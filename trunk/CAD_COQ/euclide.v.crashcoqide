@@ -1,0 +1,30 @@
+Add LoadPath "/auto/rem/u/rem/0/lemme/amahboub/RING".
+Add LoadPath "/auto/rem/u/rem/0/lemme/amahboub/QArith".
+
+Print LoadPath.
+
+Require Import Pol_is_ring.
+Require Import ZArith.
+Require Import QArith.
+
+Open Scope Q_scope.
+
+
+Definition Poly := Pol1 Q.
+
+Fixpoint degree (P:Poly) : nat :=
+ match P with
+ |Pc q => match q with
+         |xO =>
+ |PX Q q => S(degree Q)
+ end.
+
+
+Fixpoint lmonom (P:Poly) : Poly :=
+ match P with
+ |Pc q => Pc Q q
+ |PX A q => (PX  Q (lmonom A) (0#1))
+ end.
+
+Fixpoint div_euclide(A B:Poly)(n:nat){struct : n}: (prod Poly  Poly):= 
+let d = 
