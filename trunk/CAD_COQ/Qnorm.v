@@ -138,9 +138,9 @@ Require Import Qabs.
 
 
  Definition Qlt_dec(q q':Q):=
-   match Qlt_le_dec q q' with
-     |left _ => true
-     |right _ => false
+   match Zcompare ((Zpos (Qden q'))*(Qnum q)) ((Zpos (Qden q))*(Qnum q')) with
+     |Lt => true
+     |_ => false
    end.
 (*Commencer par faire la preuve de correction/completude de Qsimpl...
 

@@ -164,6 +164,12 @@ end.
        end
    end.
 
+ Definition Rat_le(q q':Rat) := orb (Rat_lt q q') (Rat_zero_test (q -q')).
+
+
+
+
+
 
    (*such a rational structure is a setoid, vivement le nouveau setoid 
   ....et la preuve de correction pour Qnorm!

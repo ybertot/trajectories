@@ -41,7 +41,7 @@ Qed.
 Fixpoint rev_app (l m:list) {struct l} :list :=
   match l with
     |nil => m
-    |hd :: tl => rev_app tl (hd :: tl)
+    |hd :: tl => rev_app tl (hd :: m)
   end.
 
 Definition my_rev (l:list) := rev_app l nil.

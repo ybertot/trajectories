@@ -725,7 +725,8 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
   suitable bern coefs *)
  Inductive TagRoot : Set :=
    |Singl : Rat -> TagRoot
-   |Pair : Rat -> Rat -> Poly -> (list Rat) -> TagRoot.
+   |Pair : Rat -> Rat -> Poly -> (list Rat) -> TagRoot
+   |Minf : TagRoot.
 
  Definition Sign := option Z.
 
@@ -738,7 +739,7 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
    Let  Pbar := square_free P.
    Let degPbar := fst (deg_coefdom Pbar).
 
-(*isoltes roots of P over ]c d[ *)
+(*isolates roots of P over ]c d[ *)
 
    Fixpoint root_isol1(res:list (TagRoot*(list Sign)))
      (c d:Rat)(blist: list Rat)(n:nat){struct n}:
@@ -784,12 +785,11 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
 
 
    Definition root_isol:= 
-     root_isol1 nil (- lbound) ubound (bernstein_coefs Pbar (- lbound)
-       ubound degPbar).
+     root_isol1 ((Minf, Some (Rat_sign (eval P (-lbound -R1)))::nil)::nil)
+          (- lbound) ubound (bernstein_coefs Pbar (- lbound) ubound degPbar).
    
-   Definition root_isol_int(c d:Rat):= 
-     root_isol1 nil c d (bernstein_coefs Pbar c
-       d degPbar).
+   Definition root_isol_int(c d:Rat)(n:nat):list (TagRoot * (list Sign)):= 
+     root_isol1 nil c d (bernstein_coefs Pbar c d degPbar) n.
  
  
 
@@ -881,6 +881,7 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
   Definition sign_at_root(n:nat)(t:TagRoot*(list Sign)):TagRoot*(list Sign):=
     let (root, sign_list) :=  t in
       match root with
+	|Minf => (Minf, Some (Rat_sign (eval Q (root_low_bound Q)))::sign_list)
 	|Singl r => 
 	  (Singl r, (Some (Rat_sign (eval Q r)))::sign_list)
 	|Pair a b P bern =>
@@ -903,98 +904,171 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
  End SIGN_AT.
 
 
-  (*pour tester
- Definition sign_at_roots(P Q:Poly)(lP:list TagRoot)(n:nat) :=
-   let Pbar := square_free  P in
-   let Qbar := (square_free Q) in
-   let dQbar := fst (deg_coefdom Qbar) in
-   let G := gcd Pbar Q in
-   let dG := fst (deg_coefdom G) in
-     sign_at_roots1 Q Pbar Qbar G dG dQbar nil lP n.
-*)
-
  Definition add_cst_sign(l:list (TagRoot*(list Sign)))(sign:Sign):=
    let add_sign := fun w => (fst w, sign::(snd w)) in
      map add_sign l.
 
+ Definition add_to_cst_list(l:list (TagRoot*(list Sign)))(sign :list Sign):=
+   let add_list := fun w => (fst w,  (snd w) @ sign) in
+     map add_list l.
+
+(* find the sign col after a root, evaluating only if necessary *)
+ Fixpoint fill_sign_between(b:Rat)(lsign:list Sign)(lpol:list Poly)
+   {struct lsign}:list Sign :=
+   match lsign,lpol with
+     |nil,_  => nil
+     |shd::stl, nil => nil
+     |shd::stl, phd::ptl =>
+       match shd with
+	 |None =>  None ::(fill_sign_between b stl ptl)
+	 |Some z =>
+	   match z with
+	     |Z0 => (Some (Rat_sign (eval phd b)))::(fill_sign_between b stl ptl)
+	     |_ => shd :: (fill_sign_between b stl ptl)
+	   end
+       end
+   end.
 
 
   (* sign for P is already determined outside ]low, up[
    P(low)has sign lowsign P(up) has sign upsign*)
- Fixpoint add_roots(P:Poly)(low up:Rat)(lowsign upsign:Sign)
+
+
+(* sign of P beteween the two roots t and t', t<t', not included 
+ Definition add_btw_roots(P:Poly)(t t' : TagRoot*(listSign))
+   (lpol : list Poly)(n:nat):
+   list (TagRoot*(list Sign)) :=
+   let tag := fst t in
+   let tag' := fst t' in
+   let lsign := snd t in
+     match tag, tag' with
+       | NoRoot, _  =>
+	 let res := root_isol_int P low up n in
+	   add_to_cst_list res lsign
+       | _, NoRoot  =>
+	 let res := root_isol_int P low up n in
+	   add_to_cst_list res lsign
+       | Singl r, Singl r' =>
+	 let lsign := 
+	   fill_sign_between ((r+r')/(2#1)) sign lpol in
+	 let res := root_isol_int P r r' n in
+	    add_to_cst_list res lsign
+       | Singl r, Pair c d Q _ => 
+	 let lsign := 
+	   fill_sign_between ((r+c)/(2#1)) sign lpol in
+	 let res := root_isol_int P r c n in
+	   add_to_cst_list res lsign
+       |Pair c d Q _, Singl r =>
+	 let lsign := 
+	   fill_sign_between ((r+d)/(2#1)) sign lpol in
+	 let res := root_isol_int P d r n in
+	   add_to_cst_list res lsign
+       | Pair c d _, Pair c' d' _ =>
+	 let sign := 
+	   fill_sign_between ((d+c')/(2#1)) sign lpol in
+	 let res := root_isol_int P d c' n in
+	   add_to_cst_list res lsign
+     end.*)
+	   
+
+(*l is not empty in res, work is done for [up, +infty [*)
+ Fixpoint add_roots(P:Poly)(freeP:Poly)(lP:list Poly)
    (l:list (TagRoot*(list Sign)))
+   (low up:Rat)(upsign:Sign)
+   (res : list (TagRoot*(list Sign)))
    (n:nat){struct l}:list (TagRoot*(list Sign)) :=
    match l with
-     |nil => root_isol_int P low up n
+     |nil => res
      |hd :: tl =>
        let tag := fst hd in
-       let slist := snd hd in
+       let prev_slist := snd hd in
 	 match tag with
+	   |Minf =>
+	     let resP := root_isol_int P low up n in
+	       res@
+	       ((add_to_cst_list resP prev_slist)@
+		 (Minf, (Some (Rat_sign (eval P (low - R1))))::prev_slist)::nil)
 	   |Singl r =>
-	     if orb (Rat_lt r low) (Rat_zero_test (r - low))
-	       then add_cst_sign l lowsign
-	       else 
-		 if orb (Rat_lt up r) (Rat_zero_test (r - low))
-		   then (tag,  upsign::slist)::
-		     (add_roots P low up lowsign upsign tl n)
-		   else 
-		     let P_sign_r := (Rat_sign (eval P r)) in
-	      	     (root_isol_int P r up n)@
-		     ((Singl r, (Some P_sign_r)::slist)::
-		       (add_roots P low r lowsign (Some P_sign_r) tl n))
-	   |Pair a b Q bernQ =>
-	     if orb (Rat_lt b low) (Rat_zero_test (b - low))
-	     then add_cst_sign l lowsign
-	     else 
-	       if orb (Rat_lt up a) (Rat_zero_test (a - low))
-		 then (fst hd,  upsign::slist)::
-		   (add_roots P low up lowsign upsign tl n)
-		 else
-		   let refine := sign_at_root P (square_free P) n hd in
-		     match fst refine  with
-		       |Singl r =>
-			 let Pr_sign_r :=
-			   match (snd refine) with
-			     |nil => None
-			     |s::tl => s
-			   end in
-			   (root_isol_int P r up n)@
-			   (refine :: (add_roots P low r lowsign Pr_sign_r tl n))
-		       |Pair a' b' Q' bern' =>
-			 let Pa' := eval P a' in
-			 let Pb' := eval P b' in
+	     if orb (Rat_lt up r) (Rat_zero_test (r - up))
+	       then 
+		 add_roots P freeP lP tl low r upsign  
+		 ((tag,  upsign::prev_slist)::res) n
+	       else
+		 let signP_r := Rat_sign (eval P r) in			
+		 let resP := root_isol_int P r up n in
+		 let prev_next_sign := fill_sign_between ((r+up)/(2#1))
+		   prev_slist lP in
+		 let res_r_up := (add_to_cst_list resP prev_next_sign) in
+		 let next_res :=
+		   res_r_up @((Singl r, (Some signP_r)::prev_next_sign)::res) in
+		   add_roots P freeP lP tl low r  (Some signP_r) next_res n
+	   |Pair a b Q bern =>
+	     if orb (Rat_lt up a) (Rat_zero_test (a - up))
+	       then
+		 add_roots P freeP lP tl  low a upsign
+		 ((tag, upsign::prev_slist)::res) n 
+	       else
+		 let refine := sign_at_root P freeP n hd in
+		   match (fst refine) with
+		     |Minf => (Minf, None :: prev_slist):: tl (*should never happen*)
+		     |Singl r =>
+		       let Pr_sign_r :=
+			 match snd refine with
+			   |nil => None
+			   |s :: tl => s
+			 end in
+		       let prev_next_sign :=
+			 fill_sign_between ((r+up)/(2#1)) prev_slist lP in
+		       let resP := (root_isol_int P r up n) in
+		       let new_res := 
+			 (add_to_cst_list resP prev_next_sign)@(refine::res) in
+			 add_roots P freeP lP tl low r Pr_sign_r
+			 new_res n
+		     |Pair a' b' Q' bern' =>
+		       let Pa' := eval P a' in
+		       let Pb' := eval P b' in
+		       let prev_next_sign :=
+			fill_sign_between ((b'+up)/(2#1)) prev_slist lP in
+		       let resP := (root_isol_int P b' up n) in
+		       let res_b'_up :=
+			 (add_to_cst_list resP prev_next_sign) in
 			 match (Rat_zero_test Pb'), (Rat_zero_test Pa') with
 			   |true, false =>
-			     (root_isol_int P b' up n)@
-			     ((Singl b', (Some Z0)::slist)::
-			       (refine::
-				 (add_roots P low a' lowsign (Some (Rat_sign Pa'))
-				   tl n))) 
+			     let new_res := 
+			       res_b'_up @
+			       ((Singl b', (Some Z0)::prev_next_sign)::(refine::res)) in
+			       add_roots P freeP lP tl low a' 
+			        (Some (Rat_sign Pa')) new_res n
 			   |false, true =>
-			     (root_isol_int P b' up n)@
-			     (refine ::
-			       ((Singl a', (Some Z0)::slist)::
-				 (add_roots P low a' lowsign (Some (Rat_sign Pa'))
-				   tl n)))
-			   |true, true =>
-			     (root_isol_int P b' up n)@
-			     ((Singl b', (Some Z0)::slist)::
+			     let prev_a'_sign :=
+			       map (fun P => Some (Rat_sign (eval P a'))) lP in
+			     let new_res :=
+			       res_b'_up@
 			       (refine ::
-				 ((Singl a', (Some Z0)::slist)::
-				   (add_roots P low a' lowsign (Some (Rat_sign Pa'))
-				     tl n))))
+				 ((Singl a', (Some Z0)::prev_a'_sign)::res)) in
+			       add_roots P freeP lP tl low a'
+			        (Some (Rat_sign Pa')) new_res n
+			   |true, true =>
+			     let prev_a'_sign :=
+			       map (fun P => Some (Rat_sign (eval P a'))) lP in
+			     let new_res := 
+			       res_b'_up @
+			       ((Singl b', (Some Z0)::prev_next_sign)::
+				 (refine ::
+				   ((Singl a', (Some Z0)::prev_a'_sign)::res))) in
+			       add_roots P freeP lP tl low a'  
+			        (Some (Rat_sign Pa')) new_res n
 			   |false, false =>
-			     (root_isol_int P b' up n)@
-			     (refine:: 
-			       (add_roots P low a' lowsign (Some (Rat_sign Pa'))
-				 tl n))
+			     let new_res :=  res_b'_up @ (refine::res) in
+			       add_roots P freeP lP tl low a'  
+			       (Some (Rat_sign Pa')) new_res n
 			 end
 		   end
 	 end
    end.			   
 
 
-(*head is the biggest root*)
+(*head is the biggest root, computes the isolating list*)
  Fixpoint family_roots(Pol_list : list Poly)(n:nat)
    {struct Pol_list}:list (TagRoot*(list Sign)):=
    match Pol_list with
@@ -1004,19 +1078,26 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
 	 |nil => root_isol P n
 	 |_ =>
 	   let prev := family_roots tl n in
-	   let P_low := root_low_bound P in
-	   let P_up := root_up_bound P in
+	   let Pfree := square_free P in
+	   let P_low := -(root_low_bound P) -R1 in
+	   let P_up := (root_up_bound P)+R1 in
 	   let upsign := Rat_sign (eval P P_up) in
-	   let lowsign := Rat_sign (eval P P_low) in
-	     add_roots P P_low P_up (Some lowsign) (Some upsign) prev n
+	     add_roots P Pfree tl prev P_low P_up (Some upsign) nil n
        end
    end.
 
-(*est-ce necessaire de distnguer root et between ? *)
+
  Inductive Index : Set :=
    |Root : Rat -> Index
    |Int : Rat -> Rat -> Index
-   |Between : Rat -> Index.
+   |Between : Rat -> Index
+   |Minfty : Index
+   |Pinfty : Index.
+
+
+
+
+
 
 
 (*sign table for the family up to "up",included.
@@ -1027,37 +1108,38 @@ up is ot a root
    (up : Rat)
    (res:list (Index*(list Sign))){struct isol_list}:
    list (Index*(list Sign)):=
-   let Sign_eval := (fun x P => Some (Rat_sign (eval P x))) in
+   let Sign_eval := (fun x P =>
+     Some (Rat_sign (eval P x))) in
    match isol_list with
      |nil => res
      |hd::tl =>
        let hdTag := fst hd in
        let hdSign := snd hd in
 	 match hdTag with
+	   |Minf => (Minfty, hdSign)::res
 	   |Singl r =>
 	     let bet := (r + up)/(2#1) in
 	       sign_table1 Pol_list tl r 
 	       ((Root r, hdSign) ::
-	       ((Between bet,(map (Sign_eval bet) Pol_list))::res))
+		 ((Between bet,fill_sign_between bet hdSign Pol_list)::res))
 	   |Pair a b _ _ =>
 	     let bet := (b + up)/(2#1) in
-	       sign_table1 Pol_list tl b
+	       sign_table1 Pol_list tl a
 	       ((Int a b, hdSign)
-		 ::((Between bet,(map (Sign_eval bet) Pol_list))
-		   ::res))
+		 ::((Between bet,fill_sign_between bet hdSign Pol_list) ::res))
 	 end
    end.
 
-
  Definition sign_table(Pol_list:list Poly)(n:nat):=
-   let Up := max_list (map root_up_bound Pol_list) in
-   let Low := max_list (map root_low_bound Pol_list) in
+   let Up := max_list (map root_up_bound Pol_list)+R1 in
    let roots := family_roots Pol_list n in
-   let minf := (Between Low, map (fun P => Some (Rat_sign (eval P Low))) Pol_list) in
-   let pinf := (Between Up, map (fun P => Some (Rat_sign (eval P Up))) Pol_list) in
-     minf :: (sign_table1 Pol_list roots Up (pinf::nil)).
+   let pinf := (Pinfty, 
+     map (fun P => Some (Rat_sign (eval P Up))) Pol_list) in
+   (sign_table1 Pol_list roots Up (pinf::nil)).
 
 
 
 
 End POLY.
+
+
