@@ -391,8 +391,8 @@ Require Export Utils.
  
 
 
-   (*gcd of P and Q : last subresultant*)
- Definition gcd (P Q:Poly) :=
+   (*gcd of P and Q : last subresultant dP>dQ*)
+ Definition gcd_strict (P Q:Poly) :=
    let l := (signed_subres_chain P Q) in 
    let SRj := (last_elem l Q) in
    let (_, srj) := deg_coefdom SRj in
@@ -400,8 +400,14 @@ Require Export Utils.
      div_cst (mult_cst SRj cP) srj.
     
 
-
-
+ Definition gcd(P Q:Poly) :=
+   let (dP,cP):= deg_coefdom P in
+   let (dQ,cQ) := deg_coefdom Q in
+     match Ncompare dP dQ with
+       |Lt  => gcd_strict Q P
+       |Gt  => gcd_strict P Q
+       |Eq => gcd_strict P ((mult_cst Q cP) -- (mult_cst P cQ))
+     end.
 
   (*gcd of P and Q, and gcd free part of P with respect to Q, pourZ,
 ca rajoute des contenus dans les DEUX
@@ -455,7 +461,8 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
 	     (mult_cst Q' ((cGCD*cNext'*cP)/cNext)) -- 
 	     (mult_cst Next' ((cGCD*cQ')/cQ)),
 	     Q')
-       |_ => gcd_gcd_free_strict P Q
+       |Gt  => gcd_gcd_free_strict P Q
+       |Lt  => gcd_gcd_free_strict Q P
      end.
     
 
@@ -748,31 +755,52 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
    end.
 
 
- Inductive Root : Set :=
-   |Singl : Rat -> Root
-   |Pair : Rat -> Rat -> Root.
+(* type for the elements of an isolation list : a root coded by a non
+  singl. interval comes with the appropriate bern coefs *)
+ Inductive TagRoot : Set :=
+   |Singl : Rat -> TagRoot
+   |Pair : Rat -> Rat -> (list Rat) -> TagRoot.
 
 
  Section ISOL.
 
    Variable P:Poly.
    Let ubound := (root_up_bound P) + R1.
-   Let lbound := (root_low_bound P) -R1.
+   Let lbound := (root_low_bound P) + R1.
    Let  Pbar := square_free P.
    Let degPbar := fst (deg_coefdom Pbar).
 
-    (*Real root isolation, last arg to decrease, P<>0 *)
-   Fixpoint root_isol1(res:list Root)(todo:list (Rat*Rat))
-     (c d:Rat)(blist: list Rat)(n:nat){struct n}:(list Root)*(list (Rat*Rat)):=
+
+
+(*Real root isolation, last arg to decrease, P<>0 
+returns a list of isolated roots and a list of it bunds where
+  isolation has failed by lack of recursive ressource.
+for the roots where isolation has succeeded in a non singl interval,
+  also returns the bern coefs of Pbar over this interval *)
+
+   Fixpoint root_isol1(res:list TagRoot)(todo:list (Rat*Rat))
+     (c d:Rat)(blist: list Rat)(n:nat){struct n}:(list TagRoot)*(list (Rat*Rat)):=
      let Vb := sign_changes (map Rat_sign blist) in
        match Vb  with
 	 |O => (res,todo)
-	 |S m =>
-	   let test := Rat_zero_test ((eval Pbar c)*(eval Pbar d)) in 
-	     match m,test with
-	     |O, false => ((Pair c d)::res,todo)
-	     |_, _ =>
+	 |S O =>
+	   if negb (Rat_zero_test ((eval P c)*(eval P d)))
+	     then ((Pair c d blist)::res,todo)
+	     else
 	       match n with
+		 |O => (res, (c,d)::todo)
+		 |S n' => 
+		   let mid := (d+c)/(2#1) in
+		   let (b', b''):= bern_split blist c d mid in
+		   let (res',todo'):=(root_isol1 res todo c  mid  b' n') in
+		   if (Rat_zero_test (eval Pbar mid)) 
+		     then
+		       root_isol1 ((Singl mid)::res') todo' mid d b'' n'
+		     else
+		       root_isol1 res' todo' mid d b'' n'
+	       end
+	 |_ =>
+	   match n with
 		 |O => (res, (c,d)::todo)
 		 |S n' => 
 		   let mid := (d+c)/(2#1) in
@@ -783,16 +811,113 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
 		       root_isol1 ((Singl c)::res') todo' mid d b'' n'
 		     else
 		       root_isol1 res' todo' mid d b'' n'
-	       end
-	     end
+	   end
        end.
 
- Definition root_isol:= 
-   root_isol1 nil nil (- lbound) ubound (bernstein_coefs Pbar (- lbound)
-     ubound degPbar).
+   Definition root_isol:= 
+     root_isol1 nil nil (- lbound) ubound (bernstein_coefs Pbar (- lbound)
+       ubound degPbar).
 
  
 
-End ISOL.
+ End ISOL.
+
+
+ Section SIGN_AT.
+
+   Variables P Q : Poly.
+   Variable lP : list TagRoot.
+
+   (*les mettre aussi en parametre pour ne les calculer qu'une fois *)
+   Variable Pbar : Poly. (*:= square_free P.*)
+   Variable Qbar : Poly. (*:= square_free Q.*)
+   Variable G : Poly. (*:= gcd Pbar Q.*)
+   Variable dG : Poly. (*:= fst (deg_coefdom G).*)
+   Variable dQbar : Poly. (*:= fst (deg_coefdom Qbar).*)
+
+
+   (*sign of Q at a root of P which is not root of Q*)
+   Fixpoint sign_at_non_com(a b:Rat)(bern:list Rat)(n:nat)
+     {struct n}:option (TagRoot*Z):=
+     let bernQ := bernstein_coefs Qbar a b dQbar in
+     let test := sign_changes (map Rat_sign bernQ) in
+       match test with
+	 |O => Some ((Pair a b bern), Rat_sign (eval Q a))
+	 |S _ => 
+	   let mid := (a+b)/(2#1) in
+	   let Pbar_mid := eval Pbar mid in
+	     if Rat_zero_test Pbar_mid
+	       then Some (Singl mid, Rat_sign (eval Q mid))
+	       else
+		 match n with
+		   |O => None
+		   |S m =>
+		     match Rat_sign (Pbar_mid*(eval Pbar a)) with
+		       |Zneg _ =>
+			 let (bern',_) := bern_split bern a b mid in
+			   sign_at_non_com a mid bern' m
+		       |_ =>
+			 let (_,bern'') := bern_split bern a b mid in
+			   sign_at_non_com mid b bern'' m
+		     end
+		 end
+       end.
+
+
+  (*deals with the common roots and generates an pre-isolation list for
+      non common ones*)
+   Fixpoint sign_at_roots(res:list (TagRoot*Z))(pos: list TagRoot)(n:nat)
+     {struct n}:(list (TagRoot*Z))*(list TagRoot):=
+     match n with
+       |O => (res, pos)
+       |S m =>
+	 match pos with
+	   |nil => (res, nil)
+	   |hd::tl =>
+	   match hd with
+	     |Singl r => 
+	       sign_at_roots
+	       ((Singl r, Rat_sign (eval Q r))::res) tl m
+	     |Pair a b bern => 
+	       let bernG := bernstein_coefs G a b dG in
+		 let VbG := sign_changes (map Rat_sign bernG) in
+		   match VbG with
+		     |O => 
+		       match (sign_at_non_com a b bern n) with
+			 |None => (res, (hd::pos))
+			 |Some s => sign_at_roots (s::res) tl m
+		       end
+		     |S O =>
+		       sign_at_roots ((hd, Z0)::res) tl m
+		     |_ =>
+		       let mid := (a+b)/(2#1) in
+		       let Pbar_mid := (eval Pbar mid) in
+			 if Rat_zero_test Pbar_mid
+			   then 
+			     sign_at_roots ((Singl mid, Rat_sign (eval
+			       Q mid))::res) tl m
+			   else
+			     match Rat_sign (Pbar_mid*(eval Pbar a)) with
+			       |Zneg _ =>
+				 let (bern',_):=bern_split bern a b mid in
+				   sign_at_roots
+				   res ((Pair a mid bern')::tl) m
+			       |_ =>
+				 let (_,bern''):=bern_split bern a b mid in
+				 sign_at_roots
+				 res ((Pair mid b bern'')::tl) m
+			     end
+		   end
+	   end
+	 end
+     end.
+   
+
+ End SIGN_AT.
+
+
+
+
+
 
 End POLY.
