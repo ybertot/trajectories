@@ -4,33 +4,6 @@ Require Export Mylist.
 Require Export Pol1sparse_is_ring.
 Require Export Utils.
 
- Definition Npred(n :N):N :=
-   match n with
-     |N0 => N0
-     |Npos p => match p with
-		  |xH => N0
-		  |_ => Npos (Ppred p)
-		end
-   end.
-
-
- Definition Nminus(n m:N):N :=
-   match n, m with
-     |N0, _ => N0
-     |_, N0 => n
-     |Npos p, Npos q =>  match Pminus_mask p q with
-			   |IsNeg => N0
-			   |IsNul => N0
-			   |IsPos p => Npos p
-			 end
-     end.
-
- Definition nat_of_N(n:N):nat:=
-   match n with
-     N0 => O
-     |Npos p => nat_of_P p
-   end.
-
 
  Module POLY(QOPS:RAT_OPS).
    Import QOPS.
@@ -97,7 +70,6 @@ Require Export Utils.
        |Pc a => Pc (a*q)
        |PX P i p => Rat_mkPX (mult_cst P q) i (p*q)
      end.
-
 
 
   (*derivative*)
@@ -202,11 +174,11 @@ Require Export Utils.
    Let cb := snd dcb.
 
    (*division of A by the non constant polynomial B*)
-   Fixpoint div_euclide_PX (A :Poly):Poly*Poly :=
+   Fixpoint euclide_div_PX (A :Poly):Poly*Poly :=
    match A with
      |Pc a => (Pc R0, Pc a)
      |PX P i p =>
-       let (Q1, R1):=div_euclide_PX P in
+       let (Q1, R1):=euclide_div_PX P in
 	 let (dr, r) := deg_coefdom R1 in
 	   match (poly_zero_test R1),(Ncompare (Nplus (Npos i) dr) db) with
 	     |true, _ => (Rat_mkPX Q1 i R0, Pc p)
@@ -222,13 +194,13 @@ Require Export Utils.
  Definition euclide_div(A B:Poly):Poly*Poly :=
    match B with
      |Pc q => (div_cst A q, Pc R0)
-     |PX _ _ _ => (div_euclide_PX B A)
+     |PX _ _ _ => (euclide_div_PX B A)
    end.
 
 (* principal signed subresulants sequence for P and Q*)
 (*ie without zeros and repetitions modulo a constant*)
 (* P = a_p X^p + ... + a_0 *)
-(* Q = b_q X^q + ... + b_0 with q < p *)
+(* Q = b_q X^q + ... + b_0 WARNING : with q < p *)
 (* cf agorithm 8.73 in MFR *)
 
 
@@ -238,11 +210,12 @@ Require Export Utils.
  Definition sum_pow(q:Rat)(n:N):Rat :=
    match n with
      |N0 => R1
-     |Npos p => match p with
-		  |xH => q
-		  |xO p' => Rat_pow q (Npos (Pmult p' (Psucc p)))
-		  |xI p' => Rat_pow q (Npos (Pmult (Psucc p') p))
-		end
+     |Npos p => 
+       match p with
+	 |xH => q
+	 |xO p' => Rat_pow q (Npos (Pmult p' (Psucc p)))
+	 |xI p' => Rat_pow q (Npos (Pmult (Psucc p') p))
+       end
    end.
 
 (*computation of the kth subresultant coefficient*)
@@ -260,31 +233,105 @@ Require Export Utils.
    Poly * Rat * N * N :=
    let (k, dom_srj_1) := (deg_coefdom SRj_1) in
    let (d, dom_sri_1) := (deg_coefdom SRi_1) in
+   let next_SR := fun x:Rat =>
+     --(div_cst 
+       (snd (euclide_div (mult_cst SRi_1 x) SRj_1))
+       (srj * dom_sri_1)) in
      match (Ncompare k  (Npred j)) with
-       |Eq => let srj_1 := dom_srj_1 in
-	 let rem :=
-	   (snd (euclide_div (mult_cst SRi_1 (Rat_pow srj_1 2)) SRj_1)) in
-	   (--(div_cst rem (srj * dom_sri_1)) , srj_1, j, k)
-       |_ => let srk := (subres_aux j k dom_srj_1 srj) in
-	 let rem := 
-	   (snd (euclide_div (mult_cst SRi_1 (dom_srj_1 * srk))
-	     SRj_1)) in
-	   (-- (div_cst rem (srj * dom_sri_1)), srk, j, k)
+       |Eq => 
+	 let srj_1 := dom_srj_1 in
+	   (next_SR (Rat_pow dom_srj_1 2), dom_srj_1, j, k)
+       |_ => 
+	 let srk := (subres_aux j k dom_srj_1 srj) in
+	   (next_SR (dom_srj_1 * srk), srk, j, k)
      end.
 
 
 
-    (*builds the list, n ensures termination and will be deg P + 1*)
+  (* extended version, for extended subresultants 
+ Definition next_subres_triple(Ti_1 Tj_1:Poly*(Poly*Poly))(srj:Rat)(i j:N):
+   (Poly*(Poly*Poly))* Rat * N * N :=
+   let (SRi_1,Di_1) := Ti_1 in
+   let (SRj_1,Dj_1) := Tj_1 in
+   let (Ui_1,Vi_1) := Di_1 in
+   let (Uj_1,Vj_1) := Dj_1 in
+   let (k, dom_srj_1) := (deg_coefdom SRj_1) in
+   let (d, dom_sri_1) := (deg_coefdom SRi_1) in
+   let next_poly := fun (P Q:Poly)(x:Rat) => 
+	   -- (div_cst (snd (euclide_div (mult_cst P x) Q))
+	     (srj * dom_sri_1))  in
+     match (Ncompare k  (Npred j)) with
+       |Eq => 
+	 let y:= (Rat_pow dom_srj_1 2) in
+	   (next_poly SRi_1 SRj_1 y,((next_poly Ui_1 Uj_1 y), next_poly Vi_1 Vj_1 y), dom_srj_1, j, k)
+       |_ => 
+	 let srk := (subres_aux j k dom_srj_1 srj) in
+	 let x:= (dom_srj_1 * srk) in
+	 let next_SR := next_poly SRi_1 SRj_1 x in
+	 let (_,dom_srk_1) := deg_coefdom next_SR in
+	   (next_SR,(next_poly Ui_1 Uj_1 x, next_poly  Vi_1 Vj_1 x),
+	     srk, j, k)
+     end.
+*)
+
+ Definition next_subres_triple(Ti_1 Tj_1:Poly*(Poly*Poly))(srj:Rat)(i j:N):
+   (Poly*(Poly*Poly))* Rat * N * N :=
+   let (SRi_1,Di_1) := Ti_1 in
+   let (SRj_1,Dj_1) := Tj_1 in
+   let (Ui_1,Vi_1) := Di_1 in
+   let (Uj_1,Vj_1) := Dj_1 in
+   let (k, dom_srj_1) := (deg_coefdom SRj_1) in
+   let (d, dom_sri_1) := (deg_coefdom SRi_1) in
+   let next :=
+     (fun x => 
+       let (C,R) := (euclide_div (mult_cst SRi_1 x) SRj_1) in
+       (C, div_cst R ((- srj)*dom_sri_1)) ) in
+   let next_UV :=
+     (fun (x:Rat)(Pi_1 Pj_1 C:Poly) =>
+       (div_cst
+	 ((C ** Pj_1) -- (mult_cst Pi_1 x)) (srj*dom_sri_1))) in
+     match (Ncompare k  (Npred j)) with
+       |Eq => 
+	 let y:= (Rat_pow dom_srj_1 2) in
+	 let (C,SR) := next y in
+	   (SR, (next_UV y Ui_1 Uj_1 C, next_UV y Vi_1 Vj_1 C), dom_srj_1, j, k)
+       |_ => 
+	 let srk := (subres_aux j k dom_srj_1 srj) in
+	 let y:= (dom_srj_1 * srk) in
+	 let (C,SR) := next y in
+	   (SR, (next_UV y Ui_1 Uj_1 C, next_UV y Vi_1 Vj_1 C), srk, j, k)
+     end.
+
+
+    (*builds the list, from A B n ensures termination and will be deg P + 1*)
+
  Fixpoint signed_subres_list(A B:Poly)(q:Rat)(i j:N)(m:nat){struct m}:list Poly :=
    match m with
      |O => nil
-     |S n => if (poly_zero_test B) then nil
-       else
-	 let (next,l) := (next_subres A B q i j) in
-	   let (next',k) := next in
-	     let (SR, sr) := next' in
-	       SR :: (signed_subres_list B SR sr k l n)
+     |S n => 
+       let (next,l) := (next_subres A B q i j) in
+       let (next',k) := next in
+       let (SR, sr) := next' in
+	 if (poly_zero_test SR) then nil
+	   else   SR :: (signed_subres_list B SR sr k l n)
    end.
+
+
+ (*extended versions,to deal with triples, goes one step further to get the last V*)
+ Fixpoint ext_signed_subres_list(T T':Poly*(Poly*Poly))(q:Rat)(i j:N)(m:nat)
+   {struct m}:list (Poly*(Poly*Poly)) :=
+   let (B,D):= T' in
+     if (poly_zero_test B) then nil
+       else
+	 match m with
+	   |O => nil
+	   |S n => 
+	     let (next,l) := (next_subres_triple T T' q i j) in
+             let (next',k) := next in
+	     let (next_T, sr) := next' in
+	     let (next_SR,_) := next_T in
+     	       next_T :: (ext_signed_subres_list T' next_T sr k l n)
+	 end.
 
 
 
@@ -302,10 +349,10 @@ Require Export Utils.
    
    Definition subres_chain_init :=
      match (Rat_sign dom_p) with
-       |Z0 => (Pc R0, R0, Pc R0) (*must never occur!*)
+       |Z0 => (Pc R0, R0, Pc R0) (*must never happen!*)
        |Zpos _ => (P, R1, Q)
        |Zneg _ => match (Npred (Nminus deg_p deg_q)) with
-		    |N0 => (P, R1, Q)
+		    |N0 => (P, - R1, Q) 
 		    |Npos p => match p with
 				 |xO _ => (P, (- R1), Q) 
 				 |_ => (-- P, R1, (-- Q))
@@ -317,13 +364,96 @@ Require Export Utils.
    Let SRq := snd subres_chain_init.
    Let SRp := fst (fst subres_chain_init).
    Let srp := snd (fst subres_chain_init).
+
+   Let Up := Pc R1.
+   Let Uq := Pc R0.
+   Let Vp := Pc R0.
+   Let Vq := Pc R1.
+
+   Let Tp := (SRp, (Up, Vp)).
+   Let Tq := (SRq, (Uq, Vq)).
    
    Definition signed_subres_chain : list Poly :=
      SRp :: (SRq :: 
-       (signed_subres_list SRp SRq srp (Nsucc deg_p) deg_p (S (nat_of_N deg_p)))).
+       (signed_subres_list SRp SRq srp deg_p (Npred deg_p) (S (nat_of_N deg_p)))).
+
+ 
+   (* extended signed subres chain *)
+   Definition ext_signed_subres_chain : list (Poly*(Poly*Poly)) :=
+     Tp :: (Tq :: 
+    (ext_signed_subres_list
+      Tp Tq  srp deg_p (Npred deg_p) (S (nat_of_N deg_p)))).
+     
+       
+
 
  End SUBRES_CHAIN.
  
+
+
+   (*gcd of P and Q : last subresultant*)
+ Definition gcd (P Q:Poly) :=
+   let l := (signed_subres_chain P Q) in 
+   let SRj := (last_elem l Q) in
+   let (_, srj) := deg_coefdom SRj in
+   let (_, cP) := deg_coefdom P in
+     div_cst (mult_cst SRj cP) srj.
+    
+
+
+
+
+  (*gcd of P and Q, and gcd free part of P with respect to Q, pourZ,
+ca rajoute des contenus dans les DEUX
+ Definition gcd_gcd_free (P Q:Poly) :=
+   let (_, cP) := deg_coefdom P in
+   let (Tj, Tj_1):= two_last_elems (ext_signed_subres_chain P Q) 
+     ((Pc R0, (Pc R0,Pc R0)),(Pc R0, (Pc R0,Pc R0))) in
+   let (SRj,Dj) := Tj in
+   let (_, srj) := deg_coefdom SRj in
+   let (_,Dj_1) := Tj_1 in
+   let (_, Vj_1) := Dj_1 in
+   let (_, cVj_1) := deg_coefdom Vj_1 in 
+     (div_cst (mult_cst SRj cP) srj, (div_cst (mult_cst Vj_1 cP) cVj_1)).
+*)    
+
+(*WARNING we have NOT gcd*(gcd_free)=P but up to a constant
+returns, gcd, gcd_free of P, gcd_free of Q*)
+ Definition gcd_gcd_free_strict (P Q:Poly) :=
+   let (Tj, Tj_1):= two_last_elems (ext_signed_subres_chain P Q) 
+     ((Pc R0, (Pc R0,Pc R0)),(Pc R0, (Pc R0,Pc R0))) in
+   let (SRj,Dj) := Tj in
+   let (_,Dj_1) := Tj_1 in
+   let (Uj_1, Vj_1) := Dj_1 in
+     (SRj, Vj_1, Uj_1).
+
+
+
+  (*gcd of P and Q : last subresultant, one preliminary step for
+ polys of same deg*)
+ Definition gcd_gcd_free (P Q:Poly) :=
+   let (dQ,cQ):= deg_coefdom Q in
+   let (dP,cP):= deg_coefdom P in
+     match (Ncompare dP dQ) with
+       |Eq => 
+	 let Next := (mult_cst Q cP) -- (mult_cst P cQ) in
+	 let (GCD_Q',Next'):= gcd_gcd_free_strict Q Next in
+	 let (GCD,Q'):= GCD_Q' in
+	 let (_,cGCD) := deg_coefdom GCD in
+	 let (_,cQ') := deg_coefdom Q' in
+	 let (_,cNext') := deg_coefdom Next' in
+	 let (_,cNext) := deg_coefdom Next in
+	   (GCD,
+	     (mult_cst Q' ((cGCD*cNext'*cP)/cNext)) -- 
+	     (mult_cst Next' ((cGCD*cQ')/cQ)),
+	     Q')
+       |_ => gcd_gcd_free_strict P Q
+     end.
+    
+
+
+
+
     (*evaluation of the sign of a list of Poly at a rational point x*)
  Fixpoint sign_eval_map(l:list Poly)(x:Rat){struct l} : list Z := 
   match l with
@@ -368,11 +498,6 @@ Require Export Utils.
    let vb := sign_eval_map sturm_seq b in
      ((sign_changes va) - (sign_changes vb))%nat.
 
- (*gcd of P and Q : last subresultant*)
- Definition gcd(P Q:Poly) :Poly :=
-   let l := (signed_subres_chain P Q) in (last_elem l Q).
-
-
   (*some transformations over polynomials, useful later fo Bernstein*)
 
 
@@ -387,12 +512,29 @@ Require Export Utils.
    end.
 
 
-(*P(cX)*)
+  (*P(cX)*)
  Fixpoint dilat(P:Poly)(c:Rat){struct P}:Poly:=
    match P with
      |Pc _ => P
      |PX P' i p => PX (mult_cst  (dilat P' c) (Rat_pow c (Npos i))) i p
    end.
+
+   (* X^d * P(1/X) where deg(P)=d, ie "reverse" of the polynomial *) 
+ Fixpoint Rev1(Q P:Poly)(i:positive){struct P}:Poly:=
+   match P with
+     |Pc c => Rat_mkPX Q i c
+     |PX P' j p => Rev1 (Rat_mkPX Q i p) P' j
+   end.
+  
+ Definition Rev(P:Poly):=
+   match P with
+     |Pc c => Pc c
+     |PX P' i p' => Rev1 (Pc p') P' i 
+   end.
+
+
+
+
 
 (*transfoms a pol in Horner form into a list of coef*power, and reverses
  Fixpoint Pol_to_list'(l:list (Rat*N))(P:Poly){struct P}:list (Rat*N) :=
@@ -456,20 +598,6 @@ Require Export Utils.
    end.
 
 
-   (* X^d * P(1/X) where deg(P)=d, ie "reverse" of the polynomial *) 
- Fixpoint Rev1(Q P:Poly)(i:positive){struct P}:Poly:=
-   match P with
-     |Pc c => Rat_mkPX Q i c
-     |PX P' j p => Rev1 (Rat_mkPX Q i p) P' j
-   end.
-  
-  Definition Rev(P:Poly):=
-   match P with
-     |Pc c => Pc c
-     |PX P' i p' => Rev1 (Pc p') P' i 
-   end.
-
-
 (*divides by the proper binomial coefs to get the bern coefs*)
  Fixpoint binomial_div (l:list Rat)(p:N)(i:N){struct l}:list Rat:=
    match l with
@@ -530,13 +658,11 @@ Require Export Utils.
 	   end
      end.
 
-
-   Definition bern_split(bern_coef:list Rat):=
-     let (b',b''):= bern_split1 (rev bern_coef) nil nil in 
-       (b', rev b'').
-
-
  End BERN_SPLIT.
+
+   Definition bern_split(bern_coef:list Rat)(c d e:Rat):=
+     let (b',b''):= bern_split1 c d e (rev bern_coef) nil nil in 
+       (b', rev b'').
 
 
  (*splitting again but without introducing any denominators*)
@@ -589,6 +715,20 @@ Require Export Utils.
    let (b',b''):= spe_bern_split1 (rev bern_coef) nil nil in 
      ((spe_bern_aux b'),(spe_bern_aux (rev b''))).
 
+
+ (*rational lower bound for the roots of P*)
+ Fixpoint sum_abs_val_coef(P:Poly):Rat:=
+   match P with
+     |Pc p => Rat_abs_val p
+     |PX P' i p => (Rat_abs_val p) + sum_abs_val_coef P' 
+   end.
+
+ Definition root_up_bound(P:Poly):=
+   let (_,p):= deg_coefdom P in
+     (sum_abs_val_coef P)/(Rat_abs_val p).
+
+ Definition root_low_bound(P:Poly):=
+   R1 / (root_up_bound P).
 
 
 End POLY.

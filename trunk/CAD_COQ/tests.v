@@ -1,5 +1,5 @@
 Add LoadPath "/0/user/amahboub/QArith".
-Add LoadPath "/0/user/amahboub/cad_coq".
+Add LoadPath "/0/user/amahboub/CAD_COQ".
 
 Require Import QArith.
 Require Import Qabs.
@@ -11,6 +11,13 @@ Module Q_NORM_POLY := POLY Q_NORM_SYST.
 Import Q_NORM_POLY.
 Module Q_NORM_POLY_PROP:= RAT_PROP Q_NORM_SYST.
 Import Q_NORM_POLY_PROP.
+
+
+(*********sous resultants******************************)
+
+(*definir des variables a,b,c,d*)
+Definition P:=PX (PX (PX (Pc R1) 2 a) 1 b) 1 c.
+Definition P':= deriv P.
 
 
 (********************polynomes de bernstein*********************************)
@@ -26,21 +33,17 @@ Definition B_2_0 := (PX (Pc (- R1)) xH R1) ^ 2.
 Definition B_2_1 := PX (PX (Pc (- (2#1)))  xH (2#1)) xH R0.
 Definition B_2_2 := PX (Pc R1) 2 R1.
 
-(*p=3)
+(*p=3*)
 
-(*(1-X)^3 *)
 Definition B_3_0:= (PX (Pc (- R1)) xH R1) ^ 3.
-(*3X(1-X)^2*)
 Definition B_3_1 := (PX (Pc (3#1)) xH R0)**((PX (Pc (- R1)) xH R1) ^ 2).
-(*3X^2*(1-X)*)
 Definition B_3_2 := (PX (Pc (3#1)) 2 R0)**(PX (Pc (- R1)) xH R1).
-(*X^3*)
 Definition B_3_3 := PX (Pc R1) 3 R0.
 
 
-Definition Q := (mult_cst Q1 (4#1))++(mult_cst Q2 (- 6#1))++(mult_cst Q3 (7#1))++(mult_cst Q4 (10#1)).
+Definition Q := (mult_cst B_3_0 (4#1))++(mult_cst B_3_1 (- 6#1))++(mult_cst B_3_2 (7#1))++(mult_cst B_3_3 (10#1)).
 
-Definition Q' := (mult_cst Q1 (15#1))++(mult_cst Q2 (3#1))++(mult_cst Q3 (- 9#2))++(mult_cst Q4 (11#1)).
+Definition Q' := (mult_cst B_3_0 (15#1))++(mult_cst B_3_1 (3#1))++(mult_cst B_3_2 (- 9#2))++(mult_cst B_3_3 (11#1)).
 
 (****** sur [0, 1/2]******)
 (*p=1*)

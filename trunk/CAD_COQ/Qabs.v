@@ -1,5 +1,5 @@
 Add LoadPath "/0/user/amahboub/QArith".
-Add LoadPath "/0/user/amahboub/cad_coq".
+Add LoadPath "/0/user/amahboub/CAD_COQ".
 
 
 Reserved Notation "x ++ y" (at level 50, left associativity).
@@ -67,7 +67,7 @@ end.
    Parameter  Rat_zero_test : Rat -> bool.
    Parameter  Rat_sign : Rat -> Z.
    Parameter  Rat_pow : Rat -> N -> Rat.
-
+   Parameter  Rat_abs_val : Rat -> Rat.
 
 
    Notation "a # b" := (MkRat a b) : Rat_scope.

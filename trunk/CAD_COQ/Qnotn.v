@@ -3,7 +3,7 @@
   normalizing*)
 
 Add LoadPath "/0/user/amahboub/QArith".
-Add LoadPath "/0/user/amahboub/cad_coq".
+Add LoadPath "/0/user/amahboub/CAD_COQ".
 
 Require Export QArith.
 Require Import Qabs.
@@ -124,7 +124,11 @@ Require Import Qabs.
      |Npos p => Qpow_pos q p
    end.
 
-
+ Definition Q_abs_val(q:Q):=
+   match Qnum q with
+     |Zneg _ => -q
+     |_ => q
+   end.
 
  Module Q_NOT_NORM <: RAT_OPS.
 
@@ -170,7 +174,7 @@ Require Import Qabs.
    Definition  RatEq_refl := Qeq_refl.
    Definition  RatEq_sym := Qeq_sym.
    Definition  RatEq_trans := Qeq_trans.
-     
+   Definition  Rat_abs_val := Q_abs_val.
   (* plus tard on a dit ...    
  
    Definition  Rat_add_ext := Qplus_r_ext.

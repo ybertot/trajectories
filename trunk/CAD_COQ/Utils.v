@@ -1,6 +1,7 @@
 Require Export NArith.
 Require Export Mylist.
 
+
  Definition Npred(n :N):N :=
    match n with
      |N0 => N0
@@ -28,23 +29,33 @@ Require Export Mylist.
      |Npos p => nat_of_P p
    end.
 
+
   (*last element of a list *)
  Fixpoint last_elem(A:Set)(l:list A)(bottom:A){struct l}:A:=
    match l with
      |nil => bottom
-     |a::q => last_elem A q bottom
+     |a::q =>
+       match q with
+	 |nil => a
+	 |_ => last_elem A q bottom
+       end
    end.
 
  Implicit Arguments last_elem [A].
 
-  (*first and last elemts of a list in a sngle op*)
- Fixpoint first_last(A:Set)(l:list A)(bottom:A){struct l}:A*A:=
+ Fixpoint two_last_elems(A:Set)(l:list A)(bottom:A*A){struct l}:A*A :=
    match l with
-     |nil => (bottom,bottom)
-     |a::q => match q with
-		|nil => (a,a)
-		|b::q' => let (c,d):= first_last A q bottom in (a,d)
-	      end
+     |nil => bottom
+     |a::q => 
+       match q with
+		|nil => bottom
+		|b::q' =>
+		  match q' with
+		    |nil => (a,b)
+		    |_ => two_last_elems A q bottom
+		  end
+       end
    end.
 
- Implicit Arguments first_last [A].
+ Implicit Arguments two_last_elems [A].
+
