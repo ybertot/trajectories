@@ -377,7 +377,7 @@ Require Export Utils.
 
 
  
-(*P(X+c)*)
+(*P(X+c), on pourrait s'embeter plus quand meme*)
  Fixpoint Ptranslate(P:Poly)(c:Rat){struct P}:Poly:=
    match P with
      |Pc p => P
@@ -499,8 +499,8 @@ Require Export Utils.
 
  Section BERN_SPLIT.
    Variables c d e:Rat.
-   Definition  a := (d-e)/(d-c).
-   Definition b := (e-c)/(d-c).
+   Definition  alpha := (d-e)/(d-c).
+   Definition beta := (e-c)/(d-c).
    
   (* computation of the next diag in the "Pascal triangle" of the
     Bernstein relation *)
@@ -512,11 +512,12 @@ Require Export Utils.
 	 let l:=next_diag_bern tl b in
 	   match l with
 	     |nil => nil (*should never happen*)
-	     |rhd::rtl => (a*hd+b*rhd)::l
+	     |rhd::rtl => ((alpha*hd)+(beta*rhd))::l
 	   end
      end.
     (* computation of the new coef, given the previous from b0 to bp
     WARNING, b'' is in reverse order*)
+
    Fixpoint bern_split1(bern_coef b' b'':list Rat){struct bern_coef}
      :(list Rat)*(list Rat):=
      match bern_coef with
@@ -528,14 +529,66 @@ Require Export Utils.
 	     |hd''::tl'' => bern_split1 tl (hd''::b') next_b''
 	   end
      end.
-(*initialisation de b'' ratee?*)
 
-   (*to be compliant with bernstein_coefs, ....and correct b''*)
+
    Definition bern_split(bern_coef:list Rat):=
      let (b',b''):= bern_split1 (rev bern_coef) nil nil in 
        (b', rev b'').
 
 
  End BERN_SPLIT.
+
+
+ (*splitting again but without introducing any denominators*)
+
+(*computes 2^p lp :: 2^{p-1} lp-1 :: ... :: l1 P :: l0 :: nil form the list l*)
+
+ Fixpoint list_2_pow_mult(l:list Rat): N * (list Rat) :=
+   match l with
+     |nil => (N0, nil)
+     |lhd::ltl => 
+       let (p,l'):=(list_2_pow_mult ltl) in
+       (Nsucc p , ((Rat_pow (2#1) p)*lhd)::l')
+   end.
+
+ Definition spe_bern_aux(l:list Rat) := snd (list_2_pow_mult l).
+
+
+ 
+ Fixpoint next_diag_spe_bern(diag:list Rat)(b:Rat){struct diag}:list Rat:=
+   match diag with
+     |nil => b::nil
+     |hd :: tl => 
+       let l:=next_diag_spe_bern tl b in
+	 match l with
+	   |nil => nil (*should never happen*)
+	   |rhd::rtl => (hd+rhd)::l
+	 end
+   end.
+ 
+      (* computation of the new coef, given the previous from b0 to bp
+	WARNING, b'' is in reverse order*)
+ 
+ Fixpoint spe_bern_split1(bern_coef b' b'':list Rat){struct bern_coef}
+   :(list Rat)*(list Rat):=
+   match bern_coef with
+     |nil  => (b',b'')
+     |hd::tl => 
+       let next_b'':= next_diag_spe_bern b'' hd in
+	 match next_b'' with
+	   |nil => (nil,nil) (*should never happen*)
+	   |hd''::tl'' => spe_bern_split1 tl (hd''::b') next_b''
+	 end
+     end.
+
+
+(*coefficients of 2^p P in the bernstein basis of c,(c+d)/2 and in the
+  bernstien basis of (c+d)/2,d, given the coef of P  in the bern basis
+  of c,d,p*)
+ Definition spe_bern_split(bern_coef:list Rat):=
+   let (b',b''):= spe_bern_split1 (rev bern_coef) nil nil in 
+     ((spe_bern_aux b'),(spe_bern_aux (rev b''))).
+
+
 
 End POLY.
