@@ -376,31 +376,14 @@ Require Export Utils.
   (*some transformations over polynomials, useful later fo Bernstein*)
 
 
- (* coefficient of X^(i-k) in the expansion of (X+c)^i ie C(i,k) * c^k*)
- Definition monom_trans_coef(k:N)(c:Rat)(i:N):=
-     match (Ncompare k i) with
-       |Gt => R0
-       |_  => (binomial i k)*(Rat_pow c k)
-     end.
-
-
- Definition trans_X_i_rec(i k:positive)(c:Rat):Poly:=
-   Prec Poly (PX (Pc R1) xH (monom_trans_coef 1 c (Npos i)))
-   (fun k P => PX P xH (monom_trans_coef (Npos k) c (Npos i))) k.
-
- (*(X+c)^i*)
- Definition trans_X_i(i:positive)(c:Rat):Poly:=
-   trans_X_i_rec i i c.
-   
-
-
+ 
 (*P(X+c)*)
  Fixpoint Ptranslate(P:Poly)(c:Rat){struct P}:Poly:=
    match P with
      |Pc p => P
      |PX P' i p' => 
        let Q := Ptranslate P' c in 
-	 Q**(trans_X_i i c) ++ (Pc p')
+	 (Q**((PX (Pc R1) xH c) ^ (Npos i))) ++ (Pc p')
    end.
 
 
@@ -411,7 +394,7 @@ Require Export Utils.
      |PX P' i p => PX (mult_cst  (dilat P' c) (Rat_pow c (Npos i))) i p
    end.
 
-(*transfoms a pol in Horner form into a list of coef*power, and reverses *)
+(*transfoms a pol in Horner form into a list of coef*power, and reverses
  Fixpoint Pol_to_list'(l:list (Rat*N))(P:Poly){struct P}:list (Rat*N) :=
    match P with
      |Pc p => (p,N0)::l
@@ -420,10 +403,10 @@ Require Export Utils.
 
  Definition Pol_to_list := Pol_to_list' nil.
 
-  (*builds a pol in Honer form from a list of coef*power*)
+  builds a pol in Honer form from a list of coef*power
  Fixpoint list_to_Pol(l:list (Rat*N)):Poly :=
    match l with
-     |nil => Pc R0 (*should never happen!*)
+     |nil => Pc R0   ********should never happen!
      |h::t => 
        let (coef,deg):= h in
 	 match t with
@@ -431,7 +414,7 @@ Require Export Utils.
 	   |h'::t'=>
 	     let (coef',deg'):=h' in
 	       match deg' with
-		 |N0 => Pc coef (*should never happen*)
+		 |N0 => Pc coef  *********should never happen
 		 |Npos d' =>
 		   let Q := list_to_Pol t in
 		     Rat_mkPX Q d' coef
@@ -440,34 +423,50 @@ Require Export Utils.
    end.
 
 
-  (* X^d * P(1/X) where deg(P)=d, ie "reverse" of the polynomial *)
+ 
  Definition Rec(P:Poly):Poly := list_to_Pol (Pol_to_list P).
+ *)
 
+
+   (*adds i times the rationnal r in head of the Rat list l*)
+ Fixpoint repeat_add(r:Rat)(i:positive)(l:list Rat){struct i}:list Rat :=
+   match i with
+     |xH => r::l
+     |xO p => repeat_add r p (repeat_add r p l)
+     |xI p => r::(repeat_add r p (repeat_add r p l))
+   end.
+
+
+   (*list of coef of a Poly of degree <= p, over 1, X,..., X^p, with
+  all zeros, constant in head, *)
+ 
+ Fixpoint Pol_to_list_dense(P:Poly)(p:N){struct P}:list Rat:=
+   match P with
+     |Pc c =>
+       match p with
+	 |N0 => c::nil
+	 |Npos p' => c::(repeat_add R0 p' nil)
+       end
+     |PX Q i q =>
+       match i with
+	 |xH => q::(Pol_to_list_dense Q (Npred p))
+	 |_ => q :: (repeat_add R0 (Ppred i) (Pol_to_list_dense Q
+	   (Nminus p (Npos i))))
+       end
+   end.
+
+
+   (* X^d * P(1/X) where deg(P)=d, ie "reverse" of the polynomial *) 
  Fixpoint Rev1(Q P:Poly)(i:positive){struct P}:Poly:=
    match P with
      |Pc c => Rat_mkPX Q i c
      |PX P' j p => Rev1 (Rat_mkPX Q i p) P' j
    end.
-
- Definition Rev(P:Poly):=
+  
+  Definition Rev(P:Poly):=
    match P with
      |Pc c => Pc c
      |PX P' i p' => Rev1 (Pc p') P' i 
-   end.
-
-   (*adds (i-1) times the rationnal r in head of the Rat list l*)
- Fixpoint repeat_add(r:Rat)(i:positive)(l:list Rat){struct i}:list Rat :=
-   match i with
-     |xH => l
-     |xO p => r::(repeat_add r p (repeat_add r p l))
-     |xI p => repeat_add r p (repeat_add r p l)
-   end.
-
-   (*list of coef of a Poly, with all zeros, from constant coef to leading*)
- Fixpoint Pol_to_list_dense(P:Poly):list Rat:=
-   match P with
-     |Pc p => p::nil
-     |PX Q i q => q :: (repeat_add R0 i (Pol_to_list_dense Q))
    end.
 
 
@@ -479,12 +478,12 @@ Require Export Utils.
    end.
 
 
-(*coefs of P in the Bernstein basis over c,d, form b_p to b_0 if
+(*coefs of P in the Bernstein basis over c,d,p form b_p to b_0 if
   p is the degree of P*)
- Definition bernstein_coefs(P:Poly)(c d:Rat):list Rat :=
-   let Q := (Ptranslate (Rec (dilat (Ptranslate P c) (d -c))) ( R1)) in
-   let (deg, coef) := deg_coefdom Q in
-   let list_coef := Pol_to_list_dense Q in
+ Definition bernstein_coefs(P:Poly)(c d:Rat)(p:N):list Rat :=
+   let (deg, coef) := deg_coefdom P in
+   let Q := (Ptranslate (Rev (dilat (Ptranslate P c) (d -c))) ( R1)) in
+   let list_coef := Pol_to_list_dense Q p in
      binomial_div list_coef deg deg.
 
  
@@ -498,30 +497,45 @@ Require Export Utils.
   p over e,d
   *)
 
-
-
- Fixpoint next_bern_list_i(bern_i_1:list Rat)(a b:Rat)
-   {struct bern_i_1}: list Rat :=
-   match bern_i_1 with
-     |nil => nil
-     |b'::l' => match l' with
-		  |nil => nil
-		  |b''::l'' => (b*b' + a*b'')::(next_bern_list_i l' a b)
-		end
-   end.
-
-(* Section BERN_SPLIT.
+ Section BERN_SPLIT.
    Variables c d e:Rat.
-   Definition  a := (d-e)/(c-c).
+   Definition  a := (d-e)/(d-c).
    Definition b := (e-c)/(d-c).
- 
-  Fixpoint bernstein_split(bern_coef:list Rat)(p:N)(l' l'':list Rat):=
-    let (b',b'') := first_last bern_coef R0 in
-      match p with
-	|N0 =>	(b'::l', b''::l'')
-	|Npos p =>
-	  let (l',l''):= bernstein_split (next_bern_list bern_coef) p-1 in
-	    (b'::l', b''::l'')
-*)
+   
+  (* computation of the next diag in the "Pascal triangle" of the
+    Bernstein relation *)
+   
+   Fixpoint next_diag_bern(diag:list Rat)(b:Rat){struct diag}:list Rat:=
+     match diag with
+       |nil => b::nil
+       |hd :: tl => 
+	 let l:=next_diag_bern tl b in
+	   match l with
+	     |nil => nil (*should never happen*)
+	     |rhd::rtl => (a*hd+b*rhd)::l
+	   end
+     end.
+    (* computation of the new coef, given the previous from b0 to bp
+    WARNING, b'' is in reverse order*)
+   Fixpoint bern_split1(bern_coef b' b'':list Rat){struct bern_coef}
+     :(list Rat)*(list Rat):=
+     match bern_coef with
+       |nil  => (b',b'')
+       |hd::tl => 
+	 let next_b'':= next_diag_bern b'' hd in
+	   match next_b'' with
+	     |nil => (nil,nil) (*should never happen*)
+	     |hd''::tl'' => bern_split1 tl (hd''::b') next_b''
+	   end
+     end.
+(*initialisation de b'' ratee?*)
+
+   (*to be compliant with bernstein_coefs, ....and correct b''*)
+   Definition bern_split(bern_coef:list Rat):=
+     let (b',b''):= bern_split1 (rev bern_coef) nil nil in 
+       (b', rev b'').
+
+
+ End BERN_SPLIT.
 
 End POLY.

@@ -38,11 +38,28 @@ Qed.
 (** Concatenation        *)
 (*************************)
 
+Fixpoint rev_app (l m:list) {struct l} :list :=
+  match l with
+    |nil => m
+    |hd :: tl => rev_app tl (hd :: tl)
+  end.
+
+Definition my_rev (l:list) := rev_app l nil.
+
+Definition my_app(l m:list) := rev_app (my_rev l) m.
+
+
 Fixpoint app (l m:list) {struct l} : list :=
   match l with
   | nil => m
   | a :: l1 => a :: app l1 m
   end.
+
+(* si besoin montrer le lemme pour recuperer les preuves
+
+Lemma my_app_is_app : forall l m:list, app l m= my_app l m.*)
+ 
+  
 
 Infix "++" := app (right associativity, at level 60) : list_scope.
 
@@ -645,7 +662,7 @@ End Functions_on_lists.
 
 Infix "::" := cons (at level 60, right associativity) : list_scope.
 
-Infix "@" := app (right associativity, at level 60) : list_scope.
+Infix "@" := my_app (right associativity, at level 60) : list_scope.
 
 Open Scope list_scope.
 

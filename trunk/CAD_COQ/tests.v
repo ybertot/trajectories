@@ -13,16 +13,55 @@ Module Q_NORM_POLY_PROP:= RAT_PROP Q_NORM_SYST.
 Import Q_NORM_POLY_PROP.
 
 
+(********************polynomes de bernstein*********************************)
+
+(****c=0, d=1****)
+(*p=1*)
+
+Definition B_1_0 := (PX (Pc (- R1)) xH R1).
+Definition B_1_1 := PX (Pc R1) xH R0.
+
+(*p=2*)
+Definition B_2_0 := (PX (Pc (- R1)) xH R1) ^ 2.
+Definition B_2_1 := PX (PX (Pc (- (2#1)))  xH (2#1)) xH R0.
+Definition B_2_2 := PX (Pc R1) 2 R1.
+
+(*p=3)
+
 (*(1-X)^3 *)
-Definition Q1:= (PX (Pc (- R1)) xH R1) ^ 3.
+Definition B_3_0:= (PX (Pc (- R1)) xH R1) ^ 3.
 (*3X(1-X)^2*)
-Definition Q2 := (PX (Pc (3#1)) xH R0)**((PX (Pc (- R1)) xH R1) ^ 2).
+Definition B_3_1 := (PX (Pc (3#1)) xH R0)**((PX (Pc (- R1)) xH R1) ^ 2).
 (*3X^2*(1-X)*)
-Definition Q3 := (PX (Pc (3#1)) 2 R0)**(PX (Pc (- R1)) xH R1).
+Definition B_3_2 := (PX (Pc (3#1)) 2 R0)**(PX (Pc (- R1)) xH R1).
 (*X^3*)
-Definition Q4 := PX (Pc R1) 3 R0.
+Definition B_3_3 := PX (Pc R1) 3 R0.
+
 
 Definition Q := (mult_cst Q1 (4#1))++(mult_cst Q2 (- 6#1))++(mult_cst Q3 (7#1))++(mult_cst Q4 (10#1)).
+
+Definition Q' := (mult_cst Q1 (15#1))++(mult_cst Q2 (3#1))++(mult_cst Q3 (- 9#2))++(mult_cst Q4 (11#1)).
+
+(****** sur [0, 1/2]******)
+(*p=1*)
+Definition B'_1_0:= PX (Pc (- (2#1))) xH R1.
+Definition B'_1_1 := PX (Pc R1) xH R1.
+
+(*p=2*)
+Definition B'_2_0 := (PX (Pc (- (2#1))) xH R1) ^ 2.
+Definition B'_2_1 := PX (PX (Pc (- (8#1)))  xH (4#1)) xH R0.
+Definition B'_2_2 := PX (Pc (4#1)) 2 R1.
+
+(*p=3*)
+Definition B'_3_0:= (PX (Pc (- (2#1))) xH R1) ^ 3.
+Definition B'_3_1 := (PX (Pc (6#1)) xH R0)**((PX (Pc (- (2#1))) xH R1) ^ 2).
+Definition B'_3_2 := (PX (Pc (12#1)) 2 R0)**(PX (Pc (- (2#1))) xH R1).
+Definition B'_3_3 := PX (Pc (8#1)) 3 R0.
+
+
+
+
+
 
 
 (* le polynome X *)
