@@ -40,7 +40,8 @@ COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \
   -I $(COQTOP)/contrib/interface -I $(COQTOP)/contrib/jprover \
   -I $(COQTOP)/contrib/omega -I $(COQTOP)/contrib/romega \
   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \
-  -I $(CAMLP4LIB)
+  -I $(CAMLP4LIB)\
+  -I /user/amahboub/home/QArith
 ZFLAGS=$(OCAMLLIBS) $(COQSRC)
 OPT=
 COQFLAGS=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)
@@ -63,7 +64,8 @@ PP=-pp "camlp4o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl"
 #########################
 
 OCAMLLIBS=-I .
-COQLIBS=-I .
+COQLIBS=-I /user/amahboub/home/QArith\
+	-I .
 
 ###################################
 #                                 #

@@ -1,7 +1,3 @@
-Add LoadPath "/0/user/amahboub/QArith".
-Add LoadPath "/0/user/amahboub/CAD_COQ".
-
-
 Reserved Notation "x ++ y" (at level 50, left associativity).
 Reserved Notation "x -- y" (at level 50, left associativity).
 Reserved Notation "x ** y" (at level 40, left associativity).
@@ -65,6 +61,7 @@ end.
    Parameter  Rat_div : Rat -> Rat -> Rat.
    Parameter  RatEq : Rat -> Rat -> Prop.
    Parameter  Rat_zero_test : Rat -> bool.
+   Parameter  Rat_lt : Rat -> Rat -> bool.
    Parameter  Rat_sign : Rat -> Z.
    Parameter  Rat_pow : Rat -> N -> Rat.
    Parameter  Rat_abs_val : Rat -> Rat.
@@ -150,6 +147,21 @@ end.
      |Eq => R1
      |Lt => R1 (*should nt happen!*)
      |Gt => (fact n)/((fact p)*(fact (Nminus n  p)))
+   end.
+
+
+ Fixpoint max_list(l:list Rat):Rat:=
+   match l with
+     |nil => R0
+     |r::l' =>
+       match l' with
+	 |nil => r
+	 |_ =>
+	   let m:= max_list l' in
+	     if Rat_lt r m 
+	       then m
+	       else r
+       end
    end.
 
 

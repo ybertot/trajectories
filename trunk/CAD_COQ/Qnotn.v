@@ -2,9 +2,6 @@
 (*rationnal numbers are the ones in QArith, and operations are systematically
   normalizing*)
 
-Add LoadPath "/0/user/amahboub/QArith".
-Add LoadPath "/0/user/amahboub/CAD_COQ".
-
 Require Export QArith.
 Require Import Qabs.
 
@@ -130,6 +127,14 @@ Require Import Qabs.
      |_ => q
    end.
 
+ 
+ Definition Qlt_dec(q q':Q):=
+   match Qlt_le_dec q q' with
+     |left _ => true
+     |right _ => false
+   end.
+
+
  Module Q_NOT_NORM <: RAT_OPS.
 
   Definition Rat := Q.
@@ -154,6 +159,7 @@ Require Import Qabs.
    Definition  Rat_inv := Qinv.
    Definition  Rat_div := Qdiv.
    Definition  RatEq := Qeq.
+   Definition  Rat_lt := Qlt_dec.
    Definition  Rat_zero_test := Qzero_test.
    Definition  Rat_sign := Qnum.
    Definition  Rat_pow := Qpow.
