@@ -56,7 +56,7 @@ Require Import Qabs.
       end
   end.
 
-
+(*
 (*if a >b > 0 computes the simplification of (a,b) ie gcd free parts (a', b')*)
 (*n for the termination, will be a*)
  Fixpoint remove_gcd_term(a b n: positive){struct n}: positive*positive :=
@@ -95,8 +95,9 @@ Require Import Qabs.
 	 |Gt => let (a', b'):= (remove_gcd a b) in (Zneg a')#b'
        end
    end.
+*)
 
- (*zero test for a normalized rationnal*)
+ (*zero test for a rationnal*)
  Definition Qzero_test(q:Q):=
    let (d,n) := q in
      match d with
@@ -104,8 +105,13 @@ Require Import Qabs.
        |_ => false
      end.
 
-(*the sig of a rationnal number is th one of its denom*)
- Definition Qsign := Qnum.
+(*the sign of a rationnal number is th one of its denom*)
+ Definition Q_sign(q:Q) :=
+	match (Qnum q) with
+	|Zpos _ => Gt
+	|Zneg _ => Lt
+	|_ => Eq
+end.
  
 (*no need to use normalized mult to compute a power of a norm rational*) 
  Fixpoint Qpow_pos(q:Q)(i:positive){struct i}:Q:=
@@ -146,11 +152,13 @@ Require Import Qabs.
 -Rat_pow builds a power of a rationnal, if the rat argument is
   normalized then the power is normalized
 *)
-   
-   Definition  R0 := 0#1.
-   Definition  R1 := 1#1.
+
+
+
+   Definition  R0 := (0#1).
+   Definition  R1 := (1#1).
    Definition  MkRat := Qmake.
-   Definition  Norm := Qsimpl.
+   Definition  Norm := (fun x:Q => x).
    Definition  Rat_add := Qplus.
    Definition  Rat_opp := Qopp.
    Definition  Rat_prod := Qmult.
@@ -158,11 +166,11 @@ Require Import Qabs.
    Definition  Rat_inv := Qinv.
    Definition  Rat_div := Qdiv.
    Definition  RatEq := Qeq.
-   Definition  Rat_lt := Qlt_dec.
    Definition  Rat_zero_test := Qzero_test.
-   Definition  Rat_sign := Qnum.
+   Definition  Rat_lt := Qlt_dec.
+   Definition  Rat_sign := Q_sign.
    Definition  Rat_pow := Qpow.
-
+   Definition Rat_abs_val := Q_abs_val.
 
 
    Notation "a # b" := (MkRat a b) : Rat_scope.
@@ -175,13 +183,13 @@ Require Import Qabs.
    Infix "/":= Rat_div : Rat_scope.
 
    Notation "x == y" := (RatEq x y) : Rat_scope.
+(* plus tard on a dit ...    
 
    Definition  RatEq_refl := Qeq_refl.
    Definition  RatEq_sym := Qeq_sym.
    Definition  RatEq_trans := Qeq_trans.
    Definition  Rat_abs_val := Q_abs_val.
-  (* plus tard on a dit ...    
- 
+   
    Definition  Rat_add_ext := Qplus_r_ext.
    Definition  Rat_opp_ext := Qopp_comp.
    Definition  Rat_prod_ext := Qmult_r_ext.

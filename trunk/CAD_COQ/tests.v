@@ -1,14 +1,150 @@
-
 Require Import QArith.
 Require Import Qabs.
 Require Import Qnorm.
 Require Import Bernstein.
 Import Q_NORM_SYST.
 
+(**************************************************************************)
+(***********Builds the development with Q = Z * positive,******************)
+(***********and systematic normalization of the fractions *****************)
+(**************************************************************************)
+
 Module Q_NORM_POLY := POLY Q_NORM_SYST.
 Import Q_NORM_POLY.
 Module Q_NORM_POLY_PROP:= RAT_PROP Q_NORM_SYST.
 Import Q_NORM_POLY_PROP.
+
+(**************************************************************************)
+(************************ Let's compute ***********************************)
+(**************************************************************************)
+Fixpoint Q_of_nat(n:nat):Rat:=
+  match n with
+    |O => R0
+    |S n => R1 + (Q_of_nat n)
+  end.
+
+(**************************************************************************)
+(************** Builds P1(n) :=(X - n)(X - (n+1))....(X - 3n) **************)
+(**************************************************************************)
+
+Definition root_prod_n_3n(n:nat):=
+  let aux := fix aux(m:nat):Poly :=
+    match m with
+      |O => (Pc R0)
+      |S O => (PX (Pc R1) xH (- (Q_of_nat (S n))))**
+	(PX (Pc R1) xH (- (Q_of_nat (2*n +1))))
+      |S m' => (PX (Pc R1) xH (- (Q_of_nat (n+m))))**
+	(PX (Pc R1) xH (-(Q_of_nat ((2*n)+m))))**(aux m')
+    end in
+    aux n.
+
+(**************************************************************************)
+(*****************  Builds P2(n) :=(X -1)(X -2)...(X -2n)  *****************)
+(**************************************************************************)
+
+Definition root_prod_1_2n(n:nat):=
+ let aux := fix aux(m:nat):Poly :=
+    match m with
+      |O => (Pc R0)
+      |S O => (PX (Pc R1) xH (- (Q_of_nat (S O))))**
+	(PX (Pc R1) xH (- (Q_of_nat (S n))))
+      |S m'=> (PX (Pc R1) xH (- (Q_of_nat m)))**
+	(PX (Pc R1) xH (-(Q_of_nat (n+m))))**(aux m')
+    end in
+    aux n.
+ 
+(**************************************************************************)
+(************  Builds the list [X, (X-1),(X-2),...,(X-(n-1))] *************)
+(**************************************************************************)
+
+Fixpoint mono_list(n:nat):list (Pol1 Q):=
+  match n with
+    |O => (PX (Pc R1) xH (- (Q_of_nat O)))::nil
+    |S m => (PX (Pc R1) xH (- (Q_of_nat m)))::(mono_list m)
+  end.
+
+(**************************************************************************)
+(**********************  Computing  sign tables  **************************)
+(**************************************************************************)
+
+Definition test(n:nat):= 
+(sign_table ((root_prod_1_2n n)::(root_prod_n_3n n)::nil) 90).
+
+
+Time Eval compute in (test 1).
+Time Eval compute in (test 2).
+Finished transaction in 52. secs (50.93u,0.02s)
+
+Time Eval compute in (test 3).
+Finished transaction in 1615. secs (1561.26u,0.57s)
+
+
+Definition test_p1(n:nat):=
+(sign_table ((root_prod_1_2n n)::nil) 90).
+
+Time Eval compute in (test_p1 1).
+
+Time Eval compute in (test_p1 2).
+Finished transaction in 3. secs (3.6u,0.s)
+
+Time Eval compute in (test_p1 5).
+
+Definition test_mono_list(n:nat):=
+(sign_table (mono_list n) 90).
+
+
+
+Time Eval compute in (test_mono_list 2).
+
+
+Time Eval compute in (test_mono_list 10).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (*******************problemes a une variable***********************)
 
