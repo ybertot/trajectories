@@ -13,12 +13,6 @@ Module Q_NORM_POLY_PROP:= RAT_PROP Q_NORM_SYST.
 Import Q_NORM_POLY_PROP.
 
 
-(*********sous resultants******************************)
-
-(*definir des variables a,b,c,d*)
-Definition P:=PX (PX (PX (Pc R1) 2 a) 1 b) 1 c.
-Definition P':= deriv P.
-
 
 (********************polynomes de bernstein*********************************)
 
@@ -60,6 +54,17 @@ Definition B'_3_0:= (PX (Pc (- (2#1))) xH R1) ^ 3.
 Definition B'_3_1 := (PX (Pc (6#1)) xH R0)**((PX (Pc (- (2#1))) xH R1) ^ 2).
 Definition B'_3_2 := (PX (Pc (12#1)) 2 R0)**(PX (Pc (- (2#1))) xH R1).
 Definition B'_3_3 := PX (Pc (8#1)) 3 R0.
+
+
+Definition P:=(PX (Pc R1) xH (- (2#1)))**(PX (Pc R1) xH (- (3#1)))**(PX (Pc R1) xH  (8#1))**(PX (Pc R1) xH (- (6#1))).
+
+
+
+(*********sous resultants******************************)
+
+(*definir des variables a,b,c,d*)
+Definition P:=PX (PX (PX (Pc R1) 2 a) 1 b) 1 c.
+Definition P':= deriv P.
 
 
 

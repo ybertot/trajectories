@@ -427,6 +427,7 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
    let (Uj_1, Vj_1) := Dj_1 in
      (SRj, Vj_1, Uj_1).
 
+(*TODO virer les contenus constants?*)
 
 
   (*gcd of P and Q : last subresultant, one preliminary step for
@@ -451,7 +452,7 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
      end.
     
 
-
+ Definition square_free(P:Poly) := snd (fst (gcd_gcd_free P (deriv P))).
 
 
     (*evaluation of the sign of a list of Poly at a rational point x*)
@@ -727,8 +728,65 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
    let (_,p):= deg_coefdom P in
      (sum_abs_val_coef P)/(Rat_abs_val p).
 
- Definition root_low_bound(P:Poly):=
-   R1 / (root_up_bound P).
+ Fixpoint root_low_bound1(P:Poly)(res:Rat){struct P}:Rat:=
+   match P with
+     |Pc p => res / (Rat_abs_val p)
+     |PX Q i q => root_low_bound1 Q (res + Rat_abs_val q)
+   end.
 
+ Definition root_low_bound(P:Poly):=
+   match P with
+     |Pc p => R1
+     |_ => root_low_bound1 P R0 
+   end.
+
+
+ Inductive Inter : Set :=
+   |Singl : Rat -> Inter
+   |Pair : Rat -> Rat -> Inter.
+
+
+ Section ISOL.
+
+   Variable P:Poly.
+   Let ubound := root_up_bound P.
+   Let lbound := root_low_bound P.
+   Let  Pbar := square_free P.
+   Let degPbar := fst (deg_coefdom Pbar).
+
+    (*Real root isolation, last arg to decrease, P<>0 *)
+   Fixpoint root_isol1(res:list Inter)(todo:list (Rat*Rat))
+     (c d:Rat)(blist: list Rat)(n:nat){struct n}:(list Inter)*(list (Rat*Rat)):=
+     let Vb := sign_changes (map Rat_sign blist) in
+       match Vb  with
+	 |O => (res,todo)
+	 |S m =>
+	   let test := Rat_zero_test ((eval Pbar c)*(eval Pbar d)) in 
+	     match m,test with
+	     |O, false => ((Pair c d)::res,todo)
+	     |_, _ =>
+	       match n with
+		 |O => (res, (c,d)::todo)
+		 |S n' => 
+		   let mid := (d-c)/(2#1) in
+		   let (b', b''):= bern_split blist c d mid in
+		   let (res',todo'):=(root_isol1 res todo c
+		     mid  b' n') in
+		   if (Rat_zero_test (eval Pbar c)) 
+		     then
+		       root_isol1 ((Singl c)::res') todo' mid d b'' n'
+		     else
+		       root_isol1 res' todo' mid d b'' n'
+	       end
+	     end
+       end.
+
+ Definition root_isol:= 
+   root_isol1 nil nil (- lbound) ubound (bernstein_coefs Pbar (- lbound)
+     ubound degPbar).
+
+ 
+
+End ISOL.
 
 End POLY.
