@@ -420,12 +420,19 @@ ca rajoute des contenus dans les DEUX
 (*WARNING we have NOT gcd*(gcd_free)=P but up to a constant
 returns, gcd, gcd_free of P, gcd_free of Q*)
  Definition gcd_gcd_free_strict (P Q:Poly) :=
+   let (_, cP) := deg_coefdom P in
    let (Tj, Tj_1):= two_last_elems (ext_signed_subres_chain P Q) 
      ((Pc R0, (Pc R0,Pc R0)),(Pc R0, (Pc R0,Pc R0))) in
    let (SRj,Dj) := Tj in
+   let (_, srj) := deg_coefdom SRj in
    let (_,Dj_1) := Tj_1 in
    let (Uj_1, Vj_1) := Dj_1 in
-     (SRj, Vj_1, Uj_1).
+   let (_,cVj_1) := deg_coefdom Vj_1 in
+   let (_,cUj_1) := deg_coefdom Uj_1 in
+     (div_cst (mult_cst SRj cP) srj,
+       div_cst (mult_cst Vj_1 cP) cVj_1,
+       div_cst (mult_cst Uj_1 cP) cUj_1).
+
 
 (*TODO virer les contenus constants?*)
 
@@ -741,22 +748,22 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
    end.
 
 
- Inductive Inter : Set :=
-   |Singl : Rat -> Inter
-   |Pair : Rat -> Rat -> Inter.
+ Inductive Root : Set :=
+   |Singl : Rat -> Root
+   |Pair : Rat -> Rat -> Root.
 
 
  Section ISOL.
 
    Variable P:Poly.
-   Let ubound := root_up_bound P.
-   Let lbound := root_low_bound P.
+   Let ubound := (root_up_bound P) + R1.
+   Let lbound := (root_low_bound P) -R1.
    Let  Pbar := square_free P.
    Let degPbar := fst (deg_coefdom Pbar).
 
     (*Real root isolation, last arg to decrease, P<>0 *)
-   Fixpoint root_isol1(res:list Inter)(todo:list (Rat*Rat))
-     (c d:Rat)(blist: list Rat)(n:nat){struct n}:(list Inter)*(list (Rat*Rat)):=
+   Fixpoint root_isol1(res:list Root)(todo:list (Rat*Rat))
+     (c d:Rat)(blist: list Rat)(n:nat){struct n}:(list Root)*(list (Rat*Rat)):=
      let Vb := sign_changes (map Rat_sign blist) in
        match Vb  with
 	 |O => (res,todo)
@@ -768,10 +775,9 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
 	       match n with
 		 |O => (res, (c,d)::todo)
 		 |S n' => 
-		   let mid := (d-c)/(2#1) in
+		   let mid := (d+c)/(2#1) in
 		   let (b', b''):= bern_split blist c d mid in
-		   let (res',todo'):=(root_isol1 res todo c
-		     mid  b' n') in
+		   let (res',todo'):=(root_isol1 res todo c  mid  b' n') in
 		   if (Rat_zero_test (eval Pbar c)) 
 		     then
 		       root_isol1 ((Singl c)::res') todo' mid d b'' n'
