@@ -78,7 +78,7 @@ fix sum_abs_val_coef (P:Pol):C_base:=
    
 Let  Pol_up_bound(P:Pol):=
      let p:= Pol_dom P in
-       (sum_abs_val_coef P)//(rabs_val p).
+       ((sum_abs_val_coef P)//(rabs_val p))++r1.
 
 Let Pol_up_bound_tt(P:Pol)(u:unit):=Pol_up_bound P.
 
@@ -92,7 +92,7 @@ Let root_low_bound1:=
 	   else sum // (rabs_val p')
      end.
 
- Let  Pol_low_bound (P:Pol) := root_low_bound1 P (sum_abs_val_coef P).
+ Let  Pol_low_bound (P:Pol) := ropp (root_low_bound1 P (sum_abs_val_coef P))++r1).
 
  Let Pol_low_bound_tt(P:Pol)(u:unit):=Pol_low_bound P.
 
@@ -522,8 +522,8 @@ Let sign_table1 (glow gup:C_base):=
    end.
 
  Let sign_table(Pol_list:list Pol)(n:nat):=
-   let up := (rmax_list (map Pol_up_bound Pol_list))++r1 in
-   let low := ropp (rmax_list (map Pol_low_bound Pol_list)) ++ r1 in
+   let up := rmax_list (map Pol_up_bound Pol_list)in
+   let low := rmax_list (map Pol_low_bound Pol_list) in
      let roots := family_root Pol_list n in
        (sign_table1 low up Pol_list roots up nil).
 

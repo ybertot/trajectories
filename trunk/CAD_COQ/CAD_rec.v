@@ -60,7 +60,7 @@ Record Cad :Type := mk_cad{
   Pol_sign_at :
  	Cert -> cell_point_up -> nat -> 
 		cell_point_up*(option comparison);
-    Pol_cad : list Pol -> nat -> list (cell_point_up * (list (option comparison)))
+    Pol_cad : list Pol -> nat -> list (cell_point_up * (list Pol*(option comparison)))
  }.
  
 End CAD_def.
