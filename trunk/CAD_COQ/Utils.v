@@ -1,6 +1,9 @@
 Require Export NArith.
 Require Export Mylist.
 
+Set Implicit Arguments.
+
+Definition Sign := option comparison.
 
  Definition Npred(n :N):N :=
    match n with
@@ -37,7 +40,7 @@ Require Export Mylist.
      |a::q =>
        match q with
 	 |nil => a
-	 |_ => last_elem A q bottom
+	 |_ => last_elem q bottom
        end
    end.
 
@@ -52,10 +55,107 @@ Require Export Mylist.
 		|b::q' =>
 		  match q' with
 		    |nil => (a,b)
-		    |_ => two_last_elems A q bottom
+		    |_ => two_last_elems q bottom
 		  end
        end
    end.
 
  Implicit Arguments two_last_elems [A].
+
+
+ Fixpoint flat_map_ac(A B:Set)(f:A -> (list B))(l:list A)(res:list B){struct l}:list B:=
+   match l with
+     |nil => res
+     |a::l' => flat_map_ac f l' ((f a)@res)
+   end.
+
+ Definition flat_map(A B:Set)(f:A -> (list B))(l:list A):= flat_map_ac f l nil.
+
+
+
+Fixpoint sign_changes_rec(sign:comparison)(l:list comparison)
+  {struct l}:nat:=
+  match l with
+    |nil => 0
+    |a :: l' =>
+      match sign, a with
+	|Eq, _ => sign_changes_rec a l'
+	|_, Eq => sign_changes_rec sign l'
+	|Lt, Gt => S (sign_changes_rec Gt l')
+	|Gt, Lt => S (sign_changes_rec Lt l')
+	|_,_ => sign_changes_rec a l'
+      end
+  end.
+
+Definition sign_changes(l : list comparison) : nat := 
+  match l with
+    |nil => O
+    |a ::l' => sign_changes_rec a l'
+  end.
+
+
+
+Fixpoint op_sign_changes_rec(sign:(option comparison))(l:list (option comparison))
+  {struct l}:option nat:=
+  match l with
+    |nil => Some 0
+    |a :: l' =>
+      match sign, a with
+	|_, None => None
+	|None, _ => None
+	|Some Eq, _ => op_sign_changes_rec a l'
+	|_, Some Eq => op_sign_changes_rec sign l'
+	|Some Lt, Some Gt =>
+	  let res := op_sign_changes_rec (Some Gt) l' in
+	    match res with
+	      |None => None
+	      |Some r => Some (S r)
+	    end
+	|Some Gt, Some Lt =>
+	  let res := op_sign_changes_rec (Some Lt) l' in
+	    match res with
+	      |None => None
+	      |Some r => Some (S r)
+	    end
+	|_,_ => op_sign_changes_rec a l'
+      end
+  end.
+
+
+
+
+Definition op_sign_changes(l:list (option comparison)) : (option nat) :=
+  match l with
+    |nil => Some O
+    |a :: l'=> op_sign_changes_rec a l'
+  end.
+     
+Definition sign_mult( u v:(option comparison)):=
+   match u, v with
+    |None,_ => None
+    | _, None => None
+    |Some u, Some v =>
+	match u, v with
+	 |Eq, _ =>Some Eq
+    	|_, Eq => Some Eq
+    	|Lt, Lt => Some Gt
+    	|Lt, Gt => Some Lt
+    	|Gt, Lt => Some Lt
+    	|Gt, Gt => Some Gt
+	end
+end.
+
+(* convenient uples in Set*)
+
+Inductive triple(A B C :Set):Set:=
+|Tr:forall a:A,forall b:B, forall c:C, triple A B C.
+
+
+Inductive four_uple(A B C D:Set):Set:=
+|Four:forall a:A, forall b:B, forall c:C, forall d:D, four_uple A B C D.
+
+Definition four_fst(A B C D:Set)(u:four_uple A B C D):=
+  match  u with
+  |Four a _ _ _ => a
+end.
 

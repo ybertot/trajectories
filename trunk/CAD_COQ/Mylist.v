@@ -550,6 +550,7 @@ Fixpoint map (l:list A) : list B :=
   end.
 End Map.
 
+
 Lemma in_map :
  forall (A B:Set) (f:A -> B) (l:list A) (x:A), In x l -> In (f x) (map f l).
 Proof. 
@@ -670,3 +671,5 @@ Open Scope list_scope.
 Delimit Scope list_scope with list.
 
 Bind Scope list_scope with list.
+
+(**exporting databases**)
