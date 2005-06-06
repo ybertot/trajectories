@@ -150,6 +150,11 @@ end.
 Inductive triple(A B C :Set):Set:=
 |Tr:forall a:A,forall b:B, forall c:C, triple A B C.
 
+Definition triple_fst(A B C:Set)(u:triple A B C):=
+  match  u with
+  |Tr a _ _ => a
+end.
+
 
 Inductive four_uple(A B C D:Set):Set:=
 |Four:forall a:A, forall b:B, forall c:C, forall d:D, four_uple A B C D.
@@ -157,5 +162,31 @@ Inductive four_uple(A B C D:Set):Set:=
 Definition four_fst(A B C D:Set)(u:four_uple A B C D):=
   match  u with
   |Four a _ _ _ => a
+end.
+
+
+Fixpoint clean_head(A:Set)
+(Aeq:A -> A -> bool)(a:A)(l:list A){struct l}:list A:=
+match l return list A with
+|nil => (a::nil)
+|hd::tl =>
+  if (Aeq a hd)
+    then clean_head Aeq a tl
+    else hd :: (clean_head Aeq a tl)
+end.
+
+
+
+Fixpoint clean_list(A:Set)(Aeq:A->A->bool)(l:list A){struct l}:list A:=
+match l return (list A) with
+|nil => nil
+|a :: tl =>clean_head Aeq a (@clean_list A Aeq tl)
+end.
+
+Fixpoint eqn(n m:nat){struct n}:bool:=
+match n,m with
+|O, O => true
+|S n, S m => eqn n m
+|_, _ => false
 end.
 

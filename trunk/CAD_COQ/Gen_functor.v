@@ -1,27 +1,9 @@
 Require Import Utils.
 Set Implicit Arguments.
 
-  Let rprod := Rat_prod Rat_struct.
-  Let radd := Rat_add Rat_struct.
-  Let ropp := Rat_opp Rat_struct.
-  Let rsign := Rat_sign Rat_struct.
-  Let rlt := Rat_lt Rat_struct.
-  Let rabs_val := Rat_abs_val Rat_struct.
-  Let rzero_test := Rat_zero_test Rat_struct.
-  Let rmk := MkRat Rat_struct.
-  Let rmax_list := max_list Rat_struct.
-  Let r1 := R1 Rat_struct.
-  Let rdiv := Rat_div Rat_struct.
-  Let rsub := Rat_sub Rat_struct.
-  Let rpow := Rat_pow Rat_struct.
-  Let rbinomial := binomial Rat_struct.
-  Let rmin4 := Rat_min4 Rat_struct.
-  Let rmax4 := Rat_max4 Rat_struct.
-  Let rof_N := Rat_of_N Rat_struct.
 
 
-
- Notation  "x # y" := (rmk x y)(at level 20, no associativity).
+ Notation  "x # y" := (MkRat x y)(at level 20, no associativity).
 
  Notation "x ++ y" := (cadd x y) (at level 50, left associativity).
  Notation "x ** y":= (cmul x y) (at level 40, left associativity).
@@ -32,11 +14,11 @@ Set Implicit Arguments.
 
 
 
-
+(*
 Inductive Pol1(C:Set):Set:=
  |Pc : C-> Pol1 C
  |PX : Pol1 C -> positive -> C -> Pol1 C.
-
+*)
 Let Pol := Pol1 Coef.
 
 Let P0 := Pc  c0.
@@ -267,7 +249,7 @@ fix Pol_div_aux(R:Pol)(i:positive){struct i}:Pol*Pol:=
 
 (*straightforward division of polynomials with coef in Rat:
   - as usual arguments are supposed to be normalized
-  - div_euclide A B = (Q,R) with  A = BQ +R and 
+  - div_euclide A B = (Q,R) with  A = BQ ++ and 
 	--either deg(R)< deg(B)
 	-- or deg(R)=deg(B)=0 and R != P R0
 	-- Q and R are normalized
@@ -276,7 +258,7 @@ fix Pol_div_aux(R:Pol)(i:positive){struct i}:Pol*Pol:=
   then AX+a=(BQ1)X^i + c1X^i +a and :
     - either deg (c1X^i +a) < deg (B),it ok : Q = X^i*Q1 and R = c1X^i + a
     - or deg (c1X^i +a) >= deg (B) and  Q = (X^i*Q1+Q2) et R = R2 + a
-  where (Q2, R2) = div_aux B db cb c1 i i.e. c1X^i = Q2B +R2
+  where (Q2, R2) = div_aux B db cb c1 i i.e. c1X^i = Q2B ++2
   ** poly returned are normalized as soon as args are normalized
   *)
  
@@ -352,7 +334,7 @@ Let Pol_deriv :=
 (*computation of the kth Pol1_subresultant coefficient*)
  Let Pol_subres_aux (j k:N)(q q':Coef): Coef:=
    let t := (Npred (Nminus j k)) in
-    (sum_pow (-- c1) t)**(cpow (q // q') t)**q.
+    (sum_pow (-- c1) t)**(cpow (q // q') t)** q.
   
 
   (*next polynomial in the sequence,after ASRi_1 and SRj_1 and arguments
@@ -368,14 +350,14 @@ Let Pol_deriv :=
    let next_SR := fun x:Coef =>
      -(Pol_div_cst 
        (snd (Pol_euclide_div (Pol_mult_cst SRi_1 x) SRj_1))
-       (srj ** dom_sri_1)) in
+       (srj **  dom_sri_1)) in
      match (Ncompare k  (Npred j)) with
        |Eq => 
 	 let srj_1 := dom_srj_1 in
 	   (next_SR (cpow dom_srj_1 2), dom_srj_1, j, k)
        |_ => 
 	 let srk := (Pol_subres_aux j k dom_srj_1 srj) in
-	   (next_SR (dom_srj_1 ** srk), srk, j, k)
+	   (next_SR (dom_srj_1 **  srk), srk, j, k)
      end.
 
 
@@ -391,11 +373,11 @@ Let Pol_deriv :=
    let next :=
      (fun x => 
        let (C,R) := (Pol_euclide_div (Pol_mult_cst SRi_1 x) SRj_1) in
-       (C, Pol_div_cst R ((-- srj)**dom_sri_1)) ) in
+       (C, Pol_div_cst R ((-- srj)** dom_sri_1)) ) in
    let next_UV :=
      (fun (x:Coef)(Pi_1 Pj_1 C:Pol) =>
        (Pol_div_cst
-	 ((C * Pj_1) - (Pol_mult_cst Pi_1 x)) (srj**dom_sri_1))) in
+	 ((C * Pj_1) - (Pol_mult_cst Pi_1 x)) (srj** dom_sri_1))) in
      match (Ncompare k  (Npred j)) with
        |Eq => 
 	 let y:= (cpow dom_srj_1 2) in
@@ -403,7 +385,7 @@ Let Pol_deriv :=
 	   (SR, (next_UV y Ui_1 Uj_1 C, next_UV y Vi_1 Vj_1 C), dom_srj_1, j, k)
        |_ => 
 	 let srk := (Pol_subres_aux j k dom_srj_1 srj) in
-	 let y:= (dom_srj_1 ** srk) in
+	 let y:= (dom_srj_1 **  srk) in
 	 let (C,SR) := next y in
 	   (SR, (next_UV y Ui_1 Uj_1 C, next_UV y Vi_1 Vj_1 C), srk, j, k)
      end.
@@ -560,8 +542,8 @@ returns, gcd, gcd_free of P, gcd_free of Q*)
 	 let cNext' := Pol_dom Next' in
 	 let cNext := Pol_dom Next in
 	   (GCD,
-	     (Pol_mult_cst Q' ((cGCD**cNext'**cP)//cNext)) -
-	     (Pol_mult_cst Next' ((cGCD**cQ')//cQ)),
+	     (Pol_mult_cst Q' ((cGCD** cNext'** cP)// cNext)) -
+	     (Pol_mult_cst Next' ((cGCD** cQ')// cQ)),
 	     Q')
        |Gt  => Pol_gcd_gcd_free_strict P Q
        |Lt  => Pol_gcd_gcd_free_strict Q P
@@ -578,7 +560,7 @@ Let Pol_eval :=
  fix Pol1_eval(P:Pol)(x:Coef){struct P} : Coef :=
    match P with
      |Pc c =>  c
-     |PX A i a => ((Pol1_eval A x)**(cpow x (Npos i))) ++ a
+     |PX A i a => ((Pol1_eval A x)** (cpow x (Npos i))) ++ a
    end.
 
 
@@ -609,12 +591,12 @@ let f:=
 f P nil nil.
 
 
- Let  Pol_mkPc(c:C_base):= Pc (cmkPc c).
+ Let  Pol_mkPc(c:Rat):= Pc (cmkPc c).
 
 
 
-Let Poln_op_base_cst (Op:Coef->C_base->Coef):=
-  fix Poln_op_base_cst(P:Pol)(c:C_base){struct P}:Pol:=
+Let Poln_op_base_cst (Op:Coef->Rat->Coef):=
+  fix Poln_op_base_cst(P:Pol)(c:Rat){struct P}:Pol:=
     match P with
     |Pc p => Pc (Op p c)
     |PX Q i q => mkPX (Poln_op_base_cst Q c) i (Op q c)
@@ -624,7 +606,7 @@ Let Pol_mult_base_cst := Poln_op_base_cst cmult_base_cst.
 Let Pol_div_base_cst :=Poln_op_base_cst cdiv_base_cst.
 
 Let Pol_partial_eval :=
-    fix partial_eval(P:Pol)(c:C_base){struct P}:Coef:=
+    fix partial_eval(P:Pol)(c:Rat){struct P}:Coef:=
     match P with
     |Pc p => p
     |PX Q i q =>
@@ -641,7 +623,7 @@ Let Pol_partial_eval :=
       (*first some transformations over polynomials*)
      
     (*P(X+c), on pourrait s'embeter plus quand meme*)
-     Let Ptranslate:=fix Ptranslate(P:Pol)(c: C_base){struct P}:Pol:=
+     Let Ptranslate:=fix Ptranslate(P:Pol)(c: Rat){struct P}:Pol:=
        match P with
 	 |Pc p => P
 	 |PX P' i p' => 
@@ -652,7 +634,7 @@ Let Pol_partial_eval :=
      
       (*P(cX)*)
      Let dilat := 
-	fix dilat(P:Pol)(c:C_base){struct P}:Pol:=
+	fix dilat(P:Pol)(c:Rat){struct P}:Pol:=
        match P with
 	 |Pc _ => P
 	 |PX P' i p => PX (Pol_mult_base_cst  (dilat P' c) (rpow c (Npos i))) i p
@@ -716,7 +698,7 @@ Let Pol_partial_eval :=
 
   (*coefs of P in the Bernstein basis over c,d,p form b_p to b_0 if
     p is the degree of P*)
-     Let Pol_bern_coefs(P:Pol)(c d:C_base)(p:N):list Coef :=
+     Let Pol_bern_coefs(P:Pol)(c d:Rat)(p:N):list Coef :=
        let (deg, coef) := Pol_deg_coefdom P in
 	 let Q := (Ptranslate (Rev (dilat (Ptranslate P c) (rsub d  c)))  r1) in
 	   let list_coef := Pol_to_list_dense Q p in
@@ -735,7 +717,7 @@ Let Pol_partial_eval :=
 
       (* computation of the next diag in the "Pascal triangle" of the
 	Bernstein relation *)
-       	Let next_diag_bern(c d e:C_base):=
+       	Let next_diag_bern(c d e:Rat):=
      	let alpha := rdiv (rsub d e) (rsub d c) in
         let beta := rdiv (rsub e c) (rsub d c) in
        fix next_diag_bern(diag:list Coef)(b:Coef){struct diag}:
@@ -747,7 +729,7 @@ Let Pol_partial_eval :=
 	       match l with
 		 |nil => nil (*should never happen*)
 		 |rhd::rtl =>
-		   ((hd ** (cmkPc alpha))
+		   ((hd **  (cmkPc alpha))
 		     ++ (rhd ** (cmkPc beta)))
 		   ::l
 	       end
@@ -755,7 +737,7 @@ Let Pol_partial_eval :=
 
       (* computation of the new coef, given the previous from b0 to bp
       WARNING, b'' is in reverse order*)
-  Let bern_split1(c d e:C_base):=
+  Let bern_split1(c d e:Rat):=
        fix bern_split1(bern_coef b' b'':list Coef){struct bern_coef}
 	 :(list Coef)*(list Coef):=
 	 match bern_coef with
@@ -769,45 +751,67 @@ Let Pol_partial_eval :=
 	 end.
 
 
-     Let Pol_bern_split(bern_coef:list Coef)(c d e:C_base):=
+     Let Pol_bern_split(bern_coef:list Coef)(c d e:Rat):=
        let (b',b''):= bern_split1 c d e (rev bern_coef) nil nil in 
 	 (b', rev b'').
 
 
 (*
    Inductive isol_box:Set:=
-     	|Singl : cell_point -> C_base -> isol_box
-     	|Pair : cell_point -> (C_base*C_base)->Pol -> Pol -> 
+     	|Singl : cell_point -> Rat -> isol_box
+     	|Pair : cell_point -> (Rat*Rat)->Pol -> Pol -> 
 	list (four_uple Coef Coef N Sign)-> isol_box
         |Minf : cell_point -> isol_box. 
 *)
 (*Cert contains all the information to keep for further computations *)
 Inductive isol_box:Set:=
-     	|Singl : cell_point -> C_base -> isol_box
-     	|Pair : cell_point -> (C_base*C_base)->Pol->Pol->list cCert-> isol_box
-        |Minf : cell_point -> C_base -> isol_box. 
+     	|Singl : cell_point -> Rat -> isol_box
+     	|Pair : cell_point -> (Rat*Rat)->Pol->Pol->list cCert-> isol_box
+        |Minf : cell_point -> Rat -> isol_box. 
 
 
   Inductive cell_point_up:Set:=
-       |Between : cell_point -> C_base -> cell_point_up
+       |Between : cell_point -> Rat -> cell_point_up
        |Root : isol_box -> cell_point_up.
 
+Let cell_point_up_proj (c:cell_point_up):=
+match  c with
+|Between z _ => z
+|Root r =>
+	match r with
+	|Singl z _ => z
+	|Pair z _  _ _ _ => z
+	|Minf z _ => z
+	end
+end.
+
   Let Cert := four_uple Pol Pol N Sign.
-  Let mk_Cert(P Q:Pol)(n:N)(s:Sign):= Four P Q n s.
-  Let build_Cert(P:Pol)(s:Sign):Cert := Four P (Pol_square_free P) (Pol_deg P) s.
+  Let mk_Cert(P Q:Pol)(n:N)(s:Sign):= Four  P Q n s. 
+(* we keep the degree of Pbar because the possible computations of bern coefs will work with Pbar*)
+ Let build_Cert(P:Pol)(s:Sign):Cert :=
+  let Pbar := Pol_square_free P in
+  Four P Pbar (Pol_deg Pbar) s.
+
+
+Let Cert_fst(c:Cert):= four_fst c.
+
+
+
+
+
 (* Very naive interval arithmetic for bound computations *)
 
 (* [a,b]+[c,d], a<=b and c<=d *)
-Let radd_int(a b c d:C_base):=((radd a c), (radd b d)).
+Let radd_int(a b c d:Rat):=((radd a c), (radd b d)).
 
 (* [a,b]*[c,d], a<=b and c<=d *)
-Let rprod_int(a b c d:C_base):= 
+Let rprod_int(a b c d:Rat):= 
 ((rmin4 (rprod a c) (rprod a d) (rprod b c) (rprod b d)),
 (rmax4 (rprod a c) (rprod a d) (rprod b c) (rprod b d))).
 
 (*[a,b]^i, a<=b*)
 Let rpow_int_pos:=
-fix ipow(a b:C_base)(i:positive){struct i}:C_base*C_base:=
+fix ipow(a b:Rat)(i:positive){struct i}:Rat*Rat:=
           match i with
 	|xH => (a,b)
 	|xO p => let (c,d) := ipow a b p in rprod_int c d c d
@@ -817,14 +821,14 @@ fix ipow(a b:C_base)(i:positive){struct i}:C_base*C_base:=
 	rprod_int c' d' a b
 	end.
 
-Let rpow_int(a b:C_base)(n:N):=
+Let rpow_int(a b:Rat)(n:N):=
  match n with
   |N0 => (r1,r1)
   |Npos p =>rpow_int_pos a b p
 end.
 
 
-Let rdiv_int(a b c d:C_base):=
+Let rdiv_int(a b c d:Rat):=
 (rmin4 (rdiv a c) (rdiv a b) (rdiv b c)  (rdiv b d),
 rmax4 (rdiv a c) (rdiv a b) (rdiv b c)  (rdiv b d)).
 
@@ -837,7 +841,7 @@ match z with
     |Singl z' r => cvalue_bound z' (Pol_partial_eval P r) 
     |Minf z' m => cvalue_bound z' (Pol_partial_eval P m)
     |Pair z' (a,b) _ _ _ =>
-let g:= fix Pol_eval_int(P:Pol):(C_base*C_base):=
+let g:= fix Pol_eval_int(P:Pol):(Rat*Rat):=
 match P with
     |Pc c => (*let x:= cvalue_bound z' c in x*) cvalue_bound z' c
     |PX P i p =>    
@@ -850,6 +854,45 @@ match P with
 g P
 end
 end.
+
+
+
+(* to add the sign of a pol to a list of signs at a tagged root*) 
+ Let add_cst_sign(l:list (isol_box*(list (Pol*Sign))))(P:Pol)(sign:Sign):=
+   let add_sign := fun w => (fst w, (P,sign)::(snd w)) in
+     map add_sign l.
+
+(* to add the sign of a pol at the end of a list of signs *)
+ Let add_to_cst_list(l:list (isol_box*(list (Pol*Sign))))(sign :list (Pol*Sign)):=
+   let add_list := fun w => (fst w,  (snd w) @ sign) in
+     map add_list l.
+
+
+
+
+
+
+
+Inductive Pol_info : Set :=
+|Cst_sign : Pol -> Sign -> Pol_info
+|Non_cst_sign : four_uple Pol Pol N Sign -> Pol_info.
+
+Let Pol_of_info_Pol(u:Pol_info):=
+match u with
+|Cst_sign P _ => P
+|Non_cst_sign  f => four_fst f
+end.
+
+Let Pol_base_cst_sign(P:Pol):=
+match P with
+|Pc c => cbase_cst_sign c
+|PX _ _ _ =>None
+end.
+
+
+
+
+
 
 (*
   Let cert_refine(z:cell_point)(P Pbar:Pol)(a b:Coef)(c:Cert)(n:nat):=

@@ -1,26 +1,72 @@
-Require Import QArith.
+
+(* Tests en deux variables *)
+
+Definition X:=PX (Pc c1) 1 c0.
+
+
+
+
+(********************************************************************************)
+(********************************************************************************)
+(********************************************************************************)
+
+
+
 Require Import Qabs.
 Require Import Qnorm.
-Require Import Bernstein.
-Import Q_NORM_SYST.
+Require Import One_dim.
+Require Import CAD.
 
-(**************************************************************************)
-(***********Builds the development with Q = Z * positive,******************)
-(***********and systematic normalization of the fractions *****************)
-(**************************************************************************)
 
-Module Q_NORM_POLY := POLY Q_NORM_SYST.
-Import Q_NORM_POLY.
-Module Q_NORM_POLY_PROP:= RAT_PROP Q_NORM_SYST.
-Import Q_NORM_POLY_PROP.
+Module Q:=Q_NORM_SYST.
+Module QFUNS:= RAT_FUNS Q.
+Module QINT := RAT_INT_OPS Q.
+Module ONE := MK_ONE_DIM Q.
 
-(**************************************************************************)
-(************************ Let's compute ***********************************)
-(**************************************************************************)
-Fixpoint Q_of_nat(n:nat):Rat:=
+Import Q.
+Import QFUNS.
+Import QINT.
+Import ONE.
+
+
+
+Load One_dim_test.
+
+Inductive print_index:Set:=
+|Pt : Q -> print_index
+|Int : Q -> Q -> print_index
+|B : Q -> print_index
+|M : Q -> print_index.
+
+Definition print_isol_box(i:ONE_DIM.isol_box):=
+match i with
+|ONE_DIM.Singl _ r => Pt r
+|ONE_DIM.Pair _ p _ _ _ => let (a,b) := p in Int a b
+|ONE_DIM.Minf _ r => M r
+end.
+
+Definition print_cell(z:ONE_DIM.cell_point_up):=
+match z with
+|ONE_DIM.Between _ r => B r
+|ONE_DIM.Root i => print_isol_box i
+end.
+
+Definition print_table_cell(z:ONE_DIM.cell_point_up * list (Pol * Sign)):=
+(print_cell (fst z), map (fun x => snd x) (snd z)).
+
+Definition print_table(l:list (ONE_DIM.cell_point_up * list (Pol * Sign))):=
+map print_table_cell l.
+
+
+
+
+
+
+
+Fixpoint Q_of_nat(n:nat):Q:=
   match n with
-    |O => R0
-    |S n => R1 + (Q_of_nat n)
+    |O => r0
+    |S n => r1 +r (Q_of_nat n)
   end.
 
 (**************************************************************************)
@@ -28,13 +74,13 @@ Fixpoint Q_of_nat(n:nat):Rat:=
 (**************************************************************************)
 
 Definition root_prod_n_3n(n:nat):=
-  let aux := fix aux(m:nat):Poly :=
+  let aux := fix aux(m:nat):Pol :=
     match m with
-      |O => (Pc R0)
-      |S O => (PX (Pc R1) xH (- (Q_of_nat (S n))))**
-	(PX (Pc R1) xH (- (Q_of_nat (2*n +1))))
-      |S m' => (PX (Pc R1) xH (- (Q_of_nat (n+m))))**
-	(PX (Pc R1) xH (-(Q_of_nat ((2*n)+m))))**(aux m')
+      |O => (Pc r0)
+      |S O => (PX (Pc r1) xH (-r (Q_of_nat (S n))))*
+	(PX (Pc r1) xH (-r (Q_of_nat (2*n +1))))
+      |S m' => (PX (Pc r1) xH (-r (Q_of_nat (n+m))))*
+	(PX (Pc r1) xH (-r (Q_of_nat ((2*n)+m))))*(aux m')
     end in
     aux n.
 
@@ -43,13 +89,13 @@ Definition root_prod_n_3n(n:nat):=
 (**************************************************************************)
 
 Definition root_prod_1_2n(n:nat):=
- let aux := fix aux(m:nat):Poly :=
+ let aux := fix aux(m:nat):Pol :=
     match m with
-      |O => (Pc R0)
-      |S O => (PX (Pc R1) xH (- (Q_of_nat (S O))))**
-	(PX (Pc R1) xH (- (Q_of_nat (S n))))
-      |S m'=> (PX (Pc R1) xH (- (Q_of_nat m)))**
-	(PX (Pc R1) xH (-(Q_of_nat (n+m))))**(aux m')
+      |O => (Pc r0)
+      |S O => (PX (Pc r1) xH (-r (Q_of_nat (S n))))*
+	(PX (Pc r1) xH (-r (Q_of_nat n)))
+      |S m'=> (PX (Pc r1) xH (-r (Q_of_nat m)))*
+	(PX (Pc r1) xH (-r (Q_of_nat (n+m))))*(aux m')
     end in
     aux n.
  
@@ -59,8 +105,8 @@ Definition root_prod_1_2n(n:nat):=
 
 Fixpoint mono_list(n:nat):list (Pol1 Q):=
   match n with
-    |O => (PX (Pc R1) xH (- (Q_of_nat O)))::nil
-    |S m => (PX (Pc R1) xH (- (Q_of_nat m)))::(mono_list m)
+    |O => (PX (Pc r1) xH (-r r0))::nil
+    |S m => (PX (Pc r1) xH (-r (Q_of_nat m)))::(mono_list m)
   end.
 
 (**************************************************************************)
@@ -68,232 +114,82 @@ Fixpoint mono_list(n:nat):list (Pol1 Q):=
 (**************************************************************************)
 
 Definition test(n:nat):= 
-(sign_table ((root_prod_1_2n n)::(root_prod_n_3n n)::nil) 90).
+print_table (sign_table ((root_prod_1_2n n)::(root_prod_n_3n n)::nil) 90).
 
 
-Time Eval compute in (test 1).
-Time Eval compute in (test 2).
-Finished transaction in 52. secs (50.93u,0.02s)
+Eval compute in (print_table (sign_table ((root_prod_1_2n 2)::nil) 90)).
+Eval compute in (family_root ((root_prod_1_2n 2)::nil) 90).
 
-Time Eval compute in (test 3).
-Finished transaction in 1615. secs (1561.26u,0.57s)
 
 
-Definition test_p1(n:nat):=
-(sign_table ((root_prod_1_2n n)::nil) 90).
+(********************************************************************************)
+(* Tests en deux variables *)
 
-Time Eval compute in (test_p1 1).
-
-Time Eval compute in (test_p1 2).
-Finished transaction in 3. secs (3.6u,0.s)
-
-Time Eval compute in (test_p1 5).
-
-Definition test_mono_list(n:nat):=
-(sign_table (mono_list n) 90).
-
-
-
-Time Eval compute in (test_mono_list 2).
-
-
-Time Eval compute in (test_mono_list 10).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(*******************problemes a une variable***********************)
-
-(* le polynome X *)
-Definition P1 := (PX (Pc R1) xH R0).
-
-(*  polynomes nul et 1 *)
-
-Definition Pol0 := Pc R0.
-
-Definition Pol1 := Pc R1.
-
-(*5X + 3*)
-Definition P2 := PX (Pc (5#1)) xH (3#1).
-
-(*5X^3 +3*)
-Definition P3 := PX (Pc (5#1)) (xI xH) (3#1).
-
-(*X^2+1*)
-Definition P4 := PX (Pc R1) (xO xH) R1.
-
-(*X+1*)
-Definition P5 := PX (Pc R1) xH R1.
-
-(*X-1*)
-Definition P6 := PX (Pc R1) xH (- R1).
-
-(*X^2-1*)
-Definition P7 := PX (Pc R1) (xO xH) (- R1).
-
-(*X^9 + X^7 - 3*)
-Definition P8 := PX P4 7 ((-3)#1).
-
-(*X^9 + X^7*)
-Definition P9 := PX P4 7 R0.
-
-
-
-Definition l:=Eval compute in (root_isol P7 60).
-
-Eval compute in (add_roots P3 P3 (P7::nil) l (- (root_low_bound P7) - R1)  ((root_up_bound P7)+R1) (Some (Zpos 1)) (Some (Zpos 1)) 30).
-
-
-Print l.
-
-
-Time Eval compute in (sign_table (P2::P3::P4::P7::P7::P4::P5::P6::nil) 60).
-  (*Finished transaction in 2. secs (1.41u,0.s)*)
-
-
-(*X et 5X^3 +3*)
-Time Eval compute in (sign_table (P1::P3::nil) 20).
-  (*Finished transaction in 1. secs (0.32u,0.s)*)
-
-(*X et X^9 + X^7 - 3*)
-Time Eval compute in (sign_table (P1::P8::nil) 20).
-  (*Finished transaction in 4. secs (4.13u,0.s)*)
-
-(*X et X^9 + X^7*)
-Time Eval compute in (sign_table (P9::P1::nil) 30).
-  (*Finished transaction in 0. secs (0.18u,0.s)*)
-
-(*X^5 et (X^9 + X^7)^3*)
-Time Eval compute in (sign_table ((P9^3)::(P1^5)::nil) 30).
-  (*Finished transaction in 1. secs (0.51u,0.s)*)
-
-Time Eval compute in (sign_table (P8::P7::nil) 60).
-  (*Finished transaction in 39. secs (37.79u,0.s)*)
-
-Time Eval compute in (sign_table (P2::P3::P4::P7::nil) 60).
-  (*Finished transaction in 2. secs (1.23u,0.01s)*)
-
-Time Eval compute in (sign_table (P8::P9::nil) 50).
-  (*Finished transaction in 9. secs (9.2u,0.s)*)
-
-
-
-(********************polynomes de bernstein*********************************)
-
-(****c=0, d=1****)
-(*p=1*)
-
-Definition B_1_0 := (PX (Pc (- R1)) xH R1).
-Definition B_1_1 := PX (Pc R1) xH R0.
-
-(*p=2*)
-Definition B_2_0 := (PX (Pc (- R1)) xH R1) ^ 2.
-Definition B_2_1 := PX (PX (Pc (- (2#1)))  xH (2#1)) xH R0.
-Definition B_2_2 := PX (Pc R1) 2 R1.
-
-(*p=3*)
-
-Definition B_3_0:= (PX (Pc (- R1)) xH R1) ^ 3.
-Definition B_3_1 := (PX (Pc (3#1)) xH R0)**((PX (Pc (- R1)) xH R1) ^ 2).
-Definition B_3_2 := (PX (Pc (3#1)) 2 R0)**(PX (Pc (- R1)) xH R1).
-Definition B_3_3 := PX (Pc R1) 3 R0.
-
-
-Definition Q := (mult_cst B_3_0 (4#1))++(mult_cst B_3_1 (- 6#1))++(mult_cst B_3_2 (7#1))++(mult_cst B_3_3 (10#1)).
-
-Definition Q' := (mult_cst B_3_0 (15#1))++(mult_cst B_3_1 (3#1))++(mult_cst B_3_2 (- 9#2))++(mult_cst B_3_3 (11#1)).
-
-(****** sur [0, 1/2]******)
-(*p=1*)
-Definition B'_1_0:= PX (Pc (- (2#1))) xH R1.
-Definition B'_1_1 := PX (Pc R1) xH R1.
-
-(*p=2*)
-Definition B'_2_0 := (PX (Pc (- (2#1))) xH R1) ^ 2.
-Definition B'_2_1 := PX (PX (Pc (- (8#1)))  xH (4#1)) xH R0.
-Definition B'_2_2 := PX (Pc (4#1)) 2 R1.
-
-(*p=3*)
-Definition B'_3_0:= (PX (Pc (- (2#1))) xH R1) ^ 3.
-Definition B'_3_1 := (PX (Pc (6#1)) xH R0)**((PX (Pc (- (2#1))) xH R1) ^ 2).
-Definition B'_3_2 := (PX (Pc (12#1)) 2 R0)**(PX (Pc (- (2#1))) xH R1).
-Definition B'_3_3 := PX (Pc (8#1)) 3 R0.
-
-
-Definition P:=(PX (Pc R1) xH (- (2#1)))**(PX (Pc R1) xH (- (3#1)))**(PX (Pc R1) xH  (8#1))**(PX (Pc R1) xH (- (6#1))).
-
-
-
-(*********sous resultants******************************)
-
-(*definir des variables a,b,c,d*)
-Definition P:=PX (PX (PX (Pc R1) 2 a) 1 b) 1 c.
-Definition P':= deriv P.
-
-
-
-
-
-
-
-
-Eval compute in bernstein 3 3 R0 R1.   
-
-(**********************)
-Add LoadPath "/0/user/amahboub/QArith".
-Add LoadPath "/0/user/amahboub/cad_coq".
-
-
-
-Require Import QArith.
+Require Import Qabs.
 Require Import Qnorm.
-Require Import Sturm.
-Require Import Qnotn.
-Import Q_NOT_NORM.
+Require Import One_dim.
+Require Import CAD.
+Require Import Up_dim.
 
-Module Q_NOT_NORM_POLY := POLY Q_NOT_NORM.
-Import Q_NOT_NORM_POLY.
+
+
+Module Q:=Q_NORM_SYST.
+Module QFUNS:= RAT_FUNS Q.
+Module QINT := RAT_INT_OPS Q.
+Module ONE := MK_ONE_DIM Q.
+Module UP := MK_UP_DIM Q.
+
+
+Import Q.
+Import QFUNS.
+Import QINT.
+Import ONE.
+Import UP.
+
+
+
+
+
+Definition Dim_two_cad := CAD_make One_dim_cad.
+
+
+(*
+Definition P0:=  Pol_0 One_dim_cad.
+Definition P1:= Pol_1 One_dim_cad.
+Definition Padd := Pol_add One_dim_cad.
+Definition Pmul := Pol_mul One_dim_cad.
+Definition Psub := Pol_subOne_dim_cad.
+Definition Popp :=  Pol_opp One_dim_cad.
+Definition Pdeg :=  Pol_deg One_dim_cad.
+Definition mkPX := Pol_mk_PX One_dim_cad.
+Definition Pzero_test := Pol_zero_test One_dim_cad.
+Definition P_of_pos := Pol_of_pos One_dim_cad.
+Definition Pbase_cst_sign := Pol_base_cst_sign One_dim_cad.
+Definition Ppow := Pol_pow One_dim_cad.
+Definition Pdiv := Pol_div One_dim_cad.
+Definition Psubres_list := Pol_subres_list One_dim_cad.
+Definition Psubres_ceof_list One_dim_cad.
+Definition P_gcd := Pol_gcd One_dim_cad.
+Definition Psquae_free := Pol_square_free One_dim_cad.
+Definition Pderiv := Pol_deriv One_dim_cad.
+Definition Peval := Pol_eval One_dim_cad.
+Definition Pis_base_cst := Pol_is_base_cst One_dim_cad.
+Definition mk_Pc := Pol_mk_Pc One_dim_cad.
+Definition mk_coef := Pol_mk_coef One_dim_cad.
+Definition Pmult_base_cst := Pol_mult_base_cst One_dim_cad.
+Definition Pdiv_base_cst := Pol_div_base_cst One_dim_cad.
+Definition P_partial_eval := Pol_partial_eval One_dim_cad.
+Definition Pcell_point_up := cell_point_upOne_dim_cad.Set;
+Definition Pcell_point_up_refine := cell_point_up_refine One_dim_cad.
+Definition low_bound := Pol_low_bound One_dim_cad.
+Definition up_bound := Pol_up_bound One_dim_cad.
+Definition value_bound := Pol_value_bound One_dim_cad.
+Definition PCert := Cert One_dim_cad.
+Definition Pmk_Cert := mk_Cert One_dim_cad.
+Definition Pbuild_Cert := build_Cert One_dim_cad.
+Definition PCert_fst := Cert_fst One_dim_cad.
+Definition low_sign := Pol_low_sign One_dim_cad.
+Definition sign_at := Pol_sign_at One_dim_cad.
+Definition cad := Pol_cad One_dim_cad.
+*)
+
