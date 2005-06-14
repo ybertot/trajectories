@@ -1,3 +1,63 @@
+(* pour commencer*)
+ Require Import Tarski.
+ Require Import Qnorm.
+ Require Import CAD.
+ Require Import One_dim.
+ Require Import Qnorm.
+
+
+ Require Import QNORM_SYST.
+ Require Import Qnorm.
+ Module Q:= Q_NORM_SYST.
+ Import Q.
+
+ Module myCAD := CAD_gen Q.
+ Import myCAD.
+
+ Module ONE := MK_ONE_DIM Q.
+ Import ONE.
+
+
+ Definition twovar := CAD_build O.
+
+
+
+
+
+(* pour faire de l'affichage *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (* Tests en deux variables *)
 

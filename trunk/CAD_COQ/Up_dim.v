@@ -1,3 +1,9 @@
+
+Unset Boxed Definitions.
+Unset Boxed Values.
+
+
+
  (*Require Import Qabs_rec.
   Require Import CAD_rec.*)
 Require Import CAD.
@@ -18,7 +24,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 
 
   (*Variable Rat_struct : Rat_ops.
-  Let C_base := Rat Rat_struct.*)
+  Definition C_base := Rat Rat_struct.*)
 
   Section UP_DIM.
   (*Variable CAD_n : Cad Rat Rat_struct.*)
@@ -26,42 +32,43 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
   Variable C:Set.
   Variable CAD_n : Cad Rat C.
 
-  Let Coef := Pol1 C.
-(*  Let Coef := Pol CAD_n.*)
-  Let c0 := Pol_0 CAD_n.
-  Let c1 := Pol_1 CAD_n.
-  Let cadd := Pol_add CAD_n.
-  Let cmul := Pol_mul CAD_n.
-  Let csub := Pol_sub CAD_n.
-  Let copp := Pol_opp CAD_n. 
-  Let cdeg := Pol_deg CAD_n.
-  Let czero_test := Pol_zero_test CAD_n.
-  Let cof_pos := Pol_of_pos CAD_n.
-  Let cpow := Pol_pow CAD_n.
-  Let cdiv := Pol_div CAD_n.
-  Let csubres_list := Pol_subres_list CAD_n.
-  Let subres_coef_list := Pol_subres_coef_list CAD_n.
-  Let cis_base_cst := Pol_is_base_cst CAD_n.
-  Let cmkPc := Pol_mk_Pc CAD_n.
-  Let cmk_coef := Pol_mk_coef CAD_n.
-  Let  cmult_base_cst := Pol_mult_base_cst CAD_n.
-  Let cdiv_base_cst :=  Pol_div_base_cst CAD_n.
-  Let csquare_free := Pol_square_free CAD_n.
-  Let csign_at := Pol_sign_at CAD_n. 
-  Let clow_bound := Pol_low_bound CAD_n.
-  Let clow_sign := Pol_low_sign CAD_n.
-  Let ccell_point_proj := cell_point_proj CAD_n.
-  Let low_cell_point := cell_point CAD_n.
-  Let cell_point := cell_point_up CAD_n.
-  Let cvalue_bound := Pol_value_bound CAD_n.
-  Let cCert:=Cert CAD_n.
-  Let cmk_Cert := mk_Cert CAD_n.
-  Let cCert_fst := Cert_fst CAD_n.
-  Let cbuild_Cert := build_Cert CAD_n.
-  Let ccell_point_up_refine := cell_point_up_refine CAD_n.
-  Let cbase_cst_sign := Pol_base_cst_sign CAD_n.
-  Let ccad := Pol_cad CAD_n.
-
+  Definition Coef := Pol1 C.
+(*  Definition Coef := Pol CAD_n.*)
+  Definition c0 := Pol_0 CAD_n.
+  Definition c1 := Pol_1 CAD_n.
+  Definition cadd := Pol_add CAD_n.
+  Definition cmul := Pol_mul CAD_n.
+  Definition csub := Pol_sub CAD_n.
+  Definition copp := Pol_opp CAD_n. 
+  Definition cdeg := Pol_deg CAD_n.
+  Definition czero_test := Pol_zero_test CAD_n.
+  Definition cof_pos := Pol_of_pos CAD_n.
+  Definition cpow := Pol_pow CAD_n.
+  Definition cdiv := Pol_div CAD_n.
+  Definition csubres_list := Pol_subres_list CAD_n.
+  Definition subres_coef_list := Pol_subres_coef_list CAD_n.
+  Definition cis_base_cst := Pol_is_base_cst CAD_n.
+  Definition cmkPc := Pol_mk_Pc CAD_n.
+  Definition cmk_coef := Pol_mk_coef CAD_n.
+  Definition  cmult_base_cst := Pol_mult_base_cst CAD_n.
+  Definition cdiv_base_cst :=  Pol_div_base_cst CAD_n.
+  Definition csquare_free := Pol_square_free CAD_n.
+  Definition cgcd_gcd_free := Pol_gcd_gcd_free CAD_n.
+  Definition csign_at := Pol_sign_at CAD_n. 
+  Definition clow_bound := Pol_low_bound CAD_n.
+  Definition clow_sign := Pol_low_sign CAD_n.
+  Definition ccell_point_proj := cell_point_proj CAD_n.
+  Definition low_cell_point := cell_point CAD_n.
+  Definition cell_point := cell_point_up CAD_n.
+  Definition cvalue_bound := Pol_value_bound CAD_n.
+  Definition cCert:=Cert CAD_n.
+  Definition cmk_Cert := mk_Cert CAD_n.
+  Definition cCert_fst := Cert_fst CAD_n.
+  Definition cbuild_Cert := build_Cert CAD_n.
+  Definition ccell_point_up_refine := cell_point_up_refine CAD_n.
+  Definition cbase_cst_sign := Pol_base_cst_sign CAD_n.
+  Definition ccad := Pol_cad CAD_n.
+  Definition cprint_cell := print_cell CAD_n.
   (* for intervals, we keep a polynomial, its ben coefs over the int,
    and for each bern coef, its degree and square free part *)
 
@@ -98,18 +105,18 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 
   (*
 
-  Let triple_csign_at(u:four_uple Coef Coef N Sign)(z:cell_point):=
+  Definition triple_csign_at(u:four_uple Coef Coef N Sign)(z:cell_point):=
   let (P, Pbar, dPbar, low) := u in 
   csign_at P Pbar dPbar low .
 
-  Let Pol_bern_coefs_tag(P:Pol)(a b:C_base)(dP:N)(z:cell_point):=
+  Definition Pol_bern_coefs_tag(P:Pol)(a b:C_base)(dP:N)(z:cell_point):=
   let blist := Pol_bern_coefs P a b dP in
   let g:= fun u =>
     let ubar := csquare_free u in
     (Four u ubar  (cdeg ubar) (clow_sign u (ccell_point_proj z))) in
   map g blist.
 
-  Let Pol_bern_split_tag(c d e:C_base)(b:list (four_uple Coef Coef N Sign))(z:cell_point):=
+  Definition Pol_bern_split_tag(c d e:C_base)(b:list (four_uple Coef Coef N Sign))(z:cell_point):=
   let bcoefs := map (fun x => four_fst x) b in
   let g:= fun u =>
     let ubar := csquare_free u in
@@ -118,18 +125,18 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
   let (b',b'') := split in
   (map g b', map g b'').*)
 
-  Let cmk_Cert_above(z:cell_point)(n:nat)(P:Coef):=
+  Definition cmk_Cert_above(z:cell_point)(n:nat)(P:Coef):=
   let Pbar :=csquare_free P in
     let dPbar := cdeg Pbar in
       cmk_Cert P Pbar dPbar (clow_sign (ccell_point_proj z) P Pbar dPbar n).
 
-  Let Pol_bern_split_tag(z:cell_point)(blist:list cCert)(c d e:Rat)(n:nat):=
+  Definition Pol_bern_split_tag(z:cell_point)(blist:list cCert)(c d e:Rat)(n:nat):=
   let bern_coef := map cCert_fst blist in
     let (b',b''):= Pol_bern_split bern_coef c d e in
       (map (cmk_Cert_above z n) b', map (cmk_Cert_above z n) b'').
   (*rajouter z *)
 
-  Let Pol_eval_sign_at_isol(P Pbar:Pol)(z:cell_point)(c:Rat)(n:nat):=
+  Definition Pol_eval_sign_at_isol(P Pbar:Pol)(z:cell_point)(c:Rat)(n:nat):=
   let Pbar_at_c := Pol_partial_eval Pbar c in
     let P_at_c := Pol_partial_eval P c in
       let dPbar_at_c := cdeg Pbar_at_c in
@@ -140,30 +147,30 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 
   (*** Bounds for the roots of a polynomial above an isolated root *)
 
-  Let  sum_square_coef:=
+  Definition  sum_square_coef:=
   fix sum_square_val_coef (P:Pol):Coef:=
     match P with
       |Pc p => p **  p
       |PX P' i p => (p ** p) ++ sum_square_val_coef P' 
     end.
   
-  Let Pol_num_bound(P:Pol)(z:cell_point):=
+  Definition Pol_num_bound(P:Pol)(z:cell_point):=
   let n:= sum_square_coef P in
     cvalue_bound z n.
 
 
-  Let Pol_bound(P:Pol)(z:cell_point):=
+  Definition Pol_bound(P:Pol)(z:cell_point):=
   let (dP, den) := Pol_deg_coefdom P in
     let (a,b):= (Pol_num_bound P z)  in
       let (c,d) := (cvalue_bound z (den ** den)) in
 	let (res,_) :=  rdiv_int a b c d in
 	  rprod (radd (rof_N dP)  r1) res.
 
-  Let  Pol_up_bound(P:Pol)(z:cell_point):= radd (Pol_bound P z) r1.
+  Definition  Pol_up_bound(P:Pol)(z:cell_point):= radd (Pol_bound P z) r1.
 
-  Let  Pol_low_bound(P:Pol)(z:cell_point):= ropp (radd (Pol_bound P z) r1).
+  Definition  Pol_low_bound(P:Pol)(z:cell_point):= ropp (radd (Pol_bound P z) r1).
 
-  Let Pol_low_sign(z:cell_point)(P Pbar:Pol)(dPbar:N)(n:nat):=
+  Definition Pol_low_sign(z:cell_point)(P Pbar:Pol)(dPbar:N)(n:nat):=
   let m:= Pol_low_bound P z in
   let P_atm := (Pol_partial_eval P m) in
   let Pbar_atm := Pol_partial_eval Pbar m in
@@ -171,14 +178,14 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
   let s := clow_sign (ccell_point_proj z) P_atm Pbar_atm (cdeg Pbar_atm) n in 
 	  csign_at (cmk_Cert P_atm Pbar_atm dPbar_atm s) z n.
 
-  Let Pol_low_sign_for_upper(z:cell_point)(P Pbar:Pol)(dPbar:N)(n:nat):=
+  Definition Pol_low_sign_for_upper(z:cell_point)(P Pbar:Pol)(dPbar:N)(n:nat):=
   snd (snd (Pol_low_sign z P Pbar dPbar n)).
   (*propager,les args de low_sign sont pas bons *)
 
   (* while mapping sign determination over a list of coef, also refines the cell_point,
   by remembering the refinments made by the sign computations *)
 
-  Let csign_at_refine(z:cell_point)(l:list cCert)(n:nat):cell_point*list (Coef*Sign):= 
+  Definition csign_at_refine(z:cell_point)(l:list cCert)(n:nat):cell_point*list (Coef*Sign):= 
   let sign_refine := fix sign_refine(l:list cCert)(res:cell_point*list (Coef *Sign)){struct l}:
     cell_point*list (Coef*Sign):=
     match l with
@@ -192,7 +199,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
   (***root isolation above an int cell point *)
 
   (*isolates roots of P over ]c d[ above z*)
-  Let root_isol1(P:Pol)(z:cell_point)(Pbar:Pol):=
+  Definition root_isol1(P:Pol)(z:cell_point)(Pbar:Pol):=
   fix root_isol1(res:list (isol_box*(list (Pol*Sign))))
     (c d:Rat)(blist: list cCert)(n:nat){struct n}:
     list (isol_box*(list (Pol*Sign))):=
@@ -244,11 +251,11 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 		end
 	    end.
 
-  Let Pol_bern_coefs_tag(z:cell_point)(P:Pol)(a b:Rat)(degPbar:N)(n:nat):=
+  Definition Pol_bern_coefs_tag(z:cell_point)(P:Pol)(a b:Rat)(degPbar:N)(n:nat):=
   let b_init := Pol_bern_coefs P a b degPbar in
     map (cmk_Cert_above z n) b_init.
 
-  Let root_isol(P:Pol)(z:cell_point)(Pbar:Pol)(degPbar:N)(lbound ubound:Rat)(n:nat):= 
+  Definition root_isol(P:Pol)(z:cell_point)(Pbar:Pol)(degPbar:N)(lbound ubound:Rat)(n:nat):= 
   let (z', sign):=(Pol_low_sign z P Pbar degPbar n) in
     root_isol1 P z Pbar
     ((Minf z' lbound, (P,snd sign)::nil)::nil)
@@ -256,7 +263,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 
 
 
-  Let root_isol_int(P:Pol)(z:cell_point)(Pbar:Pol)(degPbar:N)
+  Definition root_isol_int(P:Pol)(z:cell_point)(Pbar:Pol)(degPbar:N)
   (c d:Rat)(n:nat) := 
   root_isol1  P z Pbar
   nil c d (Pol_bern_coefs_tag z P c d degPbar n) n.
@@ -267,7 +274,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
    (** which is not a root of Q*)
    (*   None means n was not large enough *)
 
-  Let sign_at_non_com(z:cell_point)(Q Qbar:Pol)(dQbar:N):=
+  Definition sign_at_non_com(z:cell_point)(Q Qbar:Pol)(dQbar:N):=
   fix sign_at_non_com(a b:Rat)(P Pbar:Pol)
     (bern bernQ:list cCert) (n:nat){struct n}: (isol_box*(Pol* Sign)):=
     let (z,Vb) := csign_at_refine z bernQ n in
@@ -302,7 +309,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 		end
 	end. 
 
-  Let sign_at_com:= 
+  Definition sign_at_com:= 
   fix sign_at_com (z:cell_point)(a b:Rat)(P Pbar G Gbar:Pol)
     (bernG bernQ:list cCert)(n:nat){struct n}:
     isol_box*Sign:=
@@ -343,7 +350,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
     (*refines a Pair to determine the sign of Q at that root of P
       G = gcd P Q, ie up to the point where G has either a unique root or no root*)
 
-  Let Pair_refine (z:cell_point)(Q Qbar:Pol)(dQbar:N):=
+  Definition Pair_refine (z:cell_point)(Q Qbar:Pol)(dQbar:N):=
   fix Pair_refine(a b:Rat)(P Pbar G:Pol)
     (bern bernG:list cCert)(n:nat){struct n}:
     isol_box*(Pol*Sign):=
@@ -390,7 +397,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
      (* Sign of Q at an element of an isolating list,
       previous failures are propagated*)
 
-  Let sign_at_root(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:isol_box)(n:nat):
+  Definition sign_at_root(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:isol_box)(n:nat):
   isol_box*Sign:=
   match t with
     |Minf _ _ => (t, low)
@@ -407,7 +414,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
   end.
 
 
-  Let  sign_list_at_root(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:isol_box*(list (Pol*Sign)))(n:nat):
+  Definition  sign_list_at_root(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:isol_box*(list (Pol*Sign)))(n:nat):
   isol_box*(list (Pol * Sign)) :=
   let (root, sign_list) :=  t in
     match sign_list with
@@ -422,7 +429,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 
   
 
-  Let Pol_info_eval_sign(n:nat)(a:Rat)(z:cell_point)(u:Pol_info):=
+  Definition Pol_info_eval_sign(n:nat)(a:Rat)(z:cell_point)(u:Pol_info):=
   match u with
     |Cst_sign P s => (P,s)
     |Non_cst_sign u => 
@@ -430,7 +437,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	(P,snd (snd (Pol_eval_sign_at_isol P freeP z a n)))
   end.
   (* find the sign col after a root, above a cell point, evaluating only if necessary *)
-  Let fill_sign_between(z:cell_point)(n:nat) :=
+  Definition fill_sign_between(z:cell_point)(n:nat) :=
   fix fill_sign_between(b:Rat)(lsign:list (Pol*Sign))(lpol:list Pol_info)
     {struct lsign}:list (Pol*Sign) :=
     match lsign,lpol with
@@ -449,7 +456,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 le couple est bien celle de la tete courante de la liste.*)
 
 
-  Let add_roots(z:cell_point)(P:Pol)(freeP:Pol)(dfreeP:N)
+  Definition add_roots(z:cell_point)(P:Pol)(freeP:Pol)(dfreeP:N)
   (lP:list Pol_info)(n:nat) :=
   fix add_roots(l:list (isol_box*(list (Pol*Sign))))
     (low up:Rat)(lowsign upsign:Sign)
@@ -555,7 +562,7 @@ le couple est bien celle de la tete courante de la liste.*)
 
 
    (*head is the biggest root, computes the isolating list*)
-  Let family_root (z:cell_point):= 
+  Definition family_root (z:cell_point):= 
   fix family_roots(Pol_list : list Pol_info)(n:nat)
     {struct Pol_list}:list (isol_box*(list (Pol*Sign))):=
     match Pol_list with
@@ -586,7 +593,7 @@ le couple est bien celle de la tete courante de la liste.*)
 
 
 
-  Let sign_at_cell_up(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:cell_point_up)(n:nat):=
+  Definition sign_at_cell_up(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:cell_point_up)(n:nat):=
   match t with
     |Root t => let (tag_res,sign_res) := sign_at_root Q Qbar dQbar low t n in
       (Root tag_res, (Q, sign_res))
@@ -600,50 +607,8 @@ le couple est bien celle de la tete courante de la liste.*)
        head corresponds to the smallest root*)
 
 (*
-  Let sign_table1 (z:cell_point)(glow gup:Rat)(n:nat):=
-  fix sign_table1(Pol_list : list Pol_info)
-    (isol_list : list (isol_box*(list (Pol*Sign))))
-    (up:Rat)
-    (res:list (cell_point_up*(list (Pol*Sign)))){struct isol_list}:
-    list (cell_point_up*(list (Pol*Sign))):=
-    let Sign_eval := (fun x:Rat => fun u:four_uple Pol Pol N Sign =>
-      let (P,Pbar,dPbar,Plow) := u in
-	Pol_eval_sign_at_isol  P Pbar z x n) in	
-    match isol_list with
-      |nil => res
-      |hd::tl =>
-	let hdTag := fst hd in
-	  let hdSign := snd hd in
-	    match hdTag with
-	      |Minf _ _ => (Between z glow, hdSign)::res
-	      |Singl _ r =>
-		let bet := rdiv (radd r up) (2 # 1) in
-		  match res with
-		    |nil =>sign_table1 Pol_list tl r 
-		      ((Root hdTag, hdSign) ::
-			((Between z up, fill_sign_between z n bet hdSign Pol_list)::res))
-		    |_ =>
-		      sign_table1 Pol_list tl r 
-		      ((Root hdTag, hdSign) ::
-			((Between z bet,fill_sign_between z n bet hdSign Pol_list)::res))
-		  end
-	      |Pair _  (a,b) _ _ _ =>
-		let bet := rdiv (radd b up) (2#1) in
-		  match res with
-		    |nil =>
-		      sign_table1 Pol_list tl a
-		      ((Root hdTag, hdSign)
-			::((Between z gup,fill_sign_between z n bet hdSign Pol_list) ::res))
-		    |_ =>
-		      sign_table1 Pol_list tl a
-		      ((Root hdTag, hdSign)
-			::((Between z bet,fill_sign_between z n bet hdSign Pol_list) ::res))
-		  end
-	    end
-    end.
-  ******)
   
-  Let sign_table1 (z:cell_point)(glow gup:Rat)(n:nat):=
+  Definition sign_table1 (z:cell_point)(glow gup:Rat)(n:nat):=
   fix sign_table1(Pol_list : list Pol_info)
     (isol_list : list (isol_box*(list (Pol*Sign))))
     (up:Rat)
@@ -671,11 +636,60 @@ le couple est bien celle de la tete courante de la liste.*)
 		  ::((Between z bet,fill_sign_between z n bet hdSign Pol_list) ::res))
 	  end
     end.
+*)
+
+
+  Definition sign_table1 (z:cell_point)(glow gup:Rat)(n:nat):=
+  fix sign_table1(Pol_list : list Pol_info)
+    (isol_list : list (isol_box*(list (Pol*Sign))))
+    (up:Rat)
+    (res:list (cell_point_up*(list (Pol*Sign)))){struct isol_list}:
+    list (cell_point_up*(list (Pol*Sign))):=
+    let Sign_eval := (fun x:Rat => fun u:four_uple Pol Pol N Sign =>
+    let (P,Pbar,dPbar,Plow) := u in
+      Pol_eval_sign_at_isol  P Pbar z x n) in	
+    match isol_list with
+      |nil => res
+      |hd::tl =>
+	let hdTag := fst hd in
+	let hdSign := snd hd in
+	  match hdTag with
+	    |Minf _ _ => 
+		match (tail res) with
+		|nil => res
+		|_ => (Between z glow, hdSign)::res
+		end
+	    |Singl _ r =>
+		match (tail res) with
+		|nil => 
+		let bet := rdiv (radd r up) (2 # 1) in
+		sign_table1 Pol_list tl r 
+		((Root hdTag, hdSign) ::res)
+		|_ =>
+	      let bet := rdiv (radd r up) (2 # 1) in
+		sign_table1 Pol_list tl r 
+		((Root hdTag, hdSign) ::
+		  ((Between z bet,fill_sign_between z n bet hdSign Pol_list)::res))
+		end
+	    |Pair _  (a,b) _ _ _ =>
+		match (tail res) with
+		|nil =>
+	      let bet := rdiv (radd b up) (2#1) in
+		sign_table1 Pol_list tl a
+		((Root hdTag, hdSign) ::res)
+		|_ =>
+	      let bet := rdiv (radd b up) (2#1) in
+		sign_table1 Pol_list tl a
+		((Root hdTag, hdSign)
+		  ::((Between z bet,fill_sign_between z n bet hdSign Pol_list) ::res))
+		end
+	  end
+    end.
 
 
 
 
- Let up_sign_eval(m:Rat)(z:cell_point)(n:nat)(u:Pol_info):=
+ Definition up_sign_eval(m:Rat)(z:cell_point)(n:nat)(u:Pol_info):=
  match u with
    |Cst_sign P s => (P,s)
    |Non_cst_sign f =>
@@ -688,28 +702,28 @@ le couple est bien celle de la tete courante de la liste.*)
  end.
 
 
-  Let Pol_info_up_bound(z:cell_point)(u:Pol_info):=
+  Definition Pol_info_up_bound(z:cell_point)(u:Pol_info):=
   match u with
     |Cst_sign P s => r0
     |Non_cst_sign f => Pol_up_bound (four_fst f) z
   end. 
 
 
-  Let Pol_info_low_bound(z:cell_point)(u:Pol_info):=
+  Definition Pol_info_low_bound(z:cell_point)(u:Pol_info):=
   match u with
     |Cst_sign P s => r0
     |Non_cst_sign f => Pol_low_bound (four_fst f) z
   end. 
 
 (*
-  Let sign_table(z:cell_point)(Pol_list:list Pol_info)(n:nat):=
+  Definition sign_table(z:cell_point)(Pol_list:list Pol_info)(n:nat):=
   let up := rmax_list (map (Pol_info_up_bound z) Pol_list) in
     let low := rmin_list (map (Pol_info_low_bound z) Pol_list) in
       let roots := family_root z Pol_list n in
 	(sign_table1 z low up n Pol_list roots up nil).
 *)
 
-  Let sign_table(z:cell_point)(Pol_list:list Pol_info)(n:nat):=
+  Definition sign_table(z:cell_point)(Pol_list:list Pol_info)(n:nat):=
   let up := rmax_list (map (Pol_info_up_bound z) Pol_list) in
   let low := rmin_list (map (Pol_info_low_bound z) Pol_list) in
   let up_signs := map (up_sign_eval up z n) Pol_list in 
@@ -723,7 +737,7 @@ le couple est bien celle de la tete courante de la liste.*)
     initial list. for each R in tr(P), computes the subres coefs sr_j(R,
     dR/dX) where X is the current variable *)
 
-  Let subres_der_flat:=
+  Definition subres_der_flat:=
   fix subres_der_flat(llP:list (list Pol))(res:list Coef)
     {struct llP}: list Coef:=
     match llP with
@@ -744,7 +758,7 @@ le couple est bien celle de la tete courante de la liste.*)
       (* from the same list as above, computes all the sr_j(R,S) where R
     is in tr(P) and S in tr(Q) *)
 
-  Let subres_flat := 
+  Definition subres_flat := 
   fix subres_flat(llP:list (list Pol))(res: list Coef)
     {struct llP}:list Coef :=
     match llP with
@@ -777,9 +791,9 @@ le couple est bien celle de la tete courante de la liste.*)
       (* computes the projection of the family P by subresultant
     elimination and erase multiple occurences*)
 
- Let ceq(P Q:Coef):= czero_test (P -- Q). 
+ Definition ceq(P Q:Coef):= czero_test (P -- Q). 
 
-  Let elim(l:list Pol) :=
+  Definition elim(l:list Pol) :=
     let l_tr_coef := map Pol_trunc l in
       let l_tr := map (fun u => fst u) l_tr_coef in
 	let l_coef := flat_map (fun u => snd u) l_tr_coef in 
@@ -788,7 +802,7 @@ le couple est bien celle de la tete courante de la liste.*)
 
 
 
-  Let cert_refine(z:cell_point)(P Pbar:Pol)(a b:Rat)(bern:list cCert)(n:nat):=
+  Definition cert_refine(z:cell_point)(P Pbar:Pol)(a b:Rat)(bern:list cCert)(n:nat):=
   let mid := rdiv (radd a b) (2#1) in
     let Pmid := Pol_partial_eval P mid in
       let Pbarmid := Pol_partial_eval Pbar mid in
@@ -807,7 +821,7 @@ le couple est bien celle de la tete courante de la liste.*)
               	    end
 	  end.
 
-  Let cell_point_up_refine(z:cell_point_up)(n:nat) :=
+  Definition cell_point_up_refine(z:cell_point_up)(n:nat) :=
   match z with
     |Root ibox => 
       match ibox with
@@ -849,7 +863,7 @@ le couple est bien celle de la tete courante de la liste.*)
 
 
   (* sign of a coef:either the one of a base cst or a sign to find in the sign col*)
-  Let sign_find(c:Coef):=
+  Definition sign_find(c:Coef):=
   match cbase_cst_sign c with
     |Some s => fun x => Some s
     |_ =>
@@ -867,7 +881,7 @@ le couple est bien celle de la tete courante de la liste.*)
   (*on pourrait mais ca fait des calculs pour rien*)
 
 
-  Let mkPX_above(P:Pol)(infodom:Coef*Sign)(i:positive)(c:Coef)
+  Definition mkPX_above(P:Pol)(infodom:Coef*Sign)(i:positive)(c:Coef)
   (sign_col:list (Coef*Sign)):=
   match P with
     |PX _ _ _ => (PX P i c,infodom)
@@ -890,7 +904,7 @@ le couple est bien celle de la tete courante de la liste.*)
   (*computes the non degenerated form of a polynomial above a cell, return the leading coef 
   of the truncation and its sign*)
 
-  Let Pol_non_deg (sign_col:list (Coef*Sign)) :=
+  Definition Pol_non_deg (sign_col:list (Coef*Sign)) :=
   fix Pol_non_deg (P:Pol):Pol*(Coef*Sign):=
     match P with
       |Pc c => 
@@ -907,7 +921,7 @@ le couple est bien celle de la tete courante de la liste.*)
 
 
   (* idem but returns the relevant Pol_info, also possibly  computes a refinement for z *)
-  Let Pol_non_deg_info (cad_col:cell_point * list (Coef*Sign))(P:Pol)(n:nat):=
+  Definition Pol_non_deg_info (cad_col:cell_point * list (Coef*Sign))(P:Pol)(n:nat):=
   let (z, sign_col):= cad_col in
     let (P, infodom):=Pol_non_deg sign_col P in
       let (_, domsign) := infodom in
@@ -922,7 +936,7 @@ le couple est bien celle de la tete courante de la liste.*)
 	end.
 
   (* c is known to be non zero at z, refines z to get a sharp bound on the values of c*)
-  Let cell_refine_for(c:Coef):=
+  Definition cell_refine_for(c:Coef):=
   fix cell_refine_for(z:cell_point)(n:nat){struct n}:option cell_point:=
     let (a,b) := cvalue_bound z c in
       match rsign (rprod a b) with 
@@ -938,7 +952,7 @@ le couple est bien celle de la tete courante de la liste.*)
           end
       end.
 
-  Let non_deg1:=
+  Definition non_deg1:=
   fix non_deg(l:list Pol)(cad_col:cell_point*(list (Coef*Sign)))(n:nat)
     (res:(list Pol_info)*(cell_point*(list(Coef*Sign)))){struct l}:
     (list Pol_info)*(cell_point*(list(Coef*Sign))):=
@@ -965,21 +979,21 @@ le couple est bien celle de la tete courante de la liste.*)
                     non_deg Pol_tl new_cad_col n (info_pol::(fst res), new_cad_col)
     end.
 
-  Let non_deg(l:list Pol)(cad_col:cell_point*(list (Coef*Sign)))(n:nat):=
+  Definition non_deg(l:list Pol)(cad_col:cell_point*(list (Coef*Sign)))(n:nat):=
   non_deg1 l cad_col n (nil, cad_col).
 
 
-  Let one_table_up(l:list Pol)(n:nat)(cad_col:cell_point*(list (Coef*Sign))):=
+  Definition one_table_up(l:list Pol)(n:nat)(cad_col:cell_point*(list (Coef*Sign))):=
   let (l',cad_col):=non_deg l cad_col n in
     let (z,_):= cad_col in
       sign_table z l' n.
 
-  Let Pol_cad(l:list Pol)(n:nat):=
+  Definition Pol_cad(l:list Pol)(n:nat):=
   let elim_l := elim l in
     let cad := ccad elim_l n in
       flat_map (one_table_up l n) cad.
 
-  Let Pol_sign_at_for_upper(c:Cert)(z:cell_point_up)(n:nat):=
+  Definition Pol_sign_at_for_upper(c:Cert)(z:cell_point_up)(n:nat):=
   let (P,Pbar, dPbar, slow):=c in
     match z with
       |Between z r =>
@@ -998,6 +1012,10 @@ le couple est bien celle de la tete courante de la liste.*)
 
 
 
+Definition print_cad(Pol_list:list Pol)(n:nat):=
+ let table := Pol_cad Pol_list n in
+ map (fun x:cell_point_up*(list (Pol*Sign)) => let (a,b):= x in (print_cell a, b)) table.
+
 
   Definition CAD_make :=@mk_cad Rat Coef (*Rat_struct*)
     (*Coef Pol*)
@@ -1005,15 +1023,15 @@ le couple est bien celle de la tete courante de la liste.*)
     Pol_add Pol_mul Pol_sub Pol_opp Pol_deg mkPX 
     Pol_zero_test   Pol_of_pos  Pol_base_cst_sign Pol_pow   Pol_div
     Pol_subres_list  Pol_subres_coef_list
-    Pol_gcd   Pol_square_free   Pol_deriv 
+    (*Pol_gcd*) Pol_gcd_gcd_free   Pol_square_free   Pol_deriv 
     Pol_eval   Pol_is_base_cst 
     Pol_mkPc   cmkPc 
     Pol_mult_base_cst   Pol_div_base_cst
     Pol_partial_eval 
-    cell_point  cell_point_up cell_point_up_proj cell_point_up_refine
+    cell_point  cell_point_up print_cell cell_point_up_proj cell_point_up_refine
     Pol_low_bound Pol_up_bound
     Pol_value_bound Cert mk_Cert build_Cert Cert_fst 
-    Pol_low_sign_for_upper Pol_sign_at_for_upper Pol_cad.
+    Pol_low_sign_for_upper Pol_sign_at_for_upper Pol_cad print_cad.
 
 
 

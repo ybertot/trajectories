@@ -1,9 +1,17 @@
-Require Import Qabs.
+
+Unset Boxed Definitions.
+Unset Boxed Values.
+
+
+ Require Import Qabs.
 Require Import CAD.
 Require Import One_dim.
 Require Import Up_dim.
 
-Module CAD(Q:RAT_STRUCT).
+Set Implicit Arguments.
+
+  
+Module CAD_gen(Q:RAT_STRUCT).
 
 Module ONE_DIM := MK_ONE_DIM Q.
 Module UP_DIM := MK_UP_DIM Q.
@@ -18,25 +26,30 @@ match n with
 |O => Rat
 |S n => Pol1 (Poln n)
 end.
-Check CAD_make.
 
-Set Implicit Arguments.
+Section CAD_no_unfold.
 
-
-(* ca ca marche 
 Variable f: forall C : Set, Cad Rat C -> Cad Rat (Pol1 C).
 
-
-Fixpoint CAD_build(n:nat):Cad Rat (Poln n) :=
+Fixpoint CAD_build_comp(n:nat):Cad Rat (Poln n) :=
 match n return Cad Rat (Poln n) with
 |O => One_dim_cad
 |S n =>
-  f (CAD_build n)
+  f (CAD_build_comp n)
 end.
-********************************************************************************)
+
+End CAD_no_unfold.
+
+Definition CAD_build := CAD_build_comp CAD_make.
+   
+
+End CAD_gen.
 
 
-(*mais ca ca marche plus. voir bug de roland? coqcvs? *)
+(********************************************************************************)
+
+
+(*mais ca ca marche plus. voir bug de roland? coqcvs? 
 Fixpoint CAD_build(n:nat):Cad Rat (Poln n) :=
 match n return (Cad Rat) (Poln n) with
 |O => One_dim_cad
@@ -56,3 +69,4 @@ match n return (Cad Rat) (Poln n) with
 end.
 
 End CAD.
+*)

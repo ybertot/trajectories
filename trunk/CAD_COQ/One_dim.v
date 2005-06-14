@@ -1,4 +1,9 @@
 
+
+Unset Boxed Definitions.
+Unset Boxed Values.
+
+
 Require Import CAD.
 Require Import Qabs.
 Require Import Utils.
@@ -19,34 +24,35 @@ Module MK_ONE_DIM(Q:RAT_STRUCT).
 
 Section ONE_DIM.
   
-  Let C_base:= Rat.
-  Let Coef:= Rat.
-  Let c0 :=r0.
-  Let  c1 := r1.
-  Let cadd :=  radd .
-  Let copp :=  ropp .
-  Let  cmul :=  rprod .
-  Let csub := rsub .
-  Let cdiv := rdiv .
-  Let czero_test := rzero_test .
-  Let cpow := rpow .
-  Let cof_pos := rof_pos .
-  Let cbase_cst_sign := fun x:Coef => (Some (rsign  x)).
+  Definition C_base:= Rat.
+  Definition Coef:= Rat.
+  Definition c0 :=r0.
+  Definition  c1 := r1.
+  Definition cadd :=  radd .
+  Definition copp :=  ropp .
+  Definition  cmul :=  rprod .
+  Definition csub := rsub .
+  Definition cdiv := rdiv .
+  Definition czero_test := rzero_test .
+  Definition cpow := rpow .
+  Definition cof_pos := rof_pos .
+  Definition cbase_cst_sign := fun x:Coef => (Some (rsign  x)).
 
-
-  Let cis_base_cst := fun x:C_base => true.
-  Let cmkPc := fun x:C_base => x.
-  Let cmult_base_cst := cmul.
-  Let cdiv_base_cst := cdiv.
-  Let cell_point := unit.
-  Let cvalue_bound(x:unit)(y:C_base):=(y,y).
-  Let ccell_point_up_refine(x:unit):=x.
-  Let csign_at(x:Coef)(u:unit):=rsign  x.
-  Let cdeg(x:Coef):=N0.
-  Let ccell_refine(u:unit):=u.
-  Let cCert := C_base.
-  Let mk_cert(c:Coef):=c.
-
+  Definition cgcd_gcd_free :=
+    fun x y:Coef => let m:= rmax x y in (m, rdiv x m, rdiv y m).
+  Definition cis_base_cst := fun x:C_base => true.
+  Definition cmkPc := fun x:C_base => x.
+  Definition cmult_base_cst := cmul.
+  Definition cdiv_base_cst := cdiv.
+  Definition cell_point := unit.
+  Definition cvalue_bound(x:unit)(y:C_base):=(y,y).
+  Definition ccell_point_up_refine(x:unit):=x.
+  Definition csign_at(x:Coef)(u:unit):=rsign  x.
+  Definition cdeg(x:Coef):=N0.
+  Definition ccell_refine(u:unit):=u.
+  Definition cCert := C_base.
+  Definition mk_cert(c:Coef):=c.
+  Definition cprint_cell(x:unit):=@nil display_cell.
   Load Gen_functor.
 
   (*Are now available:
@@ -80,20 +86,20 @@ Section ONE_DIM.
 			 (***  Real root  isolation ****)
 			 (******************************)
 
-  Let  sum_abs_val_coef:=
+  Definition  sum_abs_val_coef:=
   fix sum_abs_val_coef (P:Pol):C_base:=
     match P with
       |Pc p => rabs_val p
       |PX P' i p => (rabs_val p) +r sum_abs_val_coef P' 
     end.
   
-  Let  Pol_up_bound(P:Pol):=
+  Definition  Pol_up_bound(P:Pol):=
   let p:= Pol_dom P in
     ((sum_abs_val_coef P)//(rabs_val p))+r r1.
 
-  Let Pol_up_bound_tt(P:Pol)(u:unit):=Pol_up_bound P.
+  Definition Pol_up_bound_tt(P:Pol)(u:unit):=Pol_up_bound P.
 
-  Let root_low_bound1:=
+  Definition root_low_bound1:=
   fix root_low_bound1(P:Pol)(sum:C_base){struct P}:C_base :=
     match P with
       |Pc p => sum // p
@@ -102,20 +108,20 @@ Section ONE_DIM.
 	  then root_low_bound1 P' sum
 	  else sum // (rabs_val p')
     end.
-  Let  Pol_low_bound (P:Pol) := ropp ((root_low_bound1 P (sum_abs_val_coef P))+r r1).
+  Definition  Pol_low_bound (P:Pol) := ropp ((root_low_bound1 P (sum_abs_val_coef P))+r r1).
 
-  Let Pol_low_bound_tt(P:Pol)(u:unit):=Pol_low_bound P.
+  Definition Pol_low_bound_tt(P:Pol)(u:unit):=Pol_low_bound P.
 
 
-  Let Pol_low_sign(P:Pol):=
+  Definition Pol_low_sign(P:Pol):=
   Some (rsign (Pol_eval P (Pol_low_bound P))).
 
-  Let Pol_low_sign_cert(u:unit)(P Pbar:Pol)(dPbar:N)(n:nat):=
+  Definition Pol_low_sign_cert(u:unit)(P Pbar:Pol)(dPbar:N)(n:nat):=
   Pol_low_sign P.
 
   (*isolates roots of P over ]c d[ *)
 
-  Let root_isol1(P:Pol)(Pbar:Pol)(degPbar:N):=
+  Definition root_isol1(P:Pol)(Pbar:Pol)(degPbar:N):=
   fix root_isol1(res:list (isol_box*(list (Pol*Sign))))
     (c d:C_base)(blist: list C_base)(n:nat){struct n}:
     list (isol_box*(list (Pol* Sign))):=
@@ -159,13 +165,13 @@ Section ONE_DIM.
 
 
 
-  Let root_isol(P:Pol)(Pbar:Pol)(degPbar:N)(lbound ubound:C_base)(low_sign:Sign):= 
+  Definition root_isol(P:Pol)(Pbar:Pol)(degPbar:N)(lbound ubound:C_base)(low_sign:Sign):= 
   root_isol1 P Pbar degPbar
   ((Minf tt lbound,(P, low_sign)::nil)::nil)
   lbound ubound (Pol_bern_coefs Pbar lbound ubound degPbar).
   
 
-  Let root_isol_int(P:Pol)(Pbar:Pol)(degPbar:N)
+  Definition root_isol_int(P:Pol)(Pbar:Pol)(degPbar:N)
   (c d:C_base)(n:nat) := 
   root_isol1  P Pbar degPbar
   nil c d (Pol_bern_coefs Pbar c d degPbar) n.
@@ -174,7 +180,7 @@ Section ONE_DIM.
   (*  which is not a root of Q *)
    (*   None means n was not large enough *)
 
-  Let sign_at_non_com(Q Qbar:Pol)(*(dQbar:N)*):=
+  Definition sign_at_non_com(Q Qbar:Pol)(*(dQbar:N)*):=
   fix sign_at_non_com(a b:C_base)(P Pbar:Pol)(bern bernQ:list C_base)
     (n:nat){struct n}: (isol_box* Sign):=
     let test := sign_changes (map rsign bernQ) in
@@ -208,7 +214,7 @@ Section ONE_DIM.
     (* refines ]ab[ which contains a unique root of P and G=gcd P Q
       to a intervalle which isolates for Q *)
 
-  Let sign_at_com :=
+  Definition sign_at_com :=
   fix sign_at_com(a b:C_base)(P Pbar G Gbar:Pol)
     (bernG bernQ:list C_base)(n:nat){struct n}:
     isol_box*Sign:=
@@ -244,7 +250,7 @@ Section ONE_DIM.
        (*refines a Pair to determine the sign of Q at that root of P
       G = gcd P Q, ie up to the point where G has either a unique root or no root*)
 
-  Let pair_refine (Q Qbar:Pol)(dQbar:N):=
+  Definition pair_refine (Q Qbar:Pol)(dQbar:N):=
   fix pair_refine(a b:C_base)(P Pbar G:Pol)
     (bern bernG:list C_base)(n:nat){struct n}:
     isol_box*Sign:=
@@ -288,7 +294,7 @@ Section ONE_DIM.
       previous failures are propagated
   *)
 
-  Let sign_at_root(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:isol_box)(n:nat):
+  Definition sign_at_root(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:isol_box)(n:nat):
   isol_box*(Pol*Sign):=
   match t with
     |Minf _ m => (Minf tt m, (Q,low))
@@ -302,7 +308,7 @@ Section ONE_DIM.
               (z,(P,s))
   end.
 
-  Let  sign_list_at_root(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:isol_box*(list (Pol*Sign)))(n:nat):
+  Definition  sign_list_at_root(Q Qbar:Pol)(dQbar:N)(low:Sign)(t:isol_box*(list (Pol*Sign)))(n:nat):
   isol_box*(list (Pol*Sign)) :=
   let (root, sign_list) :=  t in
     match sign_list with
@@ -317,7 +323,7 @@ Section ONE_DIM.
   
   (* find the sign col after a root, evaluating only if necessary 
   *)
-  Let fill_sign_between :=
+  Definition fill_sign_between :=
   fix fill_sign_between(b:C_base)(lsign:list (Pol*Sign))
     {struct lsign}:list(Pol* Sign) :=
     match lsign with
@@ -336,7 +342,7 @@ Section ONE_DIM.
       (*l is not empty in res, work is done up to up [*)
 
 
-  Let add_roots(P:Pol)(freeP:Pol)(dfreeP:N)
+  Definition add_roots(P:Pol)(freeP:Pol)(dfreeP:N)
   (lP:list Pol) :=
   fix add_roots(l:list (isol_box * (list (Pol * Sign))))
     (low up:C_base)(lowsign upsign:Sign)
@@ -439,7 +445,7 @@ Section ONE_DIM.
 
     (*head is the biggest root, computes the isolating list*)
 
-  Let family_root := 
+  Definition family_root := 
   fix family_roots(Pol_list : list Pol)(n:nat)
     {struct Pol_list}:list ( isol_box * (list (Pol*Sign))):=
     match Pol_list with
@@ -460,7 +466,7 @@ Section ONE_DIM.
     end.
 
 
-  Let sign_at_index(c:four_uple Pol Pol N Sign)(t:cell_point_up)(n:nat):=
+  Definition sign_at_index(c:four_uple Pol Pol N Sign)(t:cell_point_up)(n:nat):=
   let (Q, Qbar,dQbar, low):= c in
     match t with
       |Root t => let (tag_res,sign_res) := sign_at_root Q Qbar dQbar low t n in
@@ -472,7 +478,7 @@ Section ONE_DIM.
     (*sign table for the family up to "up",included.
       up is not a root 
        head corresponds to the smallest root*)
-  Let sign_table1 (glow gup:C_base):=
+  Definition sign_table1 (glow gup:C_base):=
   fix sign_table1(Pol_list : list Pol)
     (isol_list : list (isol_box*(list (Pol*Sign))))
     (up:C_base)
@@ -513,17 +519,17 @@ Section ONE_DIM.
 	    end
     end.
 
-  Let sign_table(Pol_list:list Pol)(n:nat):=
+  Definition sign_table(Pol_list:list Pol)(n:nat):=
   let up := rmax_list (map Pol_up_bound Pol_list)in
     let low := rmax_list (map Pol_low_bound Pol_list) in
       let roots := family_root Pol_list n in
 	(sign_table1 low up Pol_list roots up nil).
 
 
-  Let isol_box_proj(u:cell_point_up) := tt.
+  Definition isol_box_proj(u:cell_point_up) := tt.
 
 
-  Let cert_refine(z:cell_point)(P Pbar:Pol)(a b:Coef)(c:list cCert)(n:nat):=
+  Definition cert_refine(z:cell_point)(P Pbar:Pol)(a b:Coef)(c:list cCert)(n:nat):=
   let mid := rdiv (radd a b) (2#1) in
     let Pmid := Pol_partial_eval P mid in
       let Pbarmid := Pol_partial_eval Pbar mid in
@@ -538,7 +544,7 @@ Section ONE_DIM.
 		end
 	end.
 
-  Let cell_point_up_refine(z:cell_point_up)(n:nat) :=
+  Definition cell_point_up_refine(z:cell_point_up)(n:nat) :=
   match z with
     |Root ibox => let res:=
       match ibox with
@@ -551,20 +557,26 @@ Section ONE_DIM.
   end.
 
 
+Definition print_cad(Pol_list:list Pol)(n:nat):=
+ let table := sign_table Pol_list n in
+ map (fun x:cell_point_up*(list (Pol*Sign)) => let (a,b):= x in (print_cell a, b)) table.
+
+
+
   Definition One_dim_cad := @mk_cad Rat Rat
     (*C_base  Pol*)
     P0 P1
     Pol_add Pol_mul Pol_sub Pol_opp Pol_deg mkPX 
     Pol_zero_test   Pol_of_pos  Pol_base_cst_sign Pol_pow   Pol_div
     Pol_subres_list  Pol_subres_coef_list
-    Pol_gcd   Pol_square_free   Pol_deriv 
+    (*Pol_gcd*)Pol_gcd_gcd_free   Pol_square_free   Pol_deriv 
     Pol_eval   Pol_is_base_cst 
     Pol_mkPc   cmkPc 
     Pol_mult_base_cst   Pol_div_base_cst 
-    Pol_partial_eval  unit cell_point_up isol_box_proj cell_point_up_refine
+    Pol_partial_eval  unit cell_point_up print_cell isol_box_proj cell_point_up_refine
     Pol_low_bound_tt Pol_up_bound_tt 
     Pol_value_bound Cert mk_Cert build_Cert Cert_fst 
-    Pol_low_sign_cert sign_at_index sign_table.
+    Pol_low_sign_cert sign_at_index sign_table print_cad.
 
 End ONE_DIM.
 
