@@ -45,8 +45,6 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
   Definition cof_pos := Pol_of_pos CAD_n.
   Definition cpow := Pol_pow CAD_n.
   Definition cdiv := Pol_div CAD_n.
-  Definition csubres_list := Pol_subres_list CAD_n.
-  Definition subres_coef_list := Pol_subres_coef_list CAD_n.
   Definition cis_base_cst := Pol_is_base_cst CAD_n.
   Definition cmkPc := Pol_mk_Pc CAD_n.
   Definition cmk_coef := Pol_mk_coef CAD_n.

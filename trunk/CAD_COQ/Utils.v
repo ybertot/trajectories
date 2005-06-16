@@ -155,19 +155,41 @@ end.
 Inductive triple(A B C :Set):Set:=
 |Tr:forall a:A,forall b:B, forall c:C, triple A B C.
 
-Definition triple_fst(A B C:Set)(u:triple A B C):=
+Definition fst3(A B C:Set)(u:triple A B C):=
   match  u with
   |Tr a _ _ => a
 end.
 
 
-Inductive four_uple(A B C D:Set):Set:=
-|Four:forall a:A, forall b:B, forall c:C, forall d:D, four_uple A B C D.
+Inductive uple4(A B C D:Set):Set:=
+|Four:forall a:A, forall b:B, forall c:C, forall d:D, uple4 A B C D.
 
-Definition four_fst(A B C D:Set)(u:four_uple A B C D):=
+Definition fst4(A B C D:Set)(u:uple4 A B C D):=
   match  u with
   |Four a _ _ _ => a
 end.
+
+
+Inductive uple5(A B C D E:Set):Set:=
+  |Five:
+    forall a:A, forall b:B, forall c:C, forall d:D, forall e:E,
+      uple5 A B C D E.
+
+Definition fst5(A B C D E:Set)(u:uple5 A B C D E):=
+  match  u with
+    |Five a _  _ _ _ => a
+  end.
+
+
+Inductive uple6(A B C D E F:Set):Set:=
+  |Six:
+    forall a:A, forall b:B, forall c:C, forall d:D, forall e:E, forall f:F,
+      uple6 A B C D E F.
+
+Definition fst6(A B C D E F:Set)(u:uple6 A B C D E F):=
+  match  u with
+    |Six a _  _ _ _ _ => a
+  end.
 
 
 Fixpoint clean_head(A:Set)
