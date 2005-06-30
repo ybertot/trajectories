@@ -1,10 +1,9 @@
 (* pour commencer*)
  Require Import Tarski.
  Require Import Qnorm.
- Require Import CAD.
  Require Import One_dim.
  Require Import Qnorm.
-
+ Require Import Utils.
 
  Require Import QNORM_SYST.
  Require Import Qnorm.
@@ -14,112 +13,55 @@
  Module myCAD := CAD_gen Q.
  Import myCAD.
 
+(*
  Module ONE := MK_ONE_DIM Q.
  Import ONE.
-
-
- Definition twovar := CAD_build O.
-
-
-
-
-
-(* pour faire de l'affichage *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+*)
 
 
 
 (* Tests en deux variables *)
 
-Definition X:=PX (Pc c1) 1 c0.
+
+Definition twovar := CAD_build 1.
+
+(* affichage*)
+
+(* que les pols et les signes *)
 
 
 
+Definition cell_type :=
+(unit * mk_Rpoint Q (uple5 Q Q (Pol1 Q) (Pol1 Q) (list Q)) *
+  mk_Rpoint Q
+  (uple5 Q Q (Pol1 (Pol1 Q)) (Pol1 (Pol1 Q))
+    (list
+      (uple5 (Pol1 Q) (Pol1 Q) N (option comparison)
+        (option comparison)))) *
+  list (Pol1 (Pol1 Q) * option comparison))%type.
 
-(********************************************************************************)
-(********************************************************************************)
-(********************************************************************************)
-
-
-
-Require Import Qabs.
-Require Import Qnorm.
-Require Import One_dim.
-Require Import CAD.
-
-
-Module Q:=Q_NORM_SYST.
-Module QFUNS:= RAT_FUNS Q.
-Module QINT := RAT_INT_OPS Q.
-Module ONE := MK_ONE_DIM Q.
-
-Import Q.
-Import QFUNS.
-Import QINT.
-Import ONE.
+Definition polsign_of_cell(x:cell_type):=
+let (_,l1):=x in
+l1.
 
 
-
-Load One_dim_test.
-
-Inductive print_index:Set:=
-|Pt : Q -> print_index
-|Int : Q -> Q -> print_index
-|B : Q -> print_index
-|M : Q -> print_index.
-
-Definition print_isol_box(i:ONE_DIM.isol_box):=
-match i with
-|ONE_DIM.Singl _ r => Pt r
-|ONE_DIM.Pair _ p _ _ _ => let (a,b) := p in Int a b
-|ONE_DIM.Minf _ r => M r
-end.
-
-Definition print_cell(z:ONE_DIM.cell_point_up):=
-match z with
-|ONE_DIM.Between _ r => B r
-|ONE_DIM.Root i => print_isol_box i
-end.
-
-Definition print_table_cell(z:ONE_DIM.cell_point_up * list (Pol * Sign)):=
-(print_cell (fst z), map (fun x => snd x) (snd z)).
-
-Definition print_table(l:list (ONE_DIM.cell_point_up * list (Pol * Sign))):=
-map print_table_cell l.
+Definition sign_of_cell(x:cell_type):=
+let (_,l1):=x in
+map (fun x => snd x) l1.
 
 
+Definition print_sign_res(l:list (list cell_type)):=
+  map (fun x => map sign_of_cell x) l.
+
+Definition print_polsign_res(l:list (list cell_type)):=
+  map (fun x => map polsign_of_cell x) l.
 
 
+Definition test_sign(l:list (Pol1 (Poln 1)))(n:nat):=
+  print_sign_res (Pol_cad twovar l n).
+
+Definition test_polsign(l:list (Pol1 (Poln 1)))(n:nat):=
+  print_polsign_res (Pol_cad twovar l n).
 
 
 
@@ -128,6 +70,60 @@ Fixpoint Q_of_nat(n:nat):Q:=
     |O => r0
     |S n => r1 +r (Q_of_nat n)
   end.
+
+
+
+Definition X := PX (Pc (Pc r1)) 1 (Pc r0).
+
+Definition Y := Pc (PX (Pc r1) 1  r0).
+
+Definition Pol := (Pol1 (Poln 1)).
+
+Bind Scope P_scope with Pol.
+Open Scope P_scope.
+
+Definition plus := Pol_add twovar.
+Definition minus := Pol_sub twovar.
+Definition prod := Pol_mul twovar.
+
+
+
+Infix "+":=plus:P_scope.
+Infix "-":=minus:P_scope.
+Infix "*":=prod:P_scope.
+
+
+Definition circle := (X * X) + (Y * Y) - (Pc (Pc r1)).
+
+Definition XY:= X * Y.
+
+(* passe pas 
+Eval vm_compute in (length (test_sign (X::circle::nil) 90)).
+*)
+
+Eval vm_compute in (test_sign (Y::circle::nil) 90).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (**************************************************************************)
 (************** Builds P1(n) :=(X - n)(X - (n+1))....(X - 3n) **************)

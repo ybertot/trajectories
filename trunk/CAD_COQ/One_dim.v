@@ -2,23 +2,20 @@ Unset Boxed Definitions.
 Unset Boxed Values.
 
 
-Require Import CAD.
 Require Import Qabs.
 Require Import Utils.
+Require Import CAD_types.v
 
 
 Module MK_ONE_DIM(Q:RAT_STRUCT).
 
 
-  Module QCAD := CAD_DATAS Q.
   Module QFUNS:= RAT_FUNS Q.
   Module QINT := RAT_INT_OPS Q.
-(*  Module QMKCAD := MKCAD Q.*)
   
   Import Q.
   Import QFUNS.
   Import QINT.
-  Import QCAD.
 
 Section ONE_DIM.
   
@@ -44,9 +41,9 @@ Section ONE_DIM.
   Definition cell_point := unit.
   Definition cvalue_bound(x:unit)(y:Rat):=(y,y).
   Definition ccell_point_up_refine(x:unit):=x.
-  Definition csign_at(x:Coef)(u:unit)(n:nat):=Some (rsign  x).
+  Definition csign_at(x:Coef)(u:unit)(n:nat):=(u,(x,Some (rsign  x))).
   Definition cdeg(x:Coef):=N0.
-  Definition ccell_refine(u:unit):=Some u.
+  Definition ccell_refine(u:unit)(n:nat):=Some u.
   Definition cInfo := Coef.
   Definition cInfo_of_Pol(s:Sign)(c:Coef):=c.
   Definition cPol_of_Info(c:Rat):=c.
@@ -127,8 +124,8 @@ Section ONE_DIM.
   Some (rsign (Pol_eval P (Pol_low_bound P))).
 
   (**idem, but fits the type in the CAD record **)
-  Definition Pol_low_sign_info(u:unit)(P Pbar:Pol)(dPbar:N)(n:nat):=
-  Pol_low_sign P.
+  Definition Pol_low_sign_info(u:unit)(P Pbar:Pol)(n:nat):=
+  (tt,Pol_low_sign P).
 
 
   (** Builds an Info from a Pol P **)
@@ -158,10 +155,10 @@ Section ONE_DIM.
 	    |O => res
 	    |1 =>
 	      if negb (rzero_test ((Pol_eval P c) *r (Pol_eval P d)))
-		then (Alg_root (Five c d P Pbar blist), (P, Some Eq)::nil)::res
+		then (Alg_root Rat (Five c d P Pbar blist), (P, Some Eq)::nil)::res
 		else
 		  match n with
-		    |O => (Alg_root (Five c d P Pbar blist),(P, None)::nil)::res
+		    |O => (Alg_root Rat (Five c d P Pbar blist),(P, None)::nil)::res
 		    |S n' => 
 		      let mid := (d +r c) // (2 # 1) in
 		      let (b', b''):= Pol_bern_split blist c d mid in
@@ -175,7 +172,7 @@ Section ONE_DIM.
 		  end
 	    |_ =>
 	      match n with
-		|O => (Alg_root (Five c d P Pbar blist), (P,None)::nil)::res
+		|O => (Alg_root Rat (Five c d P Pbar blist), (P,None)::nil)::res
 		|S n' => 
 		  let mid := (d +r c) // (2 # 1) in
 		  let (b', b''):= Pol_bern_split blist c d mid in
@@ -220,7 +217,7 @@ Section ONE_DIM.
       (n:nat){struct n}: (Rpoint* Sign):=
       let test := sign_changes (map rsign bernQ) in
 	match test with
-	  |O => (Alg_root (Five a b P Pbar bern), (Some (rsign (Pol_eval Q a))))
+	  |O => (Alg_root Rat (Five a b P Pbar bern), (Some (rsign (Pol_eval Q a))))
 	  |S _ => 
 	    let mid := (a +r b) // (2 # 1) in
 	    let Pbar_mid := Pol_eval Pbar mid in
@@ -228,7 +225,7 @@ Section ONE_DIM.
 		then (Root Alg mid , (Some (rsign (Pol_eval Q mid))))
 		else
 		  match n with
-		    |O => (Alg_root (Five a b P Pbar bern), None)
+		    |O => (Alg_root Rat (Five a b P Pbar bern), None)
 		    |S m =>
 		      match rsign (Pbar_mid *r (Pol_eval Pbar a)) with
 			| Lt  =>
@@ -254,8 +251,8 @@ Section ONE_DIM.
     Rpoint*Sign:=
     let VbQ := sign_changes (map rsign bernQ) in  
       match VbQ with
-	|O => (Alg_root (Five a b G Gbar bernG), None) (*never!*)
-	|S O => (Alg_root (Five a b G Gbar bernG), (Some Eq))
+	|O => (Alg_root Rat (Five a b G Gbar bernG), None) (*never!*)
+	|S O => (Alg_root Rat (Five a b G Gbar bernG), (Some Eq))
 	|S _ =>
 	  let mid := (a +r b) // (2 # 1) in
 	    let Pbar_mid := (Pol_eval Pbar mid) in
@@ -264,7 +261,7 @@ Section ONE_DIM.
 		  (Root Alg mid, (Some Eq))
 		else
 		  match n with
-		    |O => (Alg_root (Five a b G Gbar bernG), None)
+		    |O => (Alg_root Rat (Five a b G Gbar bernG), None)
 		    |S n' =>
 		      match rsign (Pbar_mid *r (Pol_eval Pbar a)) with
 			|Lt =>
@@ -305,7 +302,7 @@ Section ONE_DIM.
 		  (Root Alg mid, Some (rsign (Pol_eval Q mid)))
 		else
 		  match n with
-		    |O => (Alg_root (Five a b P Pbar bern), None)
+		    |O => (Alg_root Rat (Five a b P Pbar bern), None)
 		    |S m =>
 		      match rsign (Pbar_mid *r (Pol_eval Pbar a)) with
 			|Lt =>
@@ -508,7 +505,7 @@ Section ONE_DIM.
 
 	    
 
-    (*head is the biggest root, computes the isolating list*)
+  (**head is the biggest root, computes the isolating list*)
 
   Definition family_root(global_low global_up:Rat)(n:nat) := 
   fix family_roots(Pol_list : list Info):list ( Rpoint * (list (Pol*Sign))):=
@@ -606,8 +603,14 @@ Section ONE_DIM.
     end.
 
 
+  
 
-  Definition One_dim_cad := @mk_cad Rat
+  Definition mk_Cad_type:=fun x => list x.
+  
+  Definition Cad_map(A B:Set)(c:mk_Cad_type A)(f: A -> B):=
+    map f c.
+
+  Definition One_dim_cad := @mk_cad Rat Rat
     P0 P1
     Pol_add Pol_mul Pol_sub Pol_opp Pol_deg mkPX 
     Pol_zero_test   Pol_of_pos  Pol_base_cst_sign Pol_pow   Pol_div
@@ -615,10 +618,15 @@ Section ONE_DIM.
     Pol_eval   Pol_is_base_cst 
     Pol_mkPc   cmkPc 
     Pol_mult_base_cst   Pol_div_base_cst 
-    Pol_partial_eval  unit cell_point_up cell_point_up_proj cell_refine
+    Pol_partial_eval  
+    Rpoint unit cell_point_up cell_point_up_proj rpoint_of_cell
+    mk_cell_point_up cell_refine
     Pol_low_bound_tt Pol_up_bound_tt 
     Pol_value_bound Info mk_Info Info_of_Pol Pol_of_Info 
-    Pol_low_sign_info Pol_sign_at sign_table.
+    Pol_low_sign_info Pol_sign_at 
+    Cad_col cell_point_of_Cad_col sign_col_of_Cad_col
+    mk_Cad_type Cad_map
+    sign_table.
 
 
 End ONE_DIM.

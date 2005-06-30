@@ -8,7 +8,13 @@ Require Export Mylist.
 
 Set Implicit Arguments.
 
-Definition Sign := option comparison.
+
+    (************************************************************)
+    (********                    Misc.                  *********)  
+    (************************************************************)
+
+
+(** Operations over N*)
 
  Definition Npred(n :N):N :=
    match n with
@@ -37,6 +43,8 @@ Definition Sign := option comparison.
      |Npos p => nat_of_P p
    end.
 
+
+(** Some operations over lists, o be moved in Mylist? *)
 
   (*last element of a list *)
  Fixpoint last_elem(A:Set)(l:list A)(bottom:A){struct l}:A:=
@@ -77,6 +85,8 @@ Definition Sign := option comparison.
  Definition flat_map(A B:Set)(f:A -> (list B))(l:list A):= flat_map_ac f l nil.
 
 
+
+(** Counting he number of sign changes in a list of option comp *)
 
 Fixpoint sign_changes_rec(sign:comparison)(l:list comparison)
   {struct l}:nat:=
@@ -150,7 +160,9 @@ Definition sign_mult( u v:(option comparison)):=
 	end
 end.
 
-(* convenient uples in Set*)
+
+
+(** convenient uples in Set*)
 
 Inductive triple(A B C :Set):Set:=
 |Tr:forall a:A,forall b:B, forall c:C, triple A B C.

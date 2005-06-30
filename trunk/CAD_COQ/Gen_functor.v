@@ -1,5 +1,5 @@
-Require Import Utils.
-Set Implicit Arguments.
+(*Require Import Utils.
+Set Implicit Arguments.*)
 
 
 
@@ -692,7 +692,7 @@ Definition Pol_pow':=
   (*  coefs of P in the Bernstein basis over c,d,p from b_p to b_0 if 
 	p is the degree of P 
   builds the list of info pol, no infomation about constant sign is assumed *)
- Definition Pol_bern_coefs(P:Pol)(c d:Rat)(p:N):list Coef :=
+ Definition Pol_bern_coefs(P:Pol)(c d:Rat)(p:N):=
    let Q := (Ptranslate (Rev (dilat (Ptranslate P c) (rsub d  c)))  r1) in
      let list_coef := Pol_to_list_dense Q p in
        map (cInfo_of_Pol None) (binomial_div list_coef p p).
@@ -766,15 +766,20 @@ Definition Pol_pow':=
 
 
  (** element of R at this level **)
- Definition Rpoint := mk_Rpoint Alg.
+ Definition Rpoint := mk_Rpoint Rat Alg.
 
 
  (** cell of the cad built at this level **)
- Definition cell_point_up := prod cell_point  Rpoint.
+ Definition cell_point_up := (cell_point * Rpoint)%type.
 
  Definition cell_point_up_proj (c:cell_point_up):= fst c.
+ Definition rpoint_of_cell(c:cell_point_up):= snd c.
+ Definition mk_cell_point_up(c:cell_point)(r:Rpoint):=(c,r).
 
+ Definition Cad_col:=(cell_point_up*(list (Pol*Sign)))%type.
 
+ Definition cell_point_of_Cad_col(c:Cad_col):= fst c.
+ Definition sign_col_of_Cad_col(c:Cad_col):= snd c.
 
 
  (************************************************************)
@@ -833,34 +838,39 @@ Definition Pol_pow':=
    let mid := rdiv (radd a b) (2#1) in
    let Pmid := Pol_partial_eval P mid in
    let Pbarmid := Pol_partial_eval Pbar mid in  
-     match csign_at (cmk_Info Pmid Pbarmid (cdeg Pbarmid) None None) z n with
+     match 
+       (snd (snd 
+	 (csign_at (cmk_Info Pmid Pbarmid (cdeg Pbarmid) None None) z n)))
+       with
        |None => None
        |Some Eq => Some (z,(Root Alg mid))
        |Some _ =>
 	 let (b',b''):= Pol_bern_split blist a b mid in
-	 let Vb' := op_sign_changes (map (fun x => (csign_at x z n)) b') in
+	 let Vb' := 
+	   op_sign_changes 
+	   (map (fun x => snd (snd (csign_at x z n))) b') in
 	   match Vb' with
 	     |None => None
-	     |Some 1 => Some (z, (Alg_root (Five a mid P Pbar b')))
-	     |Some _ => Some (z, (Alg_root (Five a mid P Pbar b'')))
+	     |Some 1 => Some (z, (Alg_root Rat (Five a mid P Pbar b')))
+	     |Some _ => Some (z, (Alg_root Rat (Five a mid P Pbar b'')))
 	   end
      end.
 
 
  (** keeps only the relevant half of each int in every algebraic coordinate **)
  Definition cell_refine(z:cell_point_up)(n:nat) :=
-  let (z',r):= z in
-  let z':= ccell_refine z' in
-    match z' with
-      |None => None
-      |Some z' =>
-	match r with
-	  |Minf m => Some (z', Minf Alg m)
-	  |Between b => Some (z', Between Alg b)
-	  |Root r => Some (z', Root Alg r)
-	  |Alg_root alg => alg_refine z' alg n
-	end
-    end.
+   let (z',r):= z in
+     let z':= ccell_refine z' n in
+       match z' with
+	 |None => None
+	 |Some z' =>
+	   match r with
+	     |Minf m => Some (z', Minf Alg m)
+	     |Between b => Some (z', Between Alg b)
+	     |Root r => Some (z', Root Alg r)
+	     |Alg_root alg => alg_refine z' alg n
+	   end
+   end.
 
 
 	
