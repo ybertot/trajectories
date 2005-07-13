@@ -4,7 +4,7 @@ Unset Boxed Values.
 
 Require Import Qabs.
 Require Import Utils.
-Require Import CAD_types.v
+Require Import CAD_types.
 
 
 Module MK_ONE_DIM(Q:RAT_STRUCT).
@@ -24,18 +24,18 @@ Section ONE_DIM.
   Definition  c1 := r1.
   Definition cadd :=  radd .
   Definition copp :=  ropp .
-  Definition  cmul :=  rprod .
+  Definition cmul :=  rprod .
   Definition csub := rsub .
   Definition cdiv := rdiv .
   Definition czero_test := rzero_test .
   Definition cpow := rpow .
-  Definition cof_pos := rof_pos .
+  Definition cof_pos(p:positive):=rof_pos p.
+  Definition cof_Rat(r:Rat) := r.
   Definition cbase_cst_sign := fun x:Coef => (Some (rsign  x)).
 
   Definition cgcd_gcd_free :=
     fun x y:Coef => let m:= rmax x y in (m, rdiv x m, rdiv y m).
-  Definition cis_base_cst := fun x:Rat => true.
-  Definition cmkPc := fun x:Rat => x.
+  Definition cis_Rat := fun x:Rat => true.
   Definition cmult_base_cst := cmul.
   Definition cdiv_base_cst := cdiv.
   Definition cell_point := unit.
@@ -48,6 +48,9 @@ Section ONE_DIM.
   Definition cInfo_of_Pol(s:Sign)(c:Coef):=c.
   Definition cPol_of_Info(c:Rat):=c.
   Definition cmk_Info(a b:Rat)(n:N)(s1 s2:Sign):= a.
+
+ 
+(* definir Alg, Rpoint, cell_point(up) ? *)
   Load Gen_functor.
 
   (*Are now available:
@@ -155,31 +158,31 @@ Section ONE_DIM.
 	    |O => res
 	    |1 =>
 	      if negb (rzero_test ((Pol_eval P c) *r (Pol_eval P d)))
-		then (Alg_root Rat (Five c d P Pbar blist), (P, Some Eq)::nil)::res
+		then (Alg_root (Five c d P Pbar blist), (P, Some Eq)::nil)::res
 		else
 		  match n with
-		    |O => (Alg_root Rat (Five c d P Pbar blist),(P, None)::nil)::res
+		    |O => (Alg_root (Five c d P Pbar blist),(P, None)::nil)::res
 		    |S n' => 
 		      let mid := (d +r c) // (2 # 1) in
 		      let (b', b''):= Pol_bern_split blist c d mid in
 		      let res':= root_isol1 res c  mid  b' n' in
 			if (rzero_test (Pol_eval Pbar mid)) 
 			  then
-			    root_isol1 ((Root Alg mid,(P, (Some Eq))::nil)::res')
+			    root_isol1 ((Root Coef cInfo mid,(P, (Some Eq))::nil)::res')
 			    mid d b'' n'
 			  else
 			    root_isol1 res'  mid d b'' n'
 		  end
 	    |_ =>
 	      match n with
-		|O => (Alg_root Rat (Five c d P Pbar blist), (P,None)::nil)::res
+		|O => (Alg_root (Five c d P Pbar blist), (P,None)::nil)::res
 		|S n' => 
 		  let mid := (d +r c) // (2 # 1) in
 		  let (b', b''):= Pol_bern_split blist c d mid in
 		  let res':= root_isol1 res c  mid  b' n' in
 		    if rzero_test (Pol_eval Pbar mid) 
 		      then
-			root_isol1 ((Root Alg mid, (P,(Some Eq))::nil)::res') mid d b'' n'
+			root_isol1 ((Root Coef cInfo mid, (P,(Some Eq))::nil)::res') mid d b'' n'
 		      else
 			root_isol1 res'  mid d b'' n'
 	      end
@@ -191,10 +194,10 @@ Section ONE_DIM.
     (Pinfo:Info)(lbound ubound:Rat)(n:nat):=
     let (P, Pbar, degPbar,low_sign,info_sign):=Pinfo in
       match info_sign with
-	|Some s => (Minf Alg lbound, (P, info_sign)::nil)::nil
+	|Some s => (Between Coef cInfo lbound, (P, info_sign)::nil)::nil
 	|None =>
 	  root_isol1 P Pbar degPbar
-	  ((Minf Alg lbound,(P, low_sign)::nil)::nil)
+	  ((Between Coef cInfo lbound,(P, low_sign)::nil)::nil)
 	  lbound ubound (Pol_bern_coefs Pbar lbound ubound degPbar) n
       end.
   
@@ -217,15 +220,15 @@ Section ONE_DIM.
       (n:nat){struct n}: (Rpoint* Sign):=
       let test := sign_changes (map rsign bernQ) in
 	match test with
-	  |O => (Alg_root Rat (Five a b P Pbar bern), (Some (rsign (Pol_eval Q a))))
+	  |O => (Alg_root (Five a b P Pbar bern), (Some (rsign (Pol_eval Q a))))
 	  |S _ => 
 	    let mid := (a +r b) // (2 # 1) in
 	    let Pbar_mid := Pol_eval Pbar mid in
 	      if rzero_test Pbar_mid
-		then (Root Alg mid , (Some (rsign (Pol_eval Q mid))))
+		then (Root Coef cInfo mid , (Some (rsign (Pol_eval Q mid))))
 		else
 		  match n with
-		    |O => (Alg_root Rat (Five a b P Pbar bern), None)
+		    |O => (Alg_root (Five a b P Pbar bern), None)
 		    |S m =>
 		      match rsign (Pbar_mid *r (Pol_eval Pbar a)) with
 			| Lt  =>
@@ -251,17 +254,17 @@ Section ONE_DIM.
     Rpoint*Sign:=
     let VbQ := sign_changes (map rsign bernQ) in  
       match VbQ with
-	|O => (Alg_root Rat (Five a b G Gbar bernG), None) (*never!*)
-	|S O => (Alg_root Rat (Five a b G Gbar bernG), (Some Eq))
+	|O => (Alg_root (Five a b G Gbar bernG), None) (*never!*)
+	|S O => (Alg_root (Five a b G Gbar bernG), (Some Eq))
 	|S _ =>
 	  let mid := (a +r b) // (2 # 1) in
 	    let Pbar_mid := (Pol_eval Pbar mid) in
 	      if rzero_test Pbar_mid
 		then 
-		  (Root Alg mid, (Some Eq))
+		  (Root Coef cInfo mid, (Some Eq))
 		else
 		  match n with
-		    |O => (Alg_root Rat (Five a b G Gbar bernG), None)
+		    |O => (Alg_root (Five a b G Gbar bernG), None)
 		    |S n' =>
 		      match rsign (Pbar_mid *r (Pol_eval Pbar a)) with
 			|Lt =>
@@ -299,10 +302,10 @@ Section ONE_DIM.
 	  let Pbar_mid := (Pol_eval Pbar mid) in
 	      if rzero_test Pbar_mid
 		then 
-		  (Root Alg mid, Some (rsign (Pol_eval Q mid)))
+		  (Root Coef cInfo mid, Some (rsign (Pol_eval Q mid)))
 		else
 		  match n with
-		    |O => (Alg_root Rat (Five a b P Pbar bern), None)
+		    |O => (Alg_root (Five a b P Pbar bern), None)
 		    |S m =>
 		      match rsign (Pbar_mid *r (Pol_eval Pbar a)) with
 			|Lt =>
@@ -327,11 +330,11 @@ Section ONE_DIM.
 	|Some s => (t,(Q,infosign))
 	|None =>
 	  match t with
-	      |Minf m => (Minf Alg m, (Q,low))
+	      |Minf m => (Between Coef cInfo m, (Q,low))
 	      |Root r => 
-		(Root Alg r, (Q,Some (rsign (Pol_eval Q r))))
+		(Root Coef cInfo r, (Q,Some (rsign (Pol_eval Q r))))
 	      |Between b =>
-		(Between Alg b, (Q,Some (rsign (Pol_eval Q b))))
+		(Between Coef cInfo b, (Q,Some (rsign (Pol_eval Q b))))
 	      |Alg_root (Five a b P Pbar bern) =>
 		let G := Pol_gcd Q P in
 		let dG := Pol_deg G in
@@ -414,7 +417,7 @@ Section ONE_DIM.
 		      |Minf  m =>
 			let resP := root_isol_int Pinfo low up n in
 			  ((add_to_cst_list resP prev_slist)@
-			    ((Minf Alg m, (P,(Some (rsign (Pol_eval P low ))))::prev_slist))::nil)
+			    ((Between Coef cInfo m, (P,(Some (rsign (Pol_eval P low ))))::prev_slist))::nil)
 		      |Root  r =>
 			if orb (rlt up r) (rzero_test (r  -r  up))
 			  then
@@ -427,13 +430,13 @@ Section ONE_DIM.
 				  prev_slist in
 				  let res_r_up := (add_to_cst_list resP prev_next_sign) in
 				    res_r_up @
-				    ((Root Alg r, (P, (Some signP_r)):: prev_slist)::
+				    ((Root Coef cInfo r, (P, (Some signP_r)):: prev_slist)::
 				      (add_roots tl low r  lowsign (Some signP_r) n))
 		      |Alg_root (Five a b Q Qbar bern) =>
 			let refine := sign_list_at_root Pinfo hd n in
 			  match (fst refine) with
-			    |Between b => (*dummy*)(Between Alg b, (P,None) :: prev_slist)::tl
-			    |Minf  m => (Minf Alg m, (P,None) :: prev_slist):: tl (*should never happen*)
+			    |Between b => (*dummy*)(Between Coef cInfo b, (P,None) :: prev_slist)::tl
+			    |Minf  m => (Between Coef cInfo m, (P,None) :: prev_slist):: tl (*should never happen*)
 			    |Root r =>
 			      if orb (rlt up r) (rzero_test (r  -r  up))
 				then
@@ -468,27 +471,27 @@ Section ONE_DIM.
 					    match (rzero_test Pb'), (rzero_test Pa') with
 					      |true, false =>
 						res_b'_up @
-						((Root Alg b', (P,(Some Eq))::prev_next_sign)::
+						((Root Coef cInfo b', (P,(Some Eq))::prev_next_sign)::
 						  refine::
 						    (add_roots  tl low a' 
 						      lowsign (Some (rsign Pa')) n))
 					      |false, true =>
 						let prev_a'_sign :=
-						  map (fun x => snd (sign_at (Between Alg a') n x)) lP in
+						  map (fun x => snd (sign_at (Between Coef cInfo a') n x)) lP in
 						(*  map (fun P =>(P, Some (rsign (Pol_eval P a')))) lP in*)
 						  res_b'_up@
 						  (refine ::
-						    (Root Alg a', (P,(Some Eq))::prev_a'_sign)::
+						    (Root Coef cInfo a', (P,(Some Eq))::prev_a'_sign)::
 						    (add_roots  tl low a'
 						      lowsign (Some (rsign Pa')) n))
 					      |true, true =>
 						let prev_a'_sign :=
-						  map (fun x => snd (sign_at (Between Alg a') n x)) lP in
+						  map (fun x => snd (sign_at (Between Coef cInfo a') n x)) lP in
 						  (*map (fun P => (P,Some (rsign (Pol_eval P a')))) lP in*)
 						  res_b'_up @
-						  ((Root Alg b', (P,(Some Eq))::prev_next_sign)::
+						  ((Root Coef cInfo b', (P,(Some Eq))::prev_next_sign)::
 						    refine ::
-						      (Root Alg a', (P,(Some Eq))::prev_a'_sign)::
+						      (Root Coef cInfo a', (P,(Some Eq))::prev_a'_sign)::
 						      (add_roots tl low a'  
 							lowsign (Some (rsign Pa')) n))
 					      |false, false =>
@@ -529,13 +532,13 @@ Section ONE_DIM.
       up is not a root 
        head corresponds to the smallest root
        gup and glow are the points considered as +infty and -infty for 
-       the whole family.
-       also puts the dummy tt to build cell_point_up from Rpoint **)
+       the whole family.*)
+
   Definition sign_table1 (glow gup:Rat):=
   fix sign_table1(Pol_list : list Pol)
     (isol_list : list (Rpoint*(list (Pol*Sign))))
-    (up:Rat)(res:list (cell_point_up*(list (Pol*Sign)))){struct isol_list}:
-    list (cell_point_up*(list (Pol*Sign))):=
+    (up:Rat)(res:list (Rpoint*(list (Pol*Sign)))){struct isol_list}:
+    list (Rpoint*(list (Pol*Sign))):=
     let Sign_eval := (fun x P =>
       (x, Some (rsign (Pol_eval P x)))) in
     match isol_list with
@@ -544,30 +547,30 @@ Section ONE_DIM.
 	let hdTag := fst hd in
 	let hdSign := snd hd in
 	  match hdTag with
-	    |Between b => (*dummy*)((tt, Between Alg b), hdSign)::res
-	    |Minf m=> ((tt, Between Alg glow), hdSign)::res
+	    |Between b => (*dummy*)(Between Coef cInfo b, hdSign)::res
+	    |Minf m=> (Between Coef cInfo glow, hdSign)::res
 	    |Root   r =>
 	      let bet := (r +r up)//(2 # 1) in
 		match res with
 		  |nil =>sign_table1 Pol_list tl r 
-		    (((tt, hdTag), hdSign) ::
-			(((tt, Between Alg up), fill_sign_between bet hdSign)::res))
+		    (( hdTag, hdSign) ::
+			((Between Coef cInfo up, fill_sign_between bet hdSign)::res))
 		  |_ =>
 		    sign_table1 Pol_list tl r 
-		    (((tt, hdTag), hdSign) ::
-		      (((tt, Between Alg bet),fill_sign_between bet hdSign)::res))
+		    ((hdTag, hdSign) ::
+		      ((Between Coef cInfo bet,fill_sign_between bet hdSign)::res))
 		end
 	    |Alg_root (Five a b _ _ _) =>
 	      let bet := (b +r up)//(2#1) in
 		match res with
 		  |nil =>
 		    sign_table1 Pol_list tl a
-		    (((tt, hdTag), hdSign)
-		      ::(((tt, Between Alg gup),fill_sign_between bet hdSign) ::res))
+		    ((hdTag, hdSign)
+		      ::((Between Coef cInfo gup,fill_sign_between bet hdSign) ::res))
 		    |_ =>
 		      sign_table1 Pol_list tl a
-		      (((tt, hdTag), hdSign)
-			::(((tt, Between Alg bet),fill_sign_between bet hdSign) ::res))
+		      ((hdTag, hdSign)
+			::(( Between Coef cInfo bet,fill_sign_between bet hdSign) ::res))
 		end
 	  end
     end.
@@ -595,6 +598,15 @@ Section ONE_DIM.
     let roots := family_root low up n Pol_info_list in
 	(sign_table1 low up Pol_list roots up nil).
 
+(* dummy function to convert Rpoint into cell_point_up. pour l'instant on separe ca de sign_table1 vu que c'est provisoire *)
+
+  Definition Rpoint_to_cell_point_up(rcol:Rpoint*(list (Pol *Sign))):=
+    let (r,col):= rcol in
+      (build_cell_point_up tt r,col).
+
+
+  Definition Pol_cad(Pol_list:list Pol)(n:nat):=
+    map Rpoint_to_cell_point_up (sign_table Pol_list n).
 
   Definition Pol_base_cst_sign(P:Pol):=
     match P with
@@ -603,31 +615,20 @@ Section ONE_DIM.
     end.
 
 
-  
+  Definition CAD(A:Set):= A.
 
-  Definition mk_Cad_type:=fun x => list x.
-  
-  Definition Cad_map(A B:Set)(c:mk_Cad_type A)(f: A -> B):=
-    map f c.
 
-  Definition One_dim_cad := @mk_cad Rat Rat
+  Definition One_dim_cad := @mk_cad Rat Rat cInfo unit CAD
     P0 P1
-    Pol_add Pol_mul Pol_sub Pol_opp Pol_deg mkPX 
-    Pol_zero_test   Pol_of_pos  Pol_base_cst_sign Pol_pow   Pol_div
-    Pol_gcd_gcd_free   Pol_square_free   Pol_deriv 
-    Pol_eval   Pol_is_base_cst 
-    Pol_mkPc   cmkPc 
-    Pol_mult_base_cst   Pol_div_base_cst 
-    Pol_partial_eval  
-    Rpoint unit cell_point_up cell_point_up_proj rpoint_of_cell
-    mk_cell_point_up cell_refine
-    Pol_low_bound_tt Pol_up_bound_tt 
-    Pol_value_bound Info mk_Info Info_of_Pol Pol_of_Info 
+    Pol_add Pol_mult_base_cst Pol_mul Pol_sub Pol_opp
+    Pol_of_Rat Pol_is_base_cst
+    Pol_zero_test  Pol_base_cst_sign Pol_pow Pol_div_base_cst Pol_div
+    Pol_gcd_gcd_free   Pol_square_free 
+    cell_refine
+    Pol_low_bound_tt 
+    Pol_value_bound Info_of_Pol
     Pol_low_sign_info Pol_sign_at 
-    Cad_col cell_point_of_Cad_col sign_col_of_Cad_col
-    mk_Cad_type Cad_map
-    sign_table.
-
+    Pol_cad.
 
 End ONE_DIM.
 

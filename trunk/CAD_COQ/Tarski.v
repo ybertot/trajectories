@@ -5,7 +5,8 @@ Unset Boxed Values.
 Require Import Qabs.
 Require Import Utils.
 
-Require Import CAD_types.v
+Require Import CAD_types.
+
 Require Import One_dim.
 Require Import Up_dim.
 
@@ -15,10 +16,6 @@ Set Implicit Arguments.
 Module CAD_gen(Q:RAT_STRUCT).
 
 Import Q.
-(*
-Module QCAD := CAD_DATAS Q.
-Import QCAD.
-*)
 
 Module ONE_DIM := MK_ONE_DIM Q.
 Import ONE_DIM.
@@ -27,26 +24,47 @@ Module UP_DIM := MK_UP_DIM Q.
 Import UP_DIM.
 
 Fixpoint Poln(n:nat):Set:=
-match n with
-|O => Rat
-|S n => Pol1 (Poln n)
-end.
+  match n with
+    |O => Rat
+    |S n => Pol1 (Poln n)
+  end.
 
-Section CAD_no_unfold.
+Definition Infon(n:nat):=
+  match n with
+    |O => Rat
+    |S n => Info (Poln n)
+  end.
 
-Variable f: forall C : Set, Cad Rat C -> Cad Rat (Pol1 C).
 
-Fixpoint CAD_build_comp(n:nat):Cad Rat (Poln n) :=
-match n return Cad Rat (Poln n) with
-|O => One_dim_cad
-|S n =>
-  f (CAD_build_comp n)
-end.
 
-End CAD_no_unfold.
+Fixpoint cell_pointn(n:nat):Set:=
+  match n with
+    |O=>unit
+    |S n => @mkcell_point_up Rat (Poln n) (Infon n) (cell_pointn n)
+  end.
 
-Definition CAD_build := CAD_build_comp UP_DIM.CAD_make.
-   
+Fixpoint mkCadn(n:nat):Set -> Set:=
+  match n with
+    |O => fun A :Set => A
+    |S n => fun A :Set => (mkCadn n (list A))
+  end.
+
+Fixpoint mkCad_mapn(n:nat)(C D:Set)(f:C -> D){struct n}:
+  mkCadn n C -> mkCadn n D:=
+     match n return mkCadn n C -> mkCadn n D with
+       |O =>  f
+       |S n => @mkCad_mapn n (list C) (list D) (@map C D f)
+    end.
+
+Fixpoint CAD_build(n:nat):
+  Cad Rat (Poln n) (Infon n) (cell_pointn n) (mkCadn n):=
+  match n return 
+    Cad Rat (Poln n) (Infon n) (cell_pointn n) (mkCadn n) with
+    |O => One_dim_cad
+    |S n => @CAD_make (Poln n) (cell_pointn n) (mkCadn n) (mkCad_mapn n) 
+      (CAD_build n)
+  end.
+
 
 End CAD_gen.
 

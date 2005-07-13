@@ -8,73 +8,80 @@ Unset Boxed Values.
 (*Require Import CAD.*)
 Require Import Qabs.
 Require Import Utils.
-Require Import CAD_types.v
+Require Import CAD_types.
 
 
 Set  Implicit Arguments.
 
 Module MK_UP_DIM(Q:RAT_STRUCT).
 
-(*
-  Module QCAD := CAD_SIG Q.*)
+
   Module QFUNS:= RAT_FUNS Q.
   Module QINT := RAT_INT_OPS Q.
   Import Q.
   Import QFUNS.
   Import QINT.
-(*  Import QCAD.*)
 
 
-  (*Variable Rat_struct : Rat_ops.
-  Definition C_base := Rat Rat_struct.*)
 
   Section UP_DIM.
-  (*Variable CAD_n : Cad Rat Rat_struct.*)
+
   
+    (* coefficients *)
     Variable C:Set.
-    Variable CAD_n : Cad Rat C.
-    
     Definition Coef := Pol1 C.
-  (*  Definition Coef := Pol CAD_n.*)
+    Definition cdeg := @Pol_deg C.
+    
+
+    (*information retained for bern coefs *)
+    Definition cInfo := Info C.
+    Definition cmk_Info := @mk_Info C.
+
+  
+    (* type of cell_points at the level n *)
+    Variable cell_point_low : Set.
+
+    Definition cell_point := mkcell_point_up Rat C cInfo cell_point_low.
+    Definition crpoint_of_cell(z:cell_point):= snd z.
+    Definition ccell_point_proj(z:cell_point):=fst z.
+
+
+    Variable cmkCad : Set -> Set.
+    Variable cCad_map : forall C D:Set,  (C -> D) ->cmkCad C -> cmkCad D.
+
+    Variable bern:Set.
+
+    Variable CAD_n : Cad Rat C bern cell_point_low cmkCad.
+ 
+
     Definition c0 := Pol_0 CAD_n.
     Definition c1 := Pol_1 CAD_n.
     Definition cadd := Pol_add CAD_n.
+    Definition cmult_base_cst := Pol_mul_Rat CAD_n.
     Definition cmul := Pol_mul CAD_n.
     Definition csub := Pol_sub CAD_n.
-    Definition copp := Pol_opp CAD_n. 
-    Definition cdeg := Pol_deg CAD_n.
+    Definition copp := Pol_opp CAD_n.
+    Definition cof_Rat := Pol_of_Rat CAD_n.
+    Definition cis_Rat := Pol_is_Rat CAD_n.
+    Definition cof_pos(p:positive) := cof_Rat (rof_pos p).
     Definition czero_test := Pol_zero_test CAD_n.
-    Definition cof_pos := Pol_of_pos CAD_n.
-    Definition cpow := Pol_pow CAD_n.
-    Definition cdiv := Pol_div CAD_n.
-    Definition cis_base_cst := Pol_is_base_cst CAD_n.
-    Definition cmkPc := Pol_mk_Pc CAD_n.
-    Definition cmk_coef := Pol_mk_coef CAD_n.
-    Definition cmult_base_cst := Pol_mult_base_cst CAD_n.
-    Definition cdiv_base_cst :=  Pol_div_base_cst CAD_n.
-    Definition csquare_free := Pol_square_free CAD_n.
-    Definition cgcd_gcd_free := Pol_gcd_gcd_free CAD_n.
-    Definition csign_at := Pol_sign_at CAD_n. 
-    Definition clow_bound := Pol_low_bound CAD_n.
-    Definition clow_sign := Pol_low_sign CAD_n.
-    Definition ccell_point_proj := cell_point_proj CAD_n.
-    Definition low_cell_point := cell_point CAD_n.
-    Definition cell_point := cell_point_up CAD_n.
-    Definition cvalue_bound := Pol_value_bound CAD_n.
-    Definition cInfo:=Info CAD_n.
-    Definition cmk_Info := mk_Info CAD_n.
-    Definition cPol_of_Info := Pol_of_Info CAD_n.
-    Definition cInfo_of_Pol := Info_of_Pol CAD_n.
-    Definition ccell_refine := cell_point_up_refine CAD_n.
     Definition cbase_cst_sign := Pol_base_cst_sign CAD_n.
+    Definition cpow := Pol_pow CAD_n.
+    Definition cdiv_base_cst :=  Pol_div_Rat CAD_n.
+    Definition cdiv := Pol_div CAD_n.
+    Definition cgcd_gcd_free := Pol_gcd_gcd_free CAD_n.
+    Definition csquare_free := Pol_square_free CAD_n.
+    Definition ccell_refine := cell_point_up_refine CAD_n.
+    Definition clow_bound := Pol_low_bound CAD_n.
+    Definition cvalue_bound := Pol_value_bound CAD_n.
+    Definition cInfo_of_Pol := Info_of_Pol CAD_n.
+    Definition clow_sign := Pol_low_sign CAD_n.
+    Definition csign_at := Pol_sign_at CAD_n.
     Definition ccad := Pol_cad CAD_n.
-    Definition crpoint_of_cell := rpoint_of_cell CAD_n.
-    Definition mk_cell_point := mk_cell_point_up CAD_n.
-    Definition cCad_col := Cad_col CAD_n.
-    Definition cmk_Cad_type := mk_Cad_type CAD_n.
-    Definition cCad_map:= Cad_map CAD_n.
-    Definition ccell_point_of_Cad_col := cell_point_of_Cad_col CAD_n.
-    Definition csign_col_of_Cad_col := sign_col_of_Cad_col CAD_n.
+
+    Definition cPol_of_Info(info:cInfo) := fst5 info.
+
+
 
     Load Gen_functor.
   (*Are now available:
@@ -105,6 +112,31 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
      Pol_bern_split+....*)
 
 
+
+ 
+    
+
+
+    (*
+
+    Definition Cad_up := mkCad_up Rat Coef cInfo mkCad.
+
+    
+
+    Definition map_Cad_n := @map_Cad_up Rat rmin req Coef cInfo cell_point
+      mkCad min_cell_point_list map_Cad (Minf Coef cInfo r0).
+
+*)
+
+
+
+
+
+
+
+
+
+    Definition mk_cell_point(z:cell_point_low)(r:mkRpoint Rat C cInfo):=(z,r). 
 
   (* Equality test over coefs in normal forms *)
     Definition ceq(P Q:Coef):= czero_test (P -- Q).
@@ -248,16 +280,16 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	      let (z,Vb) := csign_at_refine z blist n in
 		let test := op_sign_changes (map (fun x => snd x) Vb) in
 		  match test  with
-		    |None => (z,(Alg_root Rat (Five c d P Pbar blist), (P,None)::nil)::res)
+		    |None => (z,(Alg_root (Five c d P Pbar blist), (P,None)::nil)::res)
 		    |Some O => (z,res)
 		|Some 1 =>
 		  let (z, sP_c):=Pol_eval_sign_at_isol P Pbar z c n in
 		  let (z, sP_d):=Pol_eval_sign_at_isol P Pbar z d n in
 		    match  (sign_mult (snd sP_c) (snd sP_d)) with
-		      |None => (z,(Alg_root Rat (Five c d  P Pbar  blist), (P,None)::nil)::res)
+		      |None => (z,(Alg_root (Five c d  P Pbar  blist), (P,None)::nil)::res)
                       |Some Eq =>
 			match n with
-			  |O=> (z,(Alg_root Rat (Five c d P Pbar blist), (P,None)::nil)::res)
+			  |O=> (z,(Alg_root (Five c d P Pbar blist), (P,None)::nil)::res)
 			  |S n' => 
                             let mid := rdiv (radd d c)  (2 # 1) in
                             let (b', b''):= Pol_bern_split blist c d mid in
@@ -266,21 +298,21 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 			      match  snd sP_mid  with
 				|None =>  
 				  (z, 
-				    (Alg_root Rat (Five c d P Pbar blist), (P,snd sP_mid)::nil)
+				    (Alg_root (Five c d P Pbar blist), (P,snd sP_mid)::nil)
 				    :: res')
 				|Some Eq => 
-				  root_isol1 (z,((Root Alg mid,(P, snd sP_mid)::nil)::res'))
+				  root_isol1 (z,((Root Coef cInfo mid,(P, snd sP_mid)::nil)::res'))
 				  mid d b'' n'
 				|_ => root_isol1 (z,res')  mid d b'' n'
 	
 		      end
 			end
                       |_ =>
-			(z,(Alg_root Rat (Five c d P Pbar blist), (P,(Some Eq))::nil)::res)
+			(z,(Alg_root (Five c d P Pbar blist), (P,(Some Eq))::nil)::res)
 		    end
 		    |_ =>
 		      match n with
-			|O => (z,(Alg_root Rat (Five c d P Pbar blist), (P,None)::nil)::res)
+			|O => (z,(Alg_root (Five c d P Pbar blist), (P,None)::nil)::res)
 			|S n' => 
 			  let mid := rdiv (radd d c)  (2 # 1) in
 			  let (b', b''):= Pol_bern_split blist c d mid  in
@@ -288,11 +320,11 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 			  let (z, sP_mid) :=Pol_eval_sign_at_isol Pbar Pbar z mid n in
 			    match  snd sP_mid with
 			      |None => 
-				(z,(Alg_root Rat (Five c d P Pbar blist),(P, snd sP_mid)::nil)
+				(z,(Alg_root (Five c d P Pbar blist),(P, snd sP_mid)::nil)
 				  ::res)
 			      |Some Eq =>
 				root_isol1 
-				(z,((Root Alg mid, (P,snd sP_mid)::nil)::res')) mid d b'' n'
+				(z,((Root Coef cInfo mid, (P,snd sP_mid)::nil)::res')) mid d b'' n'
 			      |_ =>
 				root_isol1 (z,res')  mid d b'' n'
 			    end
@@ -305,7 +337,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
       (P:Pol)(z:cell_point)(Pbar:Pol)(degPbar:N)(lbound ubound:Rat)(n:nat):= 
       let (z, sign):=(Pol_low_sign z P Pbar n) in
 	root_isol1 P Pbar
-	(z,((Minf Alg lbound, (P,snd sign)::nil)::nil))
+	(z,((Minf Coef cInfo lbound, (P,snd sign)::nil)::nil))
 	lbound ubound (Pol_bern_coefs P lbound ubound degPbar) n.
     
     
@@ -330,26 +362,26 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	let (z,Vb) := csign_at_refine z bernQ n in
 	let test := op_sign_changes (map (fun x => snd x) Vb) in
 	  match test with
-	    |None => ((z, Alg_root Rat (Five a b P Pbar bern)),(Q, None))
+	    |None => ((z, Alg_root (Five a b P Pbar bern)),(Q, None))
        	    |Some O => 
 	      let (z, sQ_a):=Pol_eval_sign_at_isol Q Qbar z a n in
-		((z,Alg_root Rat (Five a b P Pbar bern)), (Q,snd sQ_a))
+		((z,Alg_root (Five a b P Pbar bern)), (Q,snd sQ_a))
 	    | _ => 
 	      let mid := rdiv (radd a b)  (2 # 1) in
 	      let (z, sPbar_mid) := Pol_eval_sign_at_isol Pbar Pbar z mid n in
 		match snd sPbar_mid with
-		  |None =>((z,Alg_root Rat (Five a b P Pbar bern)), (Q, None))
+		  |None =>((z,Alg_root (Five a b P Pbar bern)), (Q, None))
 		  |Some Eq => 
 		    let (z, sQ_mid):= Pol_eval_sign_at_isol Q Qbar z mid n in
-		      ((z, Alg_root Rat (Five a b P Pbar bern)),(Q,snd sQ_mid))
+		      ((z, Alg_root (Five a b P Pbar bern)),(Q,snd sQ_mid))
 		  |_ =>
 		    match n with
-		      |O => ((z,Alg_root Rat (Five a b P Pbar bern)), (Q, None))
+		      |O => ((z,Alg_root (Five a b P Pbar bern)), (Q, None))
 		      |S m =>
 			let (z,sP_bar_mid):=Pol_eval_sign_at_isol P Pbar z mid n in
 			let (z,sPbar_a):=Pol_eval_sign_at_isol P Pbar z a n in
 			match (sign_mult (snd sPbar_mid) (snd sPbar_a)) with
-			  |None => ((z,Alg_root Rat (Five a b P Pbar bern)), (Q, None))
+			  |None => ((z,Alg_root (Five a b P Pbar bern)), (Q, None))
 			  | Some Lt  =>
 			    let (bern',_) := Pol_bern_split bern a b mid  in
 			    let (bernQ',_) := Pol_bern_split bernQ a b mid  in
@@ -375,22 +407,22 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	let (z,Vb) := csign_at_refine z bernQ n in
 	let test := op_sign_changes  (map (fun x => snd x) Vb) in
 	  match test with
-	    |None => ((z,Alg_root Rat (Five a b G Gbar bernG)), None)
-	    |Some O => ((z,Alg_root Rat (Five a b G Gbar bernG)), None) (*never!*)
-	    |Some 1 => ((z,Alg_root Rat (Five a b G Gbar bernG)), (Some Eq))
+	    |None => ((z,Alg_root (Five a b G Gbar bernG)), None)
+	    |Some O => ((z,Alg_root (Five a b G Gbar bernG)), None) (*never!*)
+	    |Some 1 => ((z,Alg_root (Five a b G Gbar bernG)), (Some Eq))
 	    | _ =>
 	      let mid := rdiv (radd a b)  (2 # 1) in
 	      let (z, sPbar_mid) := Pol_eval_sign_at_isol Pbar Pbar z mid n in
 		match (snd sPbar_mid) with
-                  |None => ((z, Alg_root Rat (Five a b G Gbar bernG)), None)
-		  |Some Eq => ((z,Root Alg mid), (Some Eq))
+                  |None => ((z, Alg_root (Five a b G Gbar bernG)), None)
+		  |Some Eq => ((z,Root Coef cInfo mid), (Some Eq))
 		  | _ => 
 		    match n with
-			  |O => ((z,Alg_root Rat (Five a b G Gbar bernG)), None)
+			  |O => ((z,Alg_root (Five a b G Gbar bernG)), None)
 		      |S n' =>
 			let (z, sPbar_a):= Pol_eval_sign_at_isol Pbar Pbar z a n in
 			match (sign_mult (snd sPbar_mid) (snd sPbar_a)) with
-                          |None =>  ((z, Alg_root Rat (Five a b G Gbar bernG)), None)
+                          |None =>  ((z, Alg_root (Five a b G Gbar bernG)), None)
 			  |Some Lt =>
 			    let (bernG',_):=Pol_bern_split bernG a b mid  in
 			    let (bernQ',_):= Pol_bern_split bernQ a b mid in
@@ -415,7 +447,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	let (z,Vb) := csign_at_refine z bernG n in
 	let test := op_sign_changes (map (fun x => snd x) Vb) in
 	  match test with
-            |None => ((z,Alg_root Rat (Five a b P Pbar bern)),(Q, None))
+            |None => ((z,Alg_root (Five a b P Pbar bern)),(Q, None))
 	    |Some O => 
 	      let bernQ := Pol_bern_coefs Qbar a b dQbar in
 		sign_at_non_com z Q Qbar a b P Pbar bern bernQ n
@@ -428,17 +460,17 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	      let mid := rdiv (radd a b) (2 # 1) in
 	      let (z, sPbar_mid) := Pol_eval_sign_at_isol Pbar Pbar z mid n in
 		match (snd sPbar_mid) with
-		  |None => ((z,Alg_root Rat (Five a b P Pbar bern)), (Q, None))
+		  |None => ((z,Alg_root (Five a b P Pbar bern)), (Q, None))
 		  |Some Eq =>
 		    let (z,sQbar_mid):=Pol_eval_sign_at_isol Q Qbar z mid n in
-		      ((z,Root Alg mid), (Q, snd sQbar_mid))
+		      ((z,Root Coef cInfo mid), (Q, snd sQbar_mid))
 		  |_ =>
 		    match n with
-		      |O => ((z,Alg_root Rat (Five a b P Pbar bern)),(Q, None))
+		      |O => ((z,Alg_root (Five a b P Pbar bern)),(Q, None))
 		      |S m =>
 			let (z,sPbar_a) := Pol_eval_sign_at_isol Pbar Pbar z a n in
 			match (sign_mult (snd sPbar_a) (snd sPbar_mid)) with
-			  |None =>  ((z, Alg_root Rat (Five a b P Pbar bern)),(Q, None))
+			  |None =>  ((z, Alg_root (Five a b P Pbar bern)),(Q, None))
 			  |Some Lt =>
               		    let (bern',_):=Pol_bern_split bern a b mid in
               		    let (bernG',_):=Pol_bern_split bernG a b mid in
@@ -462,10 +494,10 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	|Minf  _ => (t, low)
 	|Root r =>
 	  let (res_z, res_sign) := Pol_eval_sign_at_isol Q Qbar z r n in
-	  ((res_z, Root Alg r), snd res_sign)
+	  ((res_z, Root Coef cInfo r), snd res_sign)
 	|Between b => 
 	  let (res_z, res_sign) := Pol_eval_sign_at_isol Q Qbar z b n in
-	  ((res_z,Between Alg b), snd res_sign)
+	  ((res_z,Between Coef cInfo b), snd res_sign)
 	|Alg_root (Five a b P Pbar bern) =>
 	  let Pbar := Pol_square_free P in
 	  let G := Pol_gcd Q P in
@@ -541,7 +573,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 		  let (z,resP) := root_isol_int P z freeP dfreeP  low up n in
 		  let (z,slow):= Pol_low_sign z P freeP n in
 		    (z,(add_to_cst_list resP prev_slist)@
-		      ((Minf Alg low, (P,snd slow)::prev_slist)::nil))
+		      ((Minf Coef cInfo low, (P,snd slow)::prev_slist)::nil))
 		|Root r =>
 		  if orb (rlt up r) (rzero_test (rsub r up))
 		    then
@@ -555,13 +587,13 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 		       let res_r_up := (add_to_cst_list resP prev_next_sign) in
 		       let (z,table_low_r):= (add_roots z tl low r  lowsign (snd sP_r)) in
 			 (z,res_r_up @
-			 ((Root Alg r, (P,snd sP_r):: prev_slist)::table_low_r))
+			 ((Root Coef cInfo r, (P,snd sP_r):: prev_slist)::table_low_r))
 		|Alg_root (Five a b Q Qbar bern) =>
 		  let (zup,refine) := sign_list_at_root P freeP dfreeP lowsign ((z,rpt),prev_slist) n in
 		  let (z,rpt):=zup in
 		    match rpt  with
 		      |Between _ => (z,l) (*should never happen *)
-		      |Minf _  => (z,(Minf Alg low, (P,None) :: prev_slist):: tl) (*should never happen*)
+		      |Minf _  => (z,(Minf Coef cInfo low, (P,None) :: prev_slist):: tl) (*should never happen*)
 		      |Root r =>
 			if orb (rlt up r) (rzero_test (rsub r up))
 			  then
@@ -598,20 +630,20 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 				  let prev_a'_sign := map (Pol_info_eval_sign n a' z) lP in
 				  let (z,sign_table_low_a'):= add_roots z tl low a' lowsign (snd sPa') in
 				    (z,res_b'_up @
-				    ((Root Alg b', (P,(Some Eq))::prev_next_sign)::
+				    ((Root Coef cInfo b', (P,(Some Eq))::prev_next_sign)::
 				      (rpt,refine) ::
-				      (Root Alg a', (P,(Some Eq))::prev_a'_sign):: sign_table_low_a'))
+				      (Root Coef cInfo a', (P,(Some Eq))::prev_a'_sign):: sign_table_low_a'))
 				|Some Eq, Some _  =>
 				  let (z,sign_table_low_a'):=add_roots z tl low a' lowsign (snd sPa' ) in
 				  (z,res_b'_up @
-				  ((Root Alg b', (P,(Some Eq))::prev_next_sign)::
+				  ((Root Coef cInfo b', (P,(Some Eq))::prev_next_sign)::
 				    (rpt,refine)::sign_table_low_a'))
 				|Some _, Some Eq =>
 				  let prev_a'_sign := map (Pol_info_eval_sign n a' z) lP in
 				  let (z,sign_table_low_a'):=add_roots z tl low a' lowsign (snd sPa') in
 				    (z,res_b'_up@
 				    ((rpt,refine) ::
-				      (Root Alg  a', (P,(Some Eq))::prev_a'_sign)::sign_table_low_a'))
+				      (Root Coef cInfo  a', (P,(Some Eq))::prev_a'_sign)::sign_table_low_a'))
 				|Some _, Some _ =>
 				  let (z,sign_table_low_a'):=add_roots z tl low a' lowsign (snd sPa') in
 				  (z, res_b'_up @ ((rpt,refine)::sign_table_low_a'))
@@ -631,7 +663,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	      match sinfo with
 		|Some s =>
 		  match tl with
-		    |nil => (z,(Minf Alg r0, (P, sinfo)::nil)::nil)
+		    |nil => (z,(Minf Coef cInfo r0, (P, sinfo)::nil)::nil)
 		    |_ =>
 		      let (z,prev) := family_roots z tl n in
 			(z, add_cst_sign prev P sinfo)
@@ -672,7 +704,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 		|Minf _ => 
 		  match (tail res) with
 		    |nil => res
-		    |_ => (Between Alg glow, hdSign)::res
+		    |_ => (Between Coef cInfo glow, hdSign)::res
 		  end
 		|Root r =>
 		    match (tail res) with
@@ -683,7 +715,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 			let bet := rdiv (radd r up) (2 # 1) in
 			  sign_table1 tl r 
 			  ((rpt, hdSign) ::
-			    ((Between Alg bet,fill_sign_between n bet z hdSign)::res))
+			    ((Between Coef cInfo bet,fill_sign_between n bet z hdSign)::res))
 		    end
 		  |Alg_root (Five a b _ _ _) =>
 		    match (tail res) with
@@ -695,7 +727,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 			let bet := rdiv (radd b up) (2#1) in
 			  sign_table1 tl a
 			  ((rpt, hdSign)
-			    ::((Between Alg bet,fill_sign_between n bet z hdSign) ::res))
+			    ::((Between Coef cInfo bet,fill_sign_between n bet z hdSign) ::res))
 		    end
 	      end
 	end.
@@ -708,7 +740,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
   let low := rmin_list (map (Pol_info_low_bound z) Pol_list) in
   let up_signs := map (Pol_info_eval_sign n up z) Pol_list in 
   let (z,roots) := family_root low up z Pol_list n in
-    (z,(sign_table1 z low up n roots up ((Between Alg up, up_signs)::nil))).
+    (z,(sign_table1 z low up n roots up ((Between Coef cInfo up, up_signs)::nil))).
 
 
 
@@ -987,18 +1019,32 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 
 
   Definition one_table_up(l:list Pol)(n:nat)
-    (cad_col:cCad_col):=
-    let z:= ccell_point_of_Cad_col cad_col in
-    let col := csign_col_of_Cad_col cad_col in
+    (zcol:cell_point*(list (Coef * Sign))):=
+    let (z,col):=zcol in
     let (z,l'):=non_deg z col l n in
-    let (z, table):= sign_table z l' n in
-      map (fun x => ((z, fst x), snd x)) table.
+    sign_table z l' n.
 
+
+
+  Definition one_table_up_push(l:list Pol)(n:nat)
+    (zcol:cell_point*(list (Coef * Sign))):=
+    let (z,l):=one_table_up l n zcol in
+    let aux := fun rlsign:Rpoint *(list (Pol*Sign)) =>
+      let (r,lsign):=rlsign in
+	((z, r),lsign) in
+	map aux l.
+ 
+  Definition one_table_up_map(l:list Pol)(n:nat)
+    (zcol_list:list (cell_point*(list (Coef*Sign)))):=
+    map (one_table_up_push l n) zcol_list.
+
+  Definition Pol_cad(l:list Pol)(n:nat) :=
+    let cad := ccad (elim l) n in
+      @cCad_map 
+      (list (cell_point*(list (Coef*Sign)))) (list (list (cell_point_up *(list (Pol*Sign)))))
+      (one_table_up_map l n) cad .
   
-  Definition Pol_cad(l:list Pol)(n:nat):=
-    let elim_l := elim l in
-    let cad := ccad elim_l n in
-      cCad_map cad (one_table_up l n).
+
 
 
   (************************************************************)
@@ -1006,12 +1052,12 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
   (************************************************************)
 
 
-  Definition mk_Cad_type(x:Set) := cmk_Cad_type (list x).
+(*  Definition mk_Cad_type(x:Set) := cmk_Cad_type (list x).
 
   Definition Cad_map(A B:Set)(c:mk_Cad_type A)(f:A ->B):=
     @cCad_map (list A) (list B) c (fun x:list A => map f x).
 
-
+*)
   (** Builds an Info from a Pol P, low sign is not computed **)
     Definition Info_of_Pol(info_sign:Sign)(P:Pol):=
       let Pbar := Pol_square_free P in
@@ -1060,32 +1106,37 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
    
 
 
-
-
-
-
   (************************************************************)
   (******   Building of the parametric record         *********)
   (************************************************************)
 
 
 
-  Definition CAD_make := @mk_cad Rat Coef
+    Definition mkCad := @mkCad_up cmkCad.
+
+  Definition CAD_make := @mk_cad Rat Coef cInfo cell_point mkCad
     P0 P1
-    Pol_add Pol_mul Pol_sub Pol_opp Pol_deg mkPX 
-    Pol_zero_test Pol_of_pos  Pol_base_cst_sign Pol_pow   Pol_div
-    Pol_gcd_gcd_free   Pol_square_free   Pol_deriv 
-    Pol_eval   Pol_is_base_cst 
-    Pol_mkPc   cmkPc 
-    Pol_mult_base_cst   Pol_div_base_cst 
-    Pol_partial_eval  
-    Rpoint cell_point cell_point_up cell_point_up_proj rpoint_of_cell
-    mk_cell_point_up cell_refine
-    Pol_low_bound Pol_up_bound 
-    Pol_value_bound Info mk_Info Info_of_Pol Pol_of_Info
-    Pol_low_sign_for_upper Pol_sign_at_for_upper 
-    Cad_col cell_point_of_Cad_col sign_col_of_Cad_col
-    mk_Cad_type Cad_map Pol_cad.
+    Pol_add 
+    Pol_mult_base_cst
+    Pol_mul
+    Pol_sub
+    Pol_opp
+    Pol_of_Rat
+    Pol_is_base_cst
+    Pol_zero_test
+    Pol_base_cst_sign
+    Pol_pow
+    Pol_div_base_cst 
+    Pol_div
+    Pol_gcd_gcd_free
+    Pol_square_free
+    cell_refine
+    Pol_low_bound
+    Pol_value_bound
+    Info_of_Pol
+    Pol_low_sign_for_upper
+    Pol_sign_at_for_upper
+    Pol_cad.
 
 
 End UP_DIM.

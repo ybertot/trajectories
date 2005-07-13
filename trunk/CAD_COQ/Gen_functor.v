@@ -12,6 +12,19 @@ Set Implicit Arguments.*)
  Notation "x // y" := (cdiv x y) (at level 40, left associativity).
 
 
+
+
+  (************************************************************)
+  (****             Type definitions                       ****)
+  (************************************************************)
+
+
+
+ Definition Alg := mkAlg Rat Coef cInfo.
+ Definition Rpoint := mkRpoint Rat Coef cInfo.
+ Definition cell_point_up := mkcell_point_up Rat Coef cInfo cell_point.
+
+
  (************************************************************)
  (**            Polynomials with one more variables         **)
  (************************************************************)
@@ -131,24 +144,24 @@ Notation "- P" := (Pol_opp P).
 
 
 (*P*(Pc c) *)
- Definition Pol_mult_cst_aux :=
-   fix Pol_mult_cst_aux (P:Pol) (c:Coef) {struct P} : Pol :=
+ Definition Pol_mul_Rat_aux :=
+   fix Pol_mul_Rat_aux (P:Pol) (c:Coef) {struct P} : Pol :=
      match P with
        | Pc c' => Pc (c' ** c)
-       | PX P i c' => mkPX (Pol_mult_cst_aux P c) i (c'** c)
+       | PX P i c' => mkPX (Pol_mul_Rat_aux P c) i (c'** c)
      end.
 
 (*hack to speed up*)
- Definition Pol_mult_cst P c :=
+ Definition Pol_mul_Rat P c :=
   if (czero_test c) then P0 else
-  if (czero_test (c -- c1)) then P else Pol_mult_cst_aux P c.
+  if (czero_test (c -- c1)) then P else Pol_mul_Rat_aux P c.
 
  
  Definition Pol_mul := fix Pol_mul(P P':Pol) {struct P'} : Pol :=
   match P' with
-  | Pc c' => Pol_mult_cst P c'
+  | Pc c' => Pol_mul_Rat P c'
   | PX P' i' c' => 
-     (mkPX (Pol_mul P P') i' c0) + (Pol_mult_cst P c')
+     (mkPX (Pol_mul P P') i' c0) + (Pol_mul_Rat P c')
   end.
 
  Notation "P * P'" := (Pol_mul P P').
@@ -161,21 +174,24 @@ Notation "- P" := (Pol_opp P).
      |PX _ _ _=> false
    end.
 
+ (** Builds a Pol from a Rat *)
+ Definition Pol_of_Rat(r:Rat) := Pc (cof_Rat r). 
+
  (** Builds a constant pol from a positive **)
- Definition Pol_of_pos(p:positive):Pol:= Pc (cof_pos p).
+ Definition Pol_of_pos(p:positive):Pol:= Pc (cof_Rat (rof_pos p)).
 
 
  (** Cst pol from a rational **)
- Definition  Pol_mkPc(c:Rat):= Pc (cmkPc c).
+ Definition  Pol_mkPc(c:Rat):= Pc (cof_Rat c).
 
  (*P^n*)
-Definition Pol_pow':=
- fix Pol_pow'(P:Pol)(p:positive){struct p}:Pol:=
-   match p with
-     |xH => P
-     |xO p' => let Q:=(Pol_pow' P p') in (Pol_mul Q Q)
-     |xI p' => let Q:=(Pol_pow' P p') in (Pol_mul (Pol_mul Q Q) P)
-   end.
+ Definition Pol_pow':=
+   fix Pol_pow'(P:Pol)(p:positive){struct p}:Pol:=
+     match p with
+       |xH => P
+       |xO p' => let Q:=(Pol_pow' P p') in (Pol_mul Q Q)
+       |xI p' => let Q:=(Pol_pow' P p') in (Pol_mul (Pol_mul Q Q) P)
+     end.
 
  Definition Pol_pow(P:Pol)(n:N):Pol :=
    match n with
@@ -184,7 +200,7 @@ Definition Pol_pow':=
    end.
 
 
-   
+(*   
   (*couple degree * coefdom for a polynomial in normal form *)
  Definition Pol_deg_coefdom:= 
    fix Pol_deg_coefdom(A:Pol) : N*Coef :=
@@ -208,7 +224,23 @@ Definition Pol_pow':=
        |Pc p => p
        |PX P _ _ => Pol_dom P
      end.
+*)
 
+
+
+ (** Derivative **)
+ Definition Pol_deriv := 
+   fix Pol1_deriv(P:Pol):Pol :=
+     match P with
+       |Pc c => Pc c0
+       |PX A i a => 
+	 match i with
+	   |xH => A +(mkPX (Pol1_deriv A) xH c0)
+	   |_ => (Pol_mul_Rat (PX A (Ppred i) c0) (cof_pos i)) +
+	     (mkPX (Pol1_deriv A) i c0)
+	 end
+     end.
+   
 
 
   (** division:like an euclidian division, but if the division over coef
@@ -233,7 +265,7 @@ Definition Pol_pow':=
 	   |Lt => (Pc c0, PX R i c0)
 	   | _  => 
 	     match i with
-	       | xH => (Pc (cr // cd), (mkPX R xH c0) - (Pol_mult_cst D (cr//cd)))
+	       | xH => (Pc (cr // cd), (mkPX R xH c0) - (Pol_mul_Rat D (cr//cd)))
 	       | xO p =>
 		 let (Q1, R1) := (Pol_div_aux R p) in
 		 let (dR1, cR1):=(Pol_deg_coefdom R1) in
@@ -257,7 +289,7 @@ Definition Pol_pow':=
 				 ((mkPX Q1 (Psucc p) c0)+(mkPX Q2 xH c0), mkPX R2 xH c0)
 			       | _ =>
 				 let quo := (mkPX Q1 (Psucc p) c0)+ (mkPX Q2 xH c0)+(Pc (cr2//cd)) in
-        		         let rem := (mkPX R2 xH c0) - (Pol_mult_cst D (cr2//cd)) in
+        		         let rem := (mkPX R2 xH c0) - (Pol_mul_Rat D (cr2//cd)) in
 				   (quo,rem)
 			     end
 	     end
@@ -311,19 +343,7 @@ Definition Pol_pow':=
  (** Only the quotient **)
  Definition Pol_div(A B:Pol):Pol:= fst (Pol_euclide_div A B).
 
- (** Derivative **)
- Definition Pol_deriv := 
-   fix Pol1_deriv(P:Pol):Pol :=
-     match P with
-       |Pc c => Pc c0
-       |PX A i a => 
-	 match i with
-	   |xH => A +(mkPX (Pol1_deriv A) xH c0)
-	   |_ => (Pol_mult_cst (PX A (Ppred i) c0) (cof_pos i)) +
-	     (mkPX (Pol1_deriv A) i c0)
-	 end
-     end.
-   
+
   (************************************************************)
   (***          Subresultant polynomials                     **)
   (************************************************************)
@@ -359,7 +379,7 @@ Definition Pol_pow':=
    let (d, dom_sri_1) := (Pol_deg_coefdom SRi_1) in
    let next_SR := fun x:Coef =>
      -(Pol_div_cst 
-       (snd (Pol_euclide_div (Pol_mult_cst SRi_1 x) SRj_1))
+       (snd (Pol_euclide_div (Pol_mul_Rat SRi_1 x) SRj_1))
        (srj **  dom_sri_1)) in
      match (Ncompare k  (Npred j)) with
        |Eq => 
@@ -379,12 +399,12 @@ Definition Pol_pow':=
    let (d, dom_sri_1) := (Pol_deg_coefdom SRi_1) in
    let next :=
      (fun x => 
-       let (C,R) := (Pol_euclide_div (Pol_mult_cst SRi_1 x) SRj_1) in
+       let (C,R) := (Pol_euclide_div (Pol_mul_Rat SRi_1 x) SRj_1) in
        (C, Pol_div_cst R ((-- srj)** dom_sri_1)) ) in
    let next_UV :=
      (fun (x:Coef)(Pi_1 Pj_1 C:Pol) =>
        (Pol_div_cst
-	 ((C * Pj_1) - (Pol_mult_cst Pi_1 x)) (srj** dom_sri_1))) in
+	 ((C * Pj_1) - (Pol_mul_Rat Pi_1 x)) (srj** dom_sri_1))) in
      match (Ncompare k  (Npred j)) with
        |Eq => 
 	 let y:= (cpow dom_srj_1 2) in
@@ -461,7 +481,7 @@ Definition Pol_pow':=
      let SRj := (last_elem l Q) in
      let srj := Pol_dom SRj in
      let cP := Pol_dom P in
-       Pol_div_cst (Pol_mult_cst SRj cP) srj.
+       Pol_div_cst (Pol_mul_Rat SRj cP) srj.
     
 
    Definition Pol_gcd(P Q:Pol) :=
@@ -470,7 +490,7 @@ Definition Pol_pow':=
        match Ncompare dP dQ with
 	 |Lt  => Pol_gcd_strict Q P
 	 |Gt  => Pol_gcd_strict P Q
-	 |Eq => Pol_gcd_strict P ((Pol_mult_cst Q cP) - (Pol_mult_cst P cQ))
+	 |Eq => Pol_gcd_strict P ((Pol_mul_Rat Q cP) - (Pol_mul_Rat P cQ))
        end.
 
    (** Triple gcd of P and Q, P/gcd, Q/gcd **) 
@@ -485,9 +505,9 @@ Definition Pol_pow':=
      let (_,Uj_1,Vj_1) := Tj_1 in
      let cVj_1 := Pol_dom Vj_1 in
      let cUj_1 := Pol_dom Uj_1 in
-       (Pol_div_cst (Pol_mult_cst SRj cP) srj,
-         Pol_div_cst (Pol_mult_cst Vj_1 cP) cVj_1,
-	 Pol_div_cst (Pol_mult_cst Uj_1 cP) cUj_1).
+       (Pol_div_cst (Pol_mul_Rat SRj cP) srj,
+         Pol_div_cst (Pol_mul_Rat Vj_1 cP) cVj_1,
+	 Pol_div_cst (Pol_mul_Rat Uj_1 cP) cUj_1).
 
 
   (*TODO virer les contenus constants?*)
@@ -502,7 +522,7 @@ Definition Pol_pow':=
 	 let (dP,cP):= Pol_deg_coefdom P in
 	   match (Ncompare dP dQ) with
 	     |Eq => 
-	       let Next := (Pol_mult_cst Q cP) - (Pol_mult_cst P cQ) in
+	       let Next := (Pol_mul_Rat Q cP) - (Pol_mul_Rat P cQ) in
 	       let (GCD_Q',Next'):= Pol_gcd_gcd_free_strict Q Next in
 	       let (GCD,Q'):= GCD_Q' in
 	       let cGCD := Pol_dom GCD in
@@ -510,8 +530,8 @@ Definition Pol_pow':=
 	       let cNext' := Pol_dom Next' in
 	       let cNext := Pol_dom Next in
 		 (GCD,
-		   (Pol_mult_cst Q' ((cGCD** cNext'** cP)// cNext)) -
-		   (Pol_mult_cst Next' ((cGCD** cQ')// cQ)),
+		   (Pol_mul_Rat Q' ((cGCD** cNext'** cP)// cNext)) -
+		   (Pol_mul_Rat Next' ((cGCD** cQ')// cQ)),
 		   Q')
 	     |Gt  => Pol_gcd_gcd_free_strict P Q
 	     |Lt  => Pol_gcd_gcd_free_strict Q P
@@ -527,6 +547,20 @@ Definition Pol_pow':=
   (***      Misc.                                            **)
   (************************************************************)
 
+
+ (** Truncations of P:truncates if the leading coef is not a base cst **)
+ Definition Pol_trunc(P:Pol) :=
+   let f:=
+     fix Poln_trunc(P:Pol)(tlist:list Pol)(clist:list Coef){struct P}:(list Pol)*(list Coef) :=
+       match P with
+	 |Pc c =>
+	   if (cis_Rat c) then ((P :: tlist), clist) else ((P :: (Pc c0) :: tlist), c::clist)
+	 |PX Q i c => let (tres,cres):= Poln_trunc Q tlist clist in
+	   (map (fun x => (mkPX  x i c)) tres, cres)
+       end in
+       f P nil nil.
+
+
   (** evaluation of a Pol1 at an element of the Coef set *)
  Definition Pol_eval :=
    fix Pol1_eval(P:Pol)(x:Coef){struct P} : Coef :=
@@ -541,31 +575,21 @@ Definition Pol_pow':=
   (** Tests if P is a base cst **)
  Definition  Pol_is_base_cst(P:Pol):=
    match P with
-     |Pc c => cis_base_cst c
+     |Pc c => cis_Rat c
      |PX Q i c => false
    end.
 
 
-  (** Truncations of P:truncates if the leading coef is not a base cst **)
- Definition Pol_trunc(P:Pol) :=
-   let f:=
-     fix Poln_trunc(P:Pol)(tlist:list Pol)(clist:list Coef){struct P}:(list Pol)*(list Coef) :=
-       match P with
-	 |Pc c =>
-	   if (cis_base_cst c) then ((P :: tlist), clist) else ((P :: (Pc c0) :: tlist), c::clist)
-	 |PX Q i c => let (tres,cres):= Poln_trunc Q tlist clist in
-	   (map (fun x => (mkPX  x i c)) tres, cres)
-       end in
-       f P nil nil.
-
   (** Prod and div by a rational, maps the rat operation over base coefs *)
-
  Definition Poln_op_base_cst (Op:Coef->Rat->Coef):=
    fix Poln_op_base_cst(P:Pol)(c:Rat){struct P}:Pol:=
      match P with
        |Pc p => Pc (Op p c)
        |PX Q i q => mkPX (Poln_op_base_cst Q c) i (Op q c)
      end.
+
+
+
 
  Definition Pol_mult_base_cst := Poln_op_base_cst cmult_base_cst.
  Definition Pol_div_base_cst :=Poln_op_base_cst cdiv_base_cst.
@@ -724,8 +748,8 @@ Definition Pol_pow':=
 	     match l with
 	       |nil => nil (*should never happen*)
 	       |rhd::rtl =>
-		 ((hd **  (cmkPc alpha))
-		   ++ (rhd ** (cmkPc beta)))
+		 ((hd **  (cof_Rat alpha))
+		   ++ (rhd ** (cof_Rat beta)))
 		 ::l
 	     end
        end.
@@ -756,7 +780,7 @@ Definition Pol_pow':=
  (*** Representation of algebraic points in n dimensions    **)
  (************************************************************)
 
-
+(*
  (** encoding of algebraic numbers at this level, 
   a b P Pbar (list bernstein coefs of P over [a b]).
   Pbar is the square free part of P.
@@ -773,14 +797,14 @@ Definition Pol_pow':=
  Definition cell_point_up := (cell_point * Rpoint)%type.
 
  Definition cell_point_up_proj (c:cell_point_up):= fst c.
- Definition rpoint_of_cell(c:cell_point_up):= snd c.
- Definition mk_cell_point_up(c:cell_point)(r:Rpoint):=(c,r).
+ 
+
 
  Definition Cad_col:=(cell_point_up*(list (Pol*Sign)))%type.
 
  Definition cell_point_of_Cad_col(c:Cad_col):= fst c.
  Definition sign_col_of_Cad_col(c:Cad_col):= snd c.
-
+*)
 
  (************************************************************)
  (******         Misc. for sign_tables handling        *******)
@@ -803,7 +827,7 @@ Definition Pol_pow':=
 
   (************************************************************)
   (***      Bounds on the value of P at a cell_point_up      **)
-  (************************************************************)
+  (**************************g**********************************)
 
   Definition Pol_value_bound (z:cell_point_up)(P:Pol):=
     let (z',r):=z in
@@ -843,7 +867,7 @@ Definition Pol_pow':=
 	 (csign_at (cmk_Info Pmid Pbarmid (cdeg Pbarmid) None None) z n)))
        with
        |None => None
-       |Some Eq => Some (z,(Root Alg mid))
+       |Some Eq => Some (z,(Root Coef cInfo mid))
        |Some _ =>
 	 let (b',b''):= Pol_bern_split blist a b mid in
 	 let Vb' := 
@@ -851,8 +875,8 @@ Definition Pol_pow':=
 	   (map (fun x => snd (snd (csign_at x z n))) b') in
 	   match Vb' with
 	     |None => None
-	     |Some 1 => Some (z, (Alg_root Rat (Five a mid P Pbar b')))
-	     |Some _ => Some (z, (Alg_root Rat (Five a mid P Pbar b'')))
+	     |Some 1 => Some (z, (Alg_root (Five a mid P Pbar b')))
+	     |Some _ => Some (z, (Alg_root (Five a mid P Pbar b'')))
 	   end
      end.
 
@@ -865,9 +889,9 @@ Definition Pol_pow':=
 	 |None => None
 	 |Some z' =>
 	   match r with
-	     |Minf m => Some (z', Minf Alg m)
-	     |Between b => Some (z', Between Alg b)
-	     |Root r => Some (z', Root Alg r)
+	     |Minf m => Some (z', Minf Coef cInfo m)
+	     |Between b => Some (z', Between Coef cInfo b)
+	     |Root r => Some (z', Root Coef cInfo r)
 	     |Alg_root alg => alg_refine z' alg n
 	   end
    end.
