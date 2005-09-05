@@ -89,12 +89,12 @@ Section TYPES.
      - signinfo is the sign of P if it is known to be constant,
        and None else *)
 
-  Definition Info := uple5 Pol Pol N Sign Sign.
+  Definition build_Info := uple5 Pol Pol N Sign Sign.
 
-  Definition mk_Info P Q n low sign_info : Info := 
+  Definition mk_build_Info P Q n low sign_info : build_Info := 
     Five P Q n low sign_info. 
 
-  Definition Pol_of_Info (c:Info) := fst5 c.
+  Definition Pol_of_build_Info (c:build_Info) := fst5 c.
 
 
 
@@ -104,7 +104,7 @@ Section TYPES.
 
 
  (* This will be the information encoding bernstein coefs which are
-  retained, in fact Info at the level below *)
+  retained, in fact build_Info at the level below *)
   Variable berncoef : Set.
 
 
@@ -116,7 +116,7 @@ Section TYPES.
     - lb is the list bernstein coefs of P over ]a b[.
     For each bern coef, we keep the polinfo because we will later
     have to compute signs of these coefs, so berncoef will be recursively
-    instanciate with Info. *)
+    instanciate with build_Info. *)
 
   Definition mkAlg := uple5 Rat Rat Pol Pol (list berncoef).
 
@@ -199,11 +199,11 @@ Section TYPES.
     cell_point_up_refine : mkcell_point_up -> nat -> option mkcell_point_up;
     Pol_low_bound        : Pol -> cell_point -> Rat;
     Pol_value_bound      : mkcell_point_up -> Pol -> Rat * Rat;
-    Info_of_Pol          : option comparison -> Pol -> Info;
+    Info_of_Pol          : option comparison -> Pol -> build_Info;
     Pol_low_sign         : 
       cell_point -> Pol -> Pol -> nat -> (cell_point * (option comparison));
     Pol_sign_at          :
-      Info -> mkcell_point_up -> nat -> 
+      build_Info -> mkcell_point_up -> nat -> 
       mkcell_point_up * (Pol * option comparison);
     Pol_cad : list Pol -> nat -> mkCad_up (mkcell_point_up * (list (Pol * Sign)))
   }.

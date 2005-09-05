@@ -18,6 +18,9 @@ Module MK_ONE_DIM(Q:RAT_STRUCT).
   Import QINT.
 
 Section ONE_DIM.
+
+
+(* Initialization for the loading of Gen_functor *)
   
   Definition Coef:= Rat.
   Definition c0 :=r0.
@@ -50,7 +53,7 @@ Section ONE_DIM.
   Definition cmk_Info(a b:Rat)(n:N)(s1 s2:Sign):= a.
 
  
-(* definir Alg, Rpoint, cell_point(up) ? *)
+
   Load Gen_functor.
 
   (*Are now available:

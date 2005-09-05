@@ -34,14 +34,16 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
     
 
     (*information retained for bern coefs *)
-    Definition cInfo := Info C.
-    Definition cmk_Info := @mk_Info C.
+    Definition cInfo := build_Info C.
 
+    Definition cmk_Info := @mk_build_Info C.
+
+    Variable bern:Set.
   
     (* type of cell_points at the level n *)
     Variable cell_point_low : Set.
 
-    Definition cell_point := mkcell_point_up Rat C cInfo cell_point_low.
+    Definition cell_point := mkcell_point_up Rat C bern cell_point_low.
     Definition crpoint_of_cell(z:cell_point):= snd z.
     Definition ccell_point_proj(z:cell_point):=fst z.
 
@@ -49,10 +51,9 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
     Variable cmkCad : Set -> Set.
     Variable cCad_map : forall C D:Set,  (C -> D) ->cmkCad C -> cmkCad D.
 
-    Variable bern:Set.
+
 
     Variable CAD_n : Cad Rat C bern cell_point_low cmkCad.
- 
 
     Definition c0 := Pol_0 CAD_n.
     Definition c1 := Pol_1 CAD_n.
@@ -78,10 +79,8 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
     Definition clow_sign := Pol_low_sign CAD_n.
     Definition csign_at := Pol_sign_at CAD_n.
     Definition ccad := Pol_cad CAD_n.
-
+    
     Definition cPol_of_Info(info:cInfo) := fst5 info.
-
-
 
     Load Gen_functor.
   (*Are now available:
@@ -136,7 +135,7 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 
 
 
-    Definition mk_cell_point(z:cell_point_low)(r:mkRpoint Rat C cInfo):=(z,r). 
+    Definition mk_cell_point(z:cell_point_low)(r:mkRpoint Rat C bern):=(z,r). 
 
   (* Equality test over coefs in normal forms *)
     Definition ceq(P Q:Coef):= czero_test (P -- Q).

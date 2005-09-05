@@ -26,7 +26,7 @@ Set Implicit Arguments.*)
 
 
  (************************************************************)
- (**            Polynomials with one more variables         **)
+ (**              Polynomials with one  variable            **)
  (************************************************************)
 
 
@@ -420,7 +420,7 @@ Notation "- P" := (Pol_opp P).
      end.
 
 
-   (**Sures pol list, from A B, n ensures termination and will be deg P + 1**)
+   (**Subres pol list, from A B, n ensures termination and will be deg P + 1**)
 
  Definition Pol_subres_list1:=
    fix Pol1_subres_list1(A B:Pol)(q:Coef)(i j:N)(m:nat){struct m}:list Pol :=
@@ -621,13 +621,13 @@ Notation "- P" := (Pol_opp P).
   signinfo is the sign of P if it is known to be constant,
   and None else *)
 
-  Definition Info := uple5 Pol Pol N Sign Sign.
+ (* Definition Info := uple5 Pol Pol N Sign Sign.*)
+ Definition Info := build_Info Coef.
 
   Definition mk_Info(P Q:Pol)(n:N)(low sign_info:Sign):= 
     Five  P Q n low sign_info. 
 
   Definition Pol_of_Info(c:Info):= fst5 c.
-
 
 
  (************************************************************)
