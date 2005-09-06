@@ -567,7 +567,11 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
 	  |hd :: tl =>
 	    let (rpt, prev_slist):=hd in
 	      match rpt with
-		|Between _ => (z,l) (*should never happen *)
+		|Between _ =>
+		  let (z,resP) := root_isol_int P z freeP dfreeP  low up n in
+		  let (z,slow):= Pol_low_sign z P freeP n in
+		    (z,(add_to_cst_list resP prev_slist)@
+		      ((Between Coef cInfo low, (P,snd slow)::prev_slist)::nil))
 		|Minf _ =>
 		  let (z,resP) := root_isol_int P z freeP dfreeP  low up n in
 		  let (z,slow):= Pol_low_sign z P freeP n in

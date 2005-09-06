@@ -416,7 +416,11 @@ Section ONE_DIM.
 		let tag := fst hd in
 		let prev_slist := snd hd in
 		    match tag with
-		      |Between b => (*dummy*)l
+		      |Between b => 
+			let resP := root_isol_int Pinfo low up n in
+			  ((add_to_cst_list resP prev_slist)@
+			    ((Between Coef cInfo b, (P,(Some (rsign (Pol_eval P low ))))::prev_slist))::nil)
+
 		      |Minf  m =>
 			let resP := root_isol_int Pinfo low up n in
 			  ((add_to_cst_list resP prev_slist)@
@@ -579,6 +583,7 @@ Section ONE_DIM.
     end.
 
 
+(* information sur le polynome : P, Pbar, dP, lowsign(P), cst_tag(P). cst_tag(P) vaut None si P n'estpas constant, vaut le signe de P sinon*)
 
   Definition Info_init(low :Rat)(P:Pol):=
     let Pbar := Pol_square_free P in
@@ -596,7 +601,7 @@ Section ONE_DIM.
 
   Definition sign_table(Pol_list:list Pol)(n:nat):=
     let up := rmax_list (map Pol_up_bound Pol_list)in
-    let low := rmax_list (map Pol_low_bound Pol_list) in
+    let low := rmin_list (map Pol_low_bound Pol_list) in
     let Pol_info_list := map (Info_init low) Pol_list in
     let roots := family_root low up n Pol_info_list in
 	(sign_table1 low up Pol_list roots up nil).
