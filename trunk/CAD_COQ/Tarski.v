@@ -29,14 +29,6 @@ Fixpoint Poln(n:nat):Set:=
     |S n => Pol1 (Poln n)
   end.
 
-(*
-Definition Infon(n:nat):=
-  match n with
-    |O => Rat
-    |S O => Rat
-    |S n => Info (Poln n)
-  end.
-*)
 Definition Infon(n:nat):=
   match n with
     |O => Rat
@@ -75,23 +67,3 @@ Fixpoint CAD_build(n:nat):
 
 
 End CAD_gen.
-
-
-(*
-    |S O => @CAD_make (Poln (S O)) Rat unit (mkCadn (S O)) toto One_dim_cad
-    |S (S n) => @CAD_make (Poln (S n)) (cell_pointn (S n)) (mkCadn (S n)) 
-      (mkCad_mapn (S n)) (CAD_build (S n))
-  end.
-*)
-
-
-(*
-Fixpoint CAD_build(n:nat):
-  Cad Rat (Poln n) (Infon n) (cell_pointn n) (mkCadn n):=
-  match n return 
-    Cad Rat (Poln n) (Infon n) (cell_pointn n) (mkCadn n) with
-    |O => One_dim_cad
-    |S n => @CAD_make (Poln n) (cell_pointn n) (mkCadn n) (mkCad_mapn n) 
-      (CAD_build n)
-  end.
-*)

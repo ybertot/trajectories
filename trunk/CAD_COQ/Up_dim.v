@@ -82,7 +82,13 @@ Module MK_UP_DIM(Q:RAT_STRUCT).
     
     Definition cPol_of_Info(info:cInfo) := fst5 info.
 
-    Load Gen_functor.
+(*    Load Gen_functor.*)
+
+Load Pol_on_Coef.
+Load Pol_on_Coef_on_Rat.
+Load Bern.
+Load Alg.
+
   (*Are now available:
      Pol_add :Pol -> Pol->Pol
      Pol_mul :Pol->Pol->Pol
