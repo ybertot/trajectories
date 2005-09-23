@@ -54,7 +54,12 @@ Section ONE_DIM.
 
  
 
-  Load Gen_functor.
+Load Pol_on_Coef.
+Load Pol_on_Coef_on_Rat.
+Load Bern.
+Load Alg.
+
+(*  Load Gen_functor.*)
 
   (*Are now available:
      Pol_add :Pol -> Pol->Pol
