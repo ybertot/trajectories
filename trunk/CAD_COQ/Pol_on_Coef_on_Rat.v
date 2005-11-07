@@ -34,6 +34,18 @@ cof_pos:positive -> Coef
  (** Cst pol from a rational **)
  Definition  Pol_mkPc(c:Rat):= Pc (cof_Rat c).
 
+(** Truncations of P:truncates if the leading coef is not a base cst **)
+ Definition Pol_trunc(P:Pol) :=
+   let f:=
+     fix Poln_trunc(P:Pol)(tlist:list Pol)(clist:list Coef){struct P}:(list Pol)*(list Coef) :=
+       match P with
+	 |Pc c =>
+	   if (cis_Rat c) then ((P :: tlist), clist) else ((P :: (Pc c0) :: tlist), c::clist)
+	 |PX Q i c => let (tres,cres):= Poln_trunc Q tlist clist in
+	   (map (fun x => (mkPX  x i c)) tres, cres)
+       end in
+       f P nil nil.
+
 
  (**************************************************************)
  (***********         Division (pseudo)         ****************)
