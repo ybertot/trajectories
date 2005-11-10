@@ -1,4 +1,4 @@
-   Require Import Qabs.
+Require Import Qabs.
 Require Import CAD_types.
 Require Export Setoid_ring_theory.
 
@@ -469,7 +469,7 @@ generalize  (PolEq_transO  (PX Q i c0) );intro H1;apply H1.
 unfold P0;constructor;trivial;apply ceq_refl.
 apply PolEq_sym;trivial.
 
-(*cas de rÃ©cursion*) 
+(*cas de récursion*) 
 intro Q; generalize p c; clear p c; induction Q;intros.
 generalize c p c2 H H0 ; clear c p c2 H H0;induction R;intros.
 inversion H;inversion H0;constructor;trivial;rewrite H3;trivial.
@@ -1389,7 +1389,7 @@ apply mkPX_PX;rewrite cadd_0_r;rewrite H4;apply cmul_1_l.
 simpl;apply mkPX_PX;rewrite cadd_0_r;rewrite H4;apply cmul_1_l.
 simpl;apply mkPX_PX;rewrite cadd_0_r;apply cmul_sym.
 
-(*cas gÃ©nÃ©ral*)
+(*cas général*)
 intros;unfold Pol_mul_Rat; case_c0_test c. case_c0_test c2. 
 rewrite Padd_0_r;simpl;unfold Pol_mul_Rat;rewrite H;rewrite Padd_0_r.
 repeat rewrite mkPX_PX_c.
@@ -1932,5 +1932,127 @@ Qed.
 
 Add Setoid Ring Pol Pol_Eq Pol_Setoid Pol_add Pol_mul P1 P0 Pol_opp Peqb Padd_ex  Pmul_ex
  Popp_ex  Pol_theory [Pc PX].
+
+
+
+
+
+Lemma  PolEq_prop: forall x y , Bool.Is_true (Peqb x y) -> (Pol_Eq x y).
+induction x;induction y.
+simpl;intros;constructor;apply ceq_prop;trivial.
+simpl;intro H;elim H.
+simpl Peqb.
+simpl.
+intro H;elim H.
+caseEq(Pcompare p0 p Eq);intro.
+assert (h:p0=p);[apply Pcompare_Eq_eq|rewrite h];trivial.
+simpl.
+caseEq((p ?= p)%positive Eq).
+caseEq(Peqb x y);intros.
+constructor;[apply ceq_prop ;trivial| apply IHx;trivial].
+rewrite H0;auto.
+simpl;auto.
+simpl in H2;elim H2.
+intros.
+simpl in H1; elim H1.
+intros H1 H2;simpl in H2;elim H2.
+simpl.
+assert (h: (p ?= p0)%positive Eq = Gt).
+apply ZC2;trivial.
+rewrite h.
+simpl;intro H1;elim H1.
+simpl.
+assert (h: (p ?= p0)%positive Eq = Lt);[apply ZC1;trivial|rewrite h;simpl;intro H1;elim H1].
+Qed.
+
+
+
+Lemma P0test_P0 :Pol_zero_test P0 =true.
+simpl.
+apply c0test_c0.
+Qed.
+
+
+Lemma P0test_P: forall P, Pol_zero_test P = true-> (Pol_Eq P P0).
+induction P;simpl.
+intro;unfold P0;constructor.
+apply c0test_c;trivial.
+intro;discriminate.
+Qed.
+
+Lemma P0_diff_P1: ~(Pol_Eq P0 P1).
+simpl.
+red;simpl;intro.
+inversion H.
+apply c0_diff_c1.
+trivial.
+Qed.
+
+Lemma Pmul_Rat_c1: forall P, (Pol_Eq (Pol_mul_Rat P c1 ) P).
+induction P.
+unfold Pol_mul_Rat.
+case_c0_test c1.
+absurd (ceq c0 c1); [apply c0_diff_c1| apply ceq_sym;trivial].
+case_c0_test (csub c1 c1).
+apply PolEq_refl.
+simpl.
+constructor;apply cmul_1_r.
+simpl.
+unfold Pol_mul_Rat.
+case_c0_test c1.
+absurd (ceq c0 c1); [apply c0_diff_c1| apply ceq_sym;trivial].
+case_c0_test (csub c1 c1).
+apply PolEq_refl.
+simpl.
+apply mkPXP_PXQ.
+apply cmul_1_r.
+generalize IHP;unfold Pol_mul_Rat;rewrite H;rewrite H0;auto.
+Qed.
+
+Lemma Ppow_Pplus1:  forall x n, Pol_pow' x (1+n) != x * Pol_pow' x n.
+induction n.
+simpl.
+rewrite Pplus_one_succ_l.
+rewrite IHn.
+rewrite <- Pmul_assoc.
+apply Pmul_ext_r.
+rewrite <- Pmul_assoc.
+apply Pmul_ext_r.
+apply Pmul_sym.
+simpl.
+rewrite  (Pmul_sym x).
+apply PolEq_refl.
+simpl.
+apply PolEq_refl.
+Qed.
+
+Lemma Ppow_Psucc:forall x n, Pol_pow' x (Psucc n)!= x * Pol_pow' x n.
+intros ; rewrite Pplus_one_succ_l.
+apply Ppow_Pplus1.
+Qed.
+
+Lemma Ppow'_plus: forall x i j, (Pol_Eq (Pol_pow' x (i+j)) (Pol_mul (Pol_pow' x i)(Pol_pow' x j))).
+intros;pattern i.
+elim i using Pind.
+elim j using Pind.
+simpl.
+apply PolEq_refl.
+
+intro;assert (h:(Pol_Eq (Pol_pow' x 1) x)); [simpl|rewrite h].
+apply PolEq_refl.
+
+intros.
+apply  Ppow_Pplus1.
+intros.
+rewrite Pplus_succ_permute_l.
+repeat rewrite Ppow_Psucc.
+rewrite H.
+apply Pmul_assoc.
+Qed.
+
+Lemma Ppow_plus: forall x i j, (Pol_Eq (Pol_pow x (i+j)) (Pol_mul (Pol_pow x i)(Pol_pow x j))).
+destruct i;destruct j;simpl;apply PolEq_sym;try apply Pmul_Rat_c1;try apply Pmul_1_l.
+apply PolEq_sym;apply Ppow'_plus.
+Qed.
 
 End Pol1.
