@@ -369,7 +369,8 @@ auto with arith.
 elim IHn; auto with arith.
 Defined.
 
-Definition phi (n:nat) := match n with 
+Definition phi (n:nat) := if (le_gt_dec  (d+2) n) then (fun P: Pol => Pc c0) else 
+                          match n with 
                                          O => (fun P: Pol => Pc c0)
                                       | S O => (fun P:Pol => P)
                                       | _ =>  match even_odd_dec n with 
@@ -380,7 +381,10 @@ Definition phi (n:nat) := match n with
 
 
 Lemma phi_scal : forall n a P, phi n (a !* P) != a !* (phi n P).
-intros;case n;simpl.
+intros;unfold phi;
+case (le_gt_dec (d+2) n  ); intros;simpl.
+rewrite Pscal_Pc; constructor;cring.
+case n;simpl.
 rewrite Pscal_Pc; constructor;cring.
 intros;case n0.
 Pring.
@@ -392,6 +396,9 @@ constructor;cring;simpl;ring.
 Qed.
 
 Lemma phi_Padd: forall n  P Q, phi n (P + Q) != phi n P + phi n Q.
+intros;unfold phi;
+case (le_gt_dec (d+2)n); intros.
+simpl;constructor; cring.
 intros;case n;simpl.
 constructor;cring.
 intros;case n0.
@@ -405,7 +412,10 @@ constructor;cring.
 Qed.
 
 Add Morphism phi  with signature (@eq nat) ==> Pol_Eq ==> Pol_Eq  as phi_Morphism.
-intros n P Q; case n;simpl.
+intros n P Q;unfold phi;case (le_gt_dec (d+2)n); intros.
+Pring.
+
+case n;simpl.
 intros;Pring.
 intros;case n0; trivial.
 intros;match goal with |- context [if ?X then _ else _ ] => case X end;
