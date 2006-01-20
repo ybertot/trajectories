@@ -2,7 +2,7 @@ Unset Boxed Definitions.
 Unset Boxed Values.
 
 
-
+Require Import ZArith.
 Require Export NArith.
 Require Export Mylist.
 
@@ -13,6 +13,75 @@ Set Implicit Arguments.
     (************************************************************)
     (********                    Misc.                  *********)  
     (************************************************************)
+
+(* some lemmas over Z *)
+Lemma absurdIplusJ : forall i j: positive , (i = j + i ) %positive -> False.
+intros;assert ((Zpos i) = (Zpos j + Zpos i)%Z).
+rewrite <- Zpos_plus_distr;rewrite <- H;auto.
+assert (Zpos j > 0)%Z;[red;auto|omega].
+Qed.
+
+
+Lemma ZPminus_spec : forall x y,
+  match ZPminus x y with
+  | Z0 => x = y
+  | Zpos k => x = (y + k)%positive
+  | Zneg k => y = (x + k)%positive
+  end.
+ Proof.
+  induction x;destruct y.
+  replace (ZPminus (xI x) (xI y)) with (Zdouble (ZPminus x y));trivial.
+  assert (H := IHx y);destruct (ZPminus x y);unfold Zdouble;rewrite 
+H;trivial.
+  replace (ZPminus (xI x) (xO y)) with (Zdouble_plus_one (ZPminus x 
+y));trivial.
+  assert (H := IHx y);destruct (ZPminus x y);unfold 
+Zdouble_plus_one;rewrite H;trivial.
+  apply Pplus_xI_double_minus_one.
+  simpl;trivial.
+  replace (ZPminus (xO x) (xI y)) with (Zdouble_minus_one (ZPminus x 
+y));trivial.
+  assert (H := IHx y);destruct (ZPminus x y);unfold 
+Zdouble_minus_one;rewrite H;trivial.
+  apply Pplus_xI_double_minus_one.
+  replace (ZPminus (xO x) (xO y)) with (Zdouble (ZPminus x y));trivial.
+  assert (H := IHx y);destruct (ZPminus x y);unfold Zdouble;rewrite 
+H;trivial.
+  replace (ZPminus (xO x) xH) with (Zpos (Pdouble_minus_one x));trivial.
+  rewrite <- Pplus_one_succ_l.
+  rewrite Psucc_o_double_minus_one_eq_xO;trivial.
+  replace (ZPminus xH (xI y)) with (Zneg (xO y));trivial.
+  replace (ZPminus xH (xO y)) with (Zneg (Pdouble_minus_one y));trivial.
+  rewrite <- Pplus_one_succ_l.
+  rewrite Psucc_o_double_minus_one_eq_xO;trivial.
+  simpl;trivial.
+ Qed.
+
+
+Lemma ZPminus0: forall p, ZPminus p p = Z0.
+induction p;simpl;auto;rewrite IHp;auto.
+Qed.
+
+Lemma ZPminusneg: forall p q , ZPminus p (p + q) = Zneg q.
+intros;generalize (ZPminus_spec p (p+q));destruct (ZPminus p (p+q));intro.
+generalize (@absurdIplusJ p q);intro h;elim h;auto.
+rewrite Pplus_comm;auto.
+generalize (@absurdIplusJ p ( q + p0));intro h;elim h ;auto.
+rewrite <- (Pplus_comm p);rewrite Pplus_assoc;trivial.
+assert (p0 = q);[apply (Pplus_reg_l p)|subst];auto.
+Qed.
+
+Lemma ZPminuspos: forall p q , ZPminus (p + q)  p= Zpos q.
+intros;generalize (ZPminus_spec (p+q) p);destruct (ZPminus  (p+q) p);intro.
+generalize (@absurdIplusJ p  q);intro h;elim h ;auto.
+apply sym_equal;rewrite Pplus_comm;assumption.
+assert (p0 = q);[apply (Pplus_reg_l p)|subst];auto.
+generalize (@absurdIplusJ p ( q + p0));intro h;elim h ;auto.
+rewrite <- (Pplus_comm p);rewrite Pplus_assoc;trivial.
+Qed.
+
+
+
 
 
 (** Operations over N*)

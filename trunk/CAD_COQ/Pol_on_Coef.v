@@ -33,11 +33,11 @@ cpow : Coef -> N -> Coef
  (************************************************************)
 
 
-Definition Pol := Pol1 Coef.
+Definition Pol := (Pol1 Coef).
 
-Definition P0 := Pc  c0.
-Definition P1 := Pc c1.
-Definition X := PX (Pc c1) xH c0.
+Notation P0 := (Pc c0).
+Notation P1 := (Pc c1).
+Notation X :=  (PX (Pc c1) xH c0).
  
 Definition mkPX P i c := 
   match P with
