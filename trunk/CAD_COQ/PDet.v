@@ -1,7 +1,6 @@
 Require Import Tactic.
 Load phi.
 
-
 Notation  ZCoef:=Pol.
 Notation  pol:= Pol.
 Notation add :=Pol_add.
@@ -31,16 +30,12 @@ Theorem rec_det_m: forall f rec a b c d l1 l2,
     rec ((add (scal a b) (scal c d)):: l) != a !* rec (b :: l) + c !* rec (d :: l)) ->
   rec_det f rec l1 ((add (scal a b) (scal c d)):: l2)  != a !* rec_det f rec l1 (b :: l2) + c !* rec_det f rec  l1 (d :: l2).
 intros f rec a b c d l1 l2; generalize l2; elim l1; simpl; clear l1 l2.
-
 intros;Pcsimpl;setoid ring.
 
 intros a1 l3 Rec l2 H.
-repeat rewrite Pscal_Pmul_l.
 repeat (rewrite Rec||rewrite H);try rewrite length_app;try omega.
 intros;rewrite H.
-rewrite H0.
-simpl.
-omega.
+rewrite H0;simpl;omega.
 setoid ring.
 repeat rewrite Pscal_Pmul_l.
 setoid ring.
@@ -52,35 +47,20 @@ intros n; elim n; simpl; auto.
 intros; discriminate.
 intros n1 Rec  a b c d l H; injection H; clear H; intros H.
 generalize (phi_m  deg (S n1)); intro Hphi.
-simpl in Hphi.
-
-
 repeat (rewrite Rec || rewrite Hphi|| rewrite rec_det_m); auto; repeat rewrite Pscal_Pmul_l.
-intros a1 b1 c1 d1 l1.
-simpl.
-
-rewrite plus_0_r.
-intros H1; rewrite Rec.
+intros a1 b1 c1 d1 l1;simpl.
+rewrite plus_0_r;intros H1; rewrite Rec.
 rewrite H; auto.
-repeat rewrite Pscal_Pmul_l;try setoid ring.
+setoid ring.
 setoid ring.
 Qed.
 
 Theorem det_m0: forall a b c d l, det ((add (scal a b) (scal c d)) :: l) != a !* det (b :: l) + c !* det (d :: l).
 intros; unfold det; rewrite det_aux_m; auto.
 simpl length.
-
 case ( even_odd_dec (S (length l)));intro;try rewrite det_aux_m;
 auto;setoid ring.
 Qed.
-
-(*
-il n'y avait pas besoin de Pscla_Pmul et du coup ca va plus vite
-
-case ( even_odd_dec (S (length l1)));intro;
-rewrite det_aux_m; auto;
-simpl; repeat rewrite Pscal_Pmul_l;try Pring.
-*)
 
 
 Theorem rec_det_r: forall f rec a b  l1 l2 l3,
@@ -88,17 +68,14 @@ Theorem rec_det_r: forall f rec a b  l1 l2 l3,
                rec (app l'2( a :: b :: l'1)) != -  rec (app l'2 ( b :: a :: l'1))) ->
   rec_det f rec l1 (app l2 ( a :: b :: l3)) != - rec_det f rec l1 (app l2 (b :: a :: l3)).
 intros f rec a b l1; elim l1; simpl; auto; clear l1.
-
 intros;constructor;setoid ring.
 
 intros a1 l1 Rec l2 l3 H.
 assert (tmp: forall a b l4, ( app (app l2 ( a :: b :: l3))  l4) = ((app l2 (a :: b :: (app l3  l4))))).
-
-intros; rewrite app_ass; auto;setoid ring.
-
+intros; rewrite app_ass; auto.
 repeat rewrite tmp; simpl.
 rewrite H; auto with arith.
-rewrite length_app; simpl; auto with arith.
+rewrite length_app; simpl; 
 rewrite <- (plus_comm (length l3));auto with arith.
 rewrite Rec.
  intros a2 b1 l'1 l'2; rewrite length_app; simpl.
@@ -141,7 +118,6 @@ intros n1 Rec a b l1 l2 H.
 rewrite rec_det_t; auto.
 intros a2 b1 l'1 l'2; simpl; rewrite plus_0_r.
 intros H1; rewrite <- H1 in H; clear H1.
-
 rewrite Rec; auto.
 
 injection H; intros; rewrite plus_comm; auto.
@@ -162,8 +138,7 @@ assert (h1: det_aux n (app l1 (b1 :: a1 :: app l2 (a2 :: l3))) !=
 rewrite length_app; simpl; auto with zarith.
 
 generalize (Rec a2 b1 (app l1 ( a1 ::   nil)) l3); repeat rewrite app_ass; simpl.
-intros H1.
-rewrite H1 ; auto.
+intros H1;rewrite H1 ; auto.
 
 rewrite length_app; simpl; auto with zarith.
 setoid ring.
@@ -186,7 +161,7 @@ generalize (det_t a1 (add (scal a b) (scal c d))   nil l3 l2); simpl; intros tmp
 rewrite det_m0.
 generalize (det_t b a1   nil l3 l2); simpl; intros tmp; rewrite tmp; clear tmp.
 generalize (det_t d a1   nil l3 l2); simpl; intros tmp; rewrite tmp; clear tmp.
-repeat rewrite Pscal_Pmul_l;try setoid ring.
+repeat rewrite Pscal_Pmul_l;setoid ring.
 Qed.
 
 Theorem det_zero: forall a l1 l2 l3, det (app l1 (app  (a :: l2)  (a :: l3))) != P0.
@@ -202,34 +177,6 @@ rewrite H;setoid ring.
 intros; absurd (P1 + P1 != P0 );auto; apply P2_diff_P0.
 Qed.
 
-
-
-
-
-(*
-
-Lemma Pol_sub_c0 : forall c, Pol_subC c c0 != c.
-intros;unfold Pol_subC.
-case c;intros;try Pring.
-constructor;cring.
-constructor;[cring|Pring].
-Qed.
-(* We start the proof of the fact the determinant with 1 on
-   the diagonal is 1 *)
-
-Lemma Pmul_0_l : forall x : pol, P0 * x!= P0.
-intro; rewrite Pmul_sym; Pring.
-Qed.
-
-Lemma Popp_opp: forall P , - - P != P.
-induction P;simpl.
-constructor; cring.
-rewrite mkPX_PX_c.
-simpl.
-rewrite mkPX_PX_c.
-constructor;trivial;cring.
-Qed.*)
-
 Theorem rec_det_diag: forall f rec l1 l2 a1 a2,
   (forall a, In a l1 -> f a != P0) -> f a2 != P0 ->
    rec_det f rec (app l1  (a1::a2::nil)) l2 != match even_odd_dec (length l1) with 
@@ -239,14 +186,11 @@ intros f rec l1 l2 a1 a2; generalize l2; elim l1; clear l1 l2.
 intros l2 H1 H2.
 simpl.
 Pcsimpl.
-(*rewrite Pol_sub_c0.*)
 rewrite H2;rewrite Psub_def;setoid ring.
-intros a l3 Rec l2 H1 H2.
-simpl rec_det.
+intros a l3 Rec l2 H1 H2;simpl rec_det.
 rewrite Rec; auto with datatypes zarith.
 rewrite (H1 a); auto with datatypes zarith.
-rewrite app_ass.
-simpl length.
+rewrite app_ass;simpl length.
 case (even_odd_dec (length l3));intros.
 case(even_odd_dec (S (length l3))).
 intros.
@@ -260,10 +204,7 @@ inversion o0.
 absurd (even(length l3));auto.
 red;intros;apply (not_even_and_odd (length l3));auto.
 Qed.
-(*
-Theorem Zpower_nat_S: forall a n, Zpower_nat a (S n) = a * Zpower_nat a n.
-intros; reflexivity.
-Qed.*)
+
 
 Theorem list_last_element: 
   forall (A: Set) (l : list A),
@@ -274,15 +215,6 @@ exists l1; exists a1; rewrite HH; auto.
 exists (a1::l2); exists a2; rewrite HH; auto.
 Qed.
 
-
-
-
-(*Theorem Zpower_nat_m1_square:
-  forall n, Zpower_nat (-1) n * Zpower_nat (-1) n = 1.
-intros n; elim n; simpl; auto.
-intros n1 Rec; rewrite <- Rec; rewrite Zpower_nat_S; ring.
-Qed.
-*)
 Theorem nth_app_l: forall (A: Set) a n (l1 l2: list A), (n < length l1)%nat -> nth n (app l1  l2) a = nth n l1 a.
 intros A a n l1; generalize n; elim l1; clear n l1.
 simpl; intros n l2 H;contradict H; auto with arith.
@@ -314,8 +246,6 @@ Definition Zpolpower_nat (i:nat):= match (even_odd_dec i) with
 
 Opaque phi.
 
-(*Axiom Cheat : forall A:Prop, A.*)
-
 Theorem det_aux_diag: forall l a n p,
   (forall i:nat, (1 < i)%nat -> (i <= n)%nat -> phi deg  i a != P0) -> 
   (forall (i j:nat), (j < i)%nat  -> (i < n)%nat -> phi deg (S (S i)) (nth j l p) != P0) ->
@@ -342,8 +272,6 @@ rewrite <- Eq0; rewrite <- H4; rewrite length_app; repeat (rewrite plus_comm; si
 rewrite app_ass;simpl.
 rewrite rec_det_diag; simpl; auto with zarith.
 
-
-
 intros a2 HH.
 case (in_nth_inv _ a2 l2 p); auto.
 intros i (Hi1, Hi2).
@@ -360,7 +288,6 @@ intros i j HH HH1.
 rewrite <- (H2 i j); auto with arith.
 rewrite  (@f_equal3 _ _ _ _ phi deg deg (S(S i)) (S(S i)) (nth j l2 p) (nth j (app l2 (a1 :: nil)) p)); auto.
 setoid ring.
-
 apply sym_equal; apply nth_app_l.
 apply lt_le_trans with (1 := HH).
 rewrite <- Eq1; clear Eq1; rewrite Eq0 in HH1; auto with arith.
@@ -385,8 +312,6 @@ rewrite nth_app_r.
 rewrite Eq1; rewrite <- minus_n_n; auto.
 rewrite Eq1; auto with arith.
 
-
-
 rewrite Rec; auto.
 
 intros i j HH HH1.
@@ -414,8 +339,6 @@ unfold Zpolpower_nat.
 case (even_odd_dec (length l2));intros.
 elim  (not_even_and_odd (length l2));trivial.
 setoid ring.
-(*rewrite Popp_opp.
-apply Pmul_1_l.*)
 rewrite nth_app_r.
 rewrite Eq1; rewrite <- minus_n_n; auto.
 rewrite Eq1; auto with arith.
@@ -430,14 +353,6 @@ intros l a p H2 H3 H4.
 unfold det; rewrite length_app.
 apply det_aux_diag with p; simpl; auto with arith.
 Qed.
-
-
-
-
-
-
-
-
 
 End det.
 

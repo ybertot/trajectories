@@ -289,7 +289,9 @@ inversion H.
 apply (PolEq_transO Q);trivial;apply PolEq_sym;trivial.
 apply (IHP (PX Q i0 (C0 cops)));trivial;
 constructor;trivial;apply ceq_refl.
-assert (H16:PX P i0 (C0 cops) != Top.P0). apply (PolEq_transO Q)(**);trivial.
+  rename P0 into P2;
+							       rename P1 into P3.
+assert (H16:PX P i0 (C0 cops) != P0). apply (PolEq_transO Q)(**);trivial.
 inversion H16;trivial.
 rename c0 into c2;rename c1 into c3.
 inversion H;subst.
