@@ -343,7 +343,7 @@ Load Alg.
       let (z, sign):=(Pol_low_sign z P Pbar n) in
 	root_isol1 P Pbar
 	(z,((Minf Coef cInfo lbound, (P,snd sign)::nil)::nil))
-	lbound ubound (Pol_bern_coefs P lbound ubound degPbar) n.
+	lbound ubound (Pol_bern_coefs Pbar lbound ubound degPbar) n.
     
     
     (** isolation of the roots of P over ]c d[ above z
@@ -352,7 +352,7 @@ Load Alg.
     Definition root_isol_int(P:Pol)(z:cell_point)(Pbar:Pol)(degPbar:N)
       (c d:Rat)(n:nat) := 
       root_isol1  P Pbar
-      (z,nil) c d (Pol_bern_coefs P c d degPbar) n.
+      (z,nil) c d (Pol_bern_coefs Pbar c d degPbar) n.
 
 
 
