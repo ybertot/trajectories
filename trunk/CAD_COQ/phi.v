@@ -22,10 +22,12 @@ intros c P; exact (Pol_mul_Rat P c).
 Defined.
 
 
-Section phi.
-Variable d:nat.
-(*Variable n:nat.
-Hypothesis n_le_d:  (n<= d)%nat.*)
+
+
+
+
+
+
 Fixpoint get_coef (k:nat) (P:Pol) {struct k}: Coef:=
            match k with
                         O => match P with 
@@ -369,6 +371,20 @@ induction n.
 auto with arith.
 elim IHn; auto with arith.
 Defined.
+
+
+
+
+
+
+
+
+
+Section phi.
+Variable d:nat.
+(*Variable n:nat.
+Hypothesis n_le_d:  (n<= d)%nat.*)
+
 
 Definition phi (n:nat) := if (le_gt_dec  (d+2) n) then (fun P: Pol => Pc c0) else 
                           match n with 
