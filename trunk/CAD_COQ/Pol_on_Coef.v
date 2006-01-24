@@ -33,7 +33,7 @@ cpow : Coef -> N -> Coef
  (************************************************************)
 
 
-Notation Pol := (Pol1 Coef).
+Definition Pol := (Pol1 Coef).
 
 Notation P0 := (Pc c0).
 Notation P1 := (Pc c1).
