@@ -2,24 +2,7 @@ Load Pol_ring.
 
 Require Import Mylist.
 
-Section ListAux.
 
-Variable A: Set.
-Theorem length_app:
- forall (l1 l2 : list A),  length (app l1  l2) = (length l1 + length l2)%nat.
-intros l1; elim l1; simpl; auto.
-Qed.
-
-End ListAux.
-
-Section Det.
-
-(* Polynomial addition plus scalar *)
-Notation  pol:= Pol.
-Notation add :=Pol_add.
-Definition scal :Coef -> pol -> pol.
-intros c P; exact (Pol_mul_Rat P c).
-Defined.
 
 
 
@@ -374,6 +357,34 @@ Defined.
 
 
 
+
+
+
+
+
+
+
+
+
+
+Section ListAux.
+
+Variable A: Set.
+Theorem length_app:
+ forall (l1 l2 : list A),  length (app l1  l2) = (length l1 + length l2)%nat.
+intros l1; elim l1; simpl; auto.
+Qed.
+
+End ListAux.
+
+Section Det.
+
+(* Polynomial addition plus scalar *)
+Notation  pol:= Pol.
+Notation add :=Pol_add.
+Definition scal :Coef -> pol -> pol.
+intros c P; exact (Pol_mul_Rat P c).
+Defined.
 
 
 
