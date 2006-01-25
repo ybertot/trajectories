@@ -58,6 +58,7 @@ Section  COEF_STRUCT.
 
   (* Compatibility between equalities, zerotest *)
 
+(*
   Record Coef_eq_compat : Type := mk_ceq_comp{
     Ceq: Coef -> Coef -> Prop;
     Ceq_prop: forall x y : Coef, Bool.Is_true (ceqb x y) -> (Ceq x y);
@@ -68,10 +69,25 @@ Section  COEF_STRUCT.
       x j)))
     }.
 
+*)
+
+
+  Record Coef_eq_compat : Type := mk_ceq_comp{
+    Ceq: Coef -> Coef -> Prop;
+    Ceq_prop: forall x y : Coef, Bool.Is_true (ceqb x y) -> (Ceq x y);
+    Ceq_propF: forall x y : Coef, (ceqb x y) =false -> ~(Ceq x y);
+    C0test_Ceqb : forall x:Coef, czero_test x = ceqb x c0;
+    C0test_c0 :czero_test c0 =true;
+    C0test_c1:czero_test c1 =false;
+    Cpow_plus: forall x i j, (Ceq (cpow x (i+j)) (cmul (cpow x i)(cpow
+      x j)))
+    }.
+
 
   Variable ceq_compat : Coef_eq_compat.
 
   Let ceq := Ceq ceq_compat.
+
   Notation "x == y":=(ceq x y)(at level 70, no associativity).
 
 
