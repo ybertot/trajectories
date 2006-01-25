@@ -1,6 +1,9 @@
 (* Pour charger  une structure de coefs, avec des noms courts pour les champs*)
 (*Attention il n'y a pas de sections...*)
 
+
+
+
   Variable Coef :Set.
 
   (* operations sur les coefs*)
@@ -33,10 +36,23 @@
   Variable ceq_compat : Coef_eq_compat cops.
   Notation ceq := (Ceq ceq_compat).
   Notation ceq_prop := (Ceq_prop ceq_compat).
+  Notation ceq_propF := (Ceq_propF ceq_compat).
   Notation c0test_c0 := (C0test_c0 ceq_compat).
-  Notation  c0test_c := (C0test_c ceq_compat).
-  Notation  c0_diff_c1 := (C0_diff_c1 ceq_compat).
+  Notation c0test_ceqb := (C0test_Ceqb  ceq_compat).
+  Notation c0test_c1 := (C0test_c1 ceq_compat).
   Notation  cpow_plus := (Cpow_plus ceq_compat).
+
+
+  (* For backward compatibility *)
+  Lemma c0test_c : forall c , czero_test c = true-> (ceq c c0).
+  Proof.
+  intros.
+  apply ceq_prop.
+  rewrite <- c0test_ceqb.
+  intuition.
+  Qed.
+  
+
 
   Notation "x == y":=(ceq x y)(at level 70, no associativity).
   (* eq is a setoid eq and ext for ring operations*)
@@ -45,6 +61,21 @@
   Notation ceq_refl := (Ceq_refl cset).
   Notation ceq_sym := (Ceq_sym cset).
   Notation ceq_trans := (Ceq_trans cset).
+
+
+
+(* For backward compat*)
+
+  Lemma c0_diff_c1 : ~(ceq c0 c1).
+  Proof.
+  intro.
+  elim ceq_propF with c1 c0.
+  rewrite <- (c0test_ceqb c1).
+  apply c0test_c1.
+  apply ceq_sym;trivial.
+  Qed.
+
+
 
   (* ops morphisms *)
   Variable cmorph : Coef_morph ceq_compat.
