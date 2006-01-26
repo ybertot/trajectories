@@ -462,8 +462,6 @@ apply det_aux_diag with p; simpl; auto with arith.
 Qed.
 
 
-
-
 Theorem rec_det_morph : forall f rec  l1 l1',
  l1 *= l1' ->  forall l2 l2' , l2 *= l2' ->
 (forall l1 l1' , l1*=l1' -> rec l1 != rec l1' ) ->
@@ -474,39 +472,60 @@ intros f rec l1 l1'.
 induction 1; intros m2 m2';induction 1;simpl;intros.
 reflexivity.
 reflexivity.
-rewrite (H3 a1 a2 H1).
-rewrite (H2 l1 l2 H0).
+rewrite (H2 _ _ H).
+rewrite (H1 _ _ H0).
 rewrite (IHPol_list_equiv (a1::nil) (a2::nil));
 try constructor;trivial.
 constructor.
 reflexivity.
 
-rewrite (H6 a1 a2 H1).
-rewrite (H5 (a0::(app l0 l1)) (a3::(app l3 l2)));[constructor;trivial|idtac].
-apply Pol_list_equiv_app;trivial.
+rewrite (H4 a1 a2 H).
+rewrite (H3 (a0::(app l0 l1)) (a3::(app l3 l2)));[constructor;trivial|idtac].
+rewrite H2;rewrite H0;reflexivity.
 rewrite (IHPol_list_equiv (a0::app l0 (a1 :: nil)) (a3 :: app l3 (a2 :: nil)));trivial.
  constructor;trivial.
-apply Pol_list_equiv_app;trivial.
+apply app_morph;trivial.
 constructor;trivial.
 constructor.
 reflexivity.
 Qed.
 
-
-
-
-Theorem det_morph:forall l1 l2, l1 *= l2 -> det l1 != det l2.
+Add Morphism phi  with signature (@eq nat) ==>(@eq nat) ==> Pol_Eq ==> Pol_Eq  as phi_Morphism.
+intros d n P Q;unfold phi;case (le_gt_dec (d+2)n); intros.
 Proof.
-intros l1 l2.
-induction 1.
+reflexivity. 
+case n;simpl.
 reflexivity.
-unfold det;simpl.
-rewrite (Pol_list_equiv_length l1 l2). 
+intros;case n0; trivial.
+intros;toto;
+intros;simpl;
+rewrite H;setoid ring.
+Show Script.
+Qed.
 
 
 
 
-assert (G:(length (a1::l1
+Theorem det_aux_morph : forall n, (forall l1 l2, l1 *= l2 ->  det_aux n l1 != det_aux n l2).
+Proof.
+induction n;intros l1 l2 H;induction H;simpl;try reflexivity.
+apply Psub_comp.
+rewrite H.
+rewrite (IHn l1 l2 H0).
+reflexivity.
+apply rec_det_morph;try assumption.
+constructor;[assumption|constructor].
+intros a b Hab;rewrite Hab;reflexivity.
+Qed.
+
+
+Add Morphism det with signature Pol_list_equiv ==> Pol_Eq as det_morph.
+Proof.
+intros l1 l2 H.
+unfold det.
+rewrite (Pol_list_equiv_length l1 l2 H).
+apply det_aux_morph;assumption.
+Qed.
 
 
 Theorem det_sum_simpl : forall l1 l2 l3 a b,
@@ -514,8 +533,20 @@ det (app l1 (app ((a+b)::l2) (a::l3))) != det (app l1 (app (b::l2) (a::l3))).
 Proof.
 intros.
 rewrite <- (app_comm_cons l2 (a::l3) (a+b)).
-
-rewrite det_m.
+assert (G: app l1 (a + b :: app l2 (a :: l3)) *= app l1 (((scal c1 a) + (scal c1 b)) :: app l2 (a :: l3))).
+apply app_morph.
+reflexivity.
+constructor.
+2:reflexivity.
+unfold scal;Pcsimpl.
+rewrite G.
+rewrite (det_m c1 a c1 b l1).
+Pcsimpl.
+rewrite (app_comm_cons l2 (a::l3) a).
+rewrite det_zero.
+rewrite (app_comm_cons l2 (a::l3) b).
+setoid ring.
+Qed.
 
 End det.
 
