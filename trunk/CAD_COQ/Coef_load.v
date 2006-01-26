@@ -83,6 +83,8 @@
   Notation cadd_ext := (Cadd_ext cmorph).
   Notation cmul_ext := (Cmul_ext cmorph).
   Notation copp_ext := (Copp_ext cmorph).
+  Notation c0_test_ext := (C0_test_ext cmorph).
+
 
   (* ring ops on coefs satisty ring axioms *)
 

@@ -104,7 +104,8 @@ Section  COEF_STRUCT.
       x1 == x2 -> y1 == y2 -> x1 ++ y1 == x2 ++ y2;
     Cmul_ext : forall x1 x2 y1 y2,
       x1 == x2 -> y1 == y2 -> x1 ** y1 == x2 ** y2;
-    Copp_ext : forall x1 x2, x1 == x2 -> -- x1 == -- x2
+    Copp_ext : forall x1 x2, x1 == x2 -> -- x1 == -- x2;
+    C0_test_ext : forall x1 x2, x1 == x2 -> czero_test x1 = czero_test x2 
   }.
 
 
