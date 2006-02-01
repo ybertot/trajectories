@@ -3,7 +3,6 @@ Require Import ZArith.
 Require Import CAD_types.
 Require Import Utils.
 (* Fichiers charges pour la tactique setoid ring *)
-
 Require Import Ring_tac.
 Require Import Ring_theory.
 Require Pol.
@@ -263,11 +262,11 @@ intros;destruct Q;rename c0 into c2.
 destruct R;inversion H;inversion H0;subst;constructor;trivial;rewrite H3;trivial.
 destruct R;inversion H0;inversion H;subst.
 constructor;rewrite H10;trivial.
-constructor;[rewrite H12;trivial|apply (PolEq_transO Q );trivial].
+constructor;[rewrite H12;trivial|apply (@PolEq_transO Q );trivial].
 constructor;[rewrite H3;trivial|idtac].
-generalize (PolEq_transO  Q H14 (PX R i (C0 cops)) H8);intro H1;inversion H1;trivial.
+generalize (@PolEq_transO  Q H14 (PX R i (C0 cops)) H8);intro H1;inversion H1;trivial.
 constructor;[rewrite H12;trivial|idtac].
-generalize  (PolEq_transO  (PX Q i (C0 cops)) );intro H1;apply H1.
+generalize  (@PolEq_transO  (PX Q i (C0 cops)) );intro H1;apply H1.
 constructor;trivial;apply ceq_refl.
 apply PolEq_sym;trivial.
 
@@ -286,12 +285,12 @@ constructor;trivial;apply ceq_refl.
 generalize p0 c0 p c H H0;clear p0 c0 p c H H0 ;induction R;intros.
 inversion H0;constructor;[inversion H;rewrite <- H3;trivial;apply ceq_sym;trivial|idtac].
 inversion H.
-apply (PolEq_transO Q);trivial;apply PolEq_sym;trivial.
+apply (@PolEq_transO Q);trivial;apply PolEq_sym;trivial.
 apply (IHP (PX Q i0 (C0 cops)));trivial;
 constructor;trivial;apply ceq_refl.
   rename P0 into P2;
 							       rename P1 into P3.
-assert (H16:PX P i0 (C0 cops) != P0). apply (PolEq_transO Q)(**);trivial.
+assert (H16:PX P i0 (C0 cops) != P0). apply (@PolEq_transO Q)(**);trivial.
 inversion H16;trivial.
 rename c0 into c2;rename c1 into c3.
 inversion H;subst.
@@ -881,7 +880,7 @@ Qed.
 Lemma Pmul_Rat_aux_assoc : forall P c c' , Pol_mul_Rat_aux (Pol_mul_Rat_aux P c) c' != Pol_mul_Rat_aux P (c**c').
 induction P;intros;simpl.
 constructor;rewrite cmul_assoc;apply ceq_refl.
- rewrite (Pmul_Rat_aux_compc (mkPX (Pol_mul_Rat_aux P c0) p (c ** c0)) (PX(Pol_mul_Rat_aux P c0) p (c ** c0))).
+ rewrite (@Pmul_Rat_aux_compc (mkPX (Pol_mul_Rat_aux P c0) p (c ** c0)) (PX(Pol_mul_Rat_aux P c0) p (c ** c0))).
 apply  mkPX_PX_c.
 
 simpl;repeat rewrite mkPX_PX_c;constructor;[setoid ring|auto].
@@ -1307,19 +1306,19 @@ repeat rewrite mkPX_PX_c.
 
 rewrite Padd_0_r;rewrite IHx.
 unfold Pol_mul_Rat;rewrite H1; rewrite Padd_0_r.
- rewrite(PX_pq_qp (y * x) (y * x)  p0 p c0 c0);try setoid ring;try apply PolEq_refl.
+ rewrite(@PX_pq_qp (y * x) (y * x)  p0 p c0 c0);try setoid ring;try apply PolEq_refl.
 
 case_c0_test (c2--c1). assert (c2==c1). apply copp_eq;trivial.
 simpl Pol_mul;unfold Pol_mul_Rat; rewrite H;rewrite Padd_0_r.
 
 repeat rewrite mkPX_PX_c; rewrite Padd_0_r.
 rewrite IHx; rewrite H4;rewrite Pmul_Rat_c1.
-rewrite H0; rewrite(PX_pq_qp (y * x) (y * x)  p p0 c0 c0);try setoid ring;try apply PolEq_refl.
+rewrite H0; rewrite(@PX_pq_qp (y * x) (y * x)  p p0 c0 c0);try setoid ring;try apply PolEq_refl.
 simpl; rewrite ZPminus0; rewrite mkPX_PX_c;
 constructor;[setoid ring|apply PolEq_refl].
 rewrite H0; simpl; repeat rewrite mkPX_PX_c.
 repeat rewrite Pmul_Rat_c0; repeat rewrite Padd_0_r.
-rewrite (PX_pq_qp (y * x) (y * x) p p0 c0 c0); try setoid ring;try apply PolEq_refl.
+rewrite (@PX_pq_qp (y * x) (y * x) p p0 c0 c0); try setoid ring;try apply PolEq_refl.
 simpl;rewrite ZPminus0;rewrite mkPX_PX_c.
 constructor;[setoid ring|idtac].
 generalize (IHx y p0 c2);unfold Pol_mul_Rat; rewrite H1; rewrite H2; auto.
@@ -1331,12 +1330,12 @@ unfold Pol_mul_Rat;rewrite H.
 case_c0_test (c --c1). assert (c==c1). apply copp_eq;trivial.
 
 rewrite IHx; rewrite H1;rewrite Pmul_Rat_c0; rewrite Padd_0_r.
-rewrite (PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
+rewrite (@PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
 simpl; rewrite ZPminus0; rewrite mkPX_PX_c.
 constructor;[setoid ring|apply PolEq_refl].
 simpl; rewrite H1; rewrite mkPX_PX_c.
 rewrite cmul_0_l;rewrite IHx; rewrite Pmul_Rat_c0; rewrite Padd_0_r.
-rewrite (PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
+rewrite (@PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
 simpl ;rewrite ZPminus0;rewrite mkPX_PX_c.
 constructor;[setoid ring|apply PolEq_refl].
 
@@ -1349,7 +1348,7 @@ unfold Pol_mul_Rat;rewrite H0 ;rewrite H1.
 assert (h: PX (PX (y * x) p0 c0 + x) p c0 !=PX (PX (y * x) p0 c0 ) p c0 + PX x p c0 ).
 simpl; rewrite ZPminus0;rewrite mkPX_PX_c; rewrite cadd_0_l; apply PolEq_refl.
 rewrite h.
-rewrite (PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
+rewrite (@PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
 
 rewrite <- Padd_assoc.
 
@@ -1367,7 +1366,7 @@ case_c0_test (C1 cops).
 absurd (c0==c1);[apply c0_diff_c1| apply ceq_sym;trivial].
 case_c0_test(c1--c1).
 repeat rewrite PX_Padd_r.
-rewrite (PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
+rewrite (@PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
 repeat rewrite <- Padd_assoc.
 apply Padd_ext_r.
 simpl Pol_mul_Rat_aux; rewrite mkPX_PX_c.
@@ -1377,14 +1376,14 @@ simpl;generalize (ZPminus_spec p0 p);destruct (ZPminus p0 p);intro h;try rewrite
 rewrite Pmul_Rat_aux_c1.
 simpl Pol_mul_Rat_aux; rewrite mkPX_PX_c.
 repeat rewrite PX_Padd_r.
-rewrite (PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
+rewrite (@PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
 repeat rewrite <- Padd_assoc;apply Padd_ext_r.
 rewrite Padd_sym;simpl;generalize (ZPminus_spec p0 p);destruct (ZPminus p0 p);intro h;try rewrite h;
 (repeat rewrite mkPX_PX_c;constructor;[setoid ring|apply PolEq_refl]).
 simpl; repeat rewrite mkPX_PX_c.
 rewrite IHx.
 repeat rewrite PX_Padd_r.
-rewrite (PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
+rewrite (@PX_pq_qp (y * x) (y * x) p0 p c0 c0) ;try setoid ring;try apply PolEq_refl.
 repeat rewrite <- Padd_assoc;apply Padd_ext_r.
 unfold Pol_mul_Rat; rewrite H;rewrite H0;rewrite H1.
 
@@ -1676,8 +1675,25 @@ Qed.
 
 
 
-(* si on ne met pas le Pol le Add essaie avec leibniz!??*)
-Definition PRth : @ring_theory Pol P0 P1 Pol_add Pol_mul Pol_sub Pol_opp Pol_Eq.
+Lemma Psub_comp : forall x1 x2 y1 y2, x1 != x2 -> y1 != y2 -> x1 - y1 != x2 - y2.
+   Proof.
+   intros x1 x2 y1 y2 H1 H2.
+   repeat rewrite Psub_def.
+   rewrite H1;rewrite H2.
+   reflexivity.
+   Qed.
+
+Add Morphism Pol_sub with signature Pol_Eq ==> Pol_Eq ==> Pol_Eq as Pol_sub_Morphism.
+Proof.
+intros;apply Psub_comp;trivial.
+Qed.
+
+
+
+Definition PRth : @ring_theory Pol 
+(@Pc Coef (@Coef_record.C0 Coef cops))
+(@Pc Coef (@Coef_record.C1 Coef cops))
+Pol_add Pol_mul Pol_sub Pol_opp Pol_Eq.
 Proof with trivial.
 constructor.
 apply Padd_0_l...
@@ -1691,27 +1707,16 @@ apply Psub_def...
 apply Popp_def...
 Qed.
 
+(* si on ne met pas @... Pol ci dessus il demande Leibnitz...*)
 
 Add New Ring PolRing : PRth Abstract.
+
 
 (* maintenant on a un ring sur Pol :setoid ring. *)
 
 (* on ajoute aussi le morphisempourla soustraction*)
 
 
-Lemma Psub_comp : forall x1 x2 y1 y2, x1 != x2 -> y1 != y2 -> x1 - y1 != x2 - y2.
-   Proof.
-   intros.
-   setoid_replace (x1 - y1) with (x1 + (- y1));[idtac|setoid ring].
-   setoid_replace (x2 - y2) with (x2 + (- y2));[idtac|setoid ring].
-   rewrite H;rewrite H0.
-   apply PolEq_refl.
-   Qed.
-
-Add Morphism Pol_sub with signature Pol_Eq ==> Pol_Eq ==> Pol_Eq as Pol_sub_Morphism.
-Proof.
-intros;apply Psub_comp;trivial.
-Qed.
 
 
 
@@ -2426,6 +2431,22 @@ rewrite H2;setoid ring.
 setoid ring.
 Qed.
 
+
+Lemma Pol_addC_spec : forall P p, Pol_addC P p != P + Pc p.
+Proof.
+destruct P;simpl;intros;reflexivity.
+Qed.
+
+
+Add Morphism Pol_addC with signature Pol_Eq ==> ceq ==>Pol_Eq as PaddC_comp.
+Proof.
+intros x1 x2 H x3 x4 G.
+repeat rewrite Pol_addC_spec.
+rewrite H.
+rewrite G.
+reflexivity.
+Qed.
+
 (* Une tactique de simplification des expressions avec des Pc et des operations par des des coef,
 peut permettre d' utiliser setoid ring*)
 
@@ -2442,6 +2463,7 @@ Let fun_Pmul_P0_c := fun x => (PolEq_sym _ _ (Pmul_P0_c x)).
 Let fun_Pmul_P1_c := fun x => (PolEq_sym _ _ (Pmul_P1_c x)).
 
 Hint Resolve Padd_comp Pmul_comp Psub_comp PsubC_Morphism Popp_comp
+PaddC_comp mkPX_morph ceq_refl
 PolEq_refl  Pc_Pol_opp Pmul_Rat_c0 Pmul_c1 Pmul_P0_c Pmul_P1_c
 fun_Pc_opp Pol_sub_c0 fun_Psub_c0  fun_Pmul_c1  fun_Pmul_Rat_c0
 fun_Pmul_P0_c fun_Pmul_P1_c: compat.
