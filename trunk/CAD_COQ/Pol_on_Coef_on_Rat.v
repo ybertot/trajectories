@@ -300,7 +300,12 @@ cof_pos:positive -> Coef
        match Ncompare dP dQ with
 	 |Lt  => Pol_gcd_strict Q P
 	 |Gt  => Pol_gcd_strict P Q
-	 |Eq => Pol_gcd_strict P ((Pol_mul_Rat Q cP) - (Pol_mul_Rat P cQ))
+	 |Eq => 
+           let next := ((Pol_mul_Rat Q cP) - (Pol_mul_Rat P cQ)) in
+             match next with
+              |Pc c0 => P
+              |_ => Pol_gcd_strict P next
+             end
        end.
 
    (** Triple gcd of P and Q, P/gcd, Q/gcd **) 

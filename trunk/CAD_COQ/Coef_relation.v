@@ -51,3 +51,6 @@ Add Morphism copp with signature ceq ==> ceq as copp_Morphism.
   intros;apply copp_ext;assumption.
 Qed.
 
+Add Morphism czero_test with signature ceq ==> (@eq bool) as c0_test_Morphism.
+  intros;apply c0_test_ext;assumption.
+Qed.

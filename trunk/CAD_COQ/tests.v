@@ -1,4 +1,4 @@
-(* pour commencer*)
+(* pour commencer
 
  Require Import Utils.
  Require Import CAD_types.
@@ -23,6 +23,8 @@ Infix "*":= Pol_mul.
 Infix "+":= Pol_add.
 Infix "-":= Pol_sub.
 Notation "- x" := (Pol_opp x).
+Notation "P ^ i":= (Pol_pow P i).
+Notation "c ** P":= (Pol_mul_Rat P c)(at level 40, no associativity).
 
 
 Fixpoint Q_of_nat(n:nat):Q:=
@@ -31,6 +33,13 @@ Fixpoint Q_of_nat(n:nat):Q:=
     |S n => r1 +r (Q_of_nat n)
   end.
 
+ Definition P:=((Q_of_nat 9) ** X^6) - 
+((Q_of_nat 27) ** X^4) - ((Q_of_nat 27) ** (X^3)) + ((Q_of_nat 72) ** ( X^2)) + ((Q_of_nat 18) ** X) - (Pc (Q_of_nat 45)).
+
+
+Definition P2 := ((Q_of_nat 3) ** ( X^4)) - ((Q_of_nat 4) ** (X^2)) -((Q_of_nat 9) ** X) + (Pc (Q_of_nat 21)).
+
+ 
 (* Printers for sign_tables *)
 
 (* Printing real numbers : erasure of the coding of alg.numbers, keeping
@@ -124,7 +133,7 @@ Time Eval vm_compute in (test 3).
 (*Finished transaction in 98. secs (95.85u,0.s)*)
 (* sans la vm ca passe pas...curieux...*)
 
-
+*)
 (********************************************************************)
 (*******          Des testes en plus de variable                *****)
 (********************************************************************)
@@ -223,6 +232,97 @@ Infix "*":=prod:P_scope.
 
 
 Definition circle := ((X * X) + (Y * Y) - (Pc (Pc r1))).
+
+
+Eval vm_compute in (test_sign ((Y*Y)::nil) 90).
+
+
+Module UP := MK_UP_DIM Q.
+
+Let l:= (X*X)::nil.
+
+(* WARNING pas de compute cad*)
+Let cad := UP.ccad onevar (UP.elim onevar l) 90.
+
+Check cad.
+
+Check (head cad).
+
+Variable void :mkcell_point_up Q (Poln 0) (Infon 0) (cell_pointn 0).
+Let c := 
+match (head cad) with Some u =>u |_ => (void,nil) end.
+
+Eval vm_compute in c.
+
+Let z := fst c.
+Let col := snd c.
+
+
+Let zl':= UP.non_deg onevar z col l 90.
+
+Eval vm_compute in zl'.
+
+Let z' := fst zl'.
+Let l' := snd zl'.
+
+Eval vm_compute in l'.
+
+Eval vm_compute in (UP.sign_table onevar z' l' 90).
+
+Require Import Qabs.
+Module QF := RAT_FUNS Q.
+Let up := QF.rmax_list (map (UP.Pol_info_up_bound onevar z') l'). 
+(*4*)
+Let low := QF.rmin_list (map (UP.Pol_info_low_bound onevar z') l').
+(*-4*)
+
+Let zroots := UP.family_root onevar low up z' l' 90.
+
+Eval vm_compute in zroots.
+
+Variable void2 :UP.Info (Poln 0).
+
+Let i := match (head l') with Some u => u |None => void2 end.
+
+Eval vm_compute in i.
+
+
+Let P:= fst5 i.
+Let Pbar:= match i with
+Five _ u _ _ _ => u end.
+Let dPbar := match i with
+Five _ _ u _ _ => u end.
+Let slow:= match  i with
+Five _ _ _  u _ => u end.
+Let  sinfo := match i with
+Five _ _ _ _ u => u end.
+
+Let res := UP.root_isol onevar P z Pbar dPbar low up 90.
+
+Eval vm_compute in res.
+
+Eval vm_compute in (UP.Pol_low_sign onevar z' P Pbar 90).
+(* ok*)
+Let z2sign := UP.Pol_low_sign onevar z' P Pbar 90.
+
+Eval vm_compute in slow.
+Let sign := snd z2sign.
+Let z2 := fst z2sign.
+Eval vm_compute in sign.
+Eval vm_compute in (UP.Pol_bern_coefs onevar (X*X) low up dPbar).
+
+
+Eval vm_compute in (length (snd zroots)).
+
+(*
+(tt, Between (Poln 0) (Infon 0) ((-2) # 1)%Q,
+       (Pc (2 # 1)%Q, Some Gt) :: (Pc (1 # 1)%Q, Some Gt) :: nil)*)
+
+
+
+Eval vm_compute in (UP.one_table_up onevar l 90 c).
+
+
 
 Definition XY:= X * Y.
 

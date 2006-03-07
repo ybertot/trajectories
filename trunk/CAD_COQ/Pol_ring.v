@@ -2386,6 +2386,8 @@ setoid ring.
 Qed.
 
 
+
+
 Lemma Pol_sub_c0 : forall P Q, P != Q ->  Pol_subC P c0 != Q. 
 Proof.
 intros P Q H.
@@ -2394,6 +2396,13 @@ inversion H;constructor;try rewrite H0;trivial;
 try setoid ring.
 Qed.
 
+Lemma Pol_sub_c0' : forall P,  Pol_subC P c0 != P. 
+Proof.
+intro P;apply Pol_sub_c0.
+reflexivity.
+Qed.
+
+
 Lemma Pmul_c1 : forall P Q, P !=Q -> Pol_mul_Rat P c1 != Q.
 Proof.
 intros P Q H.
@@ -2401,12 +2410,20 @@ rewrite H.
 apply Pmul_Rat_c1.
 Qed.
 
+Lemma Pmul_c1' : forall P, Pol_mul_Rat P c1 != P.
+intros P;apply Pmul_c1.
+reflexivity.
+Qed.
+
+
 Lemma Pc_Pol_opp : forall x, - (Pc x) != Pc (-- x).
 Proof.
 intro x.
 simpl.
 constructor;apply ceq_refl.
 Qed.
+
+
 
 Lemma Pmul_P0_c : forall c, c !* P0 !=P0.
 Proof.
@@ -2453,8 +2470,10 @@ peut permettre d' utiliser setoid ring*)
 Let fun_Pc_opp := fun x => (PolEq_sym _ _ (Pc_Pol_opp x)).
 
 Let fun_Psub_c0 := fun x y h=> (PolEq_sym _ _ (Pol_sub_c0 x y h)).
+Let fun_Psub_c0' := fun x => (PolEq_sym _ _ (Pol_sub_c0' x)).
 
 Let fun_Pmul_c1 := fun x y h => (PolEq_sym _ _ (Pmul_c1 x y h)).
+Let fun_Pmul_c1' := fun x => (PolEq_sym _ _ (Pmul_c1' x)).
 
 Let fun_Pmul_Rat_c0 := fun x  => (PolEq_sym _ _ (Pmul_Rat_c0 x)).
 
@@ -2463,9 +2482,14 @@ Let fun_Pmul_P0_c := fun x => (PolEq_sym _ _ (Pmul_P0_c x)).
 Let fun_Pmul_P1_c := fun x => (PolEq_sym _ _ (Pmul_P1_c x)).
 
 Hint Resolve Padd_comp Pmul_comp Psub_comp PsubC_Morphism Popp_comp
+
+PaddC_comp mkPX_morph ceq_refl
+PolEq_refl  Pc_Pol_opp Pmul_Rat_c0  Pmul_c1' Pmul_P0_c Pmul_P1_c
+fun_Pc_opp Pol_sub_c0 Pol_sub_c0' fun_Psub_c0 fun_Psub_c0' fun_Pmul_c1  fun_Pmul_c1' fun_Pmul_Rat_c0
+(*
 PaddC_comp mkPX_morph ceq_refl
 PolEq_refl  Pc_Pol_opp Pmul_Rat_c0 Pmul_c1 Pmul_P0_c Pmul_P1_c
-fun_Pc_opp Pol_sub_c0 fun_Psub_c0  fun_Pmul_c1  fun_Pmul_Rat_c0
+fun_Pc_opp Pol_sub_c0 fun_Psub_c0  fun_Pmul_c1  fun_Pmul_Rat_c0*)
 fun_Pmul_P0_c fun_Pmul_P1_c: compat.
 
 (*un pas de transformation *)
