@@ -729,7 +729,9 @@ scal (eps ((length l2 + 1)%nat*(length l4 + 1)%nat))
 Proof.
 intros d;induction l2.
 intros l4 l1 l3 l5 u v;simpl.
-(* beurk*)
+Admitted.
+
+(* beurk
 unfold scal;setoid_replace (eps 1) with (-- c1).
 transitivity (det d (app l1 (app (u::l3) (v::l5)))).
 repeat rewrite app_comm_cons;reflexivity.
@@ -798,7 +800,7 @@ rewrite (IHl4 l1 l3 l5).
 unfold scal;rewrite cpow_0.
 rewrite app_ass;Pcsimpl.
 
-
+*)
 
 Section SubresPolDef.
 
@@ -943,12 +945,12 @@ H Q (fun i => get_coef i B)).
 rewrite <- euclid_relation.
 fold p q b h;omega.
 (* ok, now we develop the determinant *)
+Admitted.
 
 
 
 
-
-
+(*
 transitivity 
 rewrite b_is_p_minus_q.
 
@@ -970,21 +972,7 @@ transitivity (det (nat_deg P + nat_deg Q - j - 1)
     (times_X_n_family Q (nat_deg (H + B * Q) - j - 1)))).
 apply det_family_sum_aux.
 
-
-Lemma det_Psum : forall m f l1 l2 P d g,
-(forall n, n <= m -> (f n) = P0 \/ PIn (f n) l1 \/ PIn (f n) l2) ->
-det d (app l1 ((P + Psum (fun i =>scal  (g i)  (f i))  m)::l2))
- != det d (app l1 (P::l2)).
-
-
-Check X_n_fam_comp.
-Check app_morph.
-
-
-
-setoid_replace (times_X_n_family (H + sum_of_Pol B * Q) (nat_deg Q - j - 1)) with (@nil Pol).
-
-(* deletion of the monomial sum of B*)
+ deletion of the monomial sum of B
  match goal with
 | |- context ctx [Pol_mul (sum_of_Pol ?P) ?Q ] =>
 let t := 
@@ -992,7 +980,7 @@ let t :=
 apply Pol_eq_trans with  t
 end.
 cool.
-
+*)
 
 Let lc_q := snd (Pol_deg_coefdom Q).
 Let lc_h := snd (Pol_deg_coefdom H).
@@ -1005,10 +993,10 @@ match n with
 |S n => ((S n) + (sum_up_to n))%nat
 end.
 
-(* (-1)^(n*(n-1))/2 *)
+(* (-1)^(n*(n-1))/2 
 Definition eps(n:nat) := cpow (--c1) (N_of_nat (sum_up_to (pred n))).
 
-(* 
+ 
 Lemma subres_shift : forall j, j < h ->
 j_subres P Q j != (eps (p -q)%nat) !*((cpow lc_q (N_of_nat (p - q)%nat)) !*(j_subres Q H j)).
 Admitted.
@@ -1033,3 +1021,4 @@ induction A;destruct B;simpl;intros;try omega.
 caseEq (BinInt.ZPminus p0 p1);intros;rewrite H3 in H2.
 Admitted.
 
+*)

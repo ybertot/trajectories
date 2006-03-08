@@ -2482,14 +2482,9 @@ Let fun_Pmul_P0_c := fun x => (PolEq_sym _ _ (Pmul_P0_c x)).
 Let fun_Pmul_P1_c := fun x => (PolEq_sym _ _ (Pmul_P1_c x)).
 
 Hint Resolve Padd_comp Pmul_comp Psub_comp PsubC_Morphism Popp_comp
-
 PaddC_comp mkPX_morph ceq_refl
 PolEq_refl  Pc_Pol_opp Pmul_Rat_c0  Pmul_c1' Pmul_P0_c Pmul_P1_c
 fun_Pc_opp Pol_sub_c0 Pol_sub_c0' fun_Psub_c0 fun_Psub_c0' fun_Pmul_c1  fun_Pmul_c1' fun_Pmul_Rat_c0
-(*
-PaddC_comp mkPX_morph ceq_refl
-PolEq_refl  Pc_Pol_opp Pmul_Rat_c0 Pmul_c1 Pmul_P0_c Pmul_P1_c
-fun_Pc_opp Pol_sub_c0 fun_Psub_c0  fun_Pmul_c1  fun_Pmul_Rat_c0*)
 fun_Pmul_P0_c fun_Pmul_P1_c: compat.
 
 (*un pas de transformation *)

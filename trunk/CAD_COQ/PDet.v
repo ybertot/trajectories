@@ -1,30 +1,119 @@
 Require Import Tactic.
-Load phi.
+(*Load phi.*)
+Require Import CAD_types.
+Require Import Utils.
+Require Import Setoid.
+Require Import ZArith.
+Require Import Even.
+Require Import phi.
 
-(*
 Notation  ZCoef:=Pol.
 Notation  pol:= Pol.
-Notation add :=Pol_add.*)
+Notation add :=Pol_add.
+Notation "a !* x" := (Pol_mul_Rat  x a )(at level 40, left associativity).
 
-(*Notation "a !* x" := (Pol_mul_Rat  x a )(at level 40, left associativity).*)
+
+Add New Ring PolRing : PRth Abstract.
+Add New Ring CoefRing : cRth Abstract. 
+
+(* lists of Pols pairwise PolEq equal*)
+Inductive Pol_list_equiv:(list Pol) -> (list Pol) ->Prop :=
+|Nil_equiv : Pol_list_equiv (@nil Pol) (@nil Pol)
+|Cons_equiv : forall a1 a2 l1 l2, a1!=a2 -> Pol_list_equiv l1 l2 ->
+(Pol_list_equiv (a1::l1) (a2::l2)).
+
+
+Infix "*=" := Pol_list_equiv (at level 70, no associativity).
+
+
+Lemma Pol_list_equiv_refl : forall l, l *=l.
+Proof.
+intro l;induction l;constructor;trivial;reflexivity.
+Qed.
+
+
+Lemma Pol_list_equiv_sym : forall l1 l2,
+l1 *= l2 -> l2 *=l1.
+Proof.
+intros l1 ;induction l1;intro l2;induction l2;intro H;inversion H;constructor;
+[apply PolEq_sym;trivial|apply IHl1;trivial].
+Qed.
+
+
+Lemma Pol_list_equiv_trans1 : forall l1 l2,
+l1*=l2 -> forall l3, l2 *= l3 -> l1 *= l3.
+Proof.
+intro l1;induction l1;intro l2;destruct l2;intros Heq12 l3 Heq23.
+inversion Heq23;trivial.
+inversion Heq12.
+inversion Heq23;trivial.
+inversion_clear Heq23.
+constructor;inversion_clear Heq12.
+apply PolEq_trans with p;trivial.
+apply IHl1 with l2;trivial.
+Qed.
+
+
+Lemma Pol_list_equiv_trans:forall l1 l2 l3,
+l1*=l2 -> l2 *= l3 -> l1 *= l3.
+Proof.
+intros;apply Pol_list_equiv_trans1 with l2;assumption.
+Qed.
+
+Add Relation (list Pol) Pol_list_equiv 
+reflexivity proved by Pol_list_equiv_refl
+symmetry proved by Pol_list_equiv_sym
+transitivity proved  by Pol_list_equiv_trans
+as Pol_list_relation.
+
+
+Add Morphism (@app Pol) with signature
+ Pol_list_equiv ==> Pol_list_equiv ==> Pol_list_equiv as app_morph. 
+Proof.
+intros l1 l2;induction 1;intros m1 m2;induction 1;
+simpl;try constructor;trivial.
+apply IHPol_list_equiv;constructor.
+apply IHPol_list_equiv;constructor;trivial.
+Qed.
+
+
+Lemma Pol_list_equiv_length : forall l m, l *= m -> length l = length m.
+Proof.
+intros l m;induction 1;simpl;trivial;auto with arith.
+Qed.
+
+
+Transparent phi.
+
+
+Ltac toto := match goal with |- context [if ?X then _ else _ ] => case X end.
+
+
+(*
+Add Morphism phi  with signature (@eq nat) ==>(@eq nat) ==> Pol_Eq ==> Pol_Eq  as phi_Morphism.
+intros d n P Q;unfold phi;case (le_gt_dec (d+2)n); intros.
+Proof.
+reflexivity. 
+case n;simpl.
+reflexivity.
+intros;case n0; trivial.
+intros;toto;
+intros;simpl;
+rewrite H;setoid ring.
+Show Script.
+Qed.
+*)
+
 Section det.
-
-
-(* f extracts the coef which is to be multiplied by the cofactor, 
-rec is the det function for a family of length n
-rec_det develops the det along the last but one column*)
-
-Fixpoint rec_det (f: Pol -> Pol) (rec: list Pol -> Pol)  (l1 l2: list Pol)  {struct l1}: Pol :=
+Fixpoint rec_det (f: pol -> Pol) (rec: list pol -> Pol)  (l1 l2: list pol)  {struct l1}: Pol :=
   match l1 with
     nil =>  P0 
   | a:: l3 => f a * rec (app l2 l3)  - rec_det f  rec  l3 (app l2 (a::nil)) 
   end.
 
-(* parameter for the det function*)
 Variable deg:nat.
 
-(* det_aux performs the recursion *)
-Fixpoint det_aux (n: nat) (l: list Pol) {struct n}: Pol :=
+Fixpoint det_aux (n: nat) (l: list pol) {struct n}: Pol :=
   match n with
     O => P1
   | S n1 => rec_det (phi deg n) (det_aux n1) l nil
@@ -32,39 +121,32 @@ Fixpoint det_aux (n: nat) (l: list Pol) {struct n}: Pol :=
 
 
 
-
 Definition det l :=  det_aux(length l) l.
 
-(*
-Lemma toto :  forall a b, Pc (a -- b) != Pc a - Pc b.
-Proof.
-intros.
-setoid ring.
-a la normalisation par setoid ring, -(Pc c1) est reduit en (Pc -- c1), c'est bof *)
+
 
 Theorem rec_det_m: forall f rec a b c d l1 l2,
   (forall a b c d l, (1 + length l = length l1 + length l2)%nat ->
-    rec (( ( a !* b) + ( c!* d)):: l) != a !* rec (b :: l) + c !* rec (d :: l)) ->
-  rec_det f rec l1 (( (a!* b) + ( c !*d)):: l2)  != a !* rec_det f rec l1 (b :: l2) + c !* rec_det f rec  l1 (d :: l2).
+    rec ((add (scal a b) (scal c d)):: l) != a !* rec (b :: l) + c !* rec (d :: l)) ->
+  rec_det f rec l1 ((add (scal a b) (scal c d)):: l2)  != a !* rec_det f rec l1 (b :: l2) + c !* rec_det f rec  l1 (d :: l2).
 intros f rec a b c d l1 l2; generalize l2; elim l1; simpl; clear l1 l2.
+(*intros;Pcsimpl;setoid ring.*)
 intros;Pcsimpl;setoid ring.
 
 intros a1 l3 Rec l2 H.
-repeat (rewrite Rec||rewrite H);try rewrite length_app.
-
-simpl;intros.
-rewrite H.
-omega.
-reflexivity.
-
-omega.
-
+repeat (rewrite Rec||rewrite H);try rewrite length_app;try omega.
+intros;rewrite H.
+rewrite H0;simpl;omega.
+setoid ring.
 repeat rewrite Pscal_Pmul_l.
 setoid ring.
 Qed.
 
+
+
 Theorem det_aux_m: forall n a b c d l,
-  (n= 1 + length l)%nat ->  det_aux n ((((a !* b) +(c !* d))) :: l) != a !* det_aux n (b :: l) + c !* det_aux n (d :: l).
+  (n= 1 + length l)%nat ->  det_aux n (((add (scal a b) (scal c d))) :: l) != a !* det_aux n (b :: l) + c !* det_aux n (d :: l).
+
 intros n; elim n; simpl; auto.
 intros; discriminate.
 intros n1 Rec  a b c d l H; injection H; clear H; intros H.
@@ -74,9 +156,10 @@ intros a1 b1 c1 d1 l1;simpl.
 rewrite plus_0_r;intros H1; rewrite Rec.
 rewrite H; auto.
 reflexivity.
-rewrite Hphi.
 setoid ring.
 Qed.
+
+
 
 Theorem det_m0: forall a b c d l, det ((add (scal a b) (scal c d)) :: l) != a !* det (b :: l) + c !* det (d :: l).
 intros; unfold det; rewrite det_aux_m; auto.
@@ -91,7 +174,8 @@ Theorem rec_det_r: forall f rec a b  l1 l2 l3,
                rec (app l'2( a :: b :: l'1)) != -  rec (app l'2 ( b :: a :: l'1))) ->
   rec_det f rec l1 (app l2 ( a :: b :: l3)) != - rec_det f rec l1 (app l2 (b :: a :: l3)).
 intros f rec a b l1; elim l1; simpl; auto; clear l1.
-intros;constructor;setoid ring.
+intros;constructor.
+setoid ring.
 
 intros a1 l1 Rec l2 l3 H.
 assert (tmp: forall a b l4, ( app (app l2 ( a :: b :: l3))  l4) = ((app l2 (a :: b :: (app l3  l4))))).
@@ -378,15 +462,105 @@ apply det_aux_diag with p; simpl; auto with arith.
 Qed.
 
 
+Theorem rec_det_morph : forall f rec  l1 l1',
+ l1 *= l1' ->  forall l2 l2' , l2 *= l2' ->
+(forall l1 l1' , l1*=l1' -> rec l1 != rec l1' ) ->
+(forall a b, a != b -> f a != f b) ->
+rec_det f rec l1 l2 != rec_det f rec l1' l2'.
+Proof.
+intros f rec l1 l1'.
+induction 1; intros m2 m2';induction 1;simpl;intros.
+reflexivity.
+reflexivity.
+rewrite (H2 _ _ H).
+rewrite (H1 _ _ H0).
+rewrite (IHPol_list_equiv (a1::nil) (a2::nil));
+try constructor;trivial.
+constructor.
+reflexivity.
 
-Theorem det_sum_in : forall l l1 l2, forall a b,
-det (l@(a::l1)@(b::l2)) != det (l@((a+b)::l1)@(b::l2)).
+rewrite (H4 a1 a2 H).
+rewrite (H3 (a0::(app l0 l1)) (a3::(app l3 l2)));[constructor;trivial|idtac].
+rewrite H2;rewrite H0;reflexivity.
+rewrite (IHPol_list_equiv (a0::app l0 (a1 :: nil)) (a3 :: app l3 (a2 :: nil)));trivial.
+ constructor;trivial.
+apply app_morph;trivial.
+constructor;trivial.
+constructor.
+reflexivity.
+Qed.
+
+Transparent phi.
+Add Morphism phi  with signature (@eq nat) ==>(@eq nat) ==> Pol_Eq ==> Pol_Eq  as phi_Morphism.
+intros d n P Q;unfold phi;case (le_gt_dec (d+2)n); intros.
+Proof.
+reflexivity. 
+case n;simpl.
+reflexivity.
+intros;case n0; trivial.
+intros;toto;
+intros;simpl;
+rewrite H;setoid ring.
+Show Script.
+Qed.
 
 
 
 
+Theorem det_aux_morph : forall n, (forall l1 l2, l1 *= l2 ->  det_aux n l1 != det_aux n l2).
+Proof.
+induction n;intros l1 l2 H;induction H;simpl;try reflexivity.
+apply Psub_comp.
+rewrite H.
+rewrite (IHn l1 l2 H0).
+reflexivity.
+apply rec_det_morph;try assumption.
+constructor;[assumption|constructor].
+intros a b Hab;rewrite Hab;reflexivity.
+Qed.
+
+
+Add Morphism det with signature Pol_list_equiv ==> Pol_Eq as det_morph.
+Proof.
+intros l1 l2 H.
+unfold det.
+rewrite (Pol_list_equiv_length l1 l2 H).
+apply det_aux_morph;assumption.
+Qed.
+
+
+Theorem det_sum_simpl : forall l1 l2 l3 a b c,
+det (app l1 (app (((b + (scal c a)))::l2) (a::l3))) != det (app l1 (app (b::l2) (a::l3))).
+Proof.
+intros.
+rewrite <- (app_comm_cons l2 (a::l3) (b+(scal c a))).
+assert (G: app l1 (b +(scal  c a) :: app l2 (a :: l3)) *= app l1 (((scal c1 b) + (scal c a)) :: app l2 (a :: l3))).
+apply app_morph.
+reflexivity.
+constructor.
+2:reflexivity.
+unfold scal;Pcsimpl.
+rewrite G.
+rewrite det_m.
+Pcsimpl.
+repeat rewrite app_comm_cons.
+rewrite det_zero.
+Pcsimpl;setoid ring.
+Qed.
+
+Theorem det_scal : forall l1 l2 a c,
+det (app l1 ((scal c a) :: l2)) != scal c (det (app l1 (a::l2))).
+Proof.
+intros l1 l2 a c.
+transitivity  (det (app l1 (((scal c a) + (scal c0 P1)) :: l2))).
+apply det_morph;apply app_morph.
+reflexivity.
+constructor.
+unfold scal;Pcsimpl;setoid ring.
+reflexivity.
+rewrite det_m.
+unfold scal;Pcsimpl;setoid ring.
+Qed.
 
 End det.
-
-
 

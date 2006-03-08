@@ -86,7 +86,8 @@ VFILES=CAD_types.v\
   PolMonOSum.v\
   Tactic.v\
   Coef_record.v\
-  Pol_ring.v
+  Pol_ring.v\
+  Coef_record.v
 VOFILES=$(VFILES:.v=.vo)
 VIFILES=$(VFILES:.v=.vi)
 GFILES=$(VFILES:.v=.g)
