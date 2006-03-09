@@ -1,11 +1,17 @@
-Load Pol_ring.
 
-
+(*Load Pol_ring.*)
 Require Import Mylist.
 
 Require Import Arith.
+Require Import ZArith.
 Require Import Even.
+Require Import CAD_types.
+Require Import Utils.
+Require Import Pol_ring.
 
+
+Add New Ring PolRing : PRth Abstract.
+Add  New Ring CoefRing : cRth Abstract. 
 
 Fixpoint get_coef (k:nat) (P:Pol) {struct k}: Coef:=
            match k with
@@ -145,7 +151,8 @@ unfold Pminus;simpl;setoid ring.
 Qed.
 
 Lemma Pscal_Pc: forall a c, a!* Pc c != Pc (a**c).
-intros;unfold Pol_mul_Rat;case_c0_test a;simpl.
+intros.
+unfold Pol_mul_Rat;case_c0_test a;simpl.
 rewrite H0; constructor; setoid ring.
 case_c0_test  (a -- c1); [assert (h:a ==c1);[ apply copp_eq;trivial|rewrite h]|idtac].
 constructor; setoid ring.

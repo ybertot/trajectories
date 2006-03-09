@@ -1,21 +1,31 @@
 Require Import CAD_types.
 Require Import Mylist.
 Require Import Tactic.
-Require Import PDet.
 Require Import Utils.
 Require Import Bool.
-Import phi.
+Require Import Pol_ring.
+
+Require Import phi.
+Require Import PDet.
 Require Import PolMonOSum.
 Require Import ZArith.
 Set Implicit Arguments.
+
+
+Add New Ring PolRing : PRth Abstract.
+Add New Ring CoefRing : cRth Abstract. 
+
+
 Hypothesis cpow_1 : forall c, cpow c 1%N ==c.
 Hypothesis cintegral : forall a b, czero_test (a **b) = orb (czero_test a) (czero_test b).
 
 
+Notation pdet := (det phi).
+
 Notation "x ^ i ":= (Pol_pow x i).
 Notation "x ^^ i ":=(cpow x i) (at level 30, no associativity).
 
-
+Notation "| l |" := (length l)(at level 30).
 (* ca sert ca?*)
 Add Morphism (@cons Pol)
  with signature Pol_Eq ==> Pol_list_equiv ==>Pol_list_equiv as cons_comp.
@@ -101,39 +111,39 @@ Ltac myreplace :=
  repeat progress
   (match goal with
    | |- - _ != - _ => apply Popp_comp
-   | |- det _ _ != det _ _ => apply det_morph;try reflexivity
+   | |- det _ _ _ != det _ _ _ => apply det_morph;try reflexivity
    | |- app _ _ *= app _ _=> apply app_morph;try reflexivity
    | |- _ :: _ *= _ :: _ => constructor;[try setoid ring|try reflexivity]
-   | |-_ =>  try reflexivity;try Pcsimpl
+   | |-_ =>  try reflexivity;try Pcsimpl;try assumption
   end).
 
 
 
 (*an other version of det_sum_simpl, using In, lefet then right*)
 Lemma det_PIn_l : forall l1 l2 P Q d c, PIn Q l1 ->
-det d (app l1 ((P+(scal c Q))::l2)) != det d (app l1 (P::l2)). 
-Proof with (try reflexivity;auto).
+pdet  d (app l1 ((P+(scal c Q))::l2)) != pdet d (app l1 (P::l2)). 
+Proof with (try apply phi_m;try reflexivity;auto).
 induction l1;intros l2 P Q d c H_In;simpl in H_In;elim H_In;intro G.
-transitivity (det d (app nil ((app (Q :: l1) (P + (scal c Q) :: l2))))).
+transitivity (det phi d (app nil ((app (Q :: l1) (P + (scal c Q) :: l2))))).
 simpl;myreplace.
 rewrite det_t.
-rewrite det_sum_simpl.
-rewrite det_t.
+unfold scal;rewrite det_sum_simpl...
+rewrite det_t. (* rajouter l'hypothese de phi*)
 setoid ring;simpl.
 myreplace.
 symmetry...
 elim (@PIn_app Q l1 G).
 intros l3 Hex.
 elim Hex;intros l4 Heq.
-transitivity (det d (app (a::l3) (app (Q::l4) (P+(scal c Q)::l2)))).
+transitivity (det phi d (app (a::l3) (app (Q::l4) (P+(scal c Q)::l2)))).
 repeat rewrite ass_app.
 myreplace.
 rewrite <- app_comm_cons.
 constructor...
-transitivity (- det d (app (a :: l3) (app (P +(scal c Q):: l4) (Q :: l2)))).
+transitivity (- det phi d (app (a :: l3) (app (P +(scal c Q):: l4) (Q :: l2)))).
 rewrite det_t.
 myreplace.
-rewrite det_sum_simpl.
+unfold scal;rewrite det_sum_simpl...
 rewrite det_t.
 simpl.
 pattern cons at 1.
@@ -144,18 +154,25 @@ myreplace.
 symmetry...
 Qed.
 
+
+
+
+
+
+
+
 Lemma det_PIn_r : forall l1 l2 P Q d c, PIn Q l2 ->
-det d (app l1 ((P+(scal c Q))::l2)) != det d (app l1 (P::l2)). 
-Proof with (try reflexivity;trivial).
+det phi d (app l1 ((P+(scal c Q))::l2)) != det phi d (app l1 (P::l2)). 
+Proof with (try apply phi_m;try reflexivity;trivial).
 intros l1 l2 P Q d c H_In.
 elim (PIn_app Q l2 H_In).
 intros l3 Hex.
 elim Hex.
 intros l4 Heq.
-transitivity (det d (app l1 (P+scal c Q::app l3 (Q :: l4)))).
+transitivity (det phi d (app l1 (P+scal c Q::app l3 (Q :: l4)))).
 myreplace...
 repeat rewrite app_comm_cons.
-rewrite det_sum_simpl.
+unfold scal;rewrite det_sum_simpl...
 rewrite <- app_comm_cons.
 myreplace.
 symmetry...
@@ -167,9 +184,9 @@ Qed.
 
 Lemma det_Psum : forall m f l1 l2 P d g,
 (forall n, n <= m -> (f n) = P0 \/ PIn (f n) l1 \/ PIn (f n) l2) ->
-det d (app l1 ((P + Psum (fun i =>scal  (g i)  (f i))  m)::l2))
- != det d (app l1 (P::l2)).
-Proof with (auto;try reflexivity).
+det phi d (app l1 ((P + Psum (fun i =>scal  (g i)  (f i))  m)::l2))
+ != det phi d (app l1 (P::l2)).
+Proof with (try apply phi_m;auto;try reflexivity).
 induction m;intros f l1 l2 P d g H_neutral;simpl.
 elim (H_neutral O);[intro H_f0|intro Hf0|auto with arith].
 rewrite H_f0.
@@ -182,9 +199,9 @@ rewrite det_PIn_l...
 rewrite det_PIn_r...
 elim (H_neutral (S m));[intro H_fsm|intro Hfsm|auto with arith].
 rewrite H_fsm.
-transitivity (det d (app l1 (P + (Psum   (fun i : nat => scal (g i) (f i)) m)  :: l2)));
+transitivity (det phi d (app l1 (P + (Psum   (fun i : nat => scal (g i) (f i)) m)  :: l2)));
 [unfold scal;myreplace;setoid ring|apply IHm]...
-transitivity (det d (app l1 ((P + Psum  (fun i : nat => scal (g i) (f i)) m) + (scal (g (S m)) (f (S m))) :: l2))).
+transitivity (det phi d (app l1 ((P + Psum  (fun i : nat => scal (g i) (f i)) m) + (scal (g (S m)) (f (S m))) :: l2))).
 myreplace.
 elim Hfsm;intro H_In.
 rewrite det_PIn_l...
@@ -217,18 +234,71 @@ setoid ring.
 Qed.
 
 
-(* builds the list A*X^n ::...::A*X :: A ::nil*)
-Fixpoint times_X_n_family(A:Pol)(n:nat){struct n}:list Pol:=
-match n with
-|O => A::nil
-|S n => (times_X_n A (S n))::(times_X_n_family A n)
+(*X^(n+m)P...X^m*)
+Fixpoint Xfamily_n_m(m:nat)(A:Pol)(n:nat){struct n}:list Pol:=
+ match n with
+|O => (times_X_n A m)::nil
+|S n => (times_X_n A (m + (S n)))::(Xfamily_n_m m A n)
 end.
 
-Add Morphism times_X_n_family with signature Pol_Eq ==> (@eq nat) ==> Pol_list_equiv as X_n_fam_comp.
+(* builds the list A*X^n ::...::A*X :: A ::nil*)
+Definition Xfamily:= Xfamily_n_m O.
+
+
+Add Morphism Xfamily with signature Pol_Eq ==> (@eq nat) ==> Pol_list_equiv as X_n_fam_comp.
 intros x1 x2 Heq.
-induction x;simpl.
+induction x;unfold Xfamily;simpl.
 constructor;trivial;reflexivity.
 constructor;[rewrite Heq|rewrite IHx];reflexivity.
+Qed.
+
+Lemma family_n_m_length : forall n m P,
+ | (Xfamily_n_m m P n)| = (n +1)%nat.
+Proof.
+induction n;intros m P;simpl;
+[idtac|rewrite IHn];reflexivity.
+Qed.
+
+Lemma family_length : forall n P, length (Xfamily P n) = (n +1)%nat.
+Proof.
+intros n P;unfold Xfamily;apply family_n_m_length.
+Qed.
+
+Lemma Xfamily_aux : forall n m P l,
+app (Xfamily_n_m m P (S n)) l*= 
+app (Xfamily_n_m (S m) P n) ((times_X_n P m)::l).
+Proof.
+induction n;intros m P l.
+simpl.
+constructor;try reflexivity.
+replace (m+1)%nat with (S m);try omega.
+reflexivity.
+transitivity 
+(app ((times_X_n P (m +(S (S n))))::
+(Xfamily_n_m m P (S n))) l).
+simpl.
+constructor;try constructor;reflexivity.
+transitivity (
+times_X_n P (m + S (S n)) ::
+app (Xfamily_n_m m P (S n)) l). 
+rewrite app_comm_cons;reflexivity.
+rewrite IHn.
+simpl.
+constructor;try reflexivity.
+replace (m + S (S n))%nat with (S (m + (S n)))%nat;auto with arith.
+reflexivity.
+Qed.
+
+Lemma Xfamily_app : forall n m P, m<>0-> 
+Xfamily P ((S n)+m)%nat *= app (Xfamily_n_m (S m) P n) (Xfamily P m).
+Proof.
+induction n;intros m P Hnm;unfold Xfamily.
+reflexivity.
+fold Xfamily.
+replace (S (S n) +m)%nat with ((S n) + (S m))%nat;[rewrite IHn|omega].
+auto with arith.
+rewrite Xfamily_aux.
+apply app_morph;reflexivity.
 Qed.
 
 (* devrait etre dans Pring, oups cést  Pmul_Rat_aux_assoc*)
@@ -255,25 +325,25 @@ Qed.
 Lemma scal_Passoc : forall c P Q, (scal c P)*Q != scal c (P*Q).
 Admitted.
 
-(* multinilearity of det when its arg contains a times_X_n_family **)
+(* multinilearity of det when its arg contains a Xfamily **)
 Lemma det_times_Xn_multilin : forall d a A n l1 l2 ,
- det d (app l1 (app (times_X_n_family (a !* A) n) l2))
+ det phi d (app l1 (app (Xfamily (a !* A) n) l2))
 !=  (cpow  a (N_of_nat (n+1))) !*
- det d (app l1 (app (times_X_n_family A n) l2)).
-Proof.
+ det phi d (app l1 (app (Xfamily A n) l2)).
+Proof with (try apply phi_m).
 intros d a;induction n;simpl;intros l1 l2.
 rewrite cpow_1.
-apply (det_scal d l1 l2 A a).
-transitivity (det d
-  (app (app l1 ((X * times_X_n (a !* A) n) ::nil))  (app (times_X_n_family (a !* A) n) l2))).
+apply det_scal...
+transitivity (det phi d
+  (app (app l1 ((X * times_X_n (a !* A) n) ::nil))  (app (Xfamily (a !* A) n) l2))).
 apply det_morph.
 rewrite app_ass.
 simpl;reflexivity.
 rewrite IHn.
 transitivity (cpow a (N_of_nat (n + 1))
-!* (det d
+!* (det phi d
      (app (app l1 (a!* (X *( times_X_n A n)) :: nil))
-        (app (times_X_n_family A n) l2)))).
+        (app (Xfamily A n) l2)))).
 apply Pmul_Rat_compc.
 apply det_morph.
 apply app_morph;[idtac|reflexivity].
@@ -281,11 +351,12 @@ apply app_morph;[reflexivity|constructor;[idtac|reflexivity]].
 rewrite times_X_n_scal.
 repeat rewrite  Pscal_Pmul_l;setoid ring.
 transitivity (cpow a (N_of_nat (n + 1))
-!* det d (app l1 ((a!* (X * times_X_n A n)) :: app (times_X_n_family A n) l2))).
+!* det phi d (app l1 ((a!* (X * times_X_n A n)) :: app (Xfamily A n) l2))).
 rewrite app_ass.
 simpl;reflexivity.
-rewrite (det_scal d l1 (app (times_X_n_family A n) l2) (X * times_X_n A n) a).
-unfold scal.
+rewrite det_scal...
+(*rewrite (det_scal  d l1 (app (Xfamily A n) l2) (X * times_X_n A n) a).
+unfold scal.*)
 rewrite scal_assoc.
 assert  (Npos (P_of_succ_nat (n + 1)) = (N_of_nat (n+1) + 1)%N).
 unfold N_of_nat.
@@ -517,8 +588,8 @@ induction n;intro P.
 simpl;Pcsimpl.
 Admitted.
 
-(*times_X_n_family contains the first P*mon n*)
-Lemma PIn_times_X_n_family : forall P, forall m n, n <= m -> PIn (P*(mon (N_of_nat n))) (times_X_n_family P m).
+(*Xfamily contains the first P*mon n*)
+Lemma PIn_Xfamily : forall P, forall m n, n <= m -> PIn (P*(mon (N_of_nat n))) (Xfamily P m).
 Proof.
 induction m;intros n Hle;simpl.
 inversion Hle;simpl.
@@ -541,7 +612,7 @@ Admitted.
 (* forall P, P\in family (A + sum g(i)BX^i i=0...k) -> 
 P = A + sum g(i)BX^(i+j) i=0...k), for some j<= n*)
 Lemma PIn_family_of_sum : forall n A B P k g,
- PIn P (times_X_n_family (A + (Psum (fun i => scal (g i) (B*(mon (N_of_nat i)))) k)) n) ->
+ PIn P (Xfamily (A + (Psum (fun i => scal (g i) (B*(mon (N_of_nat i)))) k)) n) ->
 exists j, (j<= n)/\(P!=A*(mon (N_of_nat j)) + (Psum (fun i => scal (g i) (B*(mon (N_of_nat (i+j))))) k)).
 Proof.
 induction n;simpl;intros A B P k g HIn;elim HIn;intro Heq.
@@ -585,36 +656,36 @@ Qed.
 
 Lemma det_family_sum_aux : forall n l m  k d A B g,
 k+n<=m ->
-det d (app 
-l (app (times_X_n_family (A + (Psum (fun i => scal (g i)  (B*(mon (N_of_nat i)))) k)) n)
-(times_X_n_family B m)))
+det phi d (app 
+l (app (Xfamily (A + (Psum (fun i => scal (g i)  (B*(mon (N_of_nat i)))) k)) n)
+(Xfamily B m)))
 !=
-det d (app l (app
-(times_X_n_family A n)
-(times_X_n_family B m))).
+det phi d (app l (app
+(Xfamily A n)
+(Xfamily B m))).
 Proof.
 induction n;intros l m k d A B g Hle.
 simpl.
 apply (@det_Psum k (fun i : nat => (B * mon (N_of_nat i)))).
 right;right.
-apply PIn_times_X_n_family.
+apply PIn_Xfamily.
 omega.
-unfold times_X_n_family;fold times_X_n_family.
-transitivity (det d 
+unfold Xfamily;fold Xfamily.
+transitivity (det phi d 
 (app
  (app l ((times_X_n
                     (A + Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)
                     (S n))::nil))  
-(app (times_X_n_family
+(app (Xfamily
               (A + Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)
-              n) (times_X_n_family B m)))).
+              n) (Xfamily B m)))).
 rewrite app_ass; reflexivity.                   
-transitivity (det d
+transitivity (det phi d
        (app 
        (app l
           (times_X_n A (S n) ::nil))
-          (app (times_X_n_family A n)
-             (times_X_n_family B m)))).
+          (app (Xfamily A n)
+             (Xfamily B m)))).
 
 rewrite (IHn (app l
         (times_X_n
@@ -625,41 +696,41 @@ rewrite app_ass.
 replace (app
         (times_X_n
            (A + Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)
-           (S n) :: nil) (app (times_X_n_family A n) (times_X_n_family B m)))
+           (S n) :: nil) (app (Xfamily A n) (Xfamily B m)))
 with
         ((times_X_n
            (A + Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)
-           (S n)) ::(app (times_X_n_family A n) (times_X_n_family B m)));[idtac|
+           (S n)) ::(app (Xfamily A n) (Xfamily B m)));[idtac|
 reflexivity].
 transitivity 
-(det d
+(det phi d
 (app l
 ((A*(mon (N_of_nat (S n))) 
   + (Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)*mon(N_of_nat (S n)))::
-app (times_X_n_family A n) (times_X_n_family B m)))).
+app (Xfamily A n) (Xfamily B m)))).
 myreplace.
 rewrite times_X_n_to_mon.
 setoid ring.
 transitivity
-(det d
+(det phi d
   (app l
      (A * mon (N_of_nat (S n)) +
       Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))*
       mon (N_of_nat (S n))) k
-      :: app (times_X_n_family A n) (times_X_n_family B m)))).
+      :: app (Xfamily A n) (Xfamily B m)))).
 myreplace.
 rewrite <- (Psum_mul_r k (fun i :nat => scal (g i)(B*(mon (N_of_nat i))))).
 setoid ring.
-transitivity (det d
+transitivity (det phi d
      (app l ((times_X_n A (S n)) ::
-        (app (times_X_n_family A n) (times_X_n_family B m))))).
-transitivity (det d
+        (app (Xfamily A n) (Xfamily B m))))).
+transitivity (det phi d
   (app l
      (A * mon (N_of_nat (S n)) +
       Psum
         (fun i : nat =>
          scal (g i) (B * mon (N_of_nat i) * mon (N_of_nat (S n)))) k
-      :: app (times_X_n_family A n) (times_X_n_family B m)))).
+      :: app (Xfamily A n) (Xfamily B m)))).
 myreplace.
 apply Padd_comp;[reflexivity|apply Psum_ext].
 intro n0;apply scal_Passoc.
@@ -670,7 +741,7 @@ apply PIn_PIn_app_l.
 rewrite <- Pmul_assoc.
 rewrite mon_add.
 rewrite <- N_of_nat_add.
-apply PIn_times_X_n_family.
+apply PIn_Xfamily.
 omega.
 myreplace.
 symmetry;apply times_X_n_to_mon.
@@ -680,13 +751,13 @@ Qed.
 
 Lemma det_family_sum : forall n m  k d A B g,
 k+n<=m ->
-det d 
- (app (times_X_n_family (A + (Psum (fun i => scal (g i)  (B*(mon (N_of_nat i)))) k)) n)
-(times_X_n_family B m))
+det phi d 
+ (app (Xfamily (A + (Psum (fun i => scal (g i)  (B*(mon (N_of_nat i)))) k)) n)
+(Xfamily B m))
 !=
-det d (app
-(times_X_n_family A n)
-(times_X_n_family B m)).
+det phi d (app
+(Xfamily A n)
+(Xfamily B m)).
 Proof.
 intros.
 apply (@det_family_sum_aux n (@nil Pol) m k d A B g H) .
@@ -721,31 +792,77 @@ apply mkPX_PX.
 setoid ring.
 Qed.
 
+(* pouver des egalites de listes avec cons et app dasn le desordre*)
+Ltac list_blast := simpl;try (repeat rewrite app_ass);try (repeat rewrite app_comm_cons);
+try (repeat rewrite app_ass);simpl;try reflexivity.
 
+(*buts de la forme scal a P != (-) scal b P', avec P != P',
+oppose optionnel. ramene le pb dans coef et essaie de prouver
+(-)b = a.*)
+
+Ltac to_coef_goal:= try unfold scal;try (repeat rewrite Popp_Pscal);
+try (repeat rewrite scal_assoc);
+ apply Pmul_Rat_comp;try setoid ring;try reflexivity.
+
+
+Lemma det_skip_axiom : forall d l1 l2,
+length l1 > 0 -> length l2 > 0 ->
+det phi  d (app l1 l2) != 
+(eps (length(l1) + (length l2))) !* (det phi d (app l2 l1)).
+Admitted.
+
+
+
+
+
+(*
 Lemma det_app_rev : forall d l2 l4 l1 l3 l5 a b, 
 det d  (app l1 (app (a::l2) (app l3 (app (b::l4) l5)))) !=
 scal (eps ((length l2 + 1)%nat*(length l4 + 1)%nat))
 (det d  (app l1 (app (b::l4) (app l3 (app (a::l2) l5))))).
-Proof.
+Proof with (simpl;reflexivity).
 intros d;induction l2.
-intros l4 l1 l3 l5 u v;simpl.
-Admitted.
-
-(* beurk
-unfold scal;setoid_replace (eps 1) with (-- c1).
-transitivity (det d (app l1 (app (u::l3) (v::l5)))).
-repeat rewrite app_comm_cons;reflexivity.
+(*cas de base : paar induction sur la deuxieme liste*)
+induction l4;intros l1 l3 l5 u v;simpl.
+(* cas de base_base *)
+unfold scal;setoid_replace (eps 1) with (-- c1);[idtac|unfold eps;rewrite cpow_1;reflexivity].
+transitivity (det d (app l1 (app (u::l3) (v::l5))));
+[repeat rewrite app_comm_cons;reflexivity|idtac].
 transitivity (-det d (app l1 (app (v :: l3) (u :: l5))));[apply det_t|repeat rewrite <- app_ass].
-repeat rewrite app_comm_cons.
-repeat rewrite <- app_ass.
+list_blast.
 apply Popp_Pscal.
-unfold eps.
-rewrite cpow_1;reflexivity.
-simpl.
-transitivity (det d (app l1 (app (u::l3) (v::(a::app l4 l5)))));[reflexivity|rewrite det_t].
-transitivity (det d (app (app l1 (u::nil)) (a::nil) (app (
-simpl.
+transitivity (det d (app l1 (app (u::l3) (v:: (a::(app l4 l5))))));[list_blast|rewrite det_t].
+transitivity (- det d (app (
 
+
+
+
+induction l4;intros l1 l3 l5 u v;simpl.
+(* cas de base_base *)
+unfold scal;setoid_replace (eps 1) with (-- c1);[idtac|unfold eps;rewrite cpow_1;reflexivity].
+transitivity (det d (app l1 (app (u::l3) (v::l5))));
+[repeat rewrite app_comm_cons;reflexivity|idtac].
+transitivity (-det d (app l1 (app (v :: l3) (u :: l5))));[apply det_t|repeat rewrite <- app_ass].
+list_blast.
+apply Popp_Pscal.
+(*cas de base_ind*)
+induction l3.
+simpl.
+(* echange de u et v pour appliquer l'HI*)
+transitivity (det d (app l1 (app (u::nil) (v::a::app l4 l5))));[reflexivity|rewrite det_t].
+transitivity ( - det d (app (app l1 (v::nil)) (app  (u ::nil) (app nil  (app (a :: l4) l5))))).
+list_blast...
+rewrite IHl4.
+list_blast.
+unfold scal.
+unfold eps.
+to_coef_goal.
+replace ( N_of_nat (S (length l4 + 1 + 0)%nat)) with (N_of_nat (length l4 + 1+0)%nat +1)%N.
+rewrite cpow_plus.
+rewrite cpow_1.
+setoid ring.
+replace (S (length l4 + 1 + 0)%nat) with ((length l4 + 1 + 0)+1)%nat;
+[repeat rewrite N_of_nat_add|omega];auto with arith.
 
 
 
@@ -811,9 +928,9 @@ Let p:= nat_deg P.
 Let q := nat_deg Q.
 
 Definition subres_family(j:nat) := 
-app (times_X_n_family P (q-j-1))  (times_X_n_family Q (p-j-1)).
+app (Xfamily P (q-j-1))  (Xfamily Q (p-j-1)).
 
-Definition j_subres(j:nat):=det (p+q-j-1) (subres_family j).
+Definition j_subres(j:nat):=det phi (p+q-j-1) (subres_family j).
 
 End SubresPolDef.
 
@@ -836,15 +953,15 @@ unfold subres_family.
 intros a b j j_lt_q a_not_0 b_not_0.
 repeat rewrite (nat_deg_scal);trivial.
 fold p;fold q.
-transitivity (det (p + q - j - 1) (app nil
-  (app (times_X_n_family (a !* P) (q - j - 1))
-     (times_X_n_family (b !* Q) (p - j - 1))))).
+transitivity (det phi (p + q - j - 1) (app nil
+  (app (Xfamily (a !* P) (q - j - 1))
+     (Xfamily (b !* Q) (p - j - 1))))).
 simpl;reflexivity.
 rewrite det_times_Xn_multilin;simpl.
 transitivity (cpow a (N_of_nat (q - j - 1 + 1))
-!* det (p + q - j - 1)
-     (app (times_X_n_family P (q - j - 1))
-        (app (times_X_n_family (b !* Q) (p - j - 1)) nil))).
+!* det phi (p + q - j - 1)
+     (app (Xfamily P (q - j - 1))
+        (app (Xfamily (b !* Q) (p - j - 1)) nil))).
 rewrite <- app_nil_end;reflexivity.
 rewrite det_times_Xn_multilin.
 rewrite scal_assoc.
@@ -879,7 +996,7 @@ Definition lcoef(P:Pol):= get_coef (nat_deg P) P.
 Ltac myreplace2 :=
   repeat progress
     (match goal with
-    | |- times_X_n_family _ _ *= times_X_n_family _ _=> apply X_n_fam_comp;try reflexivity;auto
+    | |- Xfamily _ _ *= Xfamily _ _=> apply X_n_fam_comp;try reflexivity;auto
     | |- context [subres_family _ _ _] => unfold subres_family
     | |- _ =>  myreplace
 end).
@@ -890,8 +1007,10 @@ Ltac cool :=match goal with
 (context ctx[ (Psum  (fun i => scal (get_coef i P) ((mon (N_of_nat i)))*Q) (nat_deg P)) ] ) in
 transitivity t
 end.
+
+Definition pol:= Pol.
 Delimit Scope P_scope with Pol.
-Bind Scope P_scope with Pol.
+Bind Scope P_scope with pol.
 
 Lemma subres_PQ_GH : forall j, j < h ->
 j_subres P Q j != ((eps ((p-q)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
@@ -902,16 +1021,16 @@ transitivity (j_subres (H+B*Q) Q j);unfold j_subres.
 myreplace2.
 rewrite (nat_deg_comp euclid_relation).
 myreplace2...
-transitivity (det (nat_deg (H + B * Q) + nat_deg Q - j - 1) (subres_family (H + ((sum_of_Pol B)* Q)) Q j)).
+transitivity (det phi (nat_deg (H + B * Q) + nat_deg Q - j - 1) (subres_family (H + ((sum_of_Pol B)* Q)) Q j)).
 myreplace2;rewrite <- (P_mon_sum B)...
 unfold subres_family.
 rewrite <- (nat_deg_comp euclid_relation).
 rewrite  (@nat_deg_comp (H + (sum_of_Pol B)*Q) (H+B*Q)).
 (*pourquoi ici replace marche pas???*)
 transitivity (
-det (nat_deg P + nat_deg Q - j - 1)
-  (app (times_X_n_family (H +  (Psum  (fun i => scal (get_coef i B) (mon (N_of_nat i))*Q) (nat_deg B))) (nat_deg Q - j - 1))
-     (times_X_n_family Q (nat_deg (H + B * Q) - j - 1)))
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app (Xfamily (H +  (Psum  (fun i => scal (get_coef i B) (mon (N_of_nat i))*Q) (nat_deg B))) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))
 ).
 myreplace2.
 apply Padd_comp...
@@ -922,13 +1041,13 @@ rewrite <- (Psum_mul_r (nat_deg B) (fun i =>  scal (get_coef i B) (mon (N_of_nat
 unfold sum_of_Pol...
 apply Psum_ext ;intro n...
 transitivity (
-det (nat_deg P + nat_deg Q - j - 1)
+det phi (nat_deg P + nat_deg Q - j - 1)
   (app
-     (times_X_n_family
+     (Xfamily
         (H +
          Psum (fun i : nat => scal (get_coef i B) (Q*(mon (N_of_nat i))))
            (nat_deg B)) (nat_deg Q - j - 1))
-     (times_X_n_family Q (nat_deg (H + B * Q) - j - 1)))).
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))).
 myreplace2.
 apply Padd_comp;[reflexivity|apply Psum_ext].
 intro n.
@@ -936,15 +1055,46 @@ rewrite scal_Passoc.
 unfold scal.
 setoid_replace (mon (N_of_nat n) * Q) with (Q*mon (N_of_nat n));setoid ring.
 transitivity (
-det (nat_deg P + nat_deg Q - j - 1) (app
-(times_X_n_family H (nat_deg Q - j - 1))
-(times_X_n_family Q (nat_deg (H + B*Q) - j - 1)))).
+det phi (nat_deg P + nat_deg Q - j - 1) (app
+(Xfamily H (nat_deg Q - j - 1))
+(Xfamily Q (nat_deg (H + B*Q) - j - 1)))).
 apply (@det_family_sum
 (nat_deg Q - j - 1) ((nat_deg (Pol_add H  (Pol_mul B Q))) - j - 1)%nat (nat_deg B) (nat_deg P + nat_deg Q - j - 1)%nat
 H Q (fun i => get_coef i B)).
 rewrite <- euclid_relation.
 fold p q b h;omega.
+rewrite det_skip_axiom;
+try (repeat rewrite family_length).
+auto with arith.
+auto with arith.
+rewrite <- euclid_relation.
+Require Import DetTrig.
+transitivity (
+eps (nat_deg Q - j - 1 + 1 + (nat_deg P - j - 1 + 1))%nat
+!*pdet (nat_deg P + nat_deg Q - j - 1)%nat
+(app
+(app (Xfamily_n_m (S (nat_deg H - j - 1)%nat) Q (nat_deg P - j - 1)%nat)
+((Xfamily Q (nat_deg H - j - 1))))
+(Xfamily H (nat_deg Q - j - 1)))).
+apply Pmul_Rat_comp;try reflexivity.
+myreplace2.
+rewrite Xfamily_app.
+
+apply Xfamily_app .
+fold h p;omega.
+rewrite app_ass.
 (* ok, now we develop the determinant *)
+
+rewrite (det_trig phi 
+(Xfamily_n_m (S (nat_deg H - j - 1)) Q (nat_deg P - j - 1))
+(app (Xfamily Q (nat_deg H - j - 1)) (Xfamily H (nat_deg Q - j - 1)))
+(nat_deg P + nat_deg Q - j - 1)
+  (Pc (lcoef Q)));fold p q h in *.
+intros T HIn i Hi Hend.
+Import phi.
+unfold phi.
+fold phi.
+fold 
 Admitted.
 
 
@@ -968,8 +1118,8 @@ rewrite (det_family_sum (nat_deg H - j - 1)
 
 transitivity (det (nat_deg P + nat_deg Q - j - 1)
 (app
-     (times_X_n_family H (nat_deg Q - j - 1))
-    (times_X_n_family Q (nat_deg (H + B * Q) - j - 1)))).
+     (Xfamily H (nat_deg Q - j - 1))
+    (Xfamily Q (nat_deg (H + B * Q) - j - 1)))).
 apply det_family_sum_aux.
 
  deletion of the monomial sum of B

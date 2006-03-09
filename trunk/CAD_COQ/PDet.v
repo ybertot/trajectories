@@ -5,9 +5,11 @@ Require Import Utils.
 Require Import Setoid.
 Require Import ZArith.
 Require Import Even.
-Require Import phi.
+Require Import Pol_ring.
+(*Require Import phi.*)
+Require Import Mylist.
 
-Notation  ZCoef:=Pol.
+(*Notation  ZCoef:=Pol.*)
 Notation  pol:= Pol.
 Notation add :=Pol_add.
 Notation "a !* x" := (Pol_mul_Rat  x a )(at level 40, left associativity).
@@ -15,6 +17,19 @@ Notation "a !* x" := (Pol_mul_Rat  x a )(at level 40, left associativity).
 
 Add New Ring PolRing : PRth Abstract.
 Add New Ring CoefRing : cRth Abstract. 
+
+
+
+Section ListAux.
+
+Variable A: Set.
+Theorem length_app:
+ forall (l1 l2 : list A),  length (app l1  l2) = (length l1 + length l2)%nat.
+intros l1; elim l1; simpl; auto.
+Qed.
+
+End ListAux.
+
 
 (* lists of Pols pairwise PolEq equal*)
 Inductive Pol_list_equiv:(list Pol) -> (list Pol) ->Prop :=
@@ -83,7 +98,7 @@ intros l m;induction 1;simpl;trivial;auto with arith.
 Qed.
 
 
-Transparent phi.
+(*Transparent phi.*)
 
 
 Ltac toto := match goal with |- context [if ?X then _ else _ ] => case X end.
@@ -105,7 +120,20 @@ Qed.
 *)
 
 Section det.
-Fixpoint rec_det (f: pol -> Pol) (rec: list pol -> Pol)  (l1 l2: list pol)  {struct l1}: Pol :=
+Variable phi : nat -> nat -> Pol -> Pol.
+
+(*
+Notation scal:=(fun x y =>Pol_mul_Rat y x).
+*)
+Definition scal(x:Coef)(y:Pol):= Pol_mul_Rat y x.
+(*Notation add := Pol_add.*)
+
+Hypothesis phi_m: forall deg n a b c d,
+ phi deg n (add (scal a b) (scal c  d)) != a !* phi deg n b + c !* phi deg n d.
+
+
+
+Fixpoint rec_det (f: Pol -> Pol) (rec: list Pol -> Pol)  (l1 l2: list pol)  {struct l1}: Pol :=
   match l1 with
     nil =>  P0 
   | a:: l3 => f a * rec (app l2 l3)  - rec_det f  rec  l3 (app l2 (a::nil)) 
@@ -113,7 +141,7 @@ Fixpoint rec_det (f: pol -> Pol) (rec: list pol -> Pol)  (l1 l2: list pol)  {str
 
 Variable deg:nat.
 
-Fixpoint det_aux (n: nat) (l: list pol) {struct n}: Pol :=
+Fixpoint det_aux (n: nat) (l: list Pol) {struct n}: Pol :=
   match n with
     O => P1
   | S n1 => rec_det (phi deg n) (det_aux n1) l nil
@@ -283,6 +311,15 @@ apply Padd_ext; [setoid ring| apply det_t].
 rewrite H;setoid ring.
 intros; absurd (P1 + P1 != P0 );auto; apply P2_diff_P0.
 Qed.
+
+
+Definition  even_odd_dec : forall n, {even n} + {odd n}.
+induction n.
+auto with arith.
+elim IHn; auto with arith.
+Defined.
+
+
 
 Theorem rec_det_diag: forall f rec l1 l2 a1 a2,
   (forall a, In a l1 -> f a != P0) -> f a2 != P0 ->
@@ -490,8 +527,10 @@ constructor.
 reflexivity.
 Qed.
 
-Transparent phi.
-Add Morphism phi  with signature (@eq nat) ==>(@eq nat) ==> Pol_Eq ==> Pol_Eq  as phi_Morphism.
+
+Add Morphism phi  with signature (@eq nat) ==>(@eq nat) ==> Pol_Eq ==> Pol_Eq as phi_Morphism.
+Admitted.
+(*
 intros d n P Q;unfold phi;case (le_gt_dec (d+2)n); intros.
 Proof.
 reflexivity. 
@@ -503,7 +542,7 @@ intros;simpl;
 rewrite H;setoid ring.
 Show Script.
 Qed.
-
+*)
 
 
 
@@ -530,10 +569,10 @@ Qed.
 
 
 Theorem det_sum_simpl : forall l1 l2 l3 a b c,
-det (app l1 (app (((b + (scal c a)))::l2) (a::l3))) != det (app l1 (app (b::l2) (a::l3))).
+det (app l1 (app (((b + (c !* a)))::l2) (a::l3))) != det (app l1 (app (b::l2) (a::l3))).
 Proof.
 intros.
-rewrite <- (app_comm_cons l2 (a::l3) (b+(scal c a))).
+rewrite <- (app_comm_cons l2 (a::l3) (b+( c !* a))).
 assert (G: app l1 (b +(scal  c a) :: app l2 (a :: l3)) *= app l1 (((scal c1 b) + (scal c a)) :: app l2 (a :: l3))).
 apply app_morph.
 reflexivity.
@@ -548,19 +587,28 @@ rewrite det_zero.
 Pcsimpl;setoid ring.
 Qed.
 
+
 Theorem det_scal : forall l1 l2 a c,
-det (app l1 ((scal c a) :: l2)) != scal c (det (app l1 (a::l2))).
+det (app l1 ((c !* a) :: l2)) != c !* (det (app l1 (a::l2))).
 Proof.
 intros l1 l2 a c.
-transitivity  (det (app l1 (((scal c a) + (scal c0 P1)) :: l2))).
+transitivity  (det (app l1 (((c !* a) + (c0 !* P1)) :: l2))).
 apply det_morph;apply app_morph.
 reflexivity.
 constructor.
 unfold scal;Pcsimpl;setoid ring.
 reflexivity.
+fold (scal c a).
+fold (scal c(det (app l1 (a :: l2)))).
+fold (scal c0 P1).
 rewrite det_m.
 unfold scal;Pcsimpl;setoid ring.
 Qed.
 
+
+
+
 End det.
+
+
 
