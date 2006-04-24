@@ -349,12 +349,15 @@ unfold Pminus;simpl; setoid ring.
 unfold Pminus;simpl; setoid ring.
 Qed.
 
+
+
+(*
 Definition  even_odd_dec : forall n, {even n} + {odd n}.
 induction n.
 auto with arith.
 elim IHn; auto with arith.
 Defined.
-
+*)
 
 
 

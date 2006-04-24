@@ -3,12 +3,15 @@ Require Import Mylist.
 Require Import Tactic.
 Require Import Utils.
 Require Import Bool.
+Require Import ZArith.
+
 Require Import Pol_ring.
 
 Require Import phi.
 Require Import PDet.
 Require Import PolMonOSum.
-Require Import ZArith.
+(*Require Import DetTrig.*)
+
 Set Implicit Arguments.
 
 
@@ -20,6 +23,11 @@ Hypothesis cpow_1 : forall c, cpow c 1%N ==c.
 Hypothesis cintegral : forall a b, czero_test (a **b) = orb (czero_test a) (czero_test b).
 
 
+Lemma nat_deg_mul : forall P Q, P0test P =false -> 
+P0test Q =  false -> nat_deg (P*Q) = (nat_deg P + nat_deg Q)%nat.
+Admitted.
+
+
 Notation pdet := (det phi).
 
 Notation "x ^ i ":= (Pol_pow x i).
@@ -27,14 +35,16 @@ Notation "x ^^ i ":=(cpow x i) (at level 30, no associativity).
 
 Notation "| l |" := (length l)(at level 30).
 (* ca sert ca?*)
+(*
 Add Morphism (@cons Pol)
  with signature Pol_Eq ==> Pol_list_equiv ==>Pol_list_equiv as cons_comp.
 intros.
 constructor;trivial.
 Qed.
-
+*)
 (* version setoid de In *)
 (* on generalise lus que ca dans Myllist?*)
+(*
 Fixpoint PIn(P:Pol)(l:list Pol){struct l}:Prop:=
   match l with
    |nil => False
@@ -98,63 +108,84 @@ right.
 rewrite  IHHequiv;auto.
 Qed.
 
-
-
-(* comment on reconnait un sous-terme?*)
-Ltac myreplace_aux t1 t2 :=
-match goal with
-| |- context ctx[t1] => let t3:=(context ctx[ t2]) in transitivity t3
-|  |- _ => idtac "rate"
-end.
-
-Ltac myreplace :=
- repeat progress
-  (match goal with
+*)
+Ltac my_replace_aux := 
+(match goal with
    | |- - _ != - _ => apply Popp_comp
    | |- det _ _ _ != det _ _ _ => apply det_morph;try reflexivity
    | |- app _ _ *= app _ _=> apply app_morph;try reflexivity
    | |- _ :: _ *= _ :: _ => constructor;[try setoid ring|try reflexivity]
-   | |-_ =>  try reflexivity;try Pcsimpl;try assumption
+   | |-_ =>  reflexivity;try Pcsimpl;try assumption
   end).
 
 
 
-(*an other version of det_sum_simpl, using In, lefet then right*)
+
+(* un setoid replace rudimentaire
+qui ne marche que pour la premiere occurence...*)
+Ltac myreplace t u:=
+match goal with
+| |-  ?e1 != ?e2 =>
+     match e1 with
+        |context c[t] => 
+        let t':= context c [u] in transitivity t';[my_replace_aux|idtac]
+        | _ =>
+           match e2 with
+           |context c[t]=>
+           let t':= context c [u] in transitivity t';[idtac|my_replace_aux]
+          end
+     end
+| |- ?e1 *= ?e2 =>
+     match e1 with
+        |context c[t] => 
+        let t':= context c [u] in transitivity t';[my_replace_aux|idtac]
+        | _ =>
+           match e2 with
+           |context c[t]=>
+           let t':= context c [u] in transitivity t';[idtac|my_replace_aux]
+          end
+     end
+end.
+
+(* on ne peut pas parameter par aux :
+Ltac myreplace1 := myreplace my_replace_aux.
+User error: Immediate match producing tactics not allowed in local definitions*)
+
+
 Lemma det_PIn_l : forall l1 l2 P Q d c, PIn Q l1 ->
 pdet  d (app l1 ((P+(scal c Q))::l2)) != pdet d (app l1 (P::l2)). 
 Proof with (try apply phi_m;try reflexivity;auto).
 induction l1;intros l2 P Q d c H_In;simpl in H_In;elim H_In;intro G.
-transitivity (det phi d (app nil ((app (Q :: l1) (P + (scal c Q) :: l2))))).
-simpl;myreplace.
+myreplace
+(app (a :: l1) (P + scal c Q :: l2))
+(app nil ((app (Q :: l1) (P + (scal c Q) :: l2)))).
+rewrite G...
 rewrite det_t.
 unfold scal;rewrite det_sum_simpl...
 rewrite det_t. (* rajouter l'hypothese de phi*)
 setoid ring;simpl.
-myreplace.
+myreplace a Q;try rewrite G...
 symmetry...
 elim (@PIn_app Q l1 G).
 intros l3 Hex.
 elim Hex;intros l4 Heq.
-transitivity (det phi d (app (a::l3) (app (Q::l4) (P+(scal c Q)::l2)))).
-repeat rewrite ass_app.
-myreplace.
-rewrite <- app_comm_cons.
-constructor...
-transitivity (- det phi d (app (a :: l3) (app (P +(scal c Q):: l4) (Q :: l2)))).
+myreplace l1 (app l3 (Q :: l4)).
+rewrite Heq...
+rewrite app_comm_cons.
+rewrite <- ass_app.
 rewrite det_t.
-myreplace.
-unfold scal;rewrite det_sum_simpl...
+unfold scal.
+myreplace (P ::l4) ((P+ c !* Q)::l4).
+rewrite det_sum_simpl...
+myreplace l1 (app l3 (Q::l4)).
+myreplace 
+(app (a :: app l3 (Q :: l4)) (P + c !* Q :: l2))
+(app  (a::l3) (app (Q::l4) (P + c !* Q :: l2))).
 rewrite det_t.
-simpl.
-pattern cons at 1.
-rewrite  app_comm_cons.
-rewrite ass_app.
 setoid ring.
-myreplace.
-symmetry...
+rewrite ass_app...
+rewrite Heq...
 Qed.
-
-
 
 
 
@@ -169,16 +200,17 @@ elim (PIn_app Q l2 H_In).
 intros l3 Hex.
 elim Hex.
 intros l4 Heq.
-transitivity (det phi d (app l1 (P+scal c Q::app l3 (Q :: l4)))).
-myreplace...
+myreplace l2 (app l3 (Q::l4)).
+rewrite Heq...
 repeat rewrite app_comm_cons.
 unfold scal;rewrite det_sum_simpl...
 rewrite <- app_comm_cons.
-myreplace.
-symmetry...
+myreplace l2 (app l3 (Q::l4))...
+rewrite Heq...
 Qed.
 
-(* generalisation of det_sum_simpl to a finite linear combination  of redundant  polynomials*)
+(* generalisation of det_sum_simpl to a finite linear combination 
+ of redundant  polynomials*)
 
 
 
@@ -199,10 +231,19 @@ rewrite det_PIn_l...
 rewrite det_PIn_r...
 elim (H_neutral (S m));[intro H_fsm|intro Hfsm|auto with arith].
 rewrite H_fsm.
-transitivity (det phi d (app l1 (P + (Psum   (fun i : nat => scal (g i) (f i)) m)  :: l2)));
-[unfold scal;myreplace;setoid ring|apply IHm]...
-transitivity (det phi d (app l1 ((P + Psum  (fun i : nat => scal (g i) (f i)) m) + (scal (g (S m)) (f (S m))) :: l2))).
-myreplace.
+myreplace 
+(P + (Psum (fun i : nat => scal (g i) (f i)) m + scal (g (S m)) P0))
+(P + (Psum (fun i : nat => scal (g i) (f i)) m)).
+apply app_morph...
+constructor;try reflexivity.
+unfold scal;Pcsimpl;setoid ring.
+apply IHm;auto.
+myreplace (P +
+      (Psum (fun i : nat => scal (g i) (f i)) m + scal (g (S m)) (f (S m))))
+((P +
+      Psum (fun i : nat => scal (g i) (f i)) m) + scal (g (S m)) (f (S m))).
+apply app_morph...
+constructor;try reflexivity;setoid ring.
 elim Hfsm;intro H_In.
 rewrite det_PIn_l...
 rewrite det_PIn_r...
@@ -289,10 +330,10 @@ replace (m + S (S n))%nat with (S (m + (S n)))%nat;auto with arith.
 reflexivity.
 Qed.
 
-Lemma Xfamily_app : forall n m P, m<>0-> 
+Lemma Xfamily_app : forall n m P,
 Xfamily P ((S n)+m)%nat *= app (Xfamily_n_m (S m) P n) (Xfamily P m).
 Proof.
-induction n;intros m P Hnm;unfold Xfamily.
+induction n;intros m P ;unfold Xfamily.
 reflexivity.
 fold Xfamily.
 replace (S (S n) +m)%nat with ((S n) + (S m))%nat;[rewrite IHn|omega].
@@ -578,7 +619,7 @@ Admitted.
 Lemma mon_X_spec : forall n, mon (N_of_nat n) != X ^ (N_of_nat n).
 Admitted.
 
- Lemma mon_add : forall n m, (mon n)*(mon m) != mon (n + m). 
+Lemma mon_add : forall n m, (mon n)*(mon m) != mon (n + m). 
 Admitted.
 
 (* relation btw times_X_n and mon *)
@@ -604,10 +645,10 @@ right.
 exact (IHm n H0).
 Qed.
 
-
+(*
 Lemma N_of_nat_add: forall n m, N_of_nat (n + m)  = (N_of_nat n +  N_of_nat m)%N.
 Admitted.
-
+*)
 
 (* forall P, P\in family (A + sum g(i)BX^i i=0...k) -> 
 P = A + sum g(i)BX^(i+j) i=0...k), for some j<= n*)
@@ -652,6 +693,15 @@ assumption.
 Show Proof.
 Qed.
 
+Ltac myreplace_old :=
+ repeat progress
+  (match goal with
+   | |- - _ != - _ => apply Popp_comp
+   | |- det _ _ _ != det _ _ _ => apply det_morph;try reflexivity
+   | |- app _ _ *= app _ _=> apply app_morph;try reflexivity
+   | |- _ :: _ *= _ :: _ => constructor;[try setoid ring|try reflexivity]
+   | |-_ =>  try reflexivity;try Pcsimpl;try assumption
+  end).
 
 
 Lemma det_family_sum_aux : forall n l m  k d A B g,
@@ -663,6 +713,28 @@ l (app (Xfamily (A + (Psum (fun i => scal (g i)  (B*(mon (N_of_nat i)))) k)) n)
 det phi d (app l (app
 (Xfamily A n)
 (Xfamily B m))).
+(*Proof.
+induction n;intros l m k d A B g Hle.
+simpl.
+apply (@det_Psum k (fun i : nat => (B * mon (N_of_nat i)))).
+right;right.
+apply PIn_Xfamily.
+omega.
+unfold Xfamily;fold Xfamily.
+myreplace 
+(Xfamily
+(A + Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)
+(S n))
+((times_X_n
+                    (A + Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)
+                    (S n))::(Xfamily
+              (A + Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)
+              n) ).
+
+
+
+*)
+
 Proof.
 induction n;intros l m k d A B g Hle.
 simpl.
@@ -708,7 +780,7 @@ transitivity
 ((A*(mon (N_of_nat (S n))) 
   + (Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))) k)*mon(N_of_nat (S n)))::
 app (Xfamily A n) (Xfamily B m)))).
-myreplace.
+myreplace_old.
 rewrite times_X_n_to_mon.
 setoid ring.
 transitivity
@@ -718,7 +790,7 @@ transitivity
       Psum (fun i : nat => scal (g i) (B * mon (N_of_nat i))*
       mon (N_of_nat (S n))) k
       :: app (Xfamily A n) (Xfamily B m)))).
-myreplace.
+myreplace_old.
 rewrite <- (Psum_mul_r k (fun i :nat => scal (g i)(B*(mon (N_of_nat i))))).
 setoid ring.
 transitivity (det phi d
@@ -731,7 +803,7 @@ transitivity (det phi d
         (fun i : nat =>
          scal (g i) (B * mon (N_of_nat i) * mon (N_of_nat (S n)))) k
       :: app (Xfamily A n) (Xfamily B m)))).
-myreplace.
+myreplace_old.
 apply Padd_comp;[reflexivity|apply Psum_ext].
 intro n0;apply scal_Passoc.
 rewrite (@det_Psum k (fun i=> (B * mon (N_of_nat i)) * mon (N_of_nat (S n)))).
@@ -743,7 +815,7 @@ rewrite mon_add.
 rewrite <- N_of_nat_add.
 apply PIn_Xfamily.
 omega.
-myreplace.
+myreplace_old.
 symmetry;apply times_X_n_to_mon.
 repeat rewrite app_ass;reflexivity.
 repeat rewrite app_ass;reflexivity.
@@ -808,8 +880,209 @@ try (repeat rewrite scal_assoc);
 Lemma det_skip_axiom : forall d l1 l2,
 length l1 > 0 -> length l2 > 0 ->
 det phi  d (app l1 l2) != 
-(eps (length(l1) + (length l2))) !* (det phi d (app l2 l1)).
+(eps (length(l1) *(length l2))) !* (det phi d (app l2 l1)).
 Admitted.
+
+(*
+Lemma nat_of_P_pred : forall p, nat_of_P (p -1 )= pred (nat_of_P p).
+Proof.
+induction p.
+*)
+
+Lemma Pminus_one_Ppred:forall p, (p - 1)%positive = Ppred p. 
+Proof.
+induction p;simpl;unfold Pminus;unfold Pminus_mask;trivial.
+Qed.
+
+
+Lemma Pcompare_lt: forall p, (p?=p)%positive Lt = Lt.
+induction p;simpl;auto.
+Qed.
+
+Lemma get_coef_deg : forall n P,
+ nat_deg P <= n -> 
+forall m, m>n -> get_coef m P == c0.
+Proof.
+induction n;intros P Hdeg m Hlt.
+inversion Hdeg.
+destruct m;simpl;
+destruct P;try (apply False_ind;omega).
+reflexivity.
+simpl in H0.
+caseEq (P0test P);intro TestP.
+destruct p;rewrite (P0test_is_P0 P TestP);[
+setoid_replace (PX P0 (xI p - 1) c0) with P0|
+setoid_replace (PX P0 (xO p - 1) c0) with P0|
+idtac];try apply gcoef_P0;constructor;reflexivity.
+rewrite TestP in H0.
+SearchAbout nat_of_P.
+assert (G:= lt_O_nat_of_P p).
+apply False_ind;omega.
+inversion Hdeg.
+induction P;simpl in H0.
+apply False_ind;omega.
+caseEq (P0test P);intro CaseP;rewrite CaseP in H0.
+apply False_ind;omega.
+destruct m.
+apply False_ind;omega.
+simpl.
+destruct p;
+(apply IHn;
+simpl;
+try rewrite CaseP;
+try simpl in Hdeg;
+try rewrite CaseP in Hdeg).
+assert (Trans:nat_deg P + nat_of_P (xI p - 1)<nat_deg P + nat_of_P (xI p )).
+apply plus_lt_compat_l.
+apply nat_of_P_lt_Lt_compare_morphism.
+simpl.
+apply Pcompare_lt.
+omega.
+omega.
+rewrite  <- (Pplus_minus (xO p) xH) in Hdeg.
+rewrite nat_of_P_plus_morphism in Hdeg.
+simpl in Hdeg.
+omega.
+simpl;trivial.
+auto with arith.
+unfold nat_of_P in Hdeg.
+unfold Pmult_nat in Hdeg.
+omega.
+auto with arith.
+apply IHn;trivial.
+omega.
+Qed.
+
+
+Lemma times_X_n_P0: forall n Q, P0test Q = true -> times_X_n Q n != P0.
+induction n;intros Q HQ0;simpl.
+rewrite (P0test_is_P0 Q);trivial;reflexivity.
+rewrite IHn;trivial.
+setoid ring.
+Qed.
+Set Printing Notations.
+
+
+Lemma P0test_X : P0test X = false.
+Proof.
+simpl.
+rewrite c0test_c1.
+reflexivity.
+Qed.
+
+
+
+Lemma times_X_n_P0test : forall n P, P0test (times_X_n P n)= P0test P.
+Proof.
+induction n;intros P;
+caseEq (P0test P);intro Ptest;simpl;trivial.
+rewrite (times_X_n_P0 n P);trivial.
+setoid_replace (X*P0) with P0;[simpl|setoid ring].
+rewrite c0test_c0;reflexivity.
+caseEq (P0test (X * times_X_n P n));intro G;trivial.
+assert (H0 := P0test_is_P0 (X * times_X_n P n) G).
+elim (Pmul_integral X (times_X_n P n) H0);intro G1.
+inversion G1.
+inversion H5.
+absurd (czero_test c1 = false).
+rewrite H8.
+rewrite (c0test_c0).
+discriminate.
+apply c0test_c1.
+absurd (P0test (times_X_n P n) = false).
+rewrite G1.
+simpl.
+rewrite c0test_c0;discriminate.
+rewrite IHn;assumption.
+Qed.
+
+
+Lemma times_X_n_deg : forall n Q, P0test Q = false -> nat_deg
+  (times_X_n Q n) = (nat_deg Q + n)%nat.
+Proof.
+induction n;intros Q QNot0;simpl.
+auto with arith.
+rewrite nat_deg_mul;trivial.
+rewrite (IHn Q QNot0).
+simpl.
+rewrite c0test_c1.
+simpl;auto with arith.
+apply P0test_X.
+rewrite <- QNot0.
+apply times_X_n_P0test.
+Qed.
+
+(*
+Lemma nth_family_aux : forall n A B, nth n (Xfamily_n_m n A n) B = times_X_n A n.
+Proof.
+induction n;intros A B;trivial.
+unfold Xfamily_n_m.
+fold Xfamily_n_m.
+
+unfold nth;fold nth.
+simpl.
+rewrite (P0test_is_P0 A Atest).
+*)
+
+Lemma nth_Xfamily : forall k m n A B, k <= m ->
+(nth k (Xfamily_n_m n A m) B)= times_X_n A (n + m -k)%nat.
+Proof.
+induction k;destruct m;intros n A B  k_le;simpl.
+replace (n+0-0)%nat with n;[reflexivity|omega].
+replace (n + S m - 0)%nat with (n + S m)%nat;[reflexivity|omega].
+destruct k;try (apply False_ind;omega).
+rewrite IHk;auto with arith.
+replace (n + S m - S k)%nat with (n + m - k)%nat;trivial.
+omega.
+Qed.
+
+
+
+
+
+
+Lemma family_n_m_deg : forall n m P Q, 
+PIn P (Xfamily_n_m m Q n) -> nat_deg P <= m + ((nat_deg Q )+n)%nat.
+Proof.
+induction n;intros m P Q HIn;caseEq (P0test Q);
+intro Qtest;
+(match goal with
+| [H : (P0test ?Q = true) |- _ ]=> rewrite (P0test_is_P0 Q H);simpl
+| [H : (P0test ?Q = false)|- _ ] => simpl in HIn;elim HIn;clear HIn;intro HIn';try rewrite <- HIn'
+end).
+simpl in HIn;elim HIn;clear HIn;intro HIn'.
+rewrite (P0test_is_P0 Q Qtest) in HIn';simpl in HIn';rewrite <- HIn'.
+rewrite times_X_n_P0;simpl.
+apply c0test_c0.
+auto with arith.
+elim HIn'.
+rewrite times_X_n_deg;[omega|assumption].
+elim HIn'.
+simpl in HIn;elim HIn;clear HIn;intro HIn'.
+rewrite <- HIn'.
+rewrite times_X_n_P0;simpl;auto with arith.
+apply le_trans with (m + (0 + n))%nat.
+replace (m + (0 + n))%nat with (m + (nat_deg Q + n))%nat.
+apply IHn;trivial.
+rewrite (P0test_is_P0 Q Qtest);reflexivity.
+auto with arith.
+rewrite times_X_n_deg;trivial;omega.
+apply le_trans with (m + (nat_deg Q + n))%nat.
+apply IHn;trivial.
+omega.
+Qed.
+
+Lemma family_deg :forall n P Q, PIn P (Xfamily Q n) -> nat_deg P <= ((nat_deg Q )+n)%nat.
+Proof.
+intros n  P Q ;unfold Xfamily;intro H.
+replace (nat_deg Q + n)%nat with (0 + (nat_deg Q + n))%nat;
+[apply family_n_m_deg;assumption|auto with arith].
+Qed.
+
+
+
+
+
 
 
 
@@ -919,6 +1192,363 @@ rewrite app_ass;Pcsimpl.
 
 *)
 
+
+
+Definition pol:= Pol.
+Delimit Scope P_scope with Pol.
+Bind Scope P_scope with pol.
+
+
+
+Lemma PInapp_dec : forall l1 l2 P, PIn P (app l1 l2) -> (PIn P l1)
+  \/PIn P l2.
+Proof.
+induction l1;destruct l2;intro A;simpl;intro HIn;auto.
+rewrite <- app_nil_end in HIn;auto.
+elim HIn;intro HIn2.
+left;left;assumption.
+elim (IHl1 (p::l2) A HIn2);intro IHn3.
+left;right;assumption.
+simpl in IHn3.
+right;assumption.
+Qed.
+
+Lemma PIn_T_XfamilyT : forall n R, PIn R (Xfamily R n).
+Proof.
+induction n;intro R;simpl.
+left;reflexivity.
+right;trivial.
+Qed.
+
+Lemma Xfamily_include : forall n m R S, m <= n -> PIn R (Xfamily  S m)
+  -> PIn R (Xfamily S n).
+Proof.
+induction n;intros m R S Hle;
+simpl;inversion Hle;simpl;intro G;
+auto.
+fold Xfamily.
+right.
+apply IHn with m;assumption.
+Qed.
+
+
+Lemma plus_minus_ass: forall n m p, m>=p -> (n + (m-p))%nat = (n + m - p)%nat.
+intros.
+omega.
+Qed.
+
+Lemma minus_plus_ass: forall n m p, 
+m<=n -> (n - m + p)%nat = (n + p -m)%nat.
+intros.
+omega.
+Qed.
+
+Lemma minus_simpl: forall n m, m<= n-> (n -m + m=n)%nat.
+Proof.
+intros;omega.
+Qed.
+
+Lemma minus_simpl2:forall n m, (n + m - m = n)%nat.
+Proof.
+intros;omega.
+Qed.
+
+
+Lemma minus_simpl3 : forall n m, (n + m -n)%nat = m.
+Proof.
+intros;omega.
+Qed.
+
+Lemma plus_le_compat_r : forall x y z, x <= y -> x +z <= y +z.
+Proof.
+intros;apply plus_le_compat;auto with arith.
+Qed.
+
+Lemma minus_lt_reg : forall x y z, x < y -> x>= z -> x - z < y -z.
+intros.
+omega.
+Qed.
+
+Lemma minus_le_reg : forall x y z, x < y -> x>= z -> x - z <= y -z.
+intros.
+omega.
+Qed.
+
+
+
+(*
+Lemma plus_0:forall x, (x+0 = x)%nat.
+Proof.
+auto with arith.
+Qed.
+*)
+
+Lemma S_minus : forall n , ((S n) -1 = n)%nat.
+Proof.
+induction n;simpl;trivial.
+Qed.
+
+Lemma S_plus : forall n, S n = (n +1)%nat.
+Proof with trivial.
+induction n;simpl...
+rewrite IHn...
+Qed.
+
+
+Ltac omega_helper :=
+repeat progress
+(match goal with
+| |- context c [plus ?x  0]=> 
+  let t:= constr:x in 
+  let u:= constr:(plus x  0) in
+   (replace u with t;auto with arith)
+| |- context c [minus (plus ?x  ?y) ?y] => 
+  let t := constr:x in
+  let u := constr:(minus (plus x  y) y) in
+   (replace u with t;auto with arith)
+
+(*
+| |- context c [minus (S ?x) 1] => rewrite S_minus;auto with arith
+| |- context c [S ?x] => rewrite S_plus;auto with arith*)
+| |- lt (minus ?x ?z) (minus ?y ?z) => apply minus_lt_reg;auto with arith
+| |- le (minus ?x ?z) (minus ?y ?z) => apply minus_le_reg;auto with arith
+| |- lt (plus ?x ?z) (plus ?y ?z) => apply plus_lt_compat_r;auto with arith
+| |- le (plus ?x ?z) (plus ?y ?z) => apply plus_le_compat_r;auto with arith
+| |- context c [plus (minus ?x  ?y) ?y ]=> rewrite minus_simpl;auto with arith
+| |- context c [minus (plus ?x ?y) ?y ] => rewrite minus_simpl2
+| |- context c [minus (plus ?x ?y) ?x]=>rewrite minus_simpl3
+| |- context c [plus (minus ?x  ?y) ?z]=>rewrite minus_plus_ass;auto with arith
+| |- context c [plus ?x (minus ?y ?z)]=> rewrite plus_minus_ass;auto with arith
+end).
+
+(*
+Lemma omega1 : forall u v k,v>0 -> (u + (v - 1) - k <= u + v - 1 - k)%nat.
+Proof.
+intros.
+omega_helper.
+Qed.
+elim (le_gt_dec 1 v);intro Hv;inversion Hv.
+simpl.
+replace (u+1-1)%nat with u.
+omega.
+simpl.
+omega.
+simpl.
+replace (u+0)%nat with u;[idtac|auto with arith].
+apply False_ind;omega.
+omega.
+Qed.
+
+*)
+
+Lemma gt_minus_reg : forall x y u v, x>y -> u > v -> x > v -> x - v > y - u.
+Proof.
+intros x y u v H1 H2 H3.
+omega.
+Qed.
+ 
+(*
+Lemma omega1 : forall p q i j k h,
+ q <= p -> h < q -> j < h ->
+ k < i -> i < p - h
+ -> p + q - j - 1 + 2 > S (S i)
+ -> k <= p - h - 1
+ -> p - h >= 1
+->
+   p + q - j - 1 - i > q + p - 1 - j - k.
+Proof.
+destruct p; intros.
+inversion H5.
+simpl in *|- *.
+clear -H3;apply False_ind;omega.
+replace (q + S p)%nat with (S (q + p))%nat;auto with arith.
+destruct j.
+simpl.
+simpl in H4.
+assert (H7:p+q>i);[clear - H4;omega|clear-H7 H2].
+om
+clear -H H2 H4.
+
+omega.
+*)
+
+
+Lemma omega1 : forall x y k t j i,
+ y <= x -> t < y ->  j < t -> i < k -> x + y - j - 1 > i-> k < x - t->
+ x + y - j - 1 - i > y + x - 1 - j - k.
+destruct x;intros.
+inversion H4.
+rewrite plus_comm.
+replace (y+ S x)%nat with (S (y +x));auto with arith.
+destruct j.
+simpl.
+simpl in H3.
+rewrite plus_comm.
+replace (x+y-0)%nat with (x+y)%nat;auto with arith.
+replace (x+y-0)%nat with (x+y)%nat in H4;auto with arith.
+replace (x+y-0)%nat with (x+y)%nat;auto with arith.
+clear - H2 H3;omega.
+replace (S (y+x) - S j)%nat with (y + x -j)%nat;auto with arith.
+replace (S (y +x) -1)%nat  with (y + x)%nat;auto with arith.
+rewrite (S_plus j).
+clear - H2 H3;omega.
+Qed.
+
+Lemma omega2 : forall n m, n < m -> (S ( m - n -1) = m - n)%nat.
+induction n;destruct m;intro G.
+apply False_ind;omega.
+simpl;auto with arith.
+apply False_ind;omega.
+simpl.
+apply IHn.
+auto with arith.
+Qed.
+
+Definition lcoef(P:Pol):= get_coef (nat_deg P) P.
+
+Lemma times_X_n_get_coef_Pc:forall c n,
+get_coef (S n) (X*(Pc c))  == get_coef n (Pc c).
+Proof.
+intros.
+simpl.
+unfold Pol_mul_Rat.
+case_c0_test c.
+rewrite H0;
+destruct n;simpl;reflexivity.
+case_c0_test (c -- c1).
+destruct n;simpl.
+is_one c;symmetry;assumption.
+reflexivity.
+unfold Pol_mul_Rat_aux.
+unfold mkPX.
+case_c0_test (c1**c).
+absurd ((czero_test c)=false).
+setoid_replace c with c0.
+rewrite c0test_c0.
+intuition.
+rewrite <- H2;setoid ring.
+assumption.
+setoid_replace (c1**c) with c;try setoid ring.
+Qed.
+
+
+Lemma times_X_n_get_coef_PX:forall P c n,
+get_coef (S n) (PX P xH c) == get_coef n P.
+Proof.
+intros;reflexivity.
+Qed.
+
+Lemma nth_app_l : forall A k l1 l2 a, k<length l1 -> 
+@nth A k (app l1 l2) a = nth k l1 a.
+Proof.
+intro A;induction k;intros l1 l2 b Hk;destruct l1;simpl in Hk.
+apply False_ind;omega.
+rewrite <- app_comm_cons.
+reflexivity.
+simpl in Hk;apply False_ind;omega.
+rewrite <- app_comm_cons.
+simpl.
+apply IHk.
+auto with arith.
+Qed.
+
+
+
+Lemma nth_app_r : forall A k l1 l2 a, k>=length l1 -> 
+@nth A k (app l1 l2) a = nth (k - (length l1)) l2 a.
+Proof.
+intro A;induction k;intros l1 l2 b Hk;destruct l1;simpl.
+reflexivity.
+simpl in Hk;apply False_ind;omega.
+reflexivity.
+rewrite IHk;auto with arith.
+Qed.
+
+Lemma rev_length : forall A l, (length (@rev A l)) = length l.
+intro A;induction l;simpl;trivial.
+rewrite length_app.
+simpl;rewrite IHl;omega.
+Qed.
+
+
+Lemma nth_rev : forall A l k a, k < length l ->
+@nth A k (rev l) a = nth ((length l) - 1  - k) l a.
+Proof.
+intro A;
+induction l;intros k b Hk.
+simpl.
+destruct k;trivial.
+inversion Hk;simpl length;simpl rev.
+rewrite nth_app_r;[idtac|rewrite rev_length;auto with arith].
+replace ((|l|) -(|rev l|))%nat with O;[idtac|rewrite rev_length;auto with arith].
+replace (S (|l|) - 1 - (|l|))%nat with O;[idtac|omega].
+reflexivity.
+rewrite nth_app_l;[idtac|rewrite rev_length;auto with arith].
+replace  (S (|l |) - 1 - k)%nat with (S (|l | - 1 - k));[idtac|omega].
+simpl nth.
+apply IHl.
+omega.
+Qed.
+
+
+Lemma nth_rev_family_n_m:forall m k n P Q, k<m ->
+nth k (rev (Xfamily_n_m n P m)) Q != times_X_n P (n + k).
+Proof.
+intros m k n P Q Hk.
+rewrite nth_rev;rewrite family_n_m_length;auto with arith.
+rewrite nth_Xfamily;[idtac|omega].
+replace (n + m - (m + 1 - 1 - k))%nat with (n+k)%nat;[reflexivity|omega].
+Qed.
+
+
+
+Lemma times_X_n_lcoef:forall n Q, 
+get_coef ((nat_deg Q) + n)%nat (times_X_n Q n) == lcoef Q.
+Proof.
+induction n;intro Q;simpl.
+unfold lcoef.
+replace (nat_deg Q + 0)%nat with (nat_deg Q);auto with arith;reflexivity.
+replace (nat_deg Q + S n)%nat with (S (nat_deg Q + n))%nat;auto with arith.
+setoid_replace (X*times_X_n Q n) with (PX (times_X_n Q n) xH c0).
+rewrite times_X_n_get_coef_PX.
+apply IHn.
+generalize (times_X_n Q n).
+intro P.
+rewrite (PX_decompose 1 P).
+unfold mon.
+setoid ring.
+Qed.
+
+Lemma Pc_mul : forall a b, (Pc a) * (Pc b) != Pc (a**b).
+intros.
+simpl.
+rewrite Pscal_Pc.
+constructor;setoid ring.
+Qed.
+
+Lemma Pc_pow : forall n c, (Pc c) ^ n != Pc (c ^^ n).
+destruct n.
+intro c.
+simpl.
+rewrite cpow_0;reflexivity.
+apply (Pind (fun i => forall c, Pc c ^ Npos i != Pc (c ^^ Npos i)));
+intro c.
+rewrite cpow_1.
+reflexivity.
+intros Hind c0.
+replace (Npos (Psucc c)) with (Npos c + 1)%N.
+rewrite cpow_plus.
+rewrite Ppow_plus.
+rewrite Hind.
+
+rewrite (Pc_mul (c0 ^^Npos c) c0).
+constructor.
+rewrite cpow_1.
+reflexivity.
+rewrite Pplus_one_succ_r.
+reflexivity.
+Qed.
+
 Section SubresPolDef.
 
 
@@ -990,7 +1620,6 @@ Hypothesis euclid_relation : P !=H+ B*Q.
 
 
 
-Definition lcoef(P:Pol):= get_coef (nat_deg P) P.
 
 
 Ltac myreplace2 :=
@@ -998,7 +1627,7 @@ Ltac myreplace2 :=
     (match goal with
     | |- Xfamily _ _ *= Xfamily _ _=> apply X_n_fam_comp;try reflexivity;auto
     | |- context [subres_family _ _ _] => unfold subres_family
-    | |- _ =>  myreplace
+    | |- _ =>  myreplace_old
 end).
 
 (* pour la suite, cf bugreport hugo*) 
@@ -1007,14 +1636,21 @@ Ltac cool :=match goal with
 (context ctx[ (Psum  (fun i => scal (get_coef i P) ((mon (N_of_nat i)))*Q) (nat_deg P)) ] ) in
 transitivity t
 end.
+Lemma det_rev : forall d l1 l2,
+length l1 > 0 -> length l2 > 0 ->
+det phi  d (app l1 l2) != 
+(eps (length l1)) !* (det phi d (app (rev l1) l2)).
+Admitted.
 
-Definition pol:= Pol.
-Delimit Scope P_scope with Pol.
-Bind Scope P_scope with pol.
+
 
 Lemma subres_PQ_GH : forall j, j < h ->
-j_subres P Q j != ((eps ((p-q)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
 Proof with (try reflexivity;auto).
+(*
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).*)
 (*we first prove : jsubres P Q j != det (family H (q-j)) (family Q (p-j))*)
 intros j Hj.
 transitivity (j_subres (H+B*Q) Q j);unfold j_subres.
@@ -1062,113 +1698,1592 @@ apply (@det_family_sum
 (nat_deg Q - j - 1) ((nat_deg (Pol_add H  (Pol_mul B Q))) - j - 1)%nat (nat_deg B) (nat_deg P + nat_deg Q - j - 1)%nat
 H Q (fun i => get_coef i B)).
 rewrite <- euclid_relation.
-fold p q b h;omega.
-rewrite det_skip_axiom;
+fold p q b h;rewrite b_is_p_minus_q.
+omega_helper.
+(* la*)
+clear;omega.
+clear - lt_h_q Hj;omega.
+clear - lt_h_q Hj;omega.
+rewrite det_skip_axiom;fold p q h;
 try (repeat rewrite family_length).
 auto with arith.
 auto with arith.
-rewrite <- euclid_relation.
-Require Import DetTrig.
-transitivity (
-eps (nat_deg Q - j - 1 + 1 + (nat_deg P - j - 1 + 1))%nat
-!*pdet (nat_deg P + nat_deg Q - j - 1)%nat
-(app
-(app (Xfamily_n_m (S (nat_deg H - j - 1)%nat) Q (nat_deg P - j - 1)%nat)
-((Xfamily Q (nat_deg H - j - 1))))
-(Xfamily H (nat_deg Q - j - 1)))).
-apply Pmul_Rat_comp;try reflexivity.
-myreplace2.
-rewrite Xfamily_app.
+rewrite <- euclid_relation;fold p.
+rewrite <- scal_assoc.
+apply Pmul_Rat_comp.
+replace (p-j-1)%nat with ( (S (p -h-1)) + (h -j -1))%nat.
+(* we cut the family of powers of Q into two :  the first triangular part,
+of length q+h-j-1,giving the power on lcoef Q,
+and the one remaining in the det*)
+transitivity 
+(pdet (p + q - j - 1)%nat
+  (app (app (Xfamily_n_m (S (h-j-1)%nat) Q (p-h-1)) (Xfamily Q (h - j - 1)))
+  (Xfamily H (q - j - 1)))).
+myreplace_old.
+apply (@Xfamily_app (p-h-1)%nat (h-j-1)%nat Q).
+rewrite app_ass.
 
-apply Xfamily_app .
-fold h p;omega.
+rewrite 
+(det_rev (p+q-j-1)%nat (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)));try
+rewrite family_n_m_length.
+omega.
+rewrite length_app.
+pattern Xfamily at 1.
+rewrite family_length.
+clear - lt_h_q Hj;omega.
+(* ok, now we develop the determinant *)
+rewrite (det_trig phi 
+(rev (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)))
+((app (Xfamily Q (h - j - 1)) (Xfamily H (q - j - 1))))
+(p - h)
+P0
+(p+q-j-1)
+(Pc (lcoef Q))).
+(* we prove that degree is low at the end of the list*)
+Import PDet. (*???*)
+intros T HTIn index Hindex1 Hindex2.
+unfold phi.
+
+replace (p - h - 1 + 1 + 1)%nat with (p-h+1)%nat;[idtac|omega_helper;clear - lt_h_q q_le_p;omega].
+unfold phi.
+case (le_gt_dec (p + q - j - 1 + 2) index);intro Hcase.
+reflexivity.
+destruct index.
+reflexivity.
+destruct index.
+apply False_ind; apply (lt_irrefl 1 Hindex1).
+destruct (phi.even_odd_dec (S (S index))).
+replace (S (S index) -2)%nat with index;[idtac|auto with arith].
+constructor.
+apply (@get_coef_deg (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;
+[idtac|clear - Hj;omega_helper;clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega_helper;omega].
+unfold h.
+apply family_deg;assumption.
+clear e B  euclid_relation HTIn T b_is_p_minus_q Hindex1.
+assert (Aux1 : index <= p-h-1);[clear - Hindex2;omega_helper;omega|clear Hindex2].
+assert(Aux2 : p+q-j-1 > index);[clear - Hcase;omega_helper;omega|clear Hcase].
+assert(Aux3 :  p  - j - index >  h - j).
+omega.
+clear - Aux3 lt_h_q;omega.
+constructor.
+assert (Rate: get_coef (p + q - j - 1 - (S (S index) - 2)) T == c0).
+apply (@get_coef_deg  (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;[idtac|clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega].
+unfold h.
+apply family_deg;assumption.
+clear B o euclid_relation HTIn T b_is_p_minus_q Hindex1.
+replace (S (S index) - 2)%nat with index;auto with arith.
+assert (Aux1 : p + q - j -1 > index + q + h - j -1).
+assert (test1 : p+q-j>1).
+omega.
+assert (test2 : index + q + h -j > 1).
+omega.
+assert (test3 : p+q> index + q +h).
+clear -Hindex2 lt_h_q q_le_p;omega.
+clear - test1 test2 test3;omega.
+replace (S(S index)) with (index+2)%nat in Hcase. 
+assert (test3:p+q-j-1 > index);[clear - Hcase;omega|clear Hcase].
+apply (plus_gt_reg_l  (p+q-j-1-index)%nat (q+h-j-1)%nat index).
+rewrite le_plus_minus_r.
+omega_helper.
+rewrite plus_assoc...
+clear - Hj;omega.
+clear - Hj;omega.
+auto with arith.
+ring.
+rewrite Rate.
+setoid ring.
+
+(* we prove that the begining of the list is triangular*)
+intros i k k_lt_i Hi.
+unfold phi.
+case (le_gt_dec (p + q - j - 1 + 2) (S (S i)));intro G.
+reflexivity.
+assert (Goal_aux : 
+get_coef (p + q - j - 1 - (S (S i) - 2))
+(nth k (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) P0)
+ == c0).
+rewrite nth_Xfamily.
+ apply get_coef_deg with
+(q+ (S (h - j - 1) + (p - h - 1) - k))%nat.
+caseEq (P0test Q);intro Qtest.
+rewrite (P0test_is_P0 Q Qtest).
+rewrite times_X_n_P0.
+simpl;try apply c0test_c0.
+simpl;auto with arith.
+
+rewrite times_X_n_deg;trivial.
+replace (S (h-j-1))%nat with (h-j)%nat;[idtac|clear -Hj;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux2:p-h>=1).
+clear - Aux1 i_lt_k;omega.
+omega_helper.
+apply omega1 with h;trivial.
+clear - b0;omega.
+clear - Aux1 Aux2;omega.
+clear -Aux2;omega.
+clear - q_le_p lt_h_q;omega.
+clear - Aux2;omega.
+clear - Aux1 Hj;omega.
+clear - Aux2;omega.
+destruct (phi.even_odd_dec (S (S i)));rewrite Goal_aux;constructor;setoid ring.
+
+
+apply get_coef_deg with (q+ (S (h - j - 1) + (p - h -1)))%nat.
+caseEq (P0test Q);intro Qtest.
+rewrite (P0test_is_P0 Q Qtest).
+rewrite times_X_n_P0.
+simpl;try apply c0test_c0.
+simpl;auto with arith.
+
+rewrite times_X_n_deg;trivial.
+replace (S (h-j-1))%nat with (h-j)%nat;[idtac|clear -Hj;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux2:p-h>=1).
+
+clear - Hi;omega.
+unfold q.
+apply plus_le_compat_l.
+generalize (h - j)%nat;intro n.
+generalize (p-h)%nat;intro m.
+clear;omega.
+replace (S (S i) - 2)%nat with i;[idtac|clear;omega].
+replace (S (h - j - 1))%nat with (h - j)%nat;[idtac|clear - Hj;omega].
+omega_helper.
+
+apply (plus_le_compat_l (p - h - 1) (p -h ) (h - j)).
+omega_helper;try (clear - Aux2;omega).
+unfold q.
+clear;omega.
+clear - q_le_p lt_h_q Hj;omega.
+clear - q_le_p lt_h_q Hj;omega.
+apply omega1 with h;trivial.
+clear - b0;omega.
+clear - Aux1 Aux2;omega.
+clear -Aux2;omega.
+clear - q_le_p lt_h_q;omega.
+clear - Aux2;omega.
+clear - Aux1 Hj;omega.
+cl
+
+
+(*rewrite family_n_m_length in Hi.*)
+(*assert (Aux1: k <= p - h - 1);[clear -Hi k_lt_i;omega|idtac].*)
+
+rewrite nth_rev_family_n_m.
+clear - k_lt_i Hi;omega.
+apply get_coef_deg with (q+ (S (h - j - 1) + i))%nat.
+caseEq (P0test Q);intro Qtest.
+rewrite (P0test_is_P0 Q Qtest).
+rewrite times_X_n_P0.
+simpl;try apply c0test_c0.
+simpl;auto with arith.
+
+rewrite times_X_n_deg;trivial.
+replace (S (h-j-1))%nat with (h-j)%nat;[idtac|clear -Hj;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux2:p-h>=1).
+clear - Hi;omega.
+omega_helper.
+apply omega1 with h;trivial.
+clear - b0;omega.
+clear - Aux1 Aux2;omega.
+clear -Aux2;omega.
+clear - q_le_p lt_h_q;omega.
+clear - Aux2;omega.
+clear - Aux1 Hj;omega.
+clear - Aux2;omega.
+destruct (phi.even_odd_dec (S (S i)));rewrite Goal_aux;constructor;setoid ring.
+(* we prove that the coefs ont the begining of the diag are all Q*)
+intros T TIn i lt_i.
+unfold phi.
+rewrite family_n_m_length in lt_i.
+assert (Aux:i<p-h);[clear - lt_i q_le_p lt_h_q;omega|clear lt_i].
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+assert (Aux2 : p+q-j+1<= S (S i));[clear - a Hj lt_h_q q_le_p;omega|clear a].
+apply False_ind;omega.
+assert (Goal_aux :
+(get_coef (p + q - j - 1 - (S (S i) - 2))
+ (nth i (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T))
+== lcoef Q).
+rewrite  nth_Xfamily;[idtac|clear - Aux;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux1:p-h>=1);[clear - Aux;omega|idtac].
+replace (p + q - j - 1 - i)%nat with (q + (p-j-1-i))%nat.
+
+replace ((S (h - j - 1) + (p - h - 1) - i))%nat with (p-j-1-i)%nat.
+
+unfold q;apply times_X_n_lcoef.
+
+replace (S (h - j -1))%nat with (h - j)%nat;[idtac|symmetry;apply omega2;assumption].
+omega_helper.
+replace (p-j-1)%nat with (p-1-j)%nat;trivial.
+clear - q_le_p lt_h_q Hj;omega.
+clear - q_le_p lt_h_q;omega.
+assert (Aux2 : p -j -1>= 1);[clear - q_le_p lt_h_q Hj;omega|idtac].
+omega_helper;try (clear - Aux1;omega).
+clear -Aux2;omega.
+clear - Aux2;omega.
+clear - Hj lt_h_q q_le_p Aux;omega.
+destruct ( phi.even_odd_dec (S (S i)));rewrite Goal_aux...
+rewrite family_n_m_length.
+rewrite Pscal_Pmul_l.
+apply Pmul_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+rewrite Pc_pow.
+constructor;reflexivity.
+apply det_f_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+intros n T.
+unfold phi.
+replace (p+q-j-1+2)%nat with (p+q-j+1)%nat;[idtac|omega].
+replace (q + h - j - 1 + 2)%nat with (q + h - j +1)%nat;[idtac|omega].
+destruct (le_gt_dec (p + q - j +1) (n + (p - h)));
+destruct ( le_gt_dec (q + h - j +1)).
+reflexivity.
+apply False_ind;omega.
+caseEq (n + (p - h))%nat;intro n0.
+reflexivity.
+intro G;destruct n0;try reflexivity.
+caseEq n.
+intro G1.
+rewrite G1 in l;clear -l.
+apply False_ind;omega.
+intros n0 G2;caseEq (p-h)%nat;intro G3.
+rewrite G3 in G.
+replace (n+0)%nat with n in G;[idtac|omega];rewrite G in l.
+clear - l lt_h_q Hj;apply False_ind;omega.
+intro G4.
+rewrite G4 in G;rewrite G2 in G;clear - G;apply False_ind;omega.
+assert (Aux3:(p + q - j + 1=q+h-j+1+(p-h))%nat).
+clear -q_le_p lt_h_q Hj;omega.
+rewrite Aux3 in g.
+clear -g l;apply False_ind;omega.
+caseEq (n+(p-h))%nat.
+intro G1;caseEq n.
+intro G2;reflexivity.
+intros n0 G2.
+clear - G2 G1 lt_h_q q_le_p;apply False_ind;omega.
+intros n0 G1.
+caseEq n.
+intro G2.
+rewrite G2 in G1;simpl in G1.
+rewrite G2 in g;simpl  in g. 
+destruct n0.
+assert ( Aux : Pc (get_coef (p + q - j - 1 - (S (S n0) - 2)) T) = P0).
+
+
+
+case (le_gt_dec  (p + q - j - 1 + 2) i);intro G3.
+reflexivity.
+destruct i...
+destruct i.
+clear - G1;apply False_ind;omega.
+assert (Aux: get_coef (p + q - j - 1 - (S (S i) - 2)) T == c0).
+apply (@get_coef_deg  (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  TIn);intro TIn2.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;[idtac|clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega].
+unfold h.
+apply family_deg;assumption.
+clear B o euclid_relation TIn T b_is_p_minus_q Hindex1.
+replace (S (S index) - 2)%nat with index;auto with arith.
+assert (Aux1 : p + q - j -1 > index + q + h - j -1).
+assert (test1 : p+q-j>1).
+omega.
+assert (test2 : index + q + h -j > 1).
+omega.
+assert (test3 : p+q> index + q +h).
+clear -Hindex2 lt_h_q q_le_p;omega.
+clear - test1 test2 test3;omega.
+replace (S(S index)) with (index+2)%nat in Hcase. 
+assert (test3:p+q-j-1 > index);[clear - Hcase;omega|clear Hcase].
+apply (plus_gt_reg_l  (p+q-j-1-index)%nat (q+h-j-1)%nat index).
+rewrite le_plus_minus_r.
+omega_helper.
+rewrite plus_assoc...
+clear - Hj;omega.
+clear - Hj;omega.
+auto with arith.
+ring.
+
+
+
+
+
+
+
+rewrite family_n_m_length.
+intros T HTIn index Hindex1 Hindex2.
+replace (p - h - 1 + 1 + 1)%nat with (p-h+1)%nat;[idtac|omega_helper;clear - lt_h_q q_le_p;omega].
+unfold phi.
+case (le_gt_dec (p + q - j - 1 + 2) index);intro Hcase.
+reflexivity.
+destruct index.
+reflexivity.
+destruct index.
+apply False_ind; apply (lt_irrefl 1 Hindex1).
+destruct (phi.even_odd_dec (S (S index))).
+replace (S (S index) -2)%nat with index;[idtac|auto with arith].
+constructor.
+apply (@get_coef_deg (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;
+[idtac|clear - Hj;omega_helper;clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega_helper;omega].
+unfold h.
+apply family_deg;assumption.
+clear e B  euclid_relation HTIn T b_is_p_minus_q Hindex1.
+assert (Aux1 : index <= p-h-1);[clear - Hindex2;omega_helper;omega|clear Hindex2].
+assert(Aux2 : p+q-j-1 > index);[clear - Hcase;omega_helper;omega|clear Hcase].
+assert(Aux3 :  p  - j - index >  h - j).
+omega.
+clear - Aux3 lt_h_q;omega.
+constructor.
+assert (Rate: get_coef (p + q - j - 1 - (S (S index) - 2)) T == c0).
+apply (@get_coef_deg  (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;[idtac|clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega].
+unfold h.
+apply family_deg;assumption.
+clear B o euclid_relation HTIn T b_is_p_minus_q Hindex1.
+replace (S (S index) - 2)%nat with index;auto with arith.
+assert (Aux1 : p + q - j -1 > index + q + h - j -1).
+assert (test1 : p+q-j>1).
+omega.
+assert (test2 : index + q + h -j > 1).
+omega.
+assert (test3 : p+q> index + q +h).
+clear -Hindex2 lt_h_q q_le_p;omega.
+clear - test1 test2 test3;omega.
+replace (S(S index)) with (index+2)%nat in Hcase. 
+assert (test3:p+q-j-1 > index);[clear - Hcase;omega|clear Hcase].
+apply (plus_gt_reg_l  (p+q-j-1-index)%nat (q+h-j-1)%nat index).
+rewrite le_plus_minus_r.
+omega_helper.
+rewrite plus_assoc...
+clear - Hj;omega.
+clear - Hj;omega.
+auto with arith.
+ring.
+rewrite Rate.
+setoid ring.
+
+(* we prove that the begining of the list is triangular*)
+intros T TIn i k i_lt_k Hi.
+unfold phi.
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+reflexivity.
+assert (Goal_aux : 
+get_coef (p + q - j - 1 - (S (S i) - 2))
+(nth k (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T)
+ == c0).
+rewrite family_n_m_length in Hi.
+assert (Aux1: k <= p - h - 1).
+clear -Hi;omega.
+rewrite nth_Xfamily...
+apply get_coef_deg with (q+ (S (h - j - 1) + (p - h - 1) - k))%nat.
+caseEq (P0test Q);intro Qtest.
+rewrite (P0test_is_P0 Q Qtest).
+rewrite times_X_n_P0.
+simpl;try apply c0test_c0.
+simpl;auto with arith.
+
+rewrite times_X_n_deg;trivial.
+replace (S (h-j-1))%nat with (h-j)%nat;[idtac|clear -Hj;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux2:p-h>=1).
+clear - Aux1 i_lt_k;omega.
+omega_helper.
+apply omega1 with h;trivial.
+clear - b0;omega.
+clear - Aux1 Aux2;omega.
+clear -Aux2;omega.
+clear - q_le_p lt_h_q;omega.
+clear - Aux2;omega.
+clear - Aux1 Hj;omega.
+clear - Aux2;omega.
+destruct (phi.even_odd_dec (S (S i)));rewrite Goal_aux;constructor;setoid ring.
+(* we prove that the coefs ont the begining of the diag are all Q*)
+intros T TIn i lt_i.
+unfold phi.
+rewrite family_n_m_length in lt_i.
+assert (Aux:i<p-h);[clear - lt_i q_le_p lt_h_q;omega|clear lt_i].
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+assert (Aux2 : p+q-j+1<= S (S i));[clear - a Hj lt_h_q q_le_p;omega|clear a].
+apply False_ind;omega.
+assert (Goal_aux :
+(get_coef (p + q - j - 1 - (S (S i) - 2))
+ (nth i (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T))
+== lcoef Q).
+rewrite  nth_Xfamily;[idtac|clear - Aux;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux1:p-h>=1);[clear - Aux;omega|idtac].
+replace (p + q - j - 1 - i)%nat with (q + (p-j-1-i))%nat.
+
+replace ((S (h - j - 1) + (p - h - 1) - i))%nat with (p-j-1-i)%nat.
+
+unfold q;apply times_X_n_lcoef.
+
+replace (S (h - j -1))%nat with (h - j)%nat;[idtac|symmetry;apply omega2;assumption].
+omega_helper.
+replace (p-j-1)%nat with (p-1-j)%nat;trivial.
+clear - q_le_p lt_h_q Hj;omega.
+clear - q_le_p lt_h_q;omega.
+assert (Aux2 : p -j -1>= 1);[clear - q_le_p lt_h_q Hj;omega|idtac].
+omega_helper;try (clear - Aux1;omega).
+clear -Aux2;omega.
+clear - Aux2;omega.
+clear - Hj lt_h_q q_le_p Aux;omega.
+destruct ( phi.even_odd_dec (S (S i)));rewrite Goal_aux...
+rewrite family_n_m_length.
+rewrite Pscal_Pmul_l.
+apply Pmul_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+rewrite Pc_pow.
+constructor;reflexivity.
+apply det_f_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+intros n T.
+unfold phi.
+replace (p+q-j-1+2)%nat with (p+q-j+1)%nat;[idtac|omega].
+replace (q + h - j - 1 + 2)%nat with (q + h - j +1)%nat;[idtac|omega].
+destruct (le_gt_dec (p + q - j +1) (n + (p - h)));
+destruct ( le_gt_dec (q + h - j +1)).
+reflexivity.
+apply False_ind;omega.
+caseEq (n + (p - h))%nat;intro n0.
+reflexivity.
+intro G;destruct n0;try reflexivity.
+caseEq n.
+intro G1.
+rewrite G1 in l;clear -l.
+apply False_ind;omega.
+intros n0 G2;caseEq (p-h)%nat;intro G3.
+rewrite G3 in G.
+replace (n+0)%nat with n in G;[idtac|omega];rewrite G in l.
+clear - l lt_h_q Hj;apply False_ind;omega.
+intro G4.
+rewrite G4 in G;rewrite G2 in G;clear - G;apply False_ind;omega.
+assert (Aux3:(p + q - j + 1=q+h-j+1+(p-h))%nat).
+clear -q_le_p lt_h_q Hj;omega.
+rewrite Aux3 in g.
+clear -g l;apply False_ind;omega.
+caseEq (n+(p-h))%nat.
+intro G1;caseEq n.
+intro G2;reflexivity.
+intros n0 G2.
+clear - G2 G1 lt_h_q q_le_p;apply False_ind;omega.
+intros n0 G1.
+caseEq n.
+intro G2.
+rewrite G2 in G1;simpl in G1.
+rewrite G2 in g;simpl  in g. 
+destruct n0.
+assert ( Aux : Pc (get_coef (p + q - j - 1 - (S (S n0) - 2)) T) = P0).
+
+
+
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).
+(*
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).*)
+(*we first prove : jsubres P Q j != det (family H (q-j)) (family Q (p-j))*)
+intros j Hj.
+transitivity (j_subres (H+B*Q) Q j);unfold j_subres.
+myreplace2.
+rewrite (nat_deg_comp euclid_relation).
+myreplace2...
+transitivity (det phi (nat_deg (H + B * Q) + nat_deg Q - j - 1) (subres_family (H + ((sum_of_Pol B)* Q)) Q j)).
+myreplace2;rewrite <- (P_mon_sum B)...
+unfold subres_family.
+rewrite <- (nat_deg_comp euclid_relation).
+rewrite  (@nat_deg_comp (H + (sum_of_Pol B)*Q) (H+B*Q)).
+(*pourquoi ici replace marche pas???*)
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app (Xfamily (H +  (Psum  (fun i => scal (get_coef i B) (mon (N_of_nat i))*Q) (nat_deg B))) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))
+).
+myreplace2.
+apply Padd_comp...
+transitivity (
+Psum (fun i : nat => (scal (get_coef i B) (mon (N_of_nat i))) * Q)
+     (nat_deg B)).
+rewrite <- (Psum_mul_r (nat_deg B) (fun i =>  scal (get_coef i B) (mon (N_of_nat i)))).
+unfold sum_of_Pol...
+apply Psum_ext ;intro n...
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app
+     (Xfamily
+        (H +
+         Psum (fun i : nat => scal (get_coef i B) (Q*(mon (N_of_nat i))))
+           (nat_deg B)) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))).
+myreplace2.
+apply Padd_comp;[reflexivity|apply Psum_ext].
+intro n.
+rewrite scal_Passoc.
+unfold scal.
+setoid_replace (mon (N_of_nat n) * Q) with (Q*mon (N_of_nat n));setoid ring.
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1) (app
+(Xfamily H (nat_deg Q - j - 1))
+(Xfamily Q (nat_deg (H + B*Q) - j - 1)))).
+apply (@det_family_sum
+(nat_deg Q - j - 1) ((nat_deg (Pol_add H  (Pol_mul B Q))) - j - 1)%nat (nat_deg B) (nat_deg P + nat_deg Q - j - 1)%nat
+H Q (fun i => get_coef i B)).
+rewrite <- euclid_relation.
+fold p q b h;rewrite b_is_p_minus_q.
+omega_helper.
+(* la*)
+clear;omega.
+clear - lt_h_q Hj;omega.
+clear - lt_h_q Hj;omega.
+rewrite det_skip_axiom;fold p q h;
+try (repeat rewrite family_length).
+auto with arith.
+auto with arith.
+rewrite <- euclid_relation;fold p.
+rewrite <- scal_assoc.
+apply Pmul_Rat_comp.
+replace (p-j-1)%nat with ( (S (p -h-1)) + (h -j -1))%nat.
+(* we cut the family of powers of Q into two :  the first triangular part,
+of length q+h-j-1,giving the power on lcoef Q,
+and the one remaining in the det*)
+transitivity 
+(pdet (p + q - j - 1)%nat
+  (app (app (Xfamily_n_m (S (h-j-1)%nat) Q (p-h-1)) (Xfamily Q (h - j - 1)))
+  (Xfamily H (q - j - 1)))).
+myreplace_old.
+apply (@Xfamily_app (p-h-1)%nat (h-j-1)%nat Q).
 rewrite app_ass.
 (* ok, now we develop the determinant *)
-
 rewrite (det_trig phi 
-(Xfamily_n_m (S (nat_deg H - j - 1)) Q (nat_deg P - j - 1))
-(app (Xfamily Q (nat_deg H - j - 1)) (Xfamily H (nat_deg Q - j - 1)))
-(nat_deg P + nat_deg Q - j - 1)
-  (Pc (lcoef Q)));fold p q h in *.
-intros T HIn i Hi Hend.
-Import phi.
+(Xfamily_n_m (S (h - j - 1)) Q (p - h - 1))
+((app (Xfamily Q (h - j - 1)) (Xfamily H (q - j - 1))))
+(p + q - j - 1)
+(Pc (lcoef Q))).
+(* we prove that degree is low at the end of the list*)
+Import PDet. (*???*)
+rewrite family_n_m_length.
+intros T HTIn index Hindex1 Hindex2.
+replace (p - h - 1 + 1 + 1)%nat with (p-h+1)%nat;[idtac|omega_helper;clear - lt_h_q q_le_p;omega].
 unfold phi.
-fold phi.
-fold 
-Admitted.
+case (le_gt_dec (p + q - j - 1 + 2) index);intro Hcase.
+reflexivity.
+destruct index.
+reflexivity.
+destruct index.
+apply False_ind; apply (lt_irrefl 1 Hindex1).
+destruct (phi.even_odd_dec (S (S index))).
+replace (S (S index) -2)%nat with index;[idtac|auto with arith].
+constructor.
+apply (@get_coef_deg (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;
+[idtac|clear - Hj;omega_helper;clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega_helper;omega].
+unfold h.
+apply family_deg;assumption.
+clear e B  euclid_relation HTIn T b_is_p_minus_q Hindex1.
+assert (Aux1 : index <= p-h-1);[clear - Hindex2;omega_helper;omega|clear Hindex2].
+assert(Aux2 : p+q-j-1 > index);[clear - Hcase;omega_helper;omega|clear Hcase].
+assert(Aux3 :  p  - j - index >  h - j).
+omega.
+clear - Aux3 lt_h_q;omega.
+constructor.
+assert (Rate: get_coef (p + q - j - 1 - (S (S index) - 2)) T == c0).
+apply (@get_coef_deg  (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;[idtac|clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega].
+unfold h.
+apply family_deg;assumption.
+clear B o euclid_relation HTIn T b_is_p_minus_q Hindex1.
+replace (S (S index) - 2)%nat with index;auto with arith.
+assert (Aux1 : p + q - j -1 > index + q + h - j -1).
+assert (test1 : p+q-j>1).
+omega.
+assert (test2 : index + q + h -j > 1).
+omega.
+assert (test3 : p+q> index + q +h).
+clear -Hindex2 lt_h_q q_le_p;omega.
+clear - test1 test2 test3;omega.
+replace (S(S index)) with (index+2)%nat in Hcase. 
+assert (test3:p+q-j-1 > index);[clear - Hcase;omega|clear Hcase].
+apply (plus_gt_reg_l  (p+q-j-1-index)%nat (q+h-j-1)%nat index).
+rewrite le_plus_minus_r.
+omega_helper.
+rewrite plus_assoc...
+clear - Hj;omega.
+clear - Hj;omega.
+auto with arith.
+ring.
+rewrite Rate.
+setoid ring.
+
+(* we prove that the begining of the list is triangular*)
+intros T TIn i k i_lt_k Hi.
+unfold phi.
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+reflexivity.
+assert (Goal_aux : 
+get_coef (p + q - j - 1 - (S (S i) - 2))
+(nth k (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T)
+ == c0).
+rewrite family_n_m_length in Hi.
+assert (Aux1: k <= p - h - 1).
+clear -Hi;omega.
+rewrite nth_Xfamily...
+apply get_coef_deg with (q+ (S (h - j - 1) + (p - h - 1) - k))%nat.
+caseEq (P0test Q);intro Qtest.
+rewrite (P0test_is_P0 Q Qtest).
+rewrite times_X_n_P0.
+simpl;try apply c0test_c0.
+simpl;auto with arith.
+
+rewrite times_X_n_deg;trivial.
+replace (S (h-j-1))%nat with (h-j)%nat;[idtac|clear -Hj;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux2:p-h>=1).
+clear - Aux1 i_lt_k;omega.
+omega_helper.
+apply omega1 with h;trivial.
+clear - b0;omega.
+clear - Aux1 Aux2;omega.
+clear -Aux2;omega.
+clear - q_le_p lt_h_q;omega.
+clear - Aux2;omega.
+clear - Aux1 Hj;omega.
+clear - Aux2;omega.
+destruct (phi.even_odd_dec (S (S i)));rewrite Goal_aux;constructor;setoid ring.
+(* we prove that the coefs ont the begining of the diag are all Q*)
+intros T TIn i lt_i.
+unfold phi.
+rewrite family_n_m_length in lt_i.
+assert (Aux:i<p-h);[clear - lt_i q_le_p lt_h_q;omega|clear lt_i].
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+assert (Aux2 : p+q-j+1<= S (S i));[clear - a Hj lt_h_q q_le_p;omega|clear a].
+apply False_ind;omega.
+assert (Goal_aux :
+(get_coef (p + q - j - 1 - (S (S i) - 2))
+ (nth i (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T))
+== lcoef Q).
+rewrite  nth_Xfamily;[idtac|clear - Aux;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux1:p-h>=1);[clear - Aux;omega|idtac].
+replace (p + q - j - 1 - i)%nat with (q + (p-j-1-i))%nat.
+
+replace ((S (h - j - 1) + (p - h - 1) - i))%nat with (p-j-1-i)%nat.
+
+unfold q;apply times_X_n_lcoef.
+
+replace (S (h - j -1))%nat with (h - j)%nat;[idtac|symmetry;apply omega2;assumption].
+omega_helper.
+replace (p-j-1)%nat with (p-1-j)%nat;trivial.
+clear - q_le_p lt_h_q Hj;omega.
+clear - q_le_p lt_h_q;omega.
+assert (Aux2 : p -j -1>= 1);[clear - q_le_p lt_h_q Hj;omega|idtac].
+omega_helper;try (clear - Aux1;omega).
+clear -Aux2;omega.
+clear - Aux2;omega.
+clear - Hj lt_h_q q_le_p Aux;omega.
+destruct ( phi.even_odd_dec (S (S i)));rewrite Goal_aux...
+rewrite family_n_m_length.
+rewrite Pscal_Pmul_l.
+apply Pmul_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+rewrite Pc_pow.
+constructor;reflexivity.
+apply det_f_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+intros n T.
+unfold phi.
+replace (p+q-j-1+2)%nat with (p+q-j+1)%nat;[idtac|omega].
+replace (q + h - j - 1 + 2)%nat with (q + h - j +1)%nat;[idtac|omega].
+destruct (le_gt_dec (p + q - j +1) (n + (p - h)));
+destruct ( le_gt_dec (q + h - j +1)).
+reflexivity.
+apply False_ind;omega.
+caseEq (n + (p - h))%nat;intro n0.
+reflexivity.
+intro G;destruct n0;try reflexivity.
+caseEq n.
+intro G1.
+rewrite G1 in l;clear -l.
+apply False_ind;omega.
+intros n0 G2;caseEq (p-h)%nat;intro G3.
+rewrite G3 in G.
+replace (n+0)%nat with n in G;[idtac|omega];rewrite G in l.
+clear - l lt_h_q Hj;apply False_ind;omega.
+intro G4.
+rewrite G4 in G;rewrite G2 in G;clear - G;apply False_ind;omega.
+assert (Aux3:(p + q - j + 1=q+h-j+1+(p-h))%nat).
+clear -q_le_p lt_h_q Hj;omega.
+rewrite Aux3 in g.
+clear -g l;apply False_ind;omega.
+caseEq (n+(p-h))%nat.
+intro G1;caseEq n.
+intro G2;reflexivity.
+intros n0 G2.
+clear - G2 G1 lt_h_q q_le_p;apply False_ind;omega.
+intros n0 G1.
+caseEq n.
+intro G2.
+rewrite G2 in G1;simpl in G1.
+rewrite G2 in g;simpl  in g. 
+destruct n0.
+assert ( Aux : Pc (get_coef (p + q - j - 1 - (S (S n0) - 2)) T) = P0).
 
 
-
-
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).
 (*
-transitivity 
-rewrite b_is_p_minus_q.
-
-
-apply (det_family_sum_aux 
-(nat_deg Q - j - 1) ((nat_deg (Pol_add H  (Pol_mul B Q))) - j - 1)%nat (nat_deg Q - j - 1)%nat (nat_deg P + nat_deg Q - j - 1)%nat
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).*)
+(*we first prove : jsubres P Q j != det (family H (q-j)) (family Q (p-j))*)
+intros j Hj.
+transitivity (j_subres (H+B*Q) Q j);unfold j_subres.
+myreplace2.
+rewrite (nat_deg_comp euclid_relation).
+myreplace2...
+transitivity (det phi (nat_deg (H + B * Q) + nat_deg Q - j - 1) (subres_family (H + ((sum_of_Pol B)* Q)) Q j)).
+myreplace2;rewrite <- (P_mon_sum B)...
+unfold subres_family.
+rewrite <- (nat_deg_comp euclid_relation).
+rewrite  (@nat_deg_comp (H + (sum_of_Pol B)*Q) (H+B*Q)).
+(*pourquoi ici replace marche pas???*)
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app (Xfamily (H +  (Psum  (fun i => scal (get_coef i B) (mon (N_of_nat i))*Q) (nat_deg B))) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))
+).
+myreplace2.
+apply Padd_comp...
+transitivity (
+Psum (fun i : nat => (scal (get_coef i B) (mon (N_of_nat i))) * Q)
+     (nat_deg B)).
+rewrite <- (Psum_mul_r (nat_deg B) (fun i =>  scal (get_coef i B) (mon (N_of_nat i)))).
+unfold sum_of_Pol...
+apply Psum_ext ;intro n...
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app
+     (Xfamily
+        (H +
+         Psum (fun i : nat => scal (get_coef i B) (Q*(mon (N_of_nat i))))
+           (nat_deg B)) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))).
+myreplace2.
+apply Padd_comp;[reflexivity|apply Psum_ext].
+intro n.
+rewrite scal_Passoc.
+unfold scal.
+setoid_replace (mon (N_of_nat n) * Q) with (Q*mon (N_of_nat n));setoid ring.
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1) (app
+(Xfamily H (nat_deg Q - j - 1))
+(Xfamily Q (nat_deg (H + B*Q) - j - 1)))).
+apply (@det_family_sum
+(nat_deg Q - j - 1) ((nat_deg (Pol_add H  (Pol_mul B Q))) - j - 1)%nat (nat_deg B) (nat_deg P + nat_deg Q - j - 1)%nat
 H Q (fun i => get_coef i B)).
+rewrite <- euclid_relation.
+fold p q b h;rewrite b_is_p_minus_q.
+omega_helper.
+(* la*)
+clear;omega.
+clear - lt_h_q Hj;omega.
+clear - lt_h_q Hj;omega.
+rewrite det_skip_axiom;fold p q h;
+try (repeat rewrite family_length).
+auto with arith.
+auto with arith.
+rewrite <- euclid_relation;fold p.
+rewrite <- scal_assoc.
+apply Pmul_Rat_comp.
+replace (p-j-1)%nat with ( (S (p -h-1)) + (h -j -1))%nat.
+(* we cut the family of powers of Q into two :  the first triangular part,
+of length q+h-j-1,giving the power on lcoef Q,
+and the one remaining in the det*)
+transitivity 
+(pdet (p + q - j - 1)%nat
+  (app (app (Xfamily_n_m (S (h-j-1)%nat) Q (p-h-1)) (Xfamily Q (h - j - 1)))
+  (Xfamily H (q - j - 1)))).
+myreplace_old.
+apply (@Xfamily_app (p-h-1)%nat (h-j-1)%nat Q).
+rewrite app_ass.
+(* ok, now we develop the determinant *)
+rewrite (det_trig phi 
+(Xfamily_n_m (S (h - j - 1)) Q (p - h - 1))
+((app (Xfamily Q (h - j - 1)) (Xfamily H (q - j - 1))))
+(p + q - j - 1)
+(Pc (lcoef Q))).
+(* we prove that degree is low at the end of the list*)
+Import PDet. (*???*)
+rewrite family_n_m_length.
+intros T HTIn index Hindex1 Hindex2.
+replace (p - h - 1 + 1 + 1)%nat with (p-h+1)%nat;[idtac|omega_helper;clear - lt_h_q q_le_p;omega].
+unfold phi.
+case (le_gt_dec (p + q - j - 1 + 2) index);intro Hcase.
+reflexivity.
+destruct index.
+reflexivity.
+destruct index.
+apply False_ind; apply (lt_irrefl 1 Hindex1).
+destruct (phi.even_odd_dec (S (S index))).
+replace (S (S index) -2)%nat with index;[idtac|auto with arith].
+constructor.
+apply (@get_coef_deg (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;
+[idtac|clear - Hj;omega_helper;clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega_helper;omega].
+unfold h.
+apply family_deg;assumption.
+clear e B  euclid_relation HTIn T b_is_p_minus_q Hindex1.
+assert (Aux1 : index <= p-h-1);[clear - Hindex2;omega_helper;omega|clear Hindex2].
+assert(Aux2 : p+q-j-1 > index);[clear - Hcase;omega_helper;omega|clear Hcase].
+assert(Aux3 :  p  - j - index >  h - j).
+omega.
+clear - Aux3 lt_h_q;omega.
+constructor.
+assert (Rate: get_coef (p + q - j - 1 - (S (S index) - 2)) T == c0).
+apply (@get_coef_deg  (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;[idtac|clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega].
+unfold h.
+apply family_deg;assumption.
+clear B o euclid_relation HTIn T b_is_p_minus_q Hindex1.
+replace (S (S index) - 2)%nat with index;auto with arith.
+assert (Aux1 : p + q - j -1 > index + q + h - j -1).
+assert (test1 : p+q-j>1).
+omega.
+assert (test2 : index + q + h -j > 1).
+omega.
+assert (test3 : p+q> index + q +h).
+clear -Hindex2 lt_h_q q_le_p;omega.
+clear - test1 test2 test3;omega.
+replace (S(S index)) with (index+2)%nat in Hcase. 
+assert (test3:p+q-j-1 > index);[clear - Hcase;omega|clear Hcase].
+apply (plus_gt_reg_l  (p+q-j-1-index)%nat (q+h-j-1)%nat index).
+rewrite le_plus_minus_r.
+omega_helper.
+rewrite plus_assoc...
+clear - Hj;omega.
+clear - Hj;omega.
+auto with arith.
+ring.
+rewrite Rate.
+setoid ring.
+
+(* we prove that the begining of the list is triangular*)
+intros T TIn i k i_lt_k Hi.
+unfold phi.
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+reflexivity.
+assert (Goal_aux : 
+get_coef (p + q - j - 1 - (S (S i) - 2))
+(nth k (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T)
+ == c0).
+rewrite family_n_m_length in Hi.
+assert (Aux1: k <= p - h - 1).
+clear -Hi;omega.
+rewrite nth_Xfamily...
+apply get_coef_deg with (q+ (S (h - j - 1) + (p - h - 1) - k))%nat.
+caseEq (P0test Q);intro Qtest.
+rewrite (P0test_is_P0 Q Qtest).
+rewrite times_X_n_P0.
+simpl;try apply c0test_c0.
+simpl;auto with arith.
+
+rewrite times_X_n_deg;trivial.
+replace (S (h-j-1))%nat with (h-j)%nat;[idtac|clear -Hj;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux2:p-h>=1).
+clear - Aux1 i_lt_k;omega.
+omega_helper.
+apply omega1 with h;trivial.
+clear - b0;omega.
+clear - Aux1 Aux2;omega.
+clear -Aux2;omega.
+clear - q_le_p lt_h_q;omega.
+clear - Aux2;omega.
+clear - Aux1 Hj;omega.
+clear - Aux2;omega.
+destruct (phi.even_odd_dec (S (S i)));rewrite Goal_aux;constructor;setoid ring.
+(* we prove that the coefs ont the begining of the diag are all Q*)
+intros T TIn i lt_i.
+unfold phi.
+rewrite family_n_m_length in lt_i.
+assert (Aux:i<p-h);[clear - lt_i q_le_p lt_h_q;omega|clear lt_i].
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+assert (Aux2 : p+q-j+1<= S (S i));[clear - a Hj lt_h_q q_le_p;omega|clear a].
+apply False_ind;omega.
+assert (Goal_aux :
+(get_coef (p + q - j - 1 - (S (S i) - 2))
+ (nth i (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T))
+== lcoef Q).
+rewrite  nth_Xfamily;[idtac|clear - Aux;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux1:p-h>=1);[clear - Aux;omega|idtac].
+replace (p + q - j - 1 - i)%nat with (q + (p-j-1-i))%nat.
+
+replace ((S (h - j - 1) + (p - h - 1) - i))%nat with (p-j-1-i)%nat.
+
+unfold q;apply times_X_n_lcoef.
+
+replace (S (h - j -1))%nat with (h - j)%nat;[idtac|symmetry;apply omega2;assumption].
+omega_helper.
+replace (p-j-1)%nat with (p-1-j)%nat;trivial.
+clear - q_le_p lt_h_q Hj;omega.
+clear - q_le_p lt_h_q;omega.
+assert (Aux2 : p -j -1>= 1);[clear - q_le_p lt_h_q Hj;omega|idtac].
+omega_helper;try (clear - Aux1;omega).
+clear -Aux2;omega.
+clear - Aux2;omega.
+clear - Hj lt_h_q q_le_p Aux;omega.
+destruct ( phi.even_odd_dec (S (S i)));rewrite Goal_aux...
+rewrite family_n_m_length.
+rewrite Pscal_Pmul_l.
+apply Pmul_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+rewrite Pc_pow.
+constructor;reflexivity.
+apply det_f_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+intros n T.
+unfold phi.
+replace (p+q-j-1+2)%nat with (p+q-j+1)%nat;[idtac|omega].
+replace (q + h - j - 1 + 2)%nat with (q + h - j +1)%nat;[idtac|omega].
+destruct (le_gt_dec (p + q - j +1) (n + (p - h)));
+destruct ( le_gt_dec (q + h - j +1)).
+reflexivity.
+apply False_ind;omega.
+caseEq (n + (p - h))%nat;intro n0.
+reflexivity.
+intro G;destruct n0;try reflexivity.
+caseEq n.
+intro G1.
+rewrite G1 in l;clear -l.
+apply False_ind;omega.
+intros n0 G2;caseEq (p-h)%nat;intro G3.
+rewrite G3 in G.
+replace (n+0)%nat with n in G;[idtac|omega];rewrite G in l.
+clear - l lt_h_q Hj;apply False_ind;omega.
+intro G4.
+rewrite G4 in G;rewrite G2 in G;clear - G;apply False_ind;omega.
+assert (Aux3:(p + q - j + 1=q+h-j+1+(p-h))%nat).
+clear -q_le_p lt_h_q Hj;omega.
+rewrite Aux3 in g.
+clear -g l;apply False_ind;omega.
+caseEq (n+(p-h))%nat.
+intro G1;caseEq n.
+intro G2;reflexivity.
+intros n0 G2.
+clear - G2 G1 lt_h_q q_le_p;apply False_ind;omega.
+intros n0 G1.
+caseEq n.
+intro G2.
+rewrite G2 in G1;simpl in G1.
+rewrite G2 in g;simpl  in g. 
+destruct n0.
+assert ( Aux : Pc (get_coef (p + q - j - 1 - (S (S n0) - 2)) T) = P0).
 
 
 
-rewrite (det_family_sum (nat_deg H - j - 1)
+
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).
+(*
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).*)
+(*we first prove : jsubres P Q j != det (family H (q-j)) (family Q (p-j))*)
+intros j Hj.
+transitivity (j_subres (H+B*Q) Q j);unfold j_subres.
+myreplace2.
+rewrite (nat_deg_comp euclid_relation).
+myreplace2...
+transitivity (det phi (nat_deg (H + B * Q) + nat_deg Q - j - 1) (subres_family (H + ((sum_of_Pol B)* Q)) Q j)).
+myreplace2;rewrite <- (P_mon_sum B)...
+unfold subres_family.
+rewrite <- (nat_deg_comp euclid_relation).
+rewrite  (@nat_deg_comp (H + (sum_of_Pol B)*Q) (H+B*Q)).
+(*pourquoi ici replace marche pas???*)
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app (Xfamily (H +  (Psum  (fun i => scal (get_coef i B) (mon (N_of_nat i))*Q) (nat_deg B))) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))
+).
+myreplace2.
+apply Padd_comp...
+transitivity (
+Psum (fun i : nat => (scal (get_coef i B) (mon (N_of_nat i))) * Q)
+     (nat_deg B)).
+rewrite <- (Psum_mul_r (nat_deg B) (fun i =>  scal (get_coef i B) (mon (N_of_nat i)))).
+unfold sum_of_Pol...
+apply Psum_ext ;intro n...
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app
+     (Xfamily
+        (H +
+         Psum (fun i : nat => scal (get_coef i B) (Q*(mon (N_of_nat i))))
+           (nat_deg B)) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))).
+myreplace2.
+apply Padd_comp;[reflexivity|apply Psum_ext].
+intro n.
+rewrite scal_Passoc.
+unfold scal.
+setoid_replace (mon (N_of_nat n) * Q) with (Q*mon (N_of_nat n));setoid ring.
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1) (app
+(Xfamily H (nat_deg Q - j - 1))
+(Xfamily Q (nat_deg (H + B*Q) - j - 1)))).
+apply (@det_family_sum
+(nat_deg Q - j - 1) ((nat_deg (Pol_add H  (Pol_mul B Q))) - j - 1)%nat (nat_deg B) (nat_deg P + nat_deg Q - j - 1)%nat
+H Q (fun i => get_coef i B)).
+rewrite <- euclid_relation.
+fold p q b h;rewrite b_is_p_minus_q.
+omega_helper.
+(* la*)
+clear;omega.
+clear - lt_h_q Hj;omega.
+clear - lt_h_q Hj;omega.
+rewrite det_skip_axiom;fold p q h;
+try (repeat rewrite family_length).
+auto with arith.
+auto with arith.
+rewrite <- euclid_relation;fold p.
+rewrite <- scal_assoc.
+apply Pmul_Rat_comp.
+replace (p-j-1)%nat with ( (S (p -h-1)) + (h -j -1))%nat.
+(* we cut the family of powers of Q into two :  the first triangular part,
+of length q+h-j-1,giving the power on lcoef Q,
+and the one remaining in the det*)
+transitivity 
+(pdet (p + q - j - 1)%nat
+  (app (app (Xfamily_n_m (S (h-j-1)%nat) Q (p-h-1)) (Xfamily Q (h - j - 1)))
+  (Xfamily H (q - j - 1)))).
+myreplace_old.
+apply (@Xfamily_app (p-h-1)%nat (h-j-1)%nat Q).
+rewrite app_ass.
+(* ok, now we develop the determinant *)
+rewrite (det_trig phi 
+(Xfamily_n_m (S (h - j - 1)) Q (p - h - 1))
+((app (Xfamily Q (h - j - 1)) (Xfamily H (q - j - 1))))
+(p + q - j - 1)
+(Pc (lcoef Q))).
+(* we prove that degree is low at the end of the list*)
+Import PDet. (*???*)
+rewrite family_n_m_length.
+intros T HTIn index Hindex1 Hindex2.
+replace (p - h - 1 + 1 + 1)%nat with (p-h+1)%nat;[idtac|omega_helper;clear - lt_h_q q_le_p;omega].
+unfold phi.
+case (le_gt_dec (p + q - j - 1 + 2) index);intro Hcase.
+reflexivity.
+destruct index.
+reflexivity.
+destruct index.
+apply False_ind; apply (lt_irrefl 1 Hindex1).
+destruct (phi.even_odd_dec (S (S index))).
+replace (S (S index) -2)%nat with index;[idtac|auto with arith].
+constructor.
+apply (@get_coef_deg (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;
+[idtac|clear - Hj;omega_helper;clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega_helper;omega].
+unfold h.
+apply family_deg;assumption.
+clear e B  euclid_relation HTIn T b_is_p_minus_q Hindex1.
+assert (Aux1 : index <= p-h-1);[clear - Hindex2;omega_helper;omega|clear Hindex2].
+assert(Aux2 : p+q-j-1 > index);[clear - Hcase;omega_helper;omega|clear Hcase].
+assert(Aux3 :  p  - j - index >  h - j).
+omega.
+clear - Aux3 lt_h_q;omega.
+constructor.
+assert (Rate: get_coef (p + q - j - 1 - (S (S index) - 2)) T == c0).
+apply (@get_coef_deg  (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;[idtac|clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega].
+unfold h.
+apply family_deg;assumption.
+clear B o euclid_relation HTIn T b_is_p_minus_q Hindex1.
+replace (S (S index) - 2)%nat with index;auto with arith.
+assert (Aux1 : p + q - j -1 > index + q + h - j -1).
+assert (test1 : p+q-j>1).
+omega.
+assert (test2 : index + q + h -j > 1).
+omega.
+assert (test3 : p+q> index + q +h).
+clear -Hindex2 lt_h_q q_le_p;omega.
+clear - test1 test2 test3;omega.
+replace (S(S index)) with (index+2)%nat in Hcase. 
+assert (test3:p+q-j-1 > index);[clear - Hcase;omega|clear Hcase].
+apply (plus_gt_reg_l  (p+q-j-1-index)%nat (q+h-j-1)%nat index).
+rewrite le_plus_minus_r.
+omega_helper.
+rewrite plus_assoc...
+clear - Hj;omega.
+clear - Hj;omega.
+auto with arith.
+ring.
+rewrite Rate.
+setoid ring.
+
+(* we prove that the begining of the list is triangular*)
+intros T TIn i k i_lt_k Hi.
+unfold phi.
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+reflexivity.
+assert (Goal_aux : 
+get_coef (p + q - j - 1 - (S (S i) - 2))
+(nth k (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T)
+ == c0).
+rewrite family_n_m_length in Hi.
+assert (Aux1: k <= p - h - 1).
+clear -Hi;omega.
+rewrite nth_Xfamily...
+apply get_coef_deg with (q+ (S (h - j - 1) + (p - h - 1) - k))%nat.
+caseEq (P0test Q);intro Qtest.
+rewrite (P0test_is_P0 Q Qtest).
+rewrite times_X_n_P0.
+simpl;try apply c0test_c0.
+simpl;auto with arith.
+
+rewrite times_X_n_deg;trivial.
+replace (S (h-j-1))%nat with (h-j)%nat;[idtac|clear -Hj;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux2:p-h>=1).
+clear - Aux1 i_lt_k;omega.
+omega_helper.
+apply omega1 with h;trivial.
+clear - b0;omega.
+clear - Aux1 Aux2;omega.
+clear -Aux2;omega.
+clear - q_le_p lt_h_q;omega.
+clear - Aux2;omega.
+clear - Aux1 Hj;omega.
+clear - Aux2;omega.
+destruct (phi.even_odd_dec (S (S i)));rewrite Goal_aux;constructor;setoid ring.
+(* we prove that the coefs ont the begining of the diag are all Q*)
+intros T TIn i lt_i.
+unfold phi.
+rewrite family_n_m_length in lt_i.
+assert (Aux:i<p-h);[clear - lt_i q_le_p lt_h_q;omega|clear lt_i].
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+assert (Aux2 : p+q-j+1<= S (S i));[clear - a Hj lt_h_q q_le_p;omega|clear a].
+apply False_ind;omega.
+assert (Goal_aux :
+(get_coef (p + q - j - 1 - (S (S i) - 2))
+ (nth i (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T))
+== lcoef Q).
+rewrite  nth_Xfamily;[idtac|clear - Aux;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux1:p-h>=1);[clear - Aux;omega|idtac].
+replace (p + q - j - 1 - i)%nat with (q + (p-j-1-i))%nat.
+
+replace ((S (h - j - 1) + (p - h - 1) - i))%nat with (p-j-1-i)%nat.
+
+unfold q;apply times_X_n_lcoef.
+
+replace (S (h - j -1))%nat with (h - j)%nat;[idtac|symmetry;apply omega2;assumption].
+omega_helper.
+replace (p-j-1)%nat with (p-1-j)%nat;trivial.
+clear - q_le_p lt_h_q Hj;omega.
+clear - q_le_p lt_h_q;omega.
+assert (Aux2 : p -j -1>= 1);[clear - q_le_p lt_h_q Hj;omega|idtac].
+omega_helper;try (clear - Aux1;omega).
+clear -Aux2;omega.
+clear - Aux2;omega.
+clear - Hj lt_h_q q_le_p Aux;omega.
+destruct ( phi.even_odd_dec (S (S i)));rewrite Goal_aux...
+rewrite family_n_m_length.
+rewrite Pscal_Pmul_l.
+apply Pmul_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+rewrite Pc_pow.
+constructor;reflexivity.
+apply det_f_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+intros n T.
+unfold phi.
+replace (p+q-j-1+2)%nat with (p+q-j+1)%nat;[idtac|omega].
+replace (q + h - j - 1 + 2)%nat with (q + h - j +1)%nat;[idtac|omega].
+destruct (le_gt_dec (p + q - j +1) (n + (p - h)));
+destruct ( le_gt_dec (q + h - j +1)).
+reflexivity.
+apply False_ind;omega.
+caseEq (n + (p - h))%nat;intro n0.
+reflexivity.
+intro G;destruct n0;try reflexivity.
+caseEq n.
+intro G1.
+rewrite G1 in l;clear -l.
+apply False_ind;omega.
+intros n0 G2;caseEq (p-h)%nat;intro G3.
+rewrite G3 in G.
+replace (n+0)%nat with n in G;[idtac|omega];rewrite G in l.
+clear - l lt_h_q Hj;apply False_ind;omega.
+intro G4.
+rewrite G4 in G;rewrite G2 in G;clear - G;apply False_ind;omega.
+assert (Aux3:(p + q - j + 1=q+h-j+1+(p-h))%nat).
+clear -q_le_p lt_h_q Hj;omega.
+rewrite Aux3 in g.
+clear -g l;apply False_ind;omega.
+caseEq (n+(p-h))%nat.
+intro G1;caseEq n.
+intro G2;reflexivity.
+intros n0 G2.
+clear - G2 G1 lt_h_q q_le_p;apply False_ind;omega.
+intros n0 G1.
+caseEq n.
+intro G2.
+rewrite G2 in G1;simpl in G1.
+rewrite G2 in g;simpl  in g. 
+destruct n0.
+assert ( Aux : Pc (get_coef (p + q - j - 1 - (S (S n0) - 2)) T) = P0).
+
+
+
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).
+(*
+Lemma subres_PQ_GH : forall j, j < h ->
+j_subres P Q j != ((eps ((p-j)*(q-j))%nat) ** ((lcoef Q) ^^ N_of_nat (p -h)%nat)) !* j_subres Q H j.
+Proof with (try reflexivity;auto).*)
+(*we first prove : jsubres P Q j != det (family H (q-j)) (family Q (p-j))*)
+intros j Hj.
+transitivity (j_subres (H+B*Q) Q j);unfold j_subres.
+myreplace2.
+rewrite (nat_deg_comp euclid_relation).
+myreplace2...
+transitivity (det phi (nat_deg (H + B * Q) + nat_deg Q - j - 1) (subres_family (H + ((sum_of_Pol B)* Q)) Q j)).
+myreplace2;rewrite <- (P_mon_sum B)...
+unfold subres_family.
+rewrite <- (nat_deg_comp euclid_relation).
+rewrite  (@nat_deg_comp (H + (sum_of_Pol B)*Q) (H+B*Q)).
+(*pourquoi ici replace marche pas???*)
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app (Xfamily (H +  (Psum  (fun i => scal (get_coef i B) (mon (N_of_nat i))*Q) (nat_deg B))) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))
+).
+myreplace2.
+apply Padd_comp...
+transitivity (
+Psum (fun i : nat => (scal (get_coef i B) (mon (N_of_nat i))) * Q)
+     (nat_deg B)).
+rewrite <- (Psum_mul_r (nat_deg B) (fun i =>  scal (get_coef i B) (mon (N_of_nat i)))).
+unfold sum_of_Pol...
+apply Psum_ext ;intro n...
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1)
+  (app
+     (Xfamily
+        (H +
+         Psum (fun i : nat => scal (get_coef i B) (Q*(mon (N_of_nat i))))
+           (nat_deg B)) (nat_deg Q - j - 1))
+     (Xfamily Q (nat_deg (H + B * Q) - j - 1)))).
+myreplace2.
+apply Padd_comp;[reflexivity|apply Psum_ext].
+intro n.
+rewrite scal_Passoc.
+unfold scal.
+setoid_replace (mon (N_of_nat n) * Q) with (Q*mon (N_of_nat n));setoid ring.
+transitivity (
+det phi (nat_deg P + nat_deg Q - j - 1) (app
+(Xfamily H (nat_deg Q - j - 1))
+(Xfamily Q (nat_deg (H + B*Q) - j - 1)))).
+apply (@det_family_sum
+(nat_deg Q - j - 1) ((nat_deg (Pol_add H  (Pol_mul B Q))) - j - 1)%nat (nat_deg B) (nat_deg P + nat_deg Q - j - 1)%nat
+H Q (fun i => get_coef i B)).
+rewrite <- euclid_relation.
+fold p q b h;rewrite b_is_p_minus_q.
+omega_helper.
+(* la*)
+clear;omega.
+clear - lt_h_q Hj;omega.
+clear - lt_h_q Hj;omega.
+rewrite det_skip_axiom;fold p q h;
+try (repeat rewrite family_length).
+auto with arith.
+auto with arith.
+rewrite <- euclid_relation;fold p.
+rewrite <- scal_assoc.
+apply Pmul_Rat_comp.
+replace (p-j-1)%nat with ( (S (p -h-1)) + (h -j -1))%nat.
+(* we cut the family of powers of Q into two :  the first triangular part,
+of length q+h-j-1,giving the power on lcoef Q,
+and the one remaining in the det*)
+transitivity 
+(pdet (p + q - j - 1)%nat
+  (app (app (Xfamily_n_m (S (h-j-1)%nat) Q (p-h-1)) (Xfamily Q (h - j - 1)))
+  (Xfamily H (q - j - 1)))).
+myreplace_old.
+apply (@Xfamily_app (p-h-1)%nat (h-j-1)%nat Q).
+rewrite app_ass.
+(* ok, now we develop the determinant *)
+rewrite (det_trig phi 
+(Xfamily_n_m (S (h - j - 1)) Q (p - h - 1))
+((app (Xfamily Q (h - j - 1)) (Xfamily H (q - j - 1))))
+(p + q - j - 1)
+(Pc (lcoef Q))).
+(* we prove that degree is low at the end of the list*)
+Import PDet. (*???*)
+rewrite family_n_m_length.
+intros T HTIn index Hindex1 Hindex2.
+replace (p - h - 1 + 1 + 1)%nat with (p-h+1)%nat;[idtac|omega_helper;clear - lt_h_q q_le_p;omega].
+unfold phi.
+case (le_gt_dec (p + q - j - 1 + 2) index);intro Hcase.
+reflexivity.
+destruct index.
+reflexivity.
+destruct index.
+apply False_ind; apply (lt_irrefl 1 Hindex1).
+destruct (phi.even_odd_dec (S (S index))).
+replace (S (S index) -2)%nat with index;[idtac|auto with arith].
+constructor.
+apply (@get_coef_deg (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;
+[idtac|clear - Hj;omega_helper;clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega_helper;omega].
+unfold h.
+apply family_deg;assumption.
+clear e B  euclid_relation HTIn T b_is_p_minus_q Hindex1.
+assert (Aux1 : index <= p-h-1);[clear - Hindex2;omega_helper;omega|clear Hindex2].
+assert(Aux2 : p+q-j-1 > index);[clear - Hcase;omega_helper;omega|clear Hcase].
+assert(Aux3 :  p  - j - index >  h - j).
+omega.
+clear - Aux3 lt_h_q;omega.
+constructor.
+assert (Rate: get_coef (p + q - j - 1 - (S (S index) - 2)) T == c0).
+apply (@get_coef_deg  (q+h-j-1)%nat T) .
+elim 
+(PInapp_dec (Xfamily Q (h - j- 1)) (Xfamily H (q - j- 1)) T
+  HTIn);intro TIn.
+replace ( q + h - j - 1)%nat with (q + (h - j - 1))%nat;[idtac|clear - Hj;omega].
+unfold q.
+apply family_deg;try assumption.
+replace ( q + h - j - 1)%nat with (h +(q-j-1))%nat;[idtac|clear - Hj lt_h_q;omega].
+unfold h.
+apply family_deg;assumption.
+clear B o euclid_relation HTIn T b_is_p_minus_q Hindex1.
+replace (S (S index) - 2)%nat with index;auto with arith.
+assert (Aux1 : p + q - j -1 > index + q + h - j -1).
+assert (test1 : p+q-j>1).
+omega.
+assert (test2 : index + q + h -j > 1).
+omega.
+assert (test3 : p+q> index + q +h).
+clear -Hindex2 lt_h_q q_le_p;omega.
+clear - test1 test2 test3;omega.
+replace (S(S index)) with (index+2)%nat in Hcase. 
+assert (test3:p+q-j-1 > index);[clear - Hcase;omega|clear Hcase].
+apply (plus_gt_reg_l  (p+q-j-1-index)%nat (q+h-j-1)%nat index).
+rewrite le_plus_minus_r.
+omega_helper.
+rewrite plus_assoc...
+clear - Hj;omega.
+clear - Hj;omega.
+auto with arith.
+ring.
+rewrite Rate.
+setoid ring.
+
+(* we prove that the begining of the list is triangular*)
+intros T TIn i k i_lt_k Hi.
+unfold phi.
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+reflexivity.
+assert (Goal_aux : 
+get_coef (p + q - j - 1 - (S (S i) - 2))
+(nth k (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T)
+ == c0).
+rewrite family_n_m_length in Hi.
+assert (Aux1: k <= p - h - 1).
+clear -Hi;omega.
+rewrite nth_Xfamily...
+apply get_coef_deg with (q+ (S (h - j - 1) + (p - h - 1) - k))%nat.
+caseEq (P0test Q);intro Qtest.
+rewrite (P0test_is_P0 Q Qtest).
+rewrite times_X_n_P0.
+simpl;try apply c0test_c0.
+simpl;auto with arith.
+
+rewrite times_X_n_deg;trivial.
+replace (S (h-j-1))%nat with (h-j)%nat;[idtac|clear -Hj;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux2:p-h>=1).
+clear - Aux1 i_lt_k;omega.
+omega_helper.
+apply omega1 with h;trivial.
+clear - b0;omega.
+clear - Aux1 Aux2;omega.
+clear -Aux2;omega.
+clear - q_le_p lt_h_q;omega.
+clear - Aux2;omega.
+clear - Aux1 Hj;omega.
+clear - Aux2;omega.
+destruct (phi.even_odd_dec (S (S i)));rewrite Goal_aux;constructor;setoid ring.
+(* we prove that the coefs ont the begining of the diag are all Q*)
+intros T TIn i lt_i.
+unfold phi.
+rewrite family_n_m_length in lt_i.
+assert (Aux:i<p-h);[clear - lt_i q_le_p lt_h_q;omega|clear lt_i].
+induction (le_gt_dec (p + q - j - 1 + 2) (S (S i))).
+assert (Aux2 : p+q-j+1<= S (S i));[clear - a Hj lt_h_q q_le_p;omega|clear a].
+apply False_ind;omega.
+assert (Goal_aux :
+(get_coef (p + q - j - 1 - (S (S i) - 2))
+ (nth i (Xfamily_n_m (S (h - j - 1)) Q (p - h - 1)) T))
+== lcoef Q).
+rewrite  nth_Xfamily;[idtac|clear - Aux;omega].
+replace (S (S i) -2)%nat with i;[idtac|clear;omega].
+assert (Aux1:p-h>=1);[clear - Aux;omega|idtac].
+replace (p + q - j - 1 - i)%nat with (q + (p-j-1-i))%nat.
+
+replace ((S (h - j - 1) + (p - h - 1) - i))%nat with (p-j-1-i)%nat.
+
+unfold q;apply times_X_n_lcoef.
+
+replace (S (h - j -1))%nat with (h - j)%nat;[idtac|symmetry;apply omega2;assumption].
+omega_helper.
+replace (p-j-1)%nat with (p-1-j)%nat;trivial.
+clear - q_le_p lt_h_q Hj;omega.
+clear - q_le_p lt_h_q;omega.
+assert (Aux2 : p -j -1>= 1);[clear - q_le_p lt_h_q Hj;omega|idtac].
+omega_helper;try (clear - Aux1;omega).
+clear -Aux2;omega.
+clear - Aux2;omega.
+clear - Hj lt_h_q q_le_p Aux;omega.
+destruct ( phi.even_odd_dec (S (S i)));rewrite Goal_aux...
+rewrite family_n_m_length.
+rewrite Pscal_Pmul_l.
+apply Pmul_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+rewrite Pc_pow.
+constructor;reflexivity.
+apply det_f_comp.
+replace (p-h-1+1)%nat with (p-h)%nat;[idtac|omega].
+intros n T.
+unfold phi.
+replace (p+q-j-1+2)%nat with (p+q-j+1)%nat;[idtac|omega].
+replace (q + h - j - 1 + 2)%nat with (q + h - j +1)%nat;[idtac|omega].
+destruct (le_gt_dec (p + q - j +1) (n + (p - h)));
+destruct ( le_gt_dec (q + h - j +1)).
+reflexivity.
+apply False_ind;omega.
+caseEq (n + (p - h))%nat;intro n0.
+reflexivity.
+intro G;destruct n0;try reflexivity.
+caseEq n.
+intro G1.
+rewrite G1 in l;clear -l.
+apply False_ind;omega.
+intros n0 G2;caseEq (p-h)%nat;intro G3.
+rewrite G3 in G.
+replace (n+0)%nat with n in G;[idtac|omega];rewrite G in l.
+clear - l lt_h_q Hj;apply False_ind;omega.
+intro G4.
+rewrite G4 in G;rewrite G2 in G;clear - G;apply False_ind;omega.
+assert (Aux3:(p + q - j + 1=q+h-j+1+(p-h))%nat).
+clear -q_le_p lt_h_q Hj;omega.
+rewrite Aux3 in g.
+clear -g l;apply False_ind;omega.
+caseEq (n+(p-h))%nat.
+intro G1;caseEq n.
+intro G2;reflexivity.
+intros n0 G2.
+clear - G2 G1 lt_h_q q_le_p;apply False_ind;omega.
+intros n0 G1.
+caseEq n.
+intro G2.
+rewrite G2 in G1;simpl in G1.
+rewrite G2 in g;simpl  in g. 
+destruct n0.
+assert ( Aux : Pc (get_coef (p + q - j - 1 - (S (S n0) - 2)) T) = P0).
 
 
 
 
-transitivity (det (nat_deg P + nat_deg Q - j - 1)
-(app
-     (Xfamily H (nat_deg Q - j - 1))
-    (Xfamily Q (nat_deg (H + B * Q) - j - 1)))).
-apply det_family_sum_aux.
 
- deletion of the monomial sum of B
- match goal with
-| |- context ctx [Pol_mul (sum_of_Pol ?P) ?Q ] =>
-let t := 
-(context ctx[ (Psum  (fun i => scal (get_coef i P) ((mon (N_of_nat i)))*Q) (nat_deg P)) ] ) in
-apply Pol_eq_trans with  t
-end.
-cool.
+
+(**** ici l'extensionalit'e de det:
+il faudrait pouver un truc comme : forall ...,
+(forall n P, f1 d1 n P != f2 d2 n P) -> forall l, det f1 d1 l = det f2 d2 l
+
 *)
 
-Let lc_q := snd (Pol_deg_coefdom Q).
-Let lc_h := snd (Pol_deg_coefdom H).
-Hypothesis div_rel : P + (B*Q)  != H.
-
-(* somme des entiers de 1 a n*)
-Fixpoint sum_up_to(n:nat):nat:=
-match n with
-|O => O
-|S n => ((S n) + (sum_up_to n))%nat
-end.
-
-(* (-1)^(n*(n-1))/2 
-Definition eps(n:nat) := cpow (--c1) (N_of_nat (sum_up_to (pred n))).
-
- 
-Lemma subres_shift : forall j, j < h ->
-j_subres P Q j != (eps (p -q)%nat) !*((cpow lc_q (N_of_nat (p - q)%nat)) !*(j_subres Q H j)).
-Admitted.
-
-Lemma subres_h :
-j_subres P Q h !=(eps (p -q)%nat) !*((cpow lc_q (N_of_nat (p - q)%nat)) !*((cpow lc_h (N_of_nat (q - h -1)%nat))!*H)).
-Admitted. 
 
 
-Lemma first_nul_subres : forall j, h<j<q-1 ->
-j_subres P Q j != P0.
-Admitted.
 
-Lemma subres_q_1 :
-j_subres P Q (pred q) != (eps (p-q)%nat )!*((cpow lc_q (N_of_nat (p - q+1))) !* H).
-Admitted.
 
-Lemma Pol_deg_add : forall A B a b c,
-nat_deg A  =a -> nat_deg B = b -> le a b -> nat_deg (A+B)  = c -> le c b. 
-Proof.
-induction A;destruct B;simpl;intros;try omega.
-caseEq (BinInt.ZPminus p0 p1);intros;rewrite H3 in H2.
-Admitted.
-
-*)

@@ -141,12 +141,13 @@ Fixpoint rec_det (f: Pol -> Pol) (rec: list Pol -> Pol)  (l1 l2: list pol)  {str
 
 Variable deg:nat.
 
+
 Fixpoint det_aux (n: nat) (l: list Pol) {struct n}: Pol :=
   match n with
     O => P1
   | S n1 => rec_det (phi deg n) (det_aux n1) l nil
   end.
-
+ 
 
 
 Definition det l :=  det_aux(length l) l.

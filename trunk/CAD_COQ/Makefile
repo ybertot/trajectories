@@ -29,6 +29,9 @@
 #                        #
 ##########################
 
+QTDIR=$(HOME)/ping/coqprime/num
+QTINCLUDE = -I $(QTDIR) -I $(QTDIR)/../Tactic -I $(QTDIR)/../N -I $(QTDIR)/../Z -I $(QTDIR)/../PrimalityTest -I $(QTDIR)/../List -I $(QTDIR)/W/W8
+
 CAMLP4LIB=`camlp4 -where`
 COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \
   -I $(COQTOP)/library -I $(COQTOP)/parsing \
@@ -65,6 +68,7 @@ PP=-pp "camlp4o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl"
 OCAMLLIBS=-I .\
   -I ./QArith/
 COQLIBS=-I .\
+  $(QTINCLUDE) \
   -I ./QArith/
 
 ###################################
@@ -81,14 +85,7 @@ VFILES=CAD_types.v\
   Tarski.v\
   Up_dim.v\
   Utils.v\
-  PDet.v\
-  phi.v\
-  PolMonOSum.v\
-  Tactic.v\
-  Coef_record.v\
-  Pol_ring.v\
-  Coef_record.v\
-  PDet.v
+  Qt.v
 VOFILES=$(VFILES:.v=.vo)
 VIFILES=$(VFILES:.v=.vi)
 GFILES=$(VFILES:.v=.g)
@@ -103,12 +100,7 @@ all: CAD_types.vo\
   Tarski.vo\
   Up_dim.vo\
   Utils.vo\
-  PDet.vo\
-  phi.vo\
-  PolMonOSum.vo\
-  Tactic.vo\
-  Coef_record.vo\
-  Pol_ring.vo
+  Qt.vo
 
 spec: $(VIFILES)
 

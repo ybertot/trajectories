@@ -10,7 +10,8 @@ Require Import Ring_th.
 Require Import ZRing_th.
 
 
-(*Operations abstraites sur les coefficients *)
+(*Operations "abstraites" sur les coefficients,plus tard dans une section et 
+reinstanciation au debut de chaque fichier du dev ...*)
 Require Import Coef_record.
 
 (*Structure d'anneau sur les Coefs, lemmes de compat *)
@@ -2467,7 +2468,7 @@ Qed.
 (* Une tactique de simplification des expressions avec des Pc et des operations par des des coef,
 peut permettre d' utiliser setoid ring*)
 
-Let fun_Pc_opp := fun x => (PolEq_sym _ _ (Pc_Pol_opp x)).
+
 
 Let fun_Psub_c0 := fun x y h=> (PolEq_sym _ _ (Pol_sub_c0 x y h)).
 Let fun_Psub_c0' := fun x => (PolEq_sym _ _ (Pol_sub_c0' x)).
@@ -2483,8 +2484,8 @@ Let fun_Pmul_P1_c := fun x => (PolEq_sym _ _ (Pmul_P1_c x)).
 
 Hint Resolve Padd_comp Pmul_comp Psub_comp PsubC_Morphism Popp_comp
 PaddC_comp mkPX_morph ceq_refl
-PolEq_refl  Pc_Pol_opp Pmul_Rat_c0  Pmul_c1' Pmul_P0_c Pmul_P1_c
-fun_Pc_opp Pol_sub_c0 Pol_sub_c0' fun_Psub_c0 fun_Psub_c0' fun_Pmul_c1  fun_Pmul_c1' fun_Pmul_Rat_c0
+PolEq_refl  Pc_Pol_opp Pmul_Rat_c0  Pmul_c1' Pmul_c1 Pmul_P0_c Pmul_P1_c
+ Pol_sub_c0' fun_Psub_c0' Pol_sub_c0 fun_Psub_c0' fun_Pmul_c1' fun_Pmul_c1 fun_Pmul_Rat_c0
 fun_Pmul_P0_c fun_Pmul_P1_c: compat.
 
 (*un pas de transformation *)
@@ -2525,5 +2526,5 @@ Ltac Pcsimpl := match goal with
   |- Pol_Eq ?t1 ?t2  =>
       let t3 := steps t1 in
       let t4 := steps t2 in
-      (apply PolEq_trans with t3; [idtac | apply PolEq_trans with t4]; auto 25 with compat)
+      (apply PolEq_trans with t3; [idtac | apply PolEq_trans with t4];auto 25 with compat)
 end.
