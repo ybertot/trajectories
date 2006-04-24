@@ -1,3 +1,11 @@
+(*************************************************************)
+(*      This file is distributed under the terms of the      *)
+(*      GNU Lesser General Public License Version 2.1        *)
+(*************************************************************)
+(*   Assia.Mahboubi@inria.fr, Laurence.Rideau@inria.fr       *)
+(*  Laurent.Thery@inria.fr  &all    Inria, 2006              *)
+(*************************************************************)
+
 
 (*Load Pol_ring.*)
 Require Import Mylist.

@@ -1,3 +1,11 @@
+(*************************************************************)
+(*      This file is distributed under the terms of the      *)
+(*      GNU Lesser General Public License Version 2.1        *)
+(*************************************************************)
+(*   Assia.Mahboubi@inria.fr, Laurence.Rideau@inria.fr       *)
+(*  Laurent.Thery@inria.fr  &all    Inria, 2006              *)
+(*************************************************************)
+
 Require Import CAD_types.
 Require Import Mylist.
 Require Import Tactic.

@@ -1,3 +1,13 @@
+
+(*************************************************************)
+(*      This file is distributed under the terms of the      *)
+(*      GNU Lesser General Public License Version 2.1        *)
+(*************************************************************)
+(*   Assia.Mahboubi@inria.fr, Laurence.Rideau@inria.fr       *)
+(*  Laurent.Thery@inria.fr  &all    2006                     *)
+(*************************************************************)
+
+
 (* WARNING : Not to be compiled!!!
 
 This defines the bernstein manipulations and the datatypes for

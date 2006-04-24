@@ -1,3 +1,14 @@
+
+
+
+(*************************************************************)
+(*      This file is distributed under the terms of the      *)
+(*      GNU Lesser General Public License Version 2.1        *)
+(*************************************************************)
+(*   Assia.Mahboubi@inria.fr, Laurence.Rideau@inria.fr       *)
+(*  Laurent.Thery@inria.fr  &all    2006                     *)
+(*************************************************************)
+
 Unset Boxed Definitions.
 Unset Boxed Values.
 
