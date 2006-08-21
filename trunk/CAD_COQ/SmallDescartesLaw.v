@@ -1248,12 +1248,85 @@ exact Qopp_plus.
 setoid ring.
 Qed.
 
-Theorem mult_continuous :
+Theorem mult_continuous_aux :
   forall f g x, continuous f x -> continuous g x ->
+    0 <= f x -> 0 <= g x ->
     continuous (fun y => f y ** g y) x.
-intros f g x Hcf Hcg eps Hp.
+intros f g x Hcf Hcg Hposf Hposg eps Hp.
+cut (forall x y z, ~y**z == c0 -> (x/y)/z == x/(y**z));
+  [intros cdiv_assoc | idtac].
+cut (forall x y z, 0 < y -> y <= z -> x/z <= x/y);
+  [intros cdiv_le_compat_r | idtac].
+cut (forall x, c0 < x -> ~x==0);[intros pos_non_c0| idtac].
+cut (c0 < c1);[intros c0_clt_c1 | idtac].
 cut (forall x y : Coef, {ceq x y} + {~ ceq x y});
   [intros ceq_dec | idtac].
+assert (Hg : 0 < g x ++ c1).
+setoid_rewrite cadd_sym.
+apply cplus_lt_0_le_lt.
+apply c0_clt_c1.
+assumption.
+assert (Hf : 0 < f x ++ c1).
+setoid_rewrite cadd_sym.
+apply cplus_lt_0_le_lt.
+apply c0_clt_c1.
+assumption.
+assert (Hdeng :0 < ((c1++c1)**(g x ++ c1))).
+apply cmul_lt_0.
+apply c0_clt_c1.
+assumption.
+assert (Hdenf :0 < ((c1++c1)**(f x ++ c1))).
+apply cmul_lt_0.
+apply c0_clt_c1.
+assumption.
+assert (epsf : exists e, 0 < e /\ e <= eps/((c1++c1)**(g x++c1)) /\
+                 e <= c1).
+destruct (clt_le_dec c1 (eps/((c1++c1)**(g x++c1)))).
+exists c1;split;[apply c0_clt_c1 | split;[idtac |apply cle_refl]].
+apply clt_cle_weak; assumption.
+exists (eps/((c1++c1)**(g x ++ c1))).
+split.
+apply cdiv_lt_0_compat_l.
+apply cmul_lt_0;[apply c0_clt_c1 | assumption].
+assumption.
+split;[apply cle_refl | assumption].
+destruct epsf as [ef [Hefp [He_eps He_1]]].
+destruct (Hcf (eps/((c1++c1)**(g x ++ c1)))) as [df [Hpf Hyf]].
+apply cdiv_lt_0_compat_l; assumption.
+
+destruct (Hcg (eps/((c1++c1)**(f x ++ c1)))) as [dg [Hpg Hyg]].
+apply cdiv_lt_0_compat_l; assumption.
+assert (Hmin : exists d, 0 < d /\ (d <= df /\ d <= dg)).
+destruct (clt_le_dec df dg) as [dfltdg | dgledf].
+exists df;split;[assumption | split; [apply cle_refl | idtac]].
+apply clt_cle_weak; assumption.
+exists dg;split;[assumption | split; [assumption | apply cle_refl]].
+destruct Hmin as [d [Hdpos [dledf dledg]]].
+exists d; split; [assumption | intros y Hint].
+split.
+assert (decompose: f y ** g y -- f x ** g x ==
+        (f y -- f x)**g y ++ f x ** (g y -- g x)).
+setoid ring.
+setoid_rewrite decompose.
+setoid_replace (-- eps) with (--(eps/(c1++c1)) ++ --(eps/(c1++c1))).
+apply cplus_le_compat.
+apply cle_trans with (--(eps/((c1++c1)**(g x ++ c1)))**g y).
+apply cle_trans with (--((eps/(c1++c1))/((g x++c1))**(g x ++ c1))).
+setoid_rewrite cmul_sym.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+setoid_rewrite mul_copp.
+apply copp_le_compat.
+setoid_rewrite cdiv_assoc.
+apply pos_non_c0.
+apply cmul_lt_0.
+apply c0_clt_c1.
+assumption.
+repeat setoid_rewrite (cmul_sym ( eps / ((c1 ++ c1) ** (g x ++ c1)))).
+apply cmul_le_compat_r.
+
+
 
 
 
