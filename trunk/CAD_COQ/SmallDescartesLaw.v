@@ -1,9 +1,11 @@
+Require Import Wellfounded.
 Require Import Setoid.
 Require Import ZArith.
+Require Import Omega.
 Require Import CAD_types.
 Require Import Utils.
 Require Import NArith.
-
+Require Import Zwf.
 Require Import QArith.
 Require Import Qring.
 Require Import Qring.
@@ -27,8 +29,8 @@ Inductive no_alternation : Pol -> Set :=
   no_alternation_c1 : forall c (q:Pol), q != Pc c -> no_alternation q
 | no_alternation_c2 :
     forall n a P1 P2,
-      no_alternation P2 -> a <> 0 ->
-      0 <= a*(least_non_zero_coeff P2) ->
+      no_alternation P2 -> ~a == c0 ->
+      c0 <= a**(least_non_zero_coeff P2) ->
       P1 != (X^n *(Pc a+X*P2))%Pol -> no_alternation P1.
 
 
@@ -124,11 +126,35 @@ rewrite (c0test_morph p q); auto.
 case (czero_test q); auto.
 Qed.
 
-Add Morphism Qle with signature Qeq ==> Qeq ==> iff as Qle_morphism.
+Definition cle : Coef -> Coef -> Prop := Qle.
+
+
+Theorem cle_trans : forall x y z, cle x y -> cle y z -> cle x z.
+exact Qle_trans.
+Qed.
+
+Theorem cle_refl : forall x, cle x x.
+exact Qle_refl.
+Qed.
+
+Theorem cle_Qle : forall x y, cle x y -> Qle x y.
+auto.
+Qed.
+
+Theorem Qle_cle : forall x y, Qle x y -> cle x y.
+auto.
+Qed.
+
+Opaque cle.
+
+
+Add Morphism cle with signature ceq ==> ceq ==> iff as Qle_morphism.
 Admitted.
 
-Add Morphism Pol_eval with signature Pol_Eq ==> ceq ==> ceq as Pol_eval_morphism.
-Admitted.
+Infix "<=" := cle.
+
+Notation "x <= y <= z" := (cle x y /\ cle y z).
+
 
 Lemma PX_interp :
    forall P n c, PX P n c != (X^(Npos n)*P+Pc c)%Pol.
@@ -160,6 +186,43 @@ simpl.
 intros _; setoid_rewrite cmul_sym; auto.
 Qed.
 
+
+Add Morphism Pol_eval with signature Pol_Eq ==> ceq ==> ceq as Pol_eval_morphism.
+Admitted.
+
+Theorem Pol_addX_eval : forall (x:Coef) f P',
+   (forall (Q:Pol1 Coef), Pol_eval (f Q) x == Pol_eval Q x ++ Pol_eval P' x) ->
+   forall P i,
+   ceq (Pol_eval (Pol_addX f P' i P) x)(
+   Pol_eval P x++cpow x (Npos i)**Pol_eval P' x).
+intros x f P' Hf P; induction P; intros i.
+simpl; setoid ring.
+simpl.
+generalize (ZPminus_spec p i); case (ZPminus p i).
+intros Hpi; rewrite Hpi.
+setoid_rewrite mkPX_PX_c.
+simpl.
+setoid_rewrite Hf.
+setoid ring.
+intros k Hpik; rewrite Hpik.
+replace (Npos (i + k)) with (Npos i + Npos k)%N.
+setoid_rewrite cpow_plus.
+setoid_rewrite mkPX_PX_c.
+simpl.
+setoid_rewrite Hf.
+simpl.
+setoid ring.
+simpl; auto.
+intros k Hpik; rewrite Hpik.
+rewrite mkPX_PX_c.
+simpl.
+setoid_rewrite IHP.
+replace (Npos (p+k))with (Npos p + Npos k)%N.
+setoid_rewrite cpow_plus.
+setoid ring.
+simpl; auto.
+Qed.
+
 Lemma Pol_eval_mult_c :
   forall c P x, Pol_eval (Pc c * P) x == c ** Pol_eval P x.
 intros c P x; induction P as [c' | P IHP i c'].
@@ -170,87 +233,197 @@ setoid_rewrite IHP; setoid ring.
 Qed.
 
 Lemma Pol_eval_plus :
-  forall P P' x, Pol_eval (P + P')%Pol x == Pol_eval P x ++ Pol_eval P' x.
-intros P; induction P; intros P' x; destruct P'.
+  forall P' P x, Pol_eval (P + P')%Pol x == Pol_eval P x ++ Pol_eval P' x.
+intros P'; induction P' as [c' | P' IHP' p' c'].
+intros P; induction P.
 simpl; auto.
-simpl (Pc c + PX P' p c0).
+intros; simpl; setoid ring.
+intros P x; induction P.
+simpl; auto.
+simpl (Pc c + PX P' p' c').
 simpl; setoid ring.
-simpl; setoid ring.
-generalize (ZPminus_spec p p0).
-caseEq (ZPminus p p0).
-intros Hm Hpp0.
 simpl.
-rewrite Hm.
-rewrite Hpp0.
+generalize (ZPminus_spec p p').
+caseEq (ZPminus p p').
+intros Hm Hpp'.
+simpl.
+rewrite Hpp'.
 setoid_rewrite mkPX_PX_c.
 simpl.
-setoid_rewrite IHP.
+setoid_rewrite IHP'.
 setoid ring.
-setoid_rewrite (PX_interp P); setoid_rewrite (PX_interp P').
+intros k Hm Hpk.
+setoid_rewrite mkPX_PX_c.
 simpl.
-setoid_Rewrite 
+setoid_rewrite IHP'.
+simpl.
+rewrite Hpk; replace (Npos (p'+k)) with (Npos p'+Npos k)%N.
+setoid_rewrite cpow_plus.
+setoid ring.
+simpl; auto.
+intros k Hm Hpk; rewrite Hpk.
+replace (Npos (p + k)) with (Npos p + Npos k)%N.
+setoid_rewrite cpow_plus.
+simpl.
+setoid_rewrite mkPX_PX_c.
+simpl.
+setoid_rewrite Pol_addX_eval.
+intros; apply IHP'.
+setoid ring.
+simpl; auto.
 Qed.
 
 Lemma Pol_eval_mult :
   forall P P' x, Pol_eval (P * P')%Pol x == (Pol_eval P x ** Pol_eval P' x).
-intros P; induction P as [c | P IHP i c]; intros P' x.
-setoid_rewrite Pol_eval_mult_c; simpl; auto.
-destruct P' as [c' | P' i' c'].
+intros P P' x; induction P' as [c' | P' IHP' i c'].
 setoid_rewrite Pmul_sym.
 setoid_rewrite Pol_eval_mult_c; simpl; setoid ring.
 simpl.
 setoid_rewrite mkPX_PX_c.
+setoid_rewrite Pol_eval_plus.
+simpl.
+setoid_rewrite IHP'.
+setoid_rewrite Pscal_Pmul_l.
+setoid_rewrite Pol_eval_mult_c; simpl; setoid ring.
 Qed.
-simpl.
 
+Lemma Npos_xI_expand :
+  forall p, Npos (xI p) = (1 + (Npos p + Npos p))%N.
+intros; simpl; rewrite Pplus_diag; auto.
+Qed.
 
-simpl; auto.
-setoid_rewrite (Pol_mul_Rat_cst c' c).
-simpl.
-setoid ring.
-simpl.
-setoid_rewrite (Pol_mul_Rat_cst c' c).
-setoid_rewrite mkPX_PX_c.
-simpl.
-
-simpl; auto.
-Admitted.
-
+Lemma Npos_xO_expand :
+  forall p, Npos (xO p) = (Npos p + Npos p)%N.
+intros; simpl; rewrite Pplus_diag; auto.
+Qed.
 
 Lemma Pol_eval_pow :
-  forall P n x, Pol_eval (P^n)%Pol x == ((Pol_eval P x)^nat_of_N n)%Q.
-Admitted.
-
-Add Morphism Qmult with signature Qeq ==> Qeq ==> Qeq as Qmult_morphsim.
-Admitted.
-
-Add Morphism Qplus with signature Qeq ==> Qeq ==> Qeq as Qplus_morphism.
-Admitted.
-
-Add Morphism Qpower with signature Qeq ==> (@eq nat) ==> Qeq as Qpower_morphism.
-Admitted.
-
-Lemma Qle_0_mult :
-   forall x y, 0<= x -> 0 <= y -> 0 <= x * y.
-intros x y Hx Hy; assert (Qeq 0 (0*y)).
-ring.
-rewrite H.
-apply Qmult_le_compat_r; auto.
+  forall P n x, Pol_eval (P^n)%Pol x == cpow (Pol_eval P x) n.
+intros P n x; case n.
+simpl; setoid_rewrite cpow_0; auto.
+intros p; induction p.
+simpl; repeat setoid_rewrite Pol_eval_mult.
+rewrite Npos_xI_expand.
+fold (Pol_pow P (Npos p)).
+setoid_rewrite IHp.
+repeat setoid_rewrite cpow_plus.
+setoid_rewrite cpow_1.
+setoid ring.
+rewrite Npos_xO_expand.
+setoid_rewrite Ppow_plus; setoid_rewrite Pol_eval_mult.
+setoid_rewrite IHp.
+setoid_rewrite cpow_plus.
+auto.
+auto.
 Qed.
 
-Lemma Qle_0_plus :
-  forall x y, 0 <= x -> 0 <= y -> 0 <= x + y.
+Lemma cmul_le_compat_r : forall x y z:Coef, x <= y -> c0 <= z -> x**z <= y**z.
+exact Qmult_le_compat_r.
+Qed.
+
+Lemma cmul_le_0 : forall x y, c0 <= x -> c0 <= y -> c0 <= x**y.
+intros; setoid_replace c0 with (c0 ** y).
+apply cmul_le_compat_r; auto.
+setoid ring.
+Qed.
+
+Definition clt : Coef -> Coef -> Prop := Qlt.
+
+Infix "<" := clt.
+Lemma clt_decompose : forall x y, ~x==y -> x <= y -> x < y.
+Admitted.
+
+Lemma cmul_lt_0_le_reg_r :
+  forall x y z, c0 < z -> x**z <= y**z -> x<= y.
+exact Qmult_lt_0_le_reg_r.
+Qed.
+
+Lemma cle_0_mult :
+   forall x y, c0 <= x -> c0 <= y -> c0 <= x ** y.
+intros x y Hx Hy; assert (ceq c0 (c0**y)).
+setoid ring.
+setoid_rewrite H.
+apply cmul_le_compat_r; auto.
+Qed.
+
+Lemma cplus_le_compat :  forall x y z t, x <= y -> z <= t -> x++z<=y++t.
+exact Qplus_le_compat.
+Qed.
+
+Lemma cle_0_plus :
+  forall x y, c0 <= x -> c0 <= y -> c0 <= x ++ y.
 intros x y Hx Hy.
-assert (Qeq 0 (0+0)).
-ring.
-rewrite H.
-apply Qplus_le_compat; auto.
+assert (ceq c0 (c0++c0)).
+setoid ring.
+setoid_rewrite H.
+apply cplus_le_compat; auto.
 Qed.
 
+Lemma Q0_le_1 : (0 <= 1)%Q.
+unfold Qle, Qnum, Qden; omega.
+Qed.
 
-Lemma Pol_eval_X : forall x, Qeq (Pol_eval X x) x.
+Lemma c0_cle_c1: c0 <= c1.
+exact Q0_le_1.
+Qed.
+
+Theorem cpow_pos : forall (c:Coef)(n:N), c0 <= c -> c0 <= cpow c n.
+intros c n H0; case n.
+setoid_rewrite cpow_0.
+exact c0_cle_c1.
+induction p.
+rewrite Npos_xI_expand.
+repeat setoid_rewrite cpow_plus.
+repeat apply cle_0_mult; try exact IHp.
+setoid_rewrite cpow_1; exact H0.
+rewrite Npos_xO_expand.
+repeat setoid_rewrite cpow_plus.
+repeat apply cle_0_mult; try exact IHp.
+setoid_rewrite cpow_1; exact H0.
+Qed.
+
+Lemma cpow_le_compat_l :
+   forall x y n, c0 <= x -> x <= y -> cpow x n <= cpow y n.
+intros x y n Hx Hy; case n.
+repeat setoid_rewrite cpow_0; apply cle_refl.
+assert (c0 <= y) by (apply cle_trans with x; auto).
+intros p.
+induction p.
+assert (c0 <= cpow x (Npos p)) by (apply cpow_pos; auto).
+rewrite Npos_xI_expand.
+repeat setoid_rewrite cpow_plus.
+repeat setoid_rewrite cpow_1.
+apply cle_trans with (y ** (cpow x (Npos p) ** cpow x (Npos p))).
+apply cmul_le_compat_r.
+assumption.
+apply cmul_le_0; auto.
+
+repeat setoid_rewrite (cmul_sym y).
+apply cmul_le_compat_r.
+apply cle_trans with (cpow x (Npos p) **cpow y (Npos p)).
+setoid_rewrite (cmul_sym (cpow x (Npos p))(cpow y (Npos p))).
+apply cmul_le_compat_r; assumption.
+assert (c0 <= cpow y (Npos p)) by (apply cpow_pos; auto).
+apply cmul_le_compat_r; auto.
+auto.
+
+assert (c0 <= cpow x (Npos p)) by (apply cpow_pos; auto).
+rewrite Npos_xO_expand.
+repeat setoid_rewrite cpow_plus.
+apply cle_trans with (cpow x (Npos p) ** cpow y (Npos p)).
+setoid_rewrite (cmul_sym (cpow x (Npos p))(cpow y (Npos p))).
+apply cmul_le_compat_r; auto.
+apply cmul_le_compat_r; auto.
+apply cpow_pos; auto.
+
+repeat setoid_rewrite cpow_1; auto.
+Qed.
+
+Lemma Pol_eval_X : forall x, ceq (Pol_eval X x) x.
 intros; simpl.
-Admitted.
+setoid_rewrite cpow_1.
+setoid ring.
+Qed.
 
 Lemma Pol_eval_c : forall c x, Pol_eval (Pc c) x = c.
 auto.
@@ -270,7 +443,7 @@ intros; ring.
 Qed.
 
 
-Add Morphism (@Pc Coef) with signature Qeq ==> Pol_Eq as Pc_morphism.
+Add Morphism (@Pc Coef) with signature ceq ==> Pol_Eq as Pc_morphism.
 Admitted.
 
 
@@ -562,29 +735,57 @@ intros b; apply least_non_zero_P5; trivial.
 Qed.
 
 Theorem no_alternation_increasing :
-  forall P, 0 <= least_non_zero_coeff P -> no_alternation P ->
-  forall x y, 0 <= x <= y -> 0 <= Pol_eval P x <= Pol_eval P y.
-intTheorem least_non_zero_P3 :
-  forall P, Pnorm P = P0 -> least_non_zero_coeff P = 0.
-ros P H H1;generalize H;clear H.
+  forall P, c0 <= least_non_zero_coeff P -> no_alternation P ->
+  forall x y, c0 <= x <= y -> c0 <= Pol_eval P x <= Pol_eval P y.
+
+intros P H H1;generalize H;clear H.
 induction H1.
 intros H x y Hint.
-setoid_rewrite p.
+rewrite p.
 simpl.
 rewrite p in H.
 simpl in H.
 split; auto.
-apply Qle_refl.
+apply cle_refl.
 intros Hpos x y Hint ; rewrite p in Hpos; rewrite p.
-do 2 rewrite Pol_eval_mult.
-do 2 rewrite Pol_eval_pow.
-do 2 rewrite Pol_eval_plus.
+do 2 setoid_rewrite Pol_eval_mult.
+do 2 setoid_rewrite Pol_eval_pow.
+do 2 setoid_rewrite Pol_eval_plus.
+assert (Hapos : c0 <= a)
+  by (setoid_rewrite (least_non_zero_P4 (X^n*(Pc a+X*P2)) a n P2) in Hpos;
+       auto).
 split.
-apply Qle_0_mult.
-rewrite Pol_eval_X.
-apply Qpower_pos; intuition.
-apply Qle_0_plus.
-rewrite Pol_eval_c.
-lazy beta iota zeta delta [least_non_zero_coeff] in Hpos;
-fold least_non_zero_coeff in Hpos. 
+apply cle_0_mult.
+setoid_rewrite Pol_eval_X.
+apply cpow_pos; intuition.
+apply cle_0_plus.
+rewrite Pol_eval_c; auto.
+setoid_rewrite Pol_eval_mult.
+apply cle_0_mult.
+setoid_rewrite Pol_eval_X; intuition.
+assert (Hlp2 : c0 <= least_non_zero_coeff P2).
+apply cmul_lt_0_le_reg_r with a.
+apply clt_decompose; intuition.
+unfold clt; intuition.
+setoid_replace (c0**a) with c0.
+setoid_rewrite <- (cmul_sym a); assumption.
+setoid ring.
+elim (IHno_alternation Hlp2 x x); auto.
+intuition auto.
+apply cle_refl.
+repeat setoid_rewrite Pol_eval_mult.
+repeat setoid_rewrite Pol_eval_X.
+repeat setoid_rewrite Pol_eval_c.
+apply cle_trans with (cpow y n ** (a ++ x ** Pol_eval P2 x)).
+repeat setoid_rewrite (cmult_sym  (a ++ x ** Pol_eval P2 x)).
+apply cmul_le_compat_r.
+apply cpow_le_compat_l.
+apply cle_trans with y; intuition.
+apply cplus_le_compat.
+apply cle_refl.
+apply cle_0_mult.
+auto.
+
+auto
+setoid_rewrite Pol_eval_mult in Hpos.
 
