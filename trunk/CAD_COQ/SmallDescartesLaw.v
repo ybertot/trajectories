@@ -486,7 +486,7 @@ assumption.
 setoid ring.
 Qed.
 
-Lemma pos_non_c0 : forall x, c0 < x -> ~x==0.
+Lemma pos_non_c0 : forall x, c0 < x -> ~x==c0.
 intros x Hx Ha; elim (clt_neq _ _ Hx);setoid_rewrite Ha; auto.
 Qed.
 
