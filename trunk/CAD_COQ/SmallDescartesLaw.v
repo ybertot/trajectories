@@ -1873,3 +1873,52 @@ apply scal_mult_continuous; auto.
 apply cle_0_copp; auto.
 Qed.
 
+Theorem pow_continuous :
+  forall f n x, continuous f x -> continuous (fun y => cpow (f y) n) x.
+intros f n x Hcf; case n.
+apply ext_continuous with (f := fun y:Coef => c1).
+intros y; setoid_rewrite cpow_0; auto.
+apply const_continuous.
+intros p; induction p.
+apply ext_continuous with 
+  (fun y => (f y) ** (cpow (f y) (Npos p) ** cpow (f y) (Npos p))).
+intros y; rewrite Npos_xI_expand; 
+ repeat setoid_rewrite cpow_plus; setoid_rewrite cpow_1; apply ceq_refl.
+apply mult_continuous with 
+     (g:= fun y => cpow (f y)(Npos p)**cpow (f y)(Npos p)).
+assumption.
+apply mult_continuous with
+  (f :=  fun y => cpow (f y)(Npos p))
+  (g :=  fun y => cpow (f y)(Npos p));assumption.
+apply ext_continuous with 
+  (fun y => (cpow (f y) (Npos p) ** cpow (f y) (Npos p))).
+intros y; rewrite Npos_xO_expand; 
+ repeat setoid_rewrite cpow_plus; apply ceq_refl.
+apply mult_continuous with
+  (f :=  fun y => cpow (f y)(Npos p))
+  (g :=  fun y => cpow (f y)(Npos p));assumption.
+apply ext_continuous with  (f:= f).
+intros; setoid_rewrite cpow_1; apply ceq_refl.
+assumption.
+Qed.
+
+Theorem Pol_eval_continuous :
+  forall P x, continuous (Pol_eval P) x.
+intros P x; induction P.
+simpl.
+apply const_continuous.
+apply ext_continuous with (fun y => Pol_eval P y**cpow y (Npos p)++c).
+intros; simpl; auto.
+
+apply plus_continuous with (f:= fun y => Pol_eval P y**cpow y (Npos p))
+  (g:= fun y:Coef => c).
+apply mult_continuous with (f:= Pol_eval P)(g:=fun y=>cpow y (Npos p)).
+assumption.
+apply pow_continuous with (f:= fun y:Coef=>y).
+apply id_continuous.
+apply const_continuous.
+Qed.
+
+
+
+
