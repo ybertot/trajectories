@@ -209,6 +209,12 @@ apply copp_le_compat; auto.
 setoid ring.
 Qed.
 
+Lemma cle_0_copp : forall x, x <= c0 -> c0 <= copp x.
+intros; setoid_replace c0 with (copp c0).
+apply copp_le_compat; auto.
+setoid ring.
+Qed.
+
 Lemma copp_le_0_compat_copp:
   forall p, cle p c0 -> cle c0 (copp p).
 intros; setoid_replace c0 with (copp c0).
@@ -425,6 +431,80 @@ elim (clt_neq _ _ c0_clt_2).
 auto.
 auto.
 setoid ring.
+Qed.
+
+Lemma cplus_pos_simplify : forall x y, c0 <= x -> y <= x ++ y.
+intros x y H;
+pose (u:=x++y); fold u.
+setoid_replace y with (c0 ++ y);[unfold u|setoid ring].
+apply cplus_le_compat;[assumption |apply cle_refl].
+Qed.
+
+Lemma mul_copp_copp : forall x y, copp x ** copp y == x ** y.
+intros; setoid ring.
+Qed.
+
+Lemma csub_diag : forall x, x -- x == c0.
+intros; setoid ring.
+Qed.
+
+Lemma cle_csub_cadd : forall a b c, a -- b <= c -> a <= b ++ c.
+intros; setoid_replace a with (b ++ (a--b));[idtac|setoid ring].
+apply cplus_le_compat;[apply cle_refl|assumption].
+Qed.
+
+Lemma cdiv_decompose :  forall x y, ~y==c0 -> x/y == c1/y**x.
+intros x y Hy; setoid_replace (x/y) with ((c1/y**y)**(x/y)).
+setoid_rewrite <- cmul_assoc.
+setoid_rewrite cmul_div_r.
+exact Hy.
+apply ceq_refl.
+setoid_rewrite (cmul_sym (c1/y) y).
+setoid_rewrite cmul_div_r.
+exact Hy.
+setoid ring.
+Qed.
+
+Lemma cdiv_assoc : forall x y z, ~y**z == c0 -> (x/y)/z == x/(y**z).
+intros x y z Hnz.
+assert (Hy:~y==c0).
+intros Ha; elim Hnz;setoid_rewrite Ha;setoid ring.
+assert (Hz:~z==c0).
+intros Ha; elim Hnz;setoid_rewrite Ha;setoid ring.
+setoid_replace ((x/y)/z) with ((y**z)**(c1/(y**z))**((x/y)/z)).
+setoid_rewrite (cmul_sym (y**z)).
+repeat setoid_rewrite <- cmul_assoc.
+setoid_rewrite cmul_div_r.
+assumption.
+setoid_rewrite cmul_div_r.
+assumption.
+setoid_rewrite (cdiv_decompose x (y**z)).
+assumption.
+apply ceq_refl.
+setoid_rewrite cmul_div_r.
+assumption.
+setoid ring.
+Qed.
+
+Lemma pos_non_c0 : forall x, c0 < x -> ~x==0.
+intros x Hx Ha; elim (clt_neq _ _ Hx);setoid_rewrite Ha; auto.
+Qed.
+
+Lemma c0_clt_c1 : c0 < c1.
+apply clt_decompose.
+apply c0_diff_c1.
+apply c0_cle_c1.
+Qed.
+
+Definition ceq_dec : forall x y : Coef, {ceq x y} + {~ ceq x y}
+:= Qeq_dec.
+
+Lemma cadd_copp : forall x y : Coef, -- x ++ -- y == -- (x++y).
+intros; setoid ring.
+Qed.
+
+Lemma copp_csub : forall x y : Coef, --(x -- y) == y -- x.
+intros; setoid ring.
 Qed.
 
 Opaque Coef_record.Czero_test Coef_record.C0 Coef_record.Ceq Coef_record.C1
@@ -1250,17 +1330,9 @@ Qed.
 
 Theorem mult_continuous_aux :
   forall f g x, continuous f x -> continuous g x ->
-    0 <= f x -> 0 <= g x ->
+    c0 <= f x -> c0 <= g x ->
     continuous (fun y => f y ** g y) x.
 intros f g x Hcf Hcg Hposf Hposg eps Hp.
-cut (forall x y z, ~y**z == c0 -> (x/y)/z == x/(y**z));
-  [intros cdiv_assoc | idtac].
-cut (forall x y z, 0 < y -> y <= z -> x/z <= x/y);
-  [intros cdiv_le_compat_r | idtac].
-cut (forall x, c0 < x -> ~x==0);[intros pos_non_c0| idtac].
-cut (c0 < c1);[intros c0_clt_c1 | idtac].
-cut (forall x y : Coef, {ceq x y} + {~ ceq x y});
-  [intros ceq_dec | idtac].
 assert (Hg : 0 < g x ++ c1).
 setoid_rewrite cadd_sym.
 apply cplus_lt_0_le_lt.
@@ -1290,12 +1362,25 @@ apply cdiv_lt_0_compat_l.
 apply cmul_lt_0;[apply c0_clt_c1 | assumption].
 assumption.
 split;[apply cle_refl | assumption].
-destruct epsf as [ef [Hefp [He_eps He_1]]].
-destruct (Hcf (eps/((c1++c1)**(g x ++ c1)))) as [df [Hpf Hyf]].
-apply cdiv_lt_0_compat_l; assumption.
+assert (epsg : exists e, c0 < e /\ e <= eps/((c1++c1)**(f x++c1)) /\
+                 e <= c1).
+destruct (clt_le_dec c1 (eps/((c1++c1)**(f x++c1)))).
+exists c1;split;[apply c0_clt_c1 | split;[idtac |apply cle_refl]].
+apply clt_cle_weak; assumption.
+exists (eps/((c1++c1)**(f x ++ c1))).
+split.
+apply cdiv_lt_0_compat_l.
+apply cmul_lt_0;[apply c0_clt_c1 | assumption].
+assumption.
+split;[apply cle_refl | assumption].
+destruct epsf as [ef [Hefp [Hef_eps Hef_1]]].
+destruct (Hcf ef) as [df [Hpf Hyf]].
+exact Hefp.
 
-destruct (Hcg (eps/((c1++c1)**(f x ++ c1)))) as [dg [Hpg Hyg]].
-apply cdiv_lt_0_compat_l; assumption.
+destruct epsg as [eg [Hegp [Heg_eps Heg_1]]].
+destruct (Hcg eg) as [dg [Hpg Hyg]].
+exact Hegp.
+
 assert (Hmin : exists d, 0 < d /\ (d <= df /\ d <= dg)).
 destruct (clt_le_dec df dg) as [dfltdg | dgledf].
 exists df;split;[assumption | split; [apply cle_refl | idtac]].
@@ -1303,10 +1388,22 @@ apply clt_cle_weak; assumption.
 exists dg;split;[assumption | split; [assumption | apply cle_refl]].
 destruct Hmin as [d [Hdpos [dledf dledg]]].
 exists d; split; [assumption | intros y Hint].
-split.
 assert (decompose: f y ** g y -- f x ** g x ==
         (f y -- f x)**g y ++ f x ** (g y -- g x)).
 setoid ring.
+assert (decompose2: f y ** g y -- f x ** g x ==
+                    (g y -- g x)**f y ++ g x ** (f y -- f x)).
+setoid ring.
+assert (Hintf : --df <= y -- x <= df).
+split;[apply cle_trans with (--d); [apply copp_le_compat|idtac] |
+        apply cle_trans with d]; intuition.
+assert (Hyf' := Hyf y Hintf).
+assert (Hintg : --dg <= y -- x <= dg).
+split;[apply cle_trans with (--d); [apply copp_le_compat|idtac] |
+        apply cle_trans with d]; intuition.
+assert (Hyg' := Hyg y Hintg).
+split.
+destruct (clt_le_dec c0 (g y)) as [gyp | gyn].
 setoid_rewrite decompose.
 setoid_replace (-- eps) with (--(eps/(c1++c1)) ++ --(eps/(c1++c1))).
 apply cplus_le_compat.
@@ -1319,17 +1416,460 @@ apply cle_refl.
 setoid_rewrite mul_copp.
 apply copp_le_compat.
 setoid_rewrite cdiv_assoc.
-apply pos_non_c0.
-apply cmul_lt_0.
-apply c0_clt_c1.
-assumption.
+apply pos_non_c0; apply cmul_lt_0; assumption || apply c0_clt_c1.
 repeat setoid_rewrite (cmul_sym ( eps / ((c1 ++ c1) ** (g x ++ c1)))).
 apply cmul_le_compat_r.
+apply cle_csub_cadd.
+apply cle_trans with eg.
+intuition.
+assumption.
+apply cdiv_le_0_compat_l.
+apply cmul_lt_0.
+apply c0_clt_2.
+assumption.
+apply clt_cle_weak; assumption.
+apply cmul_le_compat_r.
+apply cle_trans with (--ef).
+apply copp_le_compat.
+assumption.
+intuition.
+apply clt_cle_weak; assumption.
+apply cle_trans with (--(eps/((c1++c1)**(f x ++ c1)))**f x).
+setoid_rewrite mul_copp.
+apply copp_le_compat.
+apply cle_trans with (eps / ((c1 ++ c1) ** (f x ++ c1)) **(f x ++ c1)).
+repeat setoid_rewrite (cmul_sym (eps / ((c1 ++ c1) ** (f x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd; setoid_rewrite csub_diag; apply c0_cle_c1.
+apply cdiv_le_0_compat_l.
+assumption.
+apply clt_cle_weak; assumption.
+setoid_rewrite <- (cmul_sym (f x ++ c1)).
+setoid_rewrite <- cdiv_assoc.
+apply pos_non_c0.
+assumption.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+setoid_rewrite (cmul_sym (f x)).
+apply cmul_le_compat_r.
+apply cle_trans with (--eg).
+apply copp_le_compat.
+assumption.
+intuition; fail.
+assumption.
+setoid_rewrite cadd_copp.
+setoid_rewrite <- cut_half.
+apply ceq_refl.
+destruct (clt_le_dec c0 (f y)) as [fyp | fyn].
+idtac "case g y <= 0 and 0 < f y".
+setoid_rewrite decompose2.
+setoid_replace (-- eps) with (--(eps/(c1++c1)) ++ --(eps/(c1++c1))).
+apply cplus_le_compat.
+apply cle_trans with (--(eps/((c1++c1)**(f x ++ c1)))**f y).
+apply cle_trans with (--((eps/(c1++c1))/((f x++c1))**(f x ++ c1))).
+setoid_rewrite cmul_sym.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+setoid_rewrite mul_copp.
+apply copp_le_compat.
+setoid_rewrite cdiv_assoc.
+apply pos_non_c0; apply cmul_lt_0; assumption || apply c0_clt_c1.
+repeat setoid_rewrite (cmul_sym ( eps / ((c1 ++ c1) ** (f x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd.
+apply cle_trans with ef.
+intuition;fail.
+assumption.
+apply cdiv_le_0_compat_l.
+apply cmul_lt_0.
+apply c0_clt_2.
+assumption.
+apply clt_cle_weak; assumption.
+apply cmul_le_compat_r.
+apply cle_trans with (--eg).
+apply copp_le_compat.
+assumption.
+intuition.
+apply clt_cle_weak; assumption.
+apply cle_trans with (--(eps/((c1++c1)**(g x ++ c1)))**g x).
+setoid_rewrite mul_copp.
+apply copp_le_compat.
+apply cle_trans with (eps / ((c1 ++ c1) ** (g x ++ c1)) **(g x ++ c1)).
+repeat setoid_rewrite (cmul_sym (eps / ((c1 ++ c1) ** (g x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd; setoid_rewrite csub_diag; apply c0_cle_c1.
+apply cdiv_le_0_compat_l.
+assumption.
+apply clt_cle_weak; assumption.
+setoid_rewrite <- (cmul_sym (g x ++ c1)).
+setoid_rewrite <- cdiv_assoc.
+apply pos_non_c0.
+assumption.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+setoid_rewrite (cmul_sym (g x)).
+apply cmul_le_compat_r.
+apply cle_trans with (--ef).
+apply copp_le_compat.
+assumption.
+intuition; fail.
+assumption.
+setoid_rewrite cadd_copp.
+setoid_rewrite <- cut_half.
+apply ceq_refl.
+idtac "case where both f y and g y are negative.".
+setoid_rewrite decompose.
+setoid_replace (-- eps) with (--(eps/(c1++c1)) ++ --(eps/(c1++c1))).
+apply cplus_le_compat.
+apply cle_trans with (--(eps/((c1++c1)**(g x ++ c1)))**(--g y)).
+apply cle_trans with (--((eps/(c1++c1))/((g x++c1))**(g x ++ c1))).
+setoid_rewrite cmul_sym.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+setoid_rewrite mul_copp.
+apply copp_le_compat.
+setoid_rewrite cdiv_assoc.
+apply pos_non_c0; apply cmul_lt_0; assumption || apply c0_clt_c1.
+repeat setoid_rewrite (cmul_sym ( eps / ((c1 ++ c1) ** (g x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_trans with eg.
+apply cle_trans with (g x -- g y).
+setoid_replace (-- g y) with (c0 ++(-- g y));[idtac | setoid ring;fail].
+setoid_replace (g x -- g y) with (g x ++(-- g y));[idtac | setoid ring;fail].
+apply cplus_le_compat.
+assumption.
+apply cle_refl.
+setoid_rewrite <- (copp_copp (g x -- g y)).
+setoid_rewrite  copp_csub.
+setoid_rewrite <- (copp_copp eg).
+apply copp_le_compat.
+intuition.
+apply cle_trans with c1.
+assumption.
+pose (u:= g x ++ c1); fold u; 
+ setoid_replace c1 with (c0++c1);[unfold u; clear u| setoid ring].
+apply cplus_le_compat.
+assumption.
+apply cle_refl.
+apply cdiv_le_0_compat_l.
+apply cmul_lt_0.
+apply c0_clt_2.
+assumption.
+apply clt_cle_weak; assumption.
+repeat setoid_rewrite <- (fun z => (mul_copp_copp z (g y))).
+apply cmul_le_compat_r.
+apply copp_le_compat.
+apply cle_trans with ef.
+intuition.
+assumption.
+setoid_replace c0 with (--c0);[apply copp_le_compat;assumption|setoid ring].
+apply cle_trans with (--(eps/((c1++c1)**(f x ++ c1)))**f x).
+setoid_rewrite mul_copp.
+apply copp_le_compat.
+apply cle_trans with (eps / ((c1 ++ c1) ** (f x ++ c1)) **(f x ++ c1)).
+repeat setoid_rewrite (cmul_sym (eps / ((c1 ++ c1) ** (f x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd; setoid_rewrite csub_diag; apply c0_cle_c1.
+apply cdiv_le_0_compat_l.
+assumption.
+apply clt_cle_weak; assumption.
+setoid_rewrite <- (cmul_sym (f x ++ c1)).
+setoid_rewrite <- cdiv_assoc.
+apply pos_non_c0.
+assumption.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+setoid_rewrite (cmul_sym (f x)).
+apply cmul_le_compat_r.
+apply cle_trans with (--eg).
+apply copp_le_compat.
+assumption.
+intuition; fail.
+assumption.
+setoid_rewrite cadd_copp.
+setoid_rewrite <- cut_half.
+apply ceq_refl.
+idtac "proving the upperbound".
+destruct (clt_le_dec c0 (g y)).
+setoid_rewrite decompose.
+setoid_rewrite (cut_half eps).
+apply cplus_le_compat.
+apply cle_trans with (eps/((c1++c1)**(g x ++ c1))**g y).
+apply cmul_le_compat_r.
+apply cle_trans with ef.
+intuition.
+assumption.
+apply clt_cle_weak; assumption.
+apply cle_trans with (((eps/(c1++c1))/(g x++c1))**(g x ++ c1)).
+setoid_rewrite cdiv_assoc.
+apply pos_non_c0; apply cmul_lt_0; assumption || apply c0_clt_c1.
+repeat setoid_rewrite (cmul_sym ( eps / ((c1 ++ c1) ** (g x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd.
+apply cle_trans with eg; intuition;fail.
+apply cdiv_le_0_compat_l.
+apply cmul_lt_0.
+apply c0_clt_2.
+assumption.
+apply clt_cle_weak; assumption.
 
+setoid_rewrite (cmul_sym (eps / (c1 ++ c1) / (g x ++ c1))(g x ++ c1)).
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+apply cle_trans with (eps/((c1++c1)**(f x ++ c1))**f x).
+setoid_rewrite (cmul_sym (f x)).
+apply cmul_le_compat_r.
+apply cle_trans with eg.
+intuition; fail.
+assumption.
+assumption.
 
+apply cle_trans with (eps / ((c1 ++ c1) ** (f x ++ c1)) **(f x ++ c1)).
+repeat setoid_rewrite (cmul_sym (eps / ((c1 ++ c1) ** (f x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd; setoid_rewrite csub_diag; apply c0_cle_c1.
+apply cdiv_le_0_compat_l.
+assumption.
+apply clt_cle_weak; assumption.
+setoid_rewrite <- (cmul_sym (f x ++ c1)).
+setoid_rewrite <- cdiv_assoc.
+apply pos_non_c0.
+assumption.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+destruct (clt_le_dec c0 (f y)) as[fyp | fyn].
+idtac "case g y <= 0 and 0 < f y".
+setoid_rewrite decompose2.
+setoid_rewrite (cut_half eps).
+apply cplus_le_compat.
+apply cle_trans with (eps/((c1++c1)**(f x ++ c1))**f y).
+apply cmul_le_compat_r.
+apply cle_trans with eg.
+intuition;fail.
+assumption.
+apply clt_cle_weak; assumption.
 
+apply cle_trans with ((eps/(c1++c1))/((f x++c1))**(f x ++ c1)).
+setoid_rewrite cdiv_assoc.
+apply pos_non_c0; apply cmul_lt_0; assumption || apply c0_clt_c1.
+repeat setoid_rewrite (cmul_sym ( eps / ((c1 ++ c1) ** (f x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd.
+apply cle_trans with ef.
+intuition;fail.
+assumption.
+apply cdiv_le_0_compat_l.
+apply cmul_lt_0.
+apply c0_clt_2.
+assumption.
+apply clt_cle_weak; assumption.
 
+setoid_rewrite cmul_sym.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+apply cle_trans with (eps/((c1++c1)**(g x ++ c1))**g x).
+setoid_rewrite (cmul_sym (g x)).
+apply cmul_le_compat_r.
+apply cle_trans with ef.
+intuition; fail.
+assumption.
+assumption.
+apply cle_trans with (eps / ((c1 ++ c1) ** (g x ++ c1)) **(g x ++ c1)).
+repeat setoid_rewrite (cmul_sym (eps / ((c1 ++ c1) ** (g x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd; setoid_rewrite csub_diag; apply c0_cle_c1.
+apply cdiv_le_0_compat_l.
+assumption.
+apply clt_cle_weak; assumption.
+setoid_rewrite <- cdiv_assoc.
+apply pos_non_c0; apply cmul_lt_0; assumption || apply c0_clt_c1.
+setoid_rewrite <- (cmul_sym (g x ++ c1)).
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+idtac "case where both g y and f y are negative.".
+setoid_rewrite decompose.
+setoid_rewrite (cut_half eps).
+apply cplus_le_compat.
+apply cle_trans with (eps/((c1++c1)**(g x ++ c1))**(--g y)).
+setoid_rewrite <- (mul_copp_copp (f y -- f x)).
+apply cmul_le_compat_r.
+apply cle_trans with ef.
+setoid_rewrite <- (copp_copp ef).
+apply copp_le_compat.
+intuition.
+assumption.
+setoid_replace c0 with (--c0);[apply copp_le_compat;auto|setoid ring;fail].
+apply cle_trans with (((eps/(c1++c1))/(g x++c1))**(g x ++ c1)).
+setoid_rewrite cdiv_assoc.
+apply pos_non_c0; apply cmul_lt_0; assumption || apply c0_clt_c1.
+repeat setoid_rewrite (cmul_sym ( eps / ((c1 ++ c1) ** (g x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_trans with c1.
+apply cle_trans with (g x -- g y).
+setoid_replace (-- g y) with (c0++(--g y));[idtac|setoid ring;fail].
+setoid_replace (g x -- g y) with (g x++(--g y));[idtac|setoid ring;fail].
+apply cplus_le_compat.
+assumption.
+apply cle_refl.
+apply cle_trans with eg.
+setoid_rewrite <- (copp_copp (g x -- g y)).
+setoid_rewrite <- (copp_copp eg).
+apply copp_le_compat.
+setoid_rewrite copp_csub.
+intuition;fail.
+assumption.
+apply cplus_pos_simplify; assumption.
+apply cdiv_le_0_compat_l.
+apply cmul_lt_0.
+apply c0_clt_2.
+assumption.
+apply clt_cle_weak; assumption.
 
+setoid_rewrite (cmul_sym (eps / (c1 ++ c1) / (g x ++ c1))(g x ++ c1)).
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+apply cle_trans with (eps/((c1++c1)**(f x ++ c1))**f x).
+setoid_rewrite (cmul_sym (f x)).
+apply cmul_le_compat_r.
+apply cle_trans with eg.
+intuition; fail.
+assumption.
+assumption.
 
+apply cle_trans with (eps / ((c1 ++ c1) ** (f x ++ c1)) **(f x ++ c1)).
+repeat setoid_rewrite (cmul_sym (eps / ((c1 ++ c1) ** (f x ++ c1)))).
+apply cmul_le_compat_r.
+apply cle_csub_cadd; setoid_rewrite csub_diag; apply c0_cle_c1.
+apply cdiv_le_0_compat_l.
+assumption.
+apply clt_cle_weak; assumption.
+setoid_rewrite <- (cmul_sym (f x ++ c1)).
+setoid_rewrite <- cdiv_assoc.
+apply pos_non_c0.
+assumption.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+apply cle_refl.
+Qed.
 
+Theorem scal_mult_continuous :
+  forall f a x, continuous f x -> continuous (fun z => a**f z) x.
+intros f a x Hcf.
+destruct (ceq_dec a c0) as [Ha0 | Han].
+apply ext_continuous with (f:= fun x:Coef => c0).
+intros; setoid_rewrite Ha0; setoid ring.
+apply const_continuous.
+destruct (clt_le_dec c0 a) as [Hap | Hang].
+intros eps Hp.
+assert (Hp':c0 < eps/a).
+apply cdiv_lt_0_compat_l;assumption.
+destruct (Hcf (eps/a) Hp') as [delta [Hdp Hd]].
+exists delta;split;[assumption|intros y Hy].
+assert (Hfy:=Hd y Hy).
+setoid_replace (a**f y--a**f x) with ((f y--f x)**a);[idtac | setoid ring].
+assert (eps == eps/a **a).
+setoid_rewrite cmul_sym.
+setoid_rewrite cmul_div_r.
+assumption.
+auto.
+
+split.
+setoid_replace (--eps) with (--(eps/a)**a).
+apply cmul_le_compat_r.
+intuition;fail.
+apply clt_cle_weak;assumption.
+setoid_rewrite mul_copp.
+setoid_rewrite <- H; auto.
+
+setoid_replace eps with ((eps/a)**a).
+apply cmul_le_compat_r.
+intuition;fail.
+apply clt_cle_weak; assumption.
+assumption.
+intros eps Hp.
+assert (Hp':c0 < eps/(--a)).
+apply cdiv_lt_0_compat_l.
+apply clt_decompose.
+intros Ha; elim Han.
+setoid_rewrite <- (copp_copp a);setoid_rewrite <- Ha; setoid ring.
+apply cle_0_copp;assumption.
+assumption.
+
+destruct (Hcf (eps/(--a)) Hp') as [delta [Hdp Hd]].
+exists delta;split;[assumption|intros y Hy].
+assert (Hfy:=Hd y Hy).
+setoid_replace (a**f y--a**f x) with ((--(f y--f x))**(--a));
+ [idtac | setoid ring].
+assert (eps == eps/(--a) **(--a)).
+setoid_rewrite cmul_sym.
+setoid_rewrite cmul_div_r.
+intros Ha; elim Han; setoid_replace c0 with (a ++ (-- a)).
+setoid_rewrite Ha; setoid ring.
+setoid ring.
+auto.
+
+split.
+setoid_replace (--eps) with (--(eps/(--a))**(--a)).
+apply cmul_le_compat_r.
+apply copp_le_compat.
+intuition;fail.
+apply cle_0_copp;assumption.
+setoid_rewrite mul_copp.
+setoid_rewrite <- H; auto.
+
+setoid_replace eps with ((eps/(--a))**(--a)).
+apply cmul_le_compat_r.
+setoid_rewrite <- (copp_copp (eps / -- a)).
+apply copp_le_compat.
+intuition;fail.
+apply cle_0_copp;assumption.
+assumption.
+Qed.
+
+Theorem mult_continuous_aux2 :
+  forall f g x, continuous f x -> c0 <= f x -> continuous g x ->
+    continuous (fun y => f y ** g y) x.
+intros f g x Hcf fxp Hcg.
+destruct (clt_le_dec c0 (g x)) as [gxp|gxn].
+apply mult_continuous_aux; auto.
+apply clt_cle_weak; assumption.
+apply ext_continuous with (fun y => (--c1)** (f y ** --g y)).
+intros y; setoid ring.
+apply scal_mult_continuous with (f:= fun y => f y ** -- g y).
+apply mult_continuous_aux with (g:= fun y => -- g y).
+assumption.
+apply ext_continuous with (f := fun y => (--c1)**g y).
+intros y; setoid ring.
+apply scal_mult_continuous.
+assumption.
+assumption.
+apply cle_0_copp; assumption.
+Qed.
+
+Theorem mult_continuous :
+  forall f g x, continuous f x -> continuous g x ->
+    continuous (fun y => f y ** g y) x.
+intros f g x Hcf Hcg.
+destruct (clt_le_dec c0 (f x)) as [fxp | fxn].
+apply mult_continuous_aux2; auto.
+apply clt_cle_weak; assumption.
+apply ext_continuous with (fun y => (--c1)**((--f y)**g y)).
+intros y; setoid ring.
+apply scal_mult_continuous with (f:= fun y => (--f y ** g y)).
+apply mult_continuous_aux2 with (f:= fun y => -- f y); auto.
+apply ext_continuous with (f:= fun y => (--c1)**f y).
+intros; setoid ring.
+apply scal_mult_continuous; auto.
+apply cle_0_copp; auto.
+Qed.
 
