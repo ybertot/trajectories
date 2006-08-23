@@ -297,6 +297,11 @@ Axiom intermediate_value_polynom :
          Pol_eval P x <= c0 /\ c0 < Pol_eval P y /\ Pol_eval P y < eps /\
          y--x < eps.
 
+Lemma cmul_n0 : forall a b, c0 < a** b -> ~a==c0.
+intros a b H Heq; elim (clt_neq _ _ H).
+setoid_rewrite Heq; setoid ring.
+Qed.
+
 Lemma neg_cmul_n0 :  forall a b, a ** b < c0 -> ~a==c0.
 intros a b H Heq; elim (clt_neq _ _ H).
 setoid_replace (a ** b) with c0.
@@ -624,9 +629,9 @@ Theorem one_alternation_root_main :
   forall eps, c0 < eps -> exists a, exists b, c0 < a /\ a < b /\
       --eps < Pol_eval P a /\ Pol_eval P a <= c0 /\ c0 < Pol_eval P b /\
       Pol_eval P b < eps /\
-      (forall x, 0 < x -> x < a -> Pol_eval P x < c0) /\
+      (forall x, c0 < x -> x < a -> Pol_eval P x < c0) /\
       (forall x, b < x -> c0 < Pol_eval P x) /\
-      (forall x y, a < x -> x < y -> Pol_eval P x < Pol_eval P y).
+      (forall x y, b < x -> x < y -> Pol_eval P x < Pol_eval P y).
 intros P H; induction H.
 intros HlnP eps Hp.
 assert (Han:~a==0) by (apply (neg_cmul_n0 _ _ c)).
@@ -714,40 +719,87 @@ repeat (setoid_rewrite Pol_eval_plus; setoid_rewrite Pol_eval_c).
 repeat setoid_rewrite (cadd_sym a).
 apply cplus_lt_compat_r.
 repeat (setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_X).
-apply cmul_lt_le_compat_r.
-assumption.
+apply cmul_lt_le_compat.
 assumption.
 apply no_alternation_positive_strict; assumption.
-
-apply HPincr.
-
-BOUM.
-intros x' y' Hx' Hy'; split; [idtac|clear x' y' Hx' Hy'].
+assumption.
+apply no_alternation_increasing'.
+apply clt_cle_weak; assumption.
+assumption.
+split; apply clt_cle_weak; assumption.
+split.
+intros x Hx.
 setoid_rewrite p; setoid_rewrite Pol_eval_mult;
 setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
-setoid_rewrite Pol_eval_mult;
-setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
-case n.
-repeat setoid_rewrite cpow_0.
-repeat setoid_rewrite cmul_1_l.
-apply HPincr.
-apply cle_lt_trans with x; intuition;fail.
+apply cmul_lt_0.
+apply cpow_lt_0_compat_l; apply clt_trans with v2; assumption.
+apply clt_trans with (Pol_eval (Pc a + X*P1) v2).
 assumption.
-fail.
-intros p'; rewrite (Npred_correct p' (Npos p')).
-repeat setoid_rewrite cpow_plus.
-repeat setoid_rewrite cpow_1.
-setoid_replace x' ** cpow x' (Npred (Npos p')) ** Pol_eval (Pc a + X * P1) x'
-
-assert (dumm:= increase_pol_close_0_X).
-
-apply cle_lt_trans with (cpow y' n**Pol_eval (Pc a + X * P1) x').
+apply HPincr.
+apply cle_lt_trans with v1; assumption.
+assumption.
+intros x y Hx Hy.
+setoid_rewrite p.
+repeat (setoid_rewrite Pol_eval_mult;
+setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X).
+apply clt_le_trans with (cpow x n**Pol_eval(Pc a + X * P1)y).
+repeat setoid_rewrite (cmul_sym (cpow x n)).
+apply cmul_lt_compat_r.
+apply cpow_lt_0_compat_l.
+apply clt_trans with v2; assumption.
+apply HPincr.
+apply cle_lt_trans with v2.
+apply cle_trans with v1.
+assumption.
+apply clt_cle_weak; assumption.
+assumption.
+assumption.
 apply cmul_le_compat_r.
 apply cpow_le_compat_l.
-apply cle_trans with x;apply clt_cle_weak; assumption.
+apply clt_cle_weak; apply clt_trans with v2; assumption.
 apply clt_cle_weak; assumption.
-
-apply cmul_lt_compat.
-apply cpow_lt_0_compat_l.
+apply clt_cle_weak; apply clt_trans with (Pol_eval (Pc a + X*P1) v2).
+assumption.
+apply HPincr.
+apply cle_lt_trans with v1; assumption.
 apply clt_trans with x; assumption.
-apply cpow_lt_compat_l.
+
+intros Hlnz eps Hp.
+assert (Han : ~a==c0).
+apply (cmul_n0 _ _ c).
+assert (Hal := least_non_zero_P4 P _ _ _ p  Han).
+assert (Haneg : a < c0).
+setoid_rewrite <- Hal; assumption.
+
+assert (HP1l : least_non_zero_coeff P1 < c0).
+apply clt_0.
+apply neg_cmul_pos_r with a.
+setoid_rewrite cmul_sym; setoid_rewrite mul_copp.
+apply clt_0; setoid_rewrite copp_copp; setoid_rewrite cmul_sym; assumption.
+assumption.
+destruct (IHone_alternation HP1l eps Hp) as [v1 [v2 IH]].
+assert (Hav2 : c0 < --a/v2).
+apply cdiv_lt_0_compat_l.
+apply clt_trans with v1; intuition; fail.
+apply clt_0_copp; assumption.
+destruct (IHone_alternation HP1l (--a/v2) Hav2) as [v1' [v2' IH']].
+assert (Hexv'' :exists v'', (v'' == v2 \/ v'' == v2') /\ v''<= v2 /\
+                     v'' <= v2').
+destruct (clt_le_dec v2 v2') as [vv' | v'v].
+exists v2; split.
+auto.
+split.
+apply cle_refl.
+apply clt_cle_weak; assumption.
+exists v2'; split.
+auto.
+split.
+assumption.
+apply cle_refl.
+destruct Hexv'' as [v'' [Heqs [Hvv1 Hvv2]]].
+(* C'est troué, tu n'as pas d'information satisfaisante sur ce qui
+   se passe entre v1 et v2, il aurait fallu que tu assures que la
+   fonction polynomiale y est croissante, ou du moins que la valeur
+   maximale y est atteinte en v2. *)
+
+BOUM.
