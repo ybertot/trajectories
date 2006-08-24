@@ -486,7 +486,6 @@ setoid ring.
 setoid ring.
 Qed.
 
-(*
 Theorem increase_pol_close_0_X : 
    forall Q a r,
      c0 < r ->
@@ -553,6 +552,149 @@ apply clt_cle_weak; apply cle_lt_trans with x; assumption.
 apply cle_lt_trans with x; assumption.
 Qed.
 
+Parameter Coef_of_N : N -> Coef.
+Axiom Coef_of_N_0 : Coef_of_N 0 == c0.
+Axiom Coef_of_N_S : forall n, Coef_of_N (1 + n) == c1 ++ Coef_of_N n.
+
+Lemma Coef_of_N_1 : Coef_of_N 1 == c1.
+replace 1%N with (1+0)%N.
+setoid_rewrite Coef_of_N_S; setoid_rewrite Coef_of_N_0.
+setoid ring.
+auto.
+Qed.
+
+Lemma Coef_of_N_plus :
+  forall n m, Coef_of_N (n + m) == Coef_of_N n ++ Coef_of_N m.
+destruct n.
+intros; setoid_rewrite Coef_of_N_0; 
+  setoid_rewrite cadd_0_l; apply ceq_refl.
+induction p.
+intros m; rewrite Npos_xI_expand.
+repeat rewrite <- Nplus_assoc.
+repeat setoid_rewrite Coef_of_N_S.
+repeat setoid_rewrite IHp.
+setoid ring.
+intros m; rewrite Npos_xO_expand.
+repeat rewrite <- Nplus_assoc.
+repeat setoid_rewrite IHp.
+setoid ring.
+
+intros m; setoid_rewrite Coef_of_N_S; setoid_rewrite Coef_of_N_1.
+apply ceq_refl.
+Qed.
+
+Lemma c0_cle_Coef :
+  forall n, c0 <= Coef_of_N n.
+intros n; destruct n.
+setoid_rewrite Coef_of_N_0.
+apply cle_refl.
+induction p.
+rewrite Npos_xI_expand; setoid_rewrite Coef_of_N_S.
+repeat setoid_rewrite Coef_of_N_plus.
+repeat apply cle_0_plus.
+apply c0_cle_c1.
+assumption.
+assumption.
+rewrite Npos_xO_expand.
+setoid_rewrite Coef_of_N_plus; apply cle_0_plus; assumption.
+setoid_rewrite Coef_of_N_1; apply c0_cle_c1.
+Qed.
+
+Lemma c0_clt_Coef :
+  forall p, c0 <= Coef_of_N (Npos p).
+intros p; rewrite (Npred_correct p (Npos p) (refl_equal (Npos p))).
+apply c0_cle_Coef.
+Qed.
+
+Inductive NS : N -> N -> Prop :=
+   NSc : forall n, NS n (1+n).
+
+Axiom NS_wf : well_founded NS.
+
+Axiom N_eq_dec : forall x y:N, {x=y}+{x<>y}.
+
+Lemma Ppred_succ : forall n, Ppred (1 + n) = n.
+induction n.
+simpl.
+apply Pdouble_minus_one_o_succ_eq_xI.
+auto.
+auto.
+Qed.
+
+Lemma Npred_succ : forall n, Npred (1 + n) = n.
+intros n; destruct n as [|p].
+auto.
+unfold Npred.
+replace (1 + Npos p)%N with  (Npos (1+p));[idtac | auto].
+replace (1+p)%positive with (Psucc p).
+rewrite BinPos.Ppred_succ.
+caseEq (Psucc p); intros;auto.
+destruct p;simpl in H; discriminate.
+apply Pplus_one_succ_l.
+Qed.
+
+Theorem difference_cpow :
+  forall x n, (n <> 0)%N ->
+    exists P,
+    forall y,
+    cpow y n -- cpow x n == (y -- x)**
+    (Coef_of_N n**cpow x (Npred n)++(Pol_eval (X * P) (y--x))).
+intros x n; induction n using (well_founded_ind NS_wf).
+rename H into IHn.
+intros Hnn0.
+destruct n.
+elim Hnn0; auto.
+setoid_rewrite (Npred_correct p (Npos p)(refl_equal (Npos p))).
+case (N_eq_dec (Npred (Npos p)) 0).
+intros Hp1.
+rewrite  Hp1.
+exists P0.
+intros y.
+simpl (1+0)%N.
+simpl (Npred 1).
+repeat setoid_rewrite cpow_1. 
+setoid_rewrite cpow_0; setoid_rewrite Coef_of_N_1.
+setoid_rewrite Pol_eval_mult.
+repeat setoid_rewrite Pol_eval_c.
+setoid ring.
+intros Hpn1.
+assert (H' := Npred_correct p (Npos p)(refl_equal (Npos p))).
+destruct (Npred (Npos p)) as [ | p'].
+elim Hpn1; auto.
+pose (n:= Npos p').
+fold n.
+assert (Hns : NS n (Npos p)).
+setoid_rewrite H'; constructor.
+destruct (IHn n Hns Hpn1) as [P Heq].
+exists (Pc (Coef_of_N n** cpow x (Npred n)) +
+        Pc x * P + X * P).
+intros y.
+setoid_replace (cpow y (1+n)%N -- cpow x (1+n))%N with
+ (y**(cpow y n -- cpow x n)++cpow x n**y --
+     x**(cpow x n)).
+rewrite Npred_succ.
+setoid_rewrite Coef_of_N_S.
+setoid_rewrite Heq.
+setoid_rewrite Pol_eval_mult.
+setoid_rewrite Pol_eval_mult.
+setoid_rewrite Pol_eval_plus.
+setoid_rewrite Pol_eval_mult.
+setoid_rewrite Pol_eval_plus.
+setoid_rewrite Pol_eval_mult.
+setoid_rewrite Pol_eval_X.
+setoid_rewrite Pol_eval_c.
+setoid_rewrite Pol_eval_c.
+setoid_replace (cpow x n) with (x**cpow x (Npred n)).
+setoid ring.
+pattern n at 1; replace n with (1+Npred n)%N.
+setoid_rewrite cpow_plus; setoid_rewrite cpow_1.
+auto.
+symmetry; unfold n; apply Npred_correct with p'.
+auto.
+repeat setoid_rewrite cpow_plus; repeat setoid_rewrite cpow_1.
+setoid ring.
+Qed.
+
 Theorem increase_pol_close_0_Xn : 
    forall Q a r n,
      c0 < r ->
@@ -565,11 +707,24 @@ intros Q a r n Hr HQp HQi Hclose x y Hx Hy .
 repeat setoid_rewrite Pol_eval_mult.
 repeat setoid_rewrite Pol_eval_plus.
 repeat setoid_rewrite Pol_eval_c.
+repeat setoid_rewrite Pol_eval_pow.
+repeat setoid_rewrite Pol_eval_X.
 
-setoid_replace
-(Pol_eval (X ^ n) y ** Pol_eval (Pc a + X * Q) y) with
-(Pol_eval (X ^ n) y - Pol_eval (X ^ n) x)**
-(Pol_eval (Pc a + X *Q) x ++ y**Pol_eval Q y)
+
+assert (Hkey : cpow y n** (a ++ Pol_eval (X * Q) y) ==
+        cpow x n ** (a++Pol_eval (X*Q) x)++
+        (y--x **(y
+        ((cpow y n -- cpow x n)**(Pol_eval (Pc a + X * Q) x ++ y**Pol_eval Q y)
+         ++ cpow x n**y**Pol_eval Q y --cpow y n **x **Pol_eval Q x)).
+repeat setoid_rewrite Pol_eval_plus.
+repeat setoid_rewrite Pol_eval_c.
+repeat setoid_rewrite Pol_eval_mult.
+repeat setoid_rewrite Pol_eval_X.
+setoid ring.
+setoid_rewrite Hkey.
+apply cplus_lt_r.
+
+Qed.
 
 setoid_rewrite Pol_eval_mult;
 setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
