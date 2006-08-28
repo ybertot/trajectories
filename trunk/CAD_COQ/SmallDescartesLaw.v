@@ -395,9 +395,9 @@ apply clt_decompose.
 intros H; elim (clt_neq _ _ Hlq).
 setoid_rewrite <- (cmul_1_l q).
 setoid_replace c1 with (q**/q).
-setoid_replace 0 with c0 in H.
+replace 0 with c0 in H.
 setoid_rewrite <- H; setoid ring.
-apply ceq_refl.
+reflexivity.
 unfold Coef_record.Ceq, Coef_record.Cmul, ceq_compat, Coef_record.C1, cops.
 apply Qeq_sym; apply Qmult_inv_r.
 assumption.
@@ -921,7 +921,8 @@ caseEq (czero_test (c--c1)).
 intros Hctest1; rewrite Hctest1 in H'.
 setoid_replace (Pc b + X) with (PX P1 1 b) in H'.
 inversion H'; elim P0_diff_P1;auto.
-rewrite (PX_interp P1); simpl Pol_pow; setoid ring.
+setoid_rewrite (PX_interp P1 1 b); simpl Pol_pow.
+ setoid ring.
 intros Hctest1; rewrite Hctest1 in H'.
 assert (Hctest' : czero_test (c1**c)=false).
 caseEq (czero_test (c1**c)); intros Hctest2; auto.
