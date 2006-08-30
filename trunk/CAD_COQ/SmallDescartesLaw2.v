@@ -598,10 +598,6 @@ apply clt_cle_weak; apply cle_lt_trans with x; assumption.
 apply cle_lt_trans with x; assumption.
 Qed.
 
-Parameter Coef_of_N : N -> Coef.
-Axiom Coef_of_N_0 : Coef_of_N 0 == c0.
-Axiom Coef_of_N_S : forall n, Coef_of_N (1 + n) == c1 ++ Coef_of_N n.
-
 Lemma Coef_of_N_1 : Coef_of_N 1 == c1.
 replace 1%N with (1+0)%N.
 setoid_rewrite Coef_of_N_S; setoid_rewrite Coef_of_N_0.
@@ -677,13 +673,6 @@ apply cmul_lt_compat; assumption.
 repeat setoid_rewrite cpow_1; auto.
 Qed.
 
-Inductive NS : N -> N -> Prop :=
-   NSc : forall n, NS n (1+n).
-
-Axiom NS_wf : well_founded NS.
-
-Axiom N_eq_dec : forall x y:N, {x=y}+{x<>y}.
-
 Lemma Ppred_succ : forall n, Ppred (1 + n) = n.
 induction n.
 simpl.
@@ -706,59 +695,6 @@ Qed.
 
 Functional Scheme Ppred_ind := Induction for Ppred Sort Prop.
 Functional Scheme Pdouble_minus_one := Induction for Ppred Sort Prop.
-
-Lemma succ_Npred :
-  forall p n, Npred n = Npos p -> n = (Npos p + 1)%N.
-intros p n; functional induction (Npred n).
-intros; discriminate.
-simpl.
-replace (Npos (p + 1)) with (1 + Npos p)%N.
-intros Heq; rewrite <- Heq; auto.
-rewrite Pplus_comm; auto.
-intros Heq; rewrite <- Heq.
-rewrite Nplus_comm.
-clear Heq.
-simpl.
-apply f_equal with (f:= Npos).
-case _x.
-simpl; auto.
-simpl.
-intros; rewrite Psucc_o_double_minus_one_eq_xO; auto.
-simpl; auto.
-intros; discriminate.
-Qed.
-
-(*
-Function diff_cpow_pol (x:Coef) (n:N) {wf NS n} : Pol :=
-   match Npred n with
-     0%N => P0
-   | _ =>  (Pc (Coef_of_N n** cpow x (Npred n)) +
-        Pc x * diff_cpow_pol x (Npred n) + X * diff_cpow_pol x (Npred n))
-   end.
-intros _ n p Heq.
-pattern n at 2; rewrite (Npred_correct (1+p)%positive n).
-constructor.
-rewrite (succ_Npred _ _ Heq).
-rewrite Nplus_comm; auto.
-intros _ n p Heq; 
-pattern n at 2; rewrite (Npred_correct (1+p)%positive n).
-constructor.
-rewrite (succ_Npred _ _ Heq).
-rewrite Nplus_comm; auto.
-apply NS_wf.
-Qed.
-*)
-
-Parameter diff_cpow_pol : Coef -> N -> Pol.
-
-Axiom  diff_cpow_pol_equation :
- forall x n, 
-  diff_cpow_pol x n =
-   match Npred n with
-     0%N => P0
-   | _ =>  Pc (Coef_of_N (Npred n)** cpow x (Npred (Npred n))) +
-        Pc x * diff_cpow_pol x (Npred n) + X * diff_cpow_pol x (Npred n)
-   end.
 
 Lemma diff_cpow_pol_1 :
   forall x, diff_cpow_pol x 1 = P0.
@@ -821,8 +757,13 @@ replace (Npos p') with (1+(Npred (Npos p')))%N.
 repeat setoid_rewrite cpow_plus.
 repeat setoid_rewrite cpow_1.
 fold n'.
+
 repeat setoid_rewrite Coef_of_N_S.
+set (n'':=Coef_of_N n').
+set (w:=Pol_eval (diff_cpow_pol x (1+n'))(y--x)).
+set (w2 := cpow x n').
 setoid ring.
+
 pattern (Npos p') at 2;
   setoid_rewrite (Npred_correct p' (Npos p') (refl_equal (Npos p'))).
 auto.
@@ -1353,9 +1294,6 @@ apply clt_trans with r; assumption.
 assumption.
 Qed.
 
-
-Axiom tech_Coef_of_N : forall n, (1 <= Z_of_N n)%Z -> c1 <= Coef_of_N n.
-
 Lemma copp_lt_0_compat :  forall a, c0 < a -> copp a < c0.
 intros a Ha.
 setoid_replace (-- a) with (-- a++c0).
@@ -1552,6 +1490,7 @@ Theorem one_alternation_root_main :
       (forall x y, a < x -> x < y -> Pol_eval P x < Pol_eval P y).
 intros P H; induction H.
 intros HlnP eps Hp.
+rename n0 into n_non_0; rename n1 into n0.
 assert (Han:~a==0) by (apply (neg_cmul_n0 _ _ c)).
 assert (Hal : least_non_zero_coeff P == a) by 
  exact (least_non_zero_P4 P a n P1 p Han).
@@ -1617,17 +1556,24 @@ destruct (intermediate_value_polynom (Pc a +X*P1) r r2 HPrn HPr2p' Hrr2
 exists v1.
 exists v2.
 assert (Hv1p : c0 < v1) by (apply clt_le_trans with r; intuition; fail).
-assert (Hv2p : c0 < v2) .
-apply clt_le_trans with v1.
-assumption.
-apply clt_cle_weak; assumption.
+assert (Hv2p : c0 < v2) by 
+   (apply clt_le_trans with v1;[assumption|apply clt_cle_weak; assumption]).
 assert (Hden1 : c0 < Coef_of_N n ** cpow v2 (Npred n) ++
     (v2 -- v1) ** Pol_eval (diff_cpow_pol v2 n) (v2 -- v1)).
 apply cplus_lt_0_le_lt.
 apply cmul_lt_0.
 apply clt_le_trans with c1.
 apply c0_clt_c1.
-apply tech_Coef_of_N; assumption.
+destruct n as [ | p'].
+elim n_non_0; reflexivity.
+rewrite (Npred_correct p' (Npos p')).
+  setoid_rewrite Coef_of_N_S.
+setoid_rewrite cadd_sym.
+apply cplus_pos_simplify.
+apply c0_cle_Coef.
+reflexivity.
+
+
 apply cpow_lt_0_compat_l.
 assumption.
 apply cmul_le_0.

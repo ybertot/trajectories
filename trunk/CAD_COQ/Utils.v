@@ -122,6 +122,15 @@ Qed.
    end.
 
 
+
+
+Definition N_of_nat(n:nat):N:=
+match n with
+|O => N0
+|S n => Npos (P_of_succ_nat n)
+end.
+
+
 (** Some operations over lists, o be moved in Mylist? *)
 
   (*last element of a list *)
@@ -306,4 +315,44 @@ match n,m with
 |S n, S m => eqn n m
 |_, _ => false
 end.
+
+(** Iterator for update in the CAD tree construction *)
+
+Fixpoint two_fold(A B C:Set)
+  (f: A -> B  -> (A*C))(a:A)(l:list B){struct l}: A * (list C):=
+  match l with
+    |nil => (a, (@nil C))
+    |b::l1 =>
+      let (a1, c1) := f a b  in
+      let (a2, l2) := two_fold f a1 l1 in
+	(a2, (c1::l2))
+  end.
+
+(*
+Fixpoint two_fold(A B C D:Set)
+  (f: A -> B -> C -> triple A B D)(a:A)(l:list (B*C))
+  {struct l}: A * (list (B*D)):=
+  match l with
+    |nil => (a, nil)
+    |head::l1 =>
+      let (b,c):=head in
+      let (a1, b1 ,d1 ) := f a b c in
+      let (a2, l2) := two_fold f a1 l1 in
+	(a2, ((b1,d1)::l2))
+  end.
+*)
+(*
+
+Fixpoint two_fold(A B C D:Set)
+  (f: A -> B -> C -> triple A B D)(a:A)(b:B)(l:list C)
+  {struct l}:triple A B (list D):=
+  match l with
+    |nil => Tr a b nil
+    |c::l1 =>
+      let (a1, b1, d1) := f a b c in
+      let (a2, b2, l2) := two_fold f a1 b1 l1 in
+	Tr a2 b2 (d1::l2)
+  end.
+*)
+
 

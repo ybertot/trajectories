@@ -400,6 +400,7 @@ Definition Zpolpower_nat (i:nat):= match (even_odd_dec i) with
 
 Opaque phi.
 
+
 Theorem det_aux_diag: forall l a n p,
   (forall i:nat, (1 < i)%nat -> (i <= n)%nat -> phi deg  i a != P0) -> 
   (forall (i j:nat), (j < i)%nat  -> (i < n)%nat -> phi deg (S (S i)) (nth j l p) != P0) ->
@@ -498,6 +499,7 @@ rewrite Eq1; rewrite <- minus_n_n; auto.
 rewrite Eq1; auto with arith.
 Qed.
 
+
 Theorem det_diag: forall l a p,
   (forall i, (1 < i)%nat -> (i <= length l + 1)%nat -> phi  deg i a != P0)-> 
   (forall i j, (j < i)%nat-> (i < length l + 1)%nat -> phi deg (S (S i)) (nth j l p) != P0)->
@@ -507,6 +509,189 @@ intros l a p H2 H3 H4.
 unfold det; rewrite length_app.
 apply det_aux_diag with p; simpl; auto with arith.
 Qed.
+
+(*
+Ltac list_blast := simpl;try (repeat rewrite app_ass);try (repeat rewrite app_comm_cons);
+try (repeat rewrite app_ass);simpl;try reflexivity.
+
+
+Lemma nth_app_cons : forall A n l1 l2 a b, 
+length l1 = n -> @nth A n (app l1 (a::l2)) b = a.
+Proof.
+intro A;induction n;intros l1 l2 a b Defn.
+replace l1 with (@nil A);[reflexivity|destruct l1].
+trivial.
+discriminate.
+destruct l1;simpl.
+discriminate.
+apply IHn.
+simpl in Defn;auto with arith.
+Qed.
+
+
+Ltac falso := apply False_ind;omega.
+
+
+Theorem det_aux_trig: forall k1 k2 l1 l2  n p c,
+  length l1 = k1 -> length l2 = k2 -> (k1 + k2)%nat = n ->
+  (forall i:nat, (1 < i)%nat -> (i <= k1)%nat ->
+    forall j, j < k2 -> phi deg  i (nth j l2 p) != P0) ->
+ 
+  (forall (i j:nat), (j < i)%nat  -> (i < k1)%nat ->
+    phi deg (S (S i)) (nth j l1 p) != P0) ->
+
+  (forall i:nat, (i < n)%nat -> (i < length l1 )%nat ->
+    phi deg (S (S i)) (nth i l1 p) != c)->
+  det_aux n (app l1 l2) != (Pol_pow c (N_of_nat k1))*(det_aux n l2).
+Proof.
+intro k1;elim k1.
+intros k2 l1 l2 n p c H1 H2 H3.
+destruct l1.
+simpl in H3.
+subst k2;clear H1.
+intros H4 H5 H6.
+simpl.
+setoid ring.
+simpl in H1;discriminate.
+intros n Rec k2 l1 l2 n0 p c H1 H2 H3 H4 H5 H6.
+case (list_last_element _ l1).
+intro H7.
+subst l1.
+discriminate.
+intro H7.
+case H7.
+clear H7;intros l3 (a1,H7).
+subst l1.
+replace (app (app l3 (a1 :: nil)) l2) with (app l3 (a1::l2)) by list_blast.
+assert (l3_length : length l3 = n) by 
+(rewrite length_app in H1;simpl in H1;omega).
+rewrite (Rec (S k2) l3 (a1::l2) n0 p c);trivial.
+simpl;omega.
+omega.
+intros i H7 H8 j H9.
+destruct j.
+simpl.
+replace a1 with (nth (length l3) (app l3 (a1::nil)) p).
+destruct i;try destruct i;try falso.
+apply H5.
+
+
+
+
+
+
+Goal forall n, forall l:list nat, length l = S n -> False.
+intros;case(list_last_element _ l).
+intro H1.
+subst l.
+subst l1.
+simpl.
+
+
+
+
+intros l a n p.
+generalize l.
+ elim n.
+simpl.
+clear l n.
+intros l _ _ _ H1.
+rewrite plus_comm in H1; discriminate.
+clear l n.
+intros n Rec l H0 H2 H3 H4.
+case (list_last_element _ l).
+ intros H5.
+rewrite H5; simpl.
+replace n with 0%nat;simpl.
+Pcsimpl.
+(*rewrite Pol_sub_c0;rewrite Pmul_Rat_c1;setoid ring.*)
+apply eq_add_S.
+rewrite <- H4; rewrite H5; simpl; auto.
+intro H5.
+case H5.
+ clear H5; intros l2 (a1, H5).
+subst l.
+assert (Eq0: n = (S (pred n))).
+generalize H4; rewrite length_app; repeat (rewrite plus_comm; simpl); auto.
+case n; simpl; auto with zarith.
+assert (Eq1: pred n = (length l2)).
+apply eq_add_S; apply eq_add_S.
+rewrite <- Eq0; rewrite <- H4; rewrite length_app; repeat (rewrite plus_comm; simpl); auto.
+rewrite app_ass;simpl.
+rewrite rec_det_diag; simpl; auto with zarith.
+
+intros a2 HH.
+case (in_nth_inv _ a2 l2 p); auto.
+intros i (Hi1, Hi2).
+rewrite Eq0.
+replace a2 with (nth i (app l2 ( a1 :: nil)) p).
+apply H2; auto with arith.
+rewrite Eq1; auto.
+rewrite nth_app_l; auto with arith.
+case (even_odd_dec (length l2));intros.
+
+rewrite Rec; auto.
+
+intros i j HH HH1.
+rewrite <- (H2 i j); auto with arith.
+rewrite  (@f_equal3 _ _ _ _ phi deg deg (S(S i)) (S(S i)) (nth j l2 p) (nth j (app l2 (a1 :: nil)) p)); auto.
+setoid ring.
+apply sym_equal; apply nth_app_l.
+apply lt_le_trans with (1 := HH).
+rewrite <- Eq1; clear Eq1; rewrite Eq0 in HH1; auto with arith.
+
+intros i HH HH1; rewrite <- H3; auto. 
+rewrite length_app; simpl; auto with arith.
+rewrite  (@f_equal3 _ _ _ _ phi deg deg (S(S i)) (S(S i)) (nth i l2 p) (nth i (app l2 (a1 :: nil)) p)); auto.
+setoid ring.
+apply sym_equal; apply nth_app_l; auto.
+apply eq_add_S; auto with arith.
+rewrite <- H4; rewrite length_app; repeat (rewrite plus_comm; simpl); auto.
+
+rewrite Eq0.
+replace a1 with (nth (pred n) (app l2 (a1 :: nil)) p).
+rewrite H3; auto with zarith.
+rewrite Eq1.
+unfold Zpolpower_nat.
+case (even_odd_dec (length l2));intros.
+apply Pmul_1_l.
+elim  (not_even_and_odd (length l2));trivial.
+rewrite nth_app_r.
+rewrite Eq1; rewrite <- minus_n_n; auto.
+rewrite Eq1; auto with arith.
+
+rewrite Rec; auto.
+
+intros i j HH HH1.
+rewrite <- (H2 i j); auto with arith.
+rewrite  (@f_equal3 _ _ _ _ phi deg deg (S(S i)) (S(S i)) (nth j l2 p) (nth j (app l2 (a1 :: nil)) p)); auto.
+setoid ring.
+
+apply sym_equal; apply nth_app_l.
+apply lt_le_trans with (1 := HH).
+rewrite <- Eq1; clear Eq1; rewrite Eq0 in HH1; auto with arith.
+
+intros i HH HH1; rewrite <- H3; auto. 
+rewrite length_app; simpl; auto with arith.
+rewrite  (@f_equal3 _ _ _ _ phi deg deg (S(S i)) (S(S i)) (nth i l2 p) (nth i (app l2 (a1 :: nil)) p)); auto.
+setoid ring.
+apply sym_equal; apply nth_app_l; auto.
+apply eq_add_S; auto with arith.
+rewrite <- H4; rewrite length_app; repeat (rewrite plus_comm; simpl); auto.
+
+rewrite Eq0.
+replace a1 with (nth (pred n) (app l2 (a1 :: nil)) p).
+rewrite H3; auto with zarith.
+rewrite Eq1.
+unfold Zpolpower_nat.
+case (even_odd_dec (length l2));intros.
+elim  (not_even_and_odd (length l2));trivial.
+setoid ring.
+rewrite nth_app_r.
+rewrite Eq1; rewrite <- minus_n_n; auto.
+rewrite Eq1; auto with arith.
+Qed.
+*)
 
 
 Theorem rec_det_morph : forall f rec  l1 l1',

@@ -25,12 +25,11 @@ Unset Boxed Values.
 
 Require Import Le.
 
+Set Implicit Arguments.
 
 Section Lists.
 
 Variable A : Set.
-
-Set Implicit Arguments.
 
 Inductive list : Set :=
   | nil : list

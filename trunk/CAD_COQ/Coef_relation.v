@@ -63,3 +63,19 @@ Qed.
 Add Morphism czero_test with signature ceq ==> (@eq bool) as c0_test_Morphism.
   intros;apply c0_test_ext;assumption.
 Qed.
+
+Add Morphism cpow with signature ceq ==> (@eq N) ==> ceq as cpow_morphism.
+intros x1 x2 Heq n; case n.
+repeat setoid_rewrite cpow_0; apply ceq_refl.
+intros p; induction p.
+
+replace (Npos (xI p)) with (1+(Npos p+Npos p))%N;
+repeat setoid_rewrite cpow_plus; repeat setoid_rewrite cpow_1.
+setoid_rewrite IHp; setoid_rewrite Heq; apply ceq_refl.
+simpl; rewrite Pplus_diag; auto.
+
+replace (Npos (xO p)) with (Npos p+Npos p)%N.
+repeat setoid_rewrite cpow_plus; setoid_rewrite IHp; apply ceq_refl.
+simpl; rewrite Pplus_diag; auto.
+repeat setoid_rewrite cpow_1; setoid_rewrite Heq; apply ceq_refl.
+Qed.

@@ -192,7 +192,7 @@ Require Import Qabs.
    Definition rabs_val := Q_abs_val.
 
 
-   Notation "a # b" := (MkRat a b)(at level 20, no associativity) : rscope.
+   Notation "a # b" := (MkRat a b)(at level 55, no associativity) : rscope.
 
    Infix "+r" := radd(at level 50, left associativity) :rscope.
    Notation "-r x" := (ropp x)(at level 50, left associativity) : rscope.

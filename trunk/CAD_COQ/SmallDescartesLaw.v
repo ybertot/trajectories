@@ -5,11 +5,14 @@ Require Import Omega.
 Require Import CAD_types.
 Require Import Utils.
 Require Import NArith.
+Require Import NArithRing.
 Require Import Zwf.
 Require Import QArith.
 Require Import Qring.
 Require Import Qring.
 Require Import Pol_ring2.
+Require Import Recdef.
+
 Import Qnorm.
 
 Hint Resolve c0test_c PolEq_refl ceq_refl.
@@ -27,6 +30,131 @@ Qed.
 Lemma Npos_xO_expand :
   forall p, Npos (xO p) = (Npos p + Npos p)%N.
 intros; simpl; rewrite Pplus_diag; auto.
+Qed.
+
+Fixpoint Coef_of_positive (p:positive) : Coef :=
+  match p with
+    1%positive => c1
+  | xO p' => Coef_of_positive p' ++ Coef_of_positive p'
+  | xI p' => c1 ++ (Coef_of_positive p' ++ Coef_of_positive p')
+  end.
+
+Definition Coef_of_N (n:N) :=
+  match n with 0%N => c0 | Npos p => Coef_of_positive p end.
+
+Lemma Coef_of_N_0 : Coef_of_N 0 == c0.
+apply ceq_refl.
+Qed.
+
+Lemma Coef_of_N_S : forall n, Coef_of_N (1 + n) == c1 ++ Coef_of_N n.
+intros n; case n.
+setoid_rewrite Coef_of_N_0.
+unfold Coef_of_N.
+replace (1+0)%N with 1%N.
+setoid_rewrite cadd_0_r.
+apply ceq_refl.
+ring.
+intros p; induction p.
+unfold Nplus.
+simpl (1+xI p)%positive.
+replace (Coef_of_N (Npos (xO (Psucc p)))) with
+        ((Coef_of_N (Npos (Psucc p))) ++ Coef_of_N (Npos (Psucc p))).
+rewrite Pplus_one_succ_l.
+setoid_rewrite IHp.
+replace (Coef_of_N (Npos (xI p))) with 
+     (c1++ (Coef_of_N (Npos p)++Coef_of_N (Npos p))).
+setoid ring.
+reflexivity.
+reflexivity.
+simpl (1+Npos(xO p))%N.
+apply ceq_refl.
+apply ceq_refl.
+Qed.
+
+Inductive NS : N -> N -> Prop :=
+   NSc : forall n, NS n (1+n).
+
+Lemma NS_wf : well_founded NS.
+apply wf_incl with (R2 := ltof N nat_of_N).
+unfold inclusion.
+intros x y H; inversion H.
+unfold ltof.
+case x.
+exact (le_n 1).
+intros p; induction p.
+simpl.
+rewrite nat_of_P_xI.
+rewrite nat_of_P_xO.
+rewrite nat_of_P_succ_morphism.
+omega.
+simpl.
+rewrite nat_of_P_xO.
+rewrite nat_of_P_xI.
+omega.
+compute.
+omega.
+apply well_founded_ltof.
+Qed.
+
+Lemma N_eq_dec : forall x y:N, {x=y}+{x<>y}.
+intros x y.
+assert (other_direction : x = y -> Ncompare x y = Eq).
+intros Heq; rewrite Heq; apply Ncompare_refl.
+generalize (Ncompare_Eq_eq x y) other_direction.
+case (Ncompare x y).
+left; auto.
+intros _ Hd ; right; intros Habs; assert (Habs' := Hd Habs); discriminate.
+intros _ Hd ; right; intros Habs; assert (Habs' := Hd Habs); discriminate.
+Qed.
+
+Functional Scheme Npred_ind := Induction for Npred Sort Prop.
+
+Lemma Npred_correct : forall p p', p' = Npos p -> p' = (1 + Npred p')%N.
+
+intros p p'; functional induction (Npred p').
+intros; discriminate.
+intros; reflexivity.
+unfold Nplus.
+rewrite <- Pplus_one_succ_l.
+elim (Psucc_pred (xO _x)).
+intros; discriminate.
+intros H; rewrite H; reflexivity.
+reflexivity.
+Qed.
+
+Lemma succ_Npred :
+  forall p n, Npred n = Npos p -> n = (Npos p + 1)%N.
+intros p n; functional induction (Npred n).
+intros; discriminate.
+simpl.
+replace (Npos (p + 1)) with (1 + Npos p)%N.
+intros Heq; rewrite <- Heq; auto.
+rewrite Pplus_comm; auto.
+intros Heq; rewrite <- Heq.
+rewrite Nplus_comm.
+clear Heq.
+simpl.
+apply f_equal with (f:= Npos).
+case _x.
+simpl; auto.
+simpl.
+intros; rewrite Psucc_o_double_minus_one_eq_xO; auto.
+simpl; auto.
+intros; discriminate.
+Qed.
+
+Function diff_cpow_pol (x:Coef) (n:N) {wf NS n} : Pol :=
+   match Npred n with
+     0%N => P0
+   | _ =>  (Pc (Coef_of_N (Npred n)** cpow x (Npred (Npred n))) +
+        Pc x * diff_cpow_pol x (Npred n) + X * diff_cpow_pol x (Npred n))
+   end.
+intros _ n p Heq.
+rewrite (Npred_correct (1+p)%positive n).
+rewrite Heq; constructor.
+rewrite (succ_Npred _ _ Heq).
+rewrite Nplus_comm; auto.
+apply NS_wf.
 Qed.
 
 Definition cdiv : Coef -> Coef -> Coef :=
@@ -56,6 +184,10 @@ Qed.
 
 Theorem cle_refl : forall x, cle x x.
 exact Qle_refl.
+Qed.
+
+Theorem cle_antisym : forall x y, x <= y -> y <= x -> x==y.
+exact Qle_antisym.
 Qed.
 
 Theorem cle_Qle : forall x y, cle x y -> Qle x y.
@@ -531,7 +663,7 @@ Inductive no_alternation : Pol -> Set :=
 
 Inductive one_alternation : Pol -> Set :=
   one_alternation_here :
-    forall P a (n:N) P1, (1 <= Z_of_N n)%Z ->
+    forall P a (n:N) P1, n<>0%N ->
       P != (X^n *(Pc a + X * P1))%Pol ->
       a ** least_non_zero_coeff P1 < c0 -> no_alternation P1 ->
       one_alternation P
@@ -820,22 +952,6 @@ Qed.
 
 Add Morphism (@Pc Coef) with signature ceq ==> Pol_Eq as Pc_morphism.
 intros; constructor; auto.
-Qed.
-
-
-Functional Scheme Npred_ind := Induction for Npred Sort Prop.
-
-Lemma Npred_correct : forall p p', p' = Npos p -> p' = (1 + Npred p')%N.
-
-intros p p'; functional induction (Npred p').
-intros; discriminate.
-intros; reflexivity.
-unfold Nplus.
-rewrite <- Pplus_one_succ_l.
-elim (Psucc_pred (xO _x)).
-intros; discriminate.
-intros H; rewrite H; reflexivity.
-reflexivity.
 Qed.
 
 Theorem X_mul_convert_pow : forall p, X * p != X^1*p.

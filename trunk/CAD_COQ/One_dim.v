@@ -30,35 +30,35 @@ Section ONE_DIM.
 
 (* Initialization for the loading of Gen_functor *)
   
-  Definition Coef:= Rat.
-  Definition c0 :=r0.
-  Definition  c1 := r1.
-  Definition cadd :=  radd .
-  Definition copp :=  ropp .
-  Definition cmul :=  rprod .
-  Definition csub := rsub .
-  Definition cdiv := rdiv .
-  Definition czero_test := rzero_test .
-  Definition cpow := rpow .
-  Definition cof_pos(p:positive):=rof_pos p.
-  Definition cof_Rat(r:Rat) := r.
-  Definition cbase_cst_sign := fun x:Coef => (Some (rsign  x)).
+  Let Coef:= Rat.
+  Let c0 := r0.
+  Let c1 := r1.
+  Let cadd :=  radd .
+  Let copp :=  ropp .
+  Let cmul :=  rprod .
+  Let csub := rsub .
+  Let cdiv := rdiv .
+  Let czero_test := rzero_test .
+  Let cpow := rpow .
+  Let cof_pos(p:positive):=rof_pos p.
+  Let cof_Rat(r:Rat) := r.
+  Let cbase_cst_sign := fun x:Coef => (Some (rsign  x)).
 
-  Definition cgcd_gcd_free :=
+  Let cgcd_gcd_free :=
     fun x y:Coef => let m:= rmax x y in (m, rdiv x m, rdiv y m).
-  Definition cis_Rat := fun x:Rat => true.
-  Definition cmult_base_cst := cmul.
-  Definition cdiv_base_cst := cdiv.
-  Definition cell_point := unit.
-  Definition cvalue_bound(x:unit)(y:Rat):=(y,y).
-  Definition ccell_point_up_refine(x:unit):=x.
-  Definition csign_at(x:Coef)(u:unit)(n:nat):=(u,(x,Some (rsign  x))).
-  Definition cdeg(x:Coef):=N0.
-  Definition ccell_refine(u:unit)(n:nat):=Some u.
-  Definition cInfo := Coef.
-  Definition cInfo_of_Pol(s:Sign)(c:Coef):=c.
-  Definition cPol_of_Info(c:Rat):=c.
-  Definition cmk_Info(a b:Rat)(n:N)(s1 s2:Sign):= a.
+  Let cis_Rat := fun x:Rat => true.
+  Let cmult_base_cst := cmul.
+  Let cdiv_base_cst := cdiv.
+  Let path := unit.
+  Let cvalue_bound(x:unit)(y:Rat):=(y,y).
+  Let ccell_point_up_refine(x:unit):=x.
+  Let csign_at(x:Coef)(u:unit)(n:nat):=(u,(x,Some (rsign  x))).
+  Let cdeg(x:Coef):=N0.
+  Let ccell_refine(u:unit)(n:nat):=Some u.
+  Let cInfo := Coef.
+  Let cInfo_of_Pol(s:Sign)(c:Coef):=c.
+  Let cPol_of_Info(c:Rat):=c.
+  Let cmk_Info(a b:Rat)(n:N)(s1 s2:Sign):= a.
 
  
 
@@ -621,14 +621,15 @@ Load Alg.
 
 (* dummy function to convert Rpoint into cell_point_up. pour l'instant on separe ca de sign_table1 vu que c'est provisoire *)
 
-  Definition Rpoint_to_cell_point_up(rcol:Rpoint*(list (Pol *Sign))):=
+
+ Definition Rpoint_to_cell_point_up(rcol:Rpoint*(list (Pol *Sign))):=
     let (r,col):= rcol in
-      (build_cell_point_up tt r,col).
+      (build_next_path tt r,col).
 
-
+(*
   Definition Pol_cad(Pol_list:list Pol)(n:nat):=
-    map Rpoint_to_cell_point_up (sign_table Pol_list n).
-
+  (tt,(sign_table Pol_list n)).
+*)
   Definition Pol_base_cst_sign(P:Pol):=
     match P with
       |Pc p => Some (rsign p)
@@ -649,7 +650,7 @@ Load Alg.
     Pol_low_bound_tt 
     Pol_value_bound Info_of_Pol
     Pol_low_sign_info Pol_sign_at 
-    Pol_cad.
+    sign_table.
 
 End ONE_DIM.
 

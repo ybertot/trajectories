@@ -89,7 +89,9 @@ Section  COEF_STRUCT.
     C0test_c0 :czero_test c0 =true;
     C0test_c1:czero_test c1 =false;
     Cpow_plus: forall x i j, (Ceq (cpow x (i+j)) (cmul (cpow x i)(cpow
-      x j)))
+      x j)));
+    Cpow_1 : forall x, Ceq (cpow x 1) x;
+    Cpow_0 : forall x, Ceq (cpow x 0) c1
     }.
 
 

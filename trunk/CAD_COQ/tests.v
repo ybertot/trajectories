@@ -38,7 +38,7 @@ Notation "c ** P":= (Pol_mul_Rat P c)(at level 40, no associativity).
 Fixpoint Q_of_nat(n:nat):Q:=
   match n with
     |O => r0
-    |S n => r1 +r (Q_of_nat n)
+    |S n => r1Print mkCad. +r (Q_of_nat n)
   end.
 
  Definition P:=((Q_of_nat 9) ** X^6) - 
@@ -176,6 +176,7 @@ Set Implicit Arguments.
 
 (* Pour l'affichage *)
 
+(*
 Definition cell_type(Coef berncoef cell_point:Set) :=
 (mkcell_point_up Rat Coef berncoef cell_point *
           list (Pol1 Coef * Sign))%type.
@@ -211,7 +212,7 @@ Definition test_polsign(l:list (Pol1 (Poln 1)))(n:nat):=
   print_polsign_res (Pol_cad twovar l n).
 
 
-
+*)
 Fixpoint Q_of_nat(n:nat):Q:=
   match n with
     |O => r0
@@ -241,7 +242,7 @@ Infix "*":=prod:P_scope.
 
 Definition circle := ((X * X) + (Y * Y) - (Pc (Pc r1))).
 
-
+Eval vm_compute in (Pol_cad twovar (circle::nil) 90).
 Eval vm_compute in (test_sign ((Y*Y)::nil) 90).
 
 

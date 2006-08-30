@@ -153,13 +153,6 @@ end.
 
 
 
-Definition N_of_nat(n:nat):N:=
-match n with
-|O => N0
-|S n => Npos (P_of_succ_nat n)
-end.
-
-
 
 
 

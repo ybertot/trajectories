@@ -33,8 +33,6 @@ Section TYPES.
   (** Type of result of sign computations *)
   Definition Sign := option comparison.
   
-
-
   (**** Polynomials in Horner form, one var with coefs in C ****)
 
   
@@ -137,8 +135,7 @@ Section TYPES.
   either -infty : a least bound for the roots considered,
   or a rational point between two consecutive roots
   or a rational root
-  or an algebraic root: mkAlg is the type of the encoding, to be defined
-  in Gen_functor.v at each level *)
+  or an algebraic root: mkAlg *)
 
 
   Inductive mkRpoint :Set:=
@@ -148,48 +145,82 @@ Section TYPES.
    | Alg_root : mkAlg -> mkRpoint.
 
 
-
-  (* mkAlgebraic number (point in a cell) at the coef level *)
-  Variable cell_point : Set. 
-
-  (** mkAlgebraic number (point in a cell) at this level **) 
-  Definition mkcell_point_up := (cell_point * mkRpoint)%type.
-
-(*  Definition cell_point_proj (cpu:mkcell_point_up) := fst cpu.
-  Definition rpoint_of_cell(c:mkcell_point_up):= snd c.*)
-
-  Definition build_cell_point_up(c:cell_point)(r:mkRpoint):=(c,r).
-
-  (************************************************************)
-  (*****               Record Cad                        ******)
-  (************************************************************)
+(***************************************************************)
+(**                 Output of the procedure                   **)
+(***************************************************************)
 
 
-  (* This is a highly unsatisfactory version, with a lot of redundancy
-  and no propagation of refinements : path (= coordinates of the real
-  point) is put as a label of the leave *)
 
-  (* builds the type of the tree result for n variable, ie complete
-  trees of depth n, with leaves of type C *)
+(* We build a labelled tree representing a cylindrical sample of points *)
+(* For a CAD of polys with k variables, the tree is of depth k *)
+
+(* - The inner nodes at depth i of the tree are labelled with real *)
+(*points of type mkRpoints  of dim i : the dim is relevant in the *)
+(* case of alg. points  for th encoding. *)
+
+(* - Leaves of a tree of depth n are labbelled with elements of type *)
+(*  (Pol*Sign) *)
+
+
+(* a n-uple of mkRpoints of successive dimension from the root to a *)
+(* leave has type path : if a leave (l,(P,s)) is at the position *)
+(*p:path, then s is the sign of p at the point (p,l) *)
+
+
+(* path encodes elements of R^{n-1}*)
+  Variable path : Set.
+
+
+
+(* the encoding of real points along the n-th coordinate of R^n *)
+  Definition next_label := mkRpoint.
+
+(* The encoding of elements of R^n *)
+  Definition next_path := (path * next_label)%type.
+  Definition build_next_path(p:path)(r:mkRpoint):=(p,r).
+
+
+(* A zipper-like structure for update while building a new cad tree *)
+
+
+(* mkCad builds the type of cylindrical sample (cs) trees of depth n -1, *)
+(* given the type C to put in their leaves                          *)
   Variable mkCad:Set -> Set.
 
-  (* from f:C ->D, and a complete tree with leaves in C, maps f on the
-  leaves of the tree, building  a complete tree with leaves in D *)
-  Variable mkCad_map : forall C D:Set, (C -> D) -> mkCad C -> mkCad D.
+
+(* building cs tree of depth n *) 
+  Definition next_mkCad(C:Set):= mkCad (list (next_label * C)).
 
 
-  (* builds the type of the tree result for n+1 variable, ie complete
-    trees of depth n+1, with leaves of type C *)  
-  Definition mkCad_up(C:Set):=mkCad (list C).
+(* Given a cs tree of depth n-1, which leaves o type n and an update *)
+(* function f : path -> C -> path which  compute an updated path an a *)
+(* new value of type D, we build a new cs tree of depth n-1 with *)
+(* leaves of type D and updated labels in the inner nodes *)
 
-  Definition mkCad_map_up(C D:Set)(f:C -> D)(cad :mkCad (list C)):
-    mkCad (list D):=
-     let aux := fun clist:list C => map f clist in
-       @mkCad_map (list C) (list D)  aux cad.
+  Variable mkCad_map : forall C D : Set, 
+    (path -> C -> (path * D)) -> mkCad C -> mkCad D.
+
+(* Same for the level n *)
+
+  Definition next_mkCad_map(C D:Set)
+(f:next_path -> C ->  (next_path *  D))
+ (t:next_mkCad C) : next_mkCad D :=
+ let aux(p : path)(leave : list (next_label * C)) :
+   path*(list (next_label * D)):=
+   let f_aux (p:path)(np:next_label*C):path*(next_label*D):=
+     let (nlabel,c) := np in
+     let (updated_npath,d):=f (p,nlabel) c in
+       (fst updated_npath,(snd updated_npath,d)) in
+   @two_fold path (next_label*C) (next_label * D) f_aux p leave in
+   @mkCad_map (list (next_label * C)) (list (next_label * D)) aux t.
+
+
 
 
   (* Cad gathers what is needed from level n to build the cad at level n+1 *)
   
+
+
   Record Cad : Set := mk_cad {
     Pol_0                : Pol;
     Pol_1                : Pol;
@@ -207,87 +238,24 @@ Section TYPES.
     Pol_div              : Pol -> Pol -> Pol;
     Pol_gcd_gcd_free     : Pol -> Pol -> Pol * Pol * Pol;
     Pol_square_free      : Pol -> Pol;
-    cell_point_up_refine : mkcell_point_up -> nat -> option mkcell_point_up;
-    Pol_low_bound        : Pol -> cell_point -> Rat;
-    Pol_value_bound      : mkcell_point_up -> Pol -> Rat * Rat;
-    Info_of_Pol          : option comparison -> Pol -> build_Info;
-    Pol_low_sign         : 
-      cell_point -> Pol -> Pol -> nat -> (cell_point * (option comparison));
-    Pol_sign_at          :
+    path_refine          : next_path -> nat -> option next_path;
+(*  cell_point_up_refine : mkcell_point_up -> nat -> option mkcell_point_up;*)
+    Pol_low_bound        : Pol -> path -> Rat;
+(*  Pol_low_bound        : Pol -> cell_point -> Rat;*)
+    Pol_value_bound      : next_path -> Pol -> Rat * Rat;
+(*  Pol_value_bound      : mkcell_point_up -> Pol -> Rat * Rat;*)
+    Info_of_Pol          : Sign -> Pol -> build_Info;
+    Pol_low_sign         :  path -> Pol -> Pol -> nat ->
+      (path * (option comparison));
+(*  Pol_low_sign         : 
+      cell_point -> Pol -> Pol -> nat -> (cell_point * (option comparison));*)
+    Pol_sign_at          : build_Info -> next_path -> nat ->
+      next_path * (Pol * Sign)%type;
+(*  Pol_sign_at          :
       build_Info -> mkcell_point_up -> nat -> 
-      mkcell_point_up * (Pol * option comparison);
-    Pol_cad : list Pol -> nat -> mkCad_up (mkcell_point_up * (list (Pol * Sign)))
+      mkcell_point_up * (Pol * option comparison);*)
+    Pol_cad : list Pol -> nat -> next_mkCad  (list (Pol * Sign))
+(*  Pol_cad : list Pol -> nat -> mkCad_up (mkcell_point_up * (list (Pol * Sign)))*)
   }.
 
-
 End TYPES.
-
-(*
-  Variable mkCad : Set->Set.
-
-  Variable min_cell_point_list : 
-    list cell_point -> cell_point.
-
-
-  Variable map_Cad : forall C D ARGS:Set,
-    mkCad C -> (ARGS -> C -> cell_point*D) -> mkCad D.
-
-
-  Variable Rpoint_bot : mkRpoint.
-
-  Definition min_mkRpoint(a b:mkRpoint):=
-    match a, b with
-      |Alg_root tag_a, Alg_root tag_b =>
-	let (xa, ya, Pa, Pbara,la) := tag_a in
-	let (xb,yb,Pb, Pbarb,lb) := tag_b in
-	let x := rmin xa xb in
-	let y := rmin ya yb in
-	  if req x y then Root x
-	    else Alg_root (Five x y Pa Pbara la)
-      |_,_ => a
-    end.
-
-
-  Fixpoint min_mkRpoint_list1(r:mkRpoint)(l:list mkRpoint)
-    {struct l} : mkRpoint:=
-    match l with
-      |nil => r
-      |r'::tl =>
-	min_mkRpoint_list1 (min_mkRpoint r r') tl
-    end.
-
-  Definition min_mkRpoint_list := min_mkRpoint_list1 Rpoint_bot.
-
-  Definition mkCad_up(C:Set) := mkCad (list (cell_point * C)).
-
-(*  Definition min_cell_point_up_list1
-    (z:mkcell_point_up)(l:list mkcell_point_up):=
-    let (c,r):=z in
-    let minc := min_cell_point_list c (map (fun x => fst x) l) in
-    let minr := min_mkRpoint_list r (map (fun x => snd x) l) in
-      (minc, minr).*)
-
-  Definition min_cell_point_up_list(l:list mkcell_point_up):=
-    let minc := min_cell_point_list (map (fun x => fst x) l) in
-    let minr := min_mkRpoint_list (map (fun x => snd x) l) in
-      (minc, minr).
-
-(*
-
-  Definition min_cell_point_up_list:=
-    min_cell_point_up_list1 cell_up_bot.
-*)
-
-(* moralement C est une col , a changer on avait pas d'arbre...*)
-  Definition map_Cad_up(C D ARGS:Set)(cad:mkCad_up C)
-    (f:ARGS -> C -> mkcell_point_up*D):=
-    let aux := 
-      fun a:ARGS => fun rclist : list (mkRpoint *C) =>
-	let clist := map (fun x => snd x)  rclist (*:list C*) in
-	let celldlist := map (f a) clist (*:list mkcell_point_up*D*) in
-	let rdlist := map (fun x => (snd (fst x),snd x)) celldlist in
-	let celllist := map (fun x => fst (fst x)) celldlist in
-	(min_cell_point_list celllist,rdlist) in
-	@map_Cad (list (mkRpoint * C)) (list (mkRpoint * D)) ARGS
-	  cad aux.
-*)

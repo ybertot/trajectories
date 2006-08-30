@@ -22,6 +22,10 @@ Require Import PolMonOSum.
 (* on generalise lus que ca dans Myllist?*)
 Require Import phi.
 
+Definition P1 := Eval compute in (X*X*X).
+Definition P2 := Eval compute in (X*X).
+Eval compute in (det phi 3 (P1::P2::nil)).
+
 
 Hypothesis cpow_1 : forall c, cpow c 1%N ==c.
 Hypothesis cintegral : forall a b, czero_test (a **b) = orb (czero_test a) (czero_test b).
@@ -150,8 +154,6 @@ Fixpoint det_aux1(phi:nat -> nat -> Pol -> Pol)(deg : nat)(n : nat)(l : list Pol
       | S n1 => rec_det (phi deg n) (det_aux1 phi deg n1) l nil
     end)
     else P0.
-    
-
 
 
 
@@ -258,16 +260,19 @@ Qed.
 
 
 
+
 (* base case*)
 
-Add Morphism phi  with signature (@eq nat) ==> Pol_Eq ==> Pol_Eq as toto.
+(* surtout pas! bug setoid?
+Add Morphism phi  with signature  (@eq nat) ==> Pol_Eq ==> Pol_Eq as toto.
+intros; apply phi_Morphism;trivial.
+Qed.*)
+
+
+
+Add Morphism phi  with signature (@eq nat) ==> (@eq nat) ==> Pol_Eq ==> Pol_Eq as toto.
 intros; apply phi_Morphism;trivial.
 Qed.
-
-
-
-
-
 
 
 Section DET_TRIG.
@@ -312,6 +317,7 @@ simpl.
 intros.
 apply  rec_det_ext;auto.
 Qed.
+
 
 
 Lemma  det_f_comp : forall d1 d2 f1 f2,
@@ -366,7 +372,6 @@ auto.
 Qed.
 	
 Hint Immediate Pincl_appr:Plist.
-
 
 Lemma Pincl_cons :
  forall a l m, PIn a m -> Pincl l m -> Pincl (a :: l) m.
@@ -438,6 +443,7 @@ simpl in Hl.
 assumption.
 setoid ring.
 Qed.
+
 
 
 
@@ -626,6 +632,7 @@ apply Aux.
 trivial.
 Qed.
 
+
 (* the rec_det version*)
 
 Lemma minor_rec : forall l1 n l l2 a b deg p,
@@ -699,85 +706,12 @@ Lemma minor_rec : forall l1 n l l2 a b deg p,
     rewrite app_ass.
     simpl;assumption.
     Qed.
-(*
-Lemma minor_rec : forall l1 n l l2 a b deg p,
-  (forall i : nat, i > 1 -> i <=  n -> phi deg i b != P0) ->
-  (forall i j : nat,
-       i < n - j -> j < n -> phi deg (S (S i)) (nth j (a :: l) p) != P0)->
-  (|a :: l | = n)->
-  (n > 1) ->
-  (|b :: a :: l | = S n) ->
-  l = app l2 l1 ->
-   rec_det (phi deg (S n)) (det_aux1 phi deg n) l1 (b :: a :: l2)
-   != P0.
-  Proof.
-    induction l1;intros n l l2 c b deg p H1 H2 H3 H4 H5 H6.
-    reflexivity.
-    rewrite rec_det_eq.
-    destruct n.
-    discriminate.
-    destruct n.
-    apply False_ind;omega.
-    rewrite H6 in H2.
-    rewrite H6 in H3.
-    apply Ominus.
-    apply Oprod_r.
-    simpl app.
-    destruct n.
-    destruct l1;destruct l2;simpl app in * |- *;
-      match goal with
-	|- det_aux1 phi deg 2 ?l != P0 => case_det_aux1 2 l; try discriminate
-      end.
-    rewrite rec_det_eq.
-    apply Ominus.
-    rewrite H1;auto with arith;setoid ring.
-    rewrite rec_det_eq.
-    simpl rec_det.
-    replace c with (nth O (c::a::nil) p);trivial.
-    rewrite H2;auto with arith;setoid ring.
-    apply minor with (S (S n)) p c;intuition.
-    replace c with (nth O (c::(app l2 (a::l1))) p);trivial.
-    destruct i.
-    apply False_ind;omega.
-    destruct i.
-    apply False_ind;omega.
-    apply H2;omega.
-    destruct i.
-    apply False_ind;omega.
-    destruct i.
-    apply False_ind;omega.
-    destruct j.
-    simpl.
-    replace c with (nth O (c::(app l2 (a::l1))) p);trivial.
-    apply H2;omega.
-    replace (c::app l2 l1) with (app (c::l2) l1);trivial.
-     replace (c::app l2 (a::l1)) with (app (c::l2) (a::l1)) in H2;trivial.
-    induction (le_gt_dec (length (c::l2)) (S j)).
-    rewrite nth_app_r;try omega.
-    replace (nth (S j - |c :: l2 |) l1 p) with (nth (S ((S j) - |c :: l2 |)) (a::l1) p);trivial.
-    replace (S (S j - |c :: l2 |)) with (S (S j) - |c :: l2 |)%nat;try omega.
-    rewrite <- (@nth_app_r Pol (c::l2) (a::l1) p (S (S j)));try omega.
-    apply H2;omega.
-    rewrite nth_app_l;try omega.
-    rewrite <- (@nth_app_l Pol (c::l2) (a::l1) p (S j));try omega.
-    apply H2;omega.
-    left;reflexivity.
-    simpl in *|-*;rewrite length_app in H3;simpl in H3.
-    rewrite length_app;omega.
-    simpl app.
-    apply (IHl1 (S (S n)) l (app l2 (a::nil)) c b deg p);intuition.
-    rewrite  H6.
-    apply H2; omega.
-    rewrite app_ass.
-    simpl;assumption.
-    Qed.
 
-*)
+
 
 Require Import Div2.
 
 
-(* base case*)
 Theorem det_aux_trigQ: forall l n p deg Q b,
   (forall i:nat, i> 1 -> (i <= S n)%nat -> phi deg i b != P0) -> 
   (forall (i j:nat),  i < (n- (S j))   -> (j < n)%nat -> 
@@ -873,7 +807,6 @@ simpl in H4;simpl in b0;apply False_ind;omega.
 Qed.
 
 
-
 (* cas n= 1 marche aussi ... refaire la preuve ci-dessus!*)
 
 Theorem  det_aux_trigQ1 : forall b a deg Q,
@@ -891,6 +824,8 @@ Proof.
   rewrite rec_det_eq;simpl rec_det.
   simpl;Pcsimpl;setoid ring.
 Qed.
+
+
 
 
 (* pouver des egalites de listes avec cons et app dans le desordre*)
@@ -959,6 +894,7 @@ Lemma det_aux_det_aux1 : forall deg l n,
   Admitted.
   
 
+
 Lemma Zpolpower_nat_even : forall n, Zpolpower_nat (n*2) != P1.
   intro n.
   unfold Zpolpower_nat.
@@ -968,8 +904,6 @@ Lemma Zpolpower_nat_even : forall n, Zpolpower_nat (n*2) != P1.
   induction (even_odd_dec (n * 2));try reflexivity.
   elim (not_even_and_odd (n*2) c b).
 Qed.
-
-
 
 (*
 
@@ -1023,7 +957,329 @@ Lemma aux : forall deg p Q n l2 l3 p0 k ,
   simpl app.
   
 *)  
+(* m est pair?*)
+    
 
+Axiom triche : forall A:Prop, A.
+Theorem rec_det_partial_trig : forall deg p Q k n l1 l2 l3 l4,
+  S (S n) = length l2 ->
+  (S k) = length l1  ->
+  l1 = app l3 l4 ->
+  length l4 > 0 ->
+  (forall i j, i < length l1 -> j< length l2 -> 
+    phi deg (S (S j)) (nth i l1 p) != P0) ->
+
+  (forall i, i < length l2  ->
+    phi deg (S (S ((length l2) -  (S i))))%nat (nth i l2 p) !=
+    if even_odd_dec (S (S ((length l2) -  (S i))))%nat then  Q else - Q)  ->
+
+
+  (forall i j, i <length l2 -> j < ((length l2) - (S i))%nat ->
+    phi deg (S (S j)) (nth i l2 p) != P0) ->
+  
+
+  rec_det (phi deg ((length l1) + (length l2))%nat)
+  (det_aux1 phi deg (k + length l2)) (app l4 l2) l3 !=
+ (Zpolpower_nat ((div2 ((length l2)* k)))%nat)*
+  (Zpolpower_nat (div2 (S (length l2))))* (Pol_pow Q (N_of_nat (length l2)))*
+  (rec_det
+    (phi (deg - (length l2))%nat (S k))
+      (det_aux1 phi (deg -(length l2))%nat k) l4 l3).
+  Proof.
+    intros deg p Q;induction k ;intros n l1 l2 l3 l4 H1 H2 H3 H4 H5 H6 H7;
+    subst l1.
+    assert (l1_dec : exists a, l4 = a::nil). 
+    destruct l3;destruct l4;simpl in H2;try discriminate;try falso.
+    destruct l4.
+    exists p0;reflexivity.
+    simpl in H2;falso.
+    simpl in H4;falso.
+    rewrite length_app in H2;simpl in H2;falso.
+    case l1_dec;intros a G;subst l4.
+    setoid_replace (Zpolpower_nat (div2 (|l2 | * 0))) with P1.
+    replace (0 + |l2 |)%nat with (|l2|) by auto with arith.
+    destruct l3;[idtac|rewrite length_app in H2;simpl in H2;falso].
+    clear H2 H4 l1_dec.
+    simpl app in *.
+    transitivity (det_aux1 phi deg (S (|l2 |)) (a::l2)).
+    replace (|a :: nil | + |l2 |)%nat with (S (length l2)) by
+      (simpl;auto with arith).
+    simpl rec_det.
+     symmetry.
+     case_det_aux1  (S (|l2 |)) (a :: l2);simpl in *|-; try falso.
+     simpl rec_det.
+     Pcsimpl.
+     rewrite <- H1.
+     rewrite (@det_aux_trigQ l2 (S (S n)) p deg Q a).
+     intros i H8 H9.
+     replace a with (nth O (a::nil) p) by reflexivity.
+     destruct i;try falso;destruct i;try falso.
+     apply H5.
+     auto with arith.
+     rewrite <- H1.
+     auto with arith.
+     intros i j H8 H9.
+     apply H7.
+     rewrite <- H1;trivial.
+     omega.
+     intros i H8.
+     rewrite H1.
+     replace (S (|l2 | - i)) with (S (S (|l2 | - S i))) by  omega.
+     apply H6.
+     rewrite <- H1;trivial.
+     symmetry;trivial.
+     auto with arith.
+     cut ( phi deg 1 a != phi (deg - S (S n)) 1 a).
+     intro super.
+     rewrite super.
+     setoid ring.
+     unfold phi.
+     case (le_gt_dec (deg + 2) 1);intro G1.
+     falso.
+     case (le_gt_dec (deg - S (S n) + 2) 1);intro G2.
+     falso.
+     reflexivity.
+     setoid_replace ( Pol_subC (c1 !* phi (deg - |l2 |) 1 a) c0)
+       with (c1 !* phi (deg - |l2 |) 1 a).
+     Pcsimpl.
+     Pcsimpl.
+     (replace (|l2 | * 0)%nat with O by auto with arith);
+     reflexivity.
+     destruct l4.
+     simpl in H4;falso.
+     simpl app.
+     rewrite rec_det_eq.
+     destruct l3.
+     destruct l4.
+     simpl app. 
+     simpl (rec_det (phi (deg - |l2 |) (S (S k)))
+        (det_aux1 phi (deg - |l2 |) (S k)) (p0 :: nil) nil).
+     Pcsimpl.
+     setoid ring.
+     assert (great : det_aux1 phi deg (S k + |l2 |) l2 != P0).
+     destruct l2.
+     simpl in H1;discriminate.
+     transitivity ( det_aux1 phi (deg - (S k)) (S n) (p1 :: l2)).
+     apply triche.
+     rewrite (@det_aux_trigQ l2 n p (deg -(S k)) P0 p1).
+     intros i G1 G2.
+     
+
+     simpl app in H5.
+     simpl length.
+     rewrite <- H1.
+     replace (1 + S (S n))%nat with (S (S (S n))) by omega.
+     rewrite H5.
+
+     assert (great1:det_aux1 phi deg (S k + |l2 |) (app l3 (app l4 l2))
+       != P0).
+     case l3.
+     simpl app.
+     destruct l4.
+     destruct l2.
+     simpl in H1;discriminate.
+     cut (det_aux1 phi deg (S k + |p1 :: l2 |) (p1 :: l2)!=
+       (det_aux1 phi (deg - (S k)) (|p1::l2|) (p1::l2))).
+     intro cooool.
+     rewrite cooool.
+     rewrite <- H1.
+     rewrite (@det_aux_trigQ l2 (S n) p (deg -(S k)) P0 p1).
+     intros i H8 H9.
+     replace p1 with (nth O (p1::l2) p) by reflexivity.
+     assert (H10 :  phi (deg - S k) i (nth 0 (p1 :: l2) p) != 
+       phi deg ((S k) + i) (nth 0 (p1 :: l2) p)) by apply triche.
+     destruct i;try falso.
+     destruct i;try falso.
+     rewrite H10.
+     replace (S k + S (S i))%nat with (S (S (k + i)))%nat by omega.
+     apply H7.
+     simpl;omega.
+     rewrite <- H1.
+     
+     omega.
+
+    (***ici***)
+
+
+     
+     
+     unfold Zpolpower_nat;simpl.
+     
+     
+   
+
+
+
+Theorem det_aux_trigQ: forall l n p deg Q b,
+  (forall i:nat, i> 1 -> (i <= S n)%nat -> phi deg i b != P0) -> 
+  (forall (i j:nat),  i < (n- (S j))   -> (j < n)%nat -> 
+    phi deg (S (S i)) (nth j l p) != P0) ->
+  (forall i:nat, (i < n)%nat ->
+    phi deg (S (n - i)) (nth i l p) !=
+  if even_odd_dec (S (n - i)) then  Q else - Q)  ->
+  (length l = n)%nat -> n>1 -> 
+    det_aux1 phi deg (S n) (b::l) != 
+    (Zpolpower_nat (div2 (S n)))*(Pol_pow Q (N_of_nat n))*(phi deg 1
+      b).
+
+     case_det_aux1 (S (|l2 |)) (a :: l2);simpl length in *;try falso.
+     clear a0.
+     
+
+
+     rewrite <- H1.
+     induction ( eq_nat_dec (S (S n)) (S (S n))) ;try falso.
+     clear a1 a0.
+     
+     
+
+    
+
+
+    destruct l4;simpl in H2;try discriminate;
+    length_blast.
+    simpl app in *|- *.
+    simpl plus.
+    transitivity (det_aux1 phi deg (S (|l2 |)) (p0::l2)).
+    case_det_aux1  (S (|l2 |)) (p0 :: l2);simpl in *|-; try falso.
+    simpl rec_det.
+    rewrite Pol_sub_c0'.
+    Pcsimpl.
+    transitivity
+      ( Zpolpower_nat (div2 (S (|l2 |)))
+	* Pol_pow Q (N_of_nat (|l2 |)) *(phi deg 1 p0)).
+    apply (@det_aux_trigQ l2 (length l2) p deg Q p0);length_blast;intuition.
+    change p0 with (nth O (p0::nil) p).
+    destruct i;try destruct i;try discriminate;try falso.
+    apply H5;auto with arith.
+    replace (S (|l2 | - i)) with  (S (S (|l2 | - S i)));try omega.
+    apply H6;trivial.
+    setoid_replace ( Zpolpower_nat 0) with P1;
+      [idtac|unfold Zpolpower_nat;simpl;reflexivity].
+    setoid ring.
+    apply Pmul_comp;try reflexivity.
+    unfold phi.
+    induction (le_gt_dec (deg + 2) 1);
+      induction (le_gt_dec (deg - |l2 | + 2) 1);try reflexivity;try falso.
+    simpl in H4;try falso.
+    replace  (|l2 | * 0)%nat with 0 by auto with arith.
+    reflexivity.
+    simpl in H4;falso.
+    rewrite length_app in H2;simpl in H2;falso.
+    destruct l4;try destruct l4;simpl in H4;try falso.
+    simpl app in  *|-*.
+    length_blast.
+    rewrite rec_det_eq.
+    symmetry.
+    rewrite rec_det_eq.
+    simpl ( rec_det (phi (deg - |l2 |) (S (S k))) (det_aux1 phi (deg - |l2 |) (S k))
+      nil (app l3 (p0 :: nil))).
+    cut (rec_det (phi deg (|l3 | + 1 + |l2 |)) (det_aux1 phi deg (S k + |l2 |))
+        l2 (app l3 (p0 :: nil)) != P0).
+    intro G;rewrite G.
+    setoid ring.
+    symmetry.
+
+    case_det_aux1  (S k + |l2 |)%nat (app l3 l2);length_blast.
+ replace (S k + |l2 |)%nat with (S(k + (length l2)))%nat;
+      [idtac|omega].
+ replace (S (k + |l2 |))%nat with (|l3 | + |l2 |)%nat.
+ rewrite (IHk n l3 l2 (@nil Pol) l3);intuition.
+ rewrite <- (nth_app_l l3 (p0::nil) p);trivial.
+apply H5;auto with arith.
+simpl app.
+generalize (Zpolpower_nat (div2 (S (|l2 |))));intro p1.
+generalize ( Pol_pow Q (N_of_nat (|l2 |)));intro p2.
+case_det_aux1 (S k) (app l3 nil);length_blast;try falso.
+rewrite <- app_nil_end.
+generalize (rec_det (phi (deg - |l2 |) (S k)) (det_aux1 phi (deg - |l2 |) k) l3 nil).
+intro p3.
+cut ( phi deg (|l3 | + 1 + |l2 |) p0 !=  phi (deg - |l2 |) (S (S k)) p0 ).
+intro test.
+rewrite test.
+setoid ring.
+cut ( Zpolpower_nat (div2 (|l2 | * k)) != Zpolpower_nat (div2 (|l2 | * S k))).
+intro test2.
+rewrite test2.
+setoid ring.
+clear H4.
+clear a.
+clear H2.
+
+
+  assert (test : (phi (deg - |l2 |) (S (S k)) p0)*
+ (Zpolpower_nat (div2 ((|l2 |)* k)))
+ !=
+      phi deg (|l3 | + 1 + |l2 |) p0).
+    rewrite <- H2.
+    unfold phi.
+    induction (le_gt_dec (deg - |l2 | + 2) (S (S k)));
+      induction (le_gt_dec (deg + 2) (S (S k) + |l2 |));try falso.
+    setoid ring.
+    replace  (S (S k) + |l2 |)%nat with (S (S (k+(length l2))))%nat;
+      [idtac|omega].
+    induction (Even.even_odd_dec (S (S k)));
+      induction ( Even.even_odd_dec (S (S (k + |l2 |)))).
+    replace (deg - |l2 | - (S (S k) - 2))%nat with 
+(deg - (S (S (k + |l2 |)) - 2))%nat;[idtac|omega].
+    setoid_replace ( Zpolpower_nat (div2  ((|l2 |) * k))) with P1.
+    setoid ring.
+    unfold Zpolpower_nat.
+    induction (even_odd_dec (div2 ((|l2 |) * k))).
+    reflexivity.
+    inversion a1.
+    inversion H0.
+    replace (S (S (k + |l2 |)))%nat with ((S(S(k))) + (|l2|))%nat in a2;
+      [idtac|omega].
+    clear H H3 H6 H7 H5 IHk.
+    apply False_ind.
+    clear - H8 a1 a2 b1.
+    assert (G1: even (|l2|)).
+    apply (even_plus_even_inv_r (S (S k)));trivial.
+
+    assert (G2 : k = double (div2 k)).
+    apply (even_double k);trivial.
+    assert (G3 : (|l2|) = double (div2 (|l2|))).
+      apply (even_double(|l2|) );trivial.
+      assert (G4: (|l2 | * k)%nat = double (div2 (|l2 | * k))%nat).
+      apply even_double.
+      apply  even_mult_r;trivial.
+      assert (G5: (|l2 | * k = double (double ((div2 (|l2 |))*(div2 k))))%nat).
+      set (y:= div2 (|l2 |)) in *|-*.
+      set (x:=  div2 k) in *|-*.
+      rewrite G3.
+      rewrite G2.
+      unfold double.
+      ring.
+      assert (G6 : (div2 (|l2 | * k)) = (double (div2 (|l2 |) * div2 k))).
+      Lemma double_inj : forall n m, double n = double m -> n = m.
+	intros.
+	unfold double in H.
+	omega.
+Qed.
+apply double_inj.
+omega.
+Lemma even_double : forall n, even (double n).
+  induction n.
+unfold double.
+constructor.
+unfold double.
+replace (S n + S n)%nat with ((n+n) + 2)%nat;try omega.
+apply even_even_plus.
+auto.
+constructor;constructor;constructor.
+Qed.
+apply (not_even_and_odd (div2 (|l2 | * k)));trivial.
+rewrite G6;apply even_double.
+(* Focus*)
+
+
+      transitivity ((  double (div2 k))*(double (div2 (|l2 |)))
+    
+: forall n : nat, even n -> n = double (div2 n)
+: forall n m : nat, even (n + m) -> even n -> even m
+
+Print double.
 
 
 
@@ -1053,6 +1309,7 @@ Theorem rec_det_partial_trig : forall deg p Q k n l1 l2 l3 l4,
     intros deg p Q;induction k ;intros n l1 l2 l3 l4 H1 H2 H3 H4 H5 H6 H7;
     subst l1.
     destruct l3;destruct l4;simpl in H2;try discriminate;try falso.
+
    (* setoid_replace  (Zpolpower_nat (div2 (S (|l2 |)) * div2 1)) with P1.
 Impossible to unify "nat" with "pol"*)
     (replace (div2 ( (|l2 |) * 0))%nat with 0;

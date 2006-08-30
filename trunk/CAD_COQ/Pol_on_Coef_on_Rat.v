@@ -54,11 +54,21 @@ cof_pos:positive -> Coef
 
   (** division:like an euclidian division, but if the division over coef
   fails, returns 0*)
+(* patch 12/07*)
+
  Definition Pol_div_cst :=
    fix Pol1_div_cst(A:Pol)(q:Coef){struct A}: Pol:=
+     if (Pol_zero_test A) then P0
+     else
      match A with
        |Pc a => Pc (a // q)
-       |PX P i p => PX (Pol1_div_cst P q) i (p // q)
+       |PX P i p => 
+	 let P':= (Pol1_div_cst P q) in
+	 if (Pol_zero_test P') then P0 else
+	   if czero_test p then PX P' i p else
+	     let p':= p // q in
+	       if czero_test p' then P0 else
+		 PX P' i p'
      end.
  
 
@@ -108,7 +118,7 @@ cof_pos:positive -> Coef
 
   (** division of polynomials with coef in Coef:
   - as usual arguments are supposed to be normalized
-  - div_euclide A B = (Q,R) with  A = BQ ++ and 
+  - div_euclide A B = (Q,R) with  A = BQ ++ R and 
 	--either deg(R)< deg(B)
 	-- or deg(R)=deg(B)=0 and R != P R0
 	-- Q and R are normalized

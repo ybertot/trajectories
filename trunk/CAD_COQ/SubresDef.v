@@ -520,6 +520,7 @@ let G := fresh in
 end.
 
 (* devrait etre dans Pring *)
+
 Lemma Pscal_PX : forall P a i b, a !* PX P i b != PX (a !* P) i (a ** b).
 Proof.
 induction P;intros a i b;unfold Pol_mul_Rat;simpl;

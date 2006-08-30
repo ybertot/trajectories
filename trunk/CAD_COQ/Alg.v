@@ -34,7 +34,7 @@ Rpoint
 
  Definition Alg := mkAlg Rat Coef cInfo.
  Definition Rpoint := mkRpoint Rat Coef cInfo.
- Definition cell_point_up := mkcell_point_up Rat Coef cInfo cell_point.
+ Definition cell_point_up := next_path Rat Coef cInfo path.
 
 
  (************************************************************)
@@ -88,7 +88,7 @@ Rpoint
   (************************************************************)
 
 
- Definition alg_refine(z:cell_point)(alg:Alg)(n:nat):=
+ Definition alg_refine(z:path)(alg:Alg)(n:nat):=
    let (a, b, P, Pbar, blist):= alg in
    let mid := rdiv (radd a b) (2#1) in
    let Pmid := Pol_partial_eval P mid in
