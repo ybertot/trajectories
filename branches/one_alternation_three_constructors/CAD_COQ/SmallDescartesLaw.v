@@ -663,14 +663,18 @@ Inductive no_alternation : Pol -> Set :=
 
 Inductive one_alternation : Pol -> Set :=
   one_alternation_here :
-    forall P a (n:N) P1, n<>0%N ->
-      P != (X^n *(Pc a + X * P1))%Pol ->
+    forall P a P1,
+      P != (Pc a + X * P1)%Pol ->
       a ** least_non_zero_coeff P1 < c0 -> no_alternation P1 ->
       one_alternation P
 | one_alternation_step :
-    forall P a n P1,
-      P != (X^n * (Pc a + X * P1))%Pol ->
-      one_alternation P1 -> c0 < a ** least_non_zero_coeff P1 ->
+    forall P a P1,
+      P != (Pc a + X * P1)%Pol ->
+      one_alternation P1 -> c0 < 
+      a ** least_non_zero_coeff P1 ->
+      one_alternation P
+| one_alternation_X :
+    forall P n P1, P != (X^n*P1)%Pol -> one_alternation P1 ->
       one_alternation P.
 
 Theorem least_non_zero_coeff_0 :

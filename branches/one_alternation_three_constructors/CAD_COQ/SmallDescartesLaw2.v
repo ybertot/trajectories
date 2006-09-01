@@ -1490,277 +1490,47 @@ Theorem one_alternation_root_main :
       (forall x y, a < x -> x < y -> Pol_eval P x < Pol_eval P y).
 intros P H; induction H.
 intros HlnP eps Hp.
-rename n0 into n_non_0; rename n1 into n0.
 assert (Han:~a==0) by (apply (neg_cmul_n0 _ _ c)).
-assert (Hal : least_non_zero_coeff P == a) by 
- exact (least_non_zero_P4 P a n P1 p Han).
+assert (Hal : least_non_zero_coeff P == a).
+apply (least_non_zero_P4 P a 0%N P1).
+unfold Pol_pow; setoid_rewrite p; setoid ring.
+assumption.
 assert (Haneg : a < c0) by (setoid_rewrite <- Hal; assumption).
 assert (Hlqp : c0 < least_non_zero_coeff P1)
   by (apply neg_cmul_pos_r with a; assumption).
-destruct (alternation_here_root P1 a Haneg Hlqp n0) as
+destruct (alternation_here_root P1 a Haneg Hlqp n) as
   [r [Hrp [HPrn [r2 [Hrr2 [HPr2p HPincr]]]]]].
 assert (HPr2p' := clt_cle_weak _ _ HPr2p).
-assert (Hfpos : c0 < c1++Coef_of_N n ** cpow r2 (Npred n) ++
-          (r2 -- r) ** Pol_eval (diff_cpow_pol r2 n) (r2 -- r)).
-setoid_rewrite <- (cadd_assoc c1);
-setoid_rewrite (cadd_sym c1); apply clt_0_le_lt_plus_compat.
-apply cle_0_plus.
-apply cmul_le_0.
-apply c0_cle_Coef.
-apply cpow_pos.
-apply clt_cle_weak; apply clt_trans with r; assumption.
-apply cmul_le_0.
-apply csub_le_0; apply clt_cle_weak; assumption.
-apply diff_cpow_pol_pos.
-apply clt_cle_weak; apply clt_trans with r; assumption.
-apply csub_le_0; apply clt_cle_weak; assumption.
-apply c0_clt_c1.
-
-assert (Hex' : exists eps',
-          0 < eps' /\ eps' <= eps/(cpow r2 n) /\
-         eps' <=
-         cpow r n ** Pol_eval P1 r /
-           (c1++Coef_of_N n ** cpow r2 (Npred n) ++
-            (r2 -- r) ** Pol_eval (diff_cpow_pol r2 n) (r2 -- r))).
-destruct (clt_le_dec  (eps/cpow r2 n)(cpow r n ** Pol_eval P1 r /
-           (c1++Coef_of_N n ** cpow r2 (Npred n) ++
-            (r2 -- r) ** Pol_eval (diff_cpow_pol r2 n) (r2 -- r)))) as
-  [Helt | Hflt].
-exists (eps/cpow r2 n).
-split.
+assert (Hepsr2pos : c0 < eps/r2).
 apply cdiv_lt_0_compat_l.
-apply cpow_lt_0_compat_l.
 apply clt_trans with r; assumption.
 assumption.
-split.
-apply cle_refl.
-apply clt_cle_weak; assumption.
-exists (cpow r n ** Pol_eval P1 r /
-          (c1++Coef_of_N n ** cpow r2 (Npred n) ++
-           (r2--r) ** Pol_eval (diff_cpow_pol r2 n) (r2--r))).
-split.
-apply cdiv_lt_0_compat_l.
-exact Hfpos.
-apply cmul_lt_0.
-apply cpow_lt_0_compat_l.
-assumption.
-apply no_alternation_positive_strict; assumption.
-split.
-assumption.
-apply cle_refl.
-destruct Hex' as [eps' [Heps'1 Heps'2]].
 destruct (intermediate_value_polynom (Pc a +X*P1) r r2 HPrn HPr2p' Hrr2 
-            eps' Heps'1) as 
+            eps Hp) as 
             [v1 [v2 [Hv1 [Hv2 [Hv2r2 [HPv1l [HPv1u [HPv2l 
             [HPv2u Hdiff]]]]]]]]].
+
 exists v1.
 exists v2.
 assert (Hv1p : c0 < v1) by (apply clt_le_trans with r; intuition; fail).
 assert (Hv2p : c0 < v2) by 
    (apply clt_le_trans with v1;[assumption|apply clt_cle_weak; assumption]).
-assert (Hden1 : c0 < Coef_of_N n ** cpow v2 (Npred n) ++
-    (v2 -- v1) ** Pol_eval (diff_cpow_pol v2 n) (v2 -- v1)).
-apply cplus_lt_0_le_lt.
-apply cmul_lt_0.
-apply clt_le_trans with c1.
-apply c0_clt_c1.
-destruct n as [ | p'].
-elim n_non_0; reflexivity.
-rewrite (Npred_correct p' (Npos p')).
-  setoid_rewrite Coef_of_N_S.
-setoid_rewrite cadd_sym.
-apply cplus_pos_simplify.
-apply c0_cle_Coef.
-reflexivity.
 
-
-apply cpow_lt_0_compat_l.
-assumption.
-apply cmul_le_0.
-apply csub_le_0.
-apply clt_cle_weak; assumption.
-apply diff_cpow_pol_pos.
-apply clt_cle_weak; assumption.
-apply csub_le_0; apply clt_cle_weak; assumption.
-assert(Hfr2fv2 : -- (cpow v1 n ** Pol_eval P1 v1) /
-   (c1++Coef_of_N n ** cpow v2 (Npred n) ++
-    (v2 -- v1) ** Pol_eval (diff_cpow_pol v2 n) (v2 -- v1)) <=
-   -- (cpow r n ** Pol_eval P1 r) /
-   (c1++Coef_of_N n ** cpow r2 (Npred n) ++
-    (r2 -- r) ** Pol_eval (diff_cpow_pol r2 n) (r2 -- r))).
-setoid_rewrite (cdiv_decompose (--(cpow v1 n** Pol_eval P1 v1))).
-setoid_rewrite <- (cadd_assoc c1).
-apply pos_non_c0; apply clt_0_plus_compat.
-apply c0_clt_c1.
-assumption.
-setoid_rewrite (cdiv_decompose (--(cpow r n** Pol_eval P1 r))).
-setoid_rewrite <- (cadd_assoc c1); setoid_rewrite (cadd_sym c1);
-apply pos_non_c0; apply clt_0_le_lt_plus_compat.
-apply cle_0_plus.
-apply cmul_le_0.
-apply c0_cle_Coef.
-apply cpow_pos.
-apply clt_cle_weak; apply clt_trans with r; assumption.
-apply cmul_le_0.
-apply csub_le_0.
-apply clt_cle_weak; assumption.
-apply diff_cpow_pol_pos.
-apply clt_cle_weak; apply clt_trans with r; assumption.
-apply csub_le_0.
-apply clt_cle_weak; assumption.
-apply c0_clt_c1.
-apply cle_trans with ( c1 /
-   (c1++Coef_of_N n ** cpow v2 (Npred n) ++
-    (v2 -- v1) ** Pol_eval (diff_cpow_pol v2 n) (v2 -- v1))** -- (cpow r n ** Pol_eval P1 r)).
-repeat setoid_rewrite (fun x y => (cmul_sym (c1/x) y)).
-apply cmul_le_compat_r.
-apply copp_le_compat.
-apply cle_trans with (cpow r n** Pol_eval P1 v1).
-repeat setoid_rewrite (cmul_sym (cpow r n)).
-apply cmul_le_compat_r.
-apply no_alternation_increasing'.
-apply clt_cle_weak; assumption.
-assumption.
-split.
-apply clt_cle_weak; assumption.
-assumption.
-apply cpow_pos; apply clt_cle_weak; assumption.
-apply cmul_le_compat_r.
-apply cpow_le_compat_l.
-apply clt_cle_weak; assumption.
-assumption.
-apply no_alternation_positive.
-assumption.
-apply clt_cle_weak; assumption.
-apply clt_cle_weak; apply clt_le_trans with r; assumption.
-apply cdiv_le_0_compat_l.
-setoid_rewrite <- (cadd_assoc c1).
-apply clt_0_plus_compat.
-apply c0_clt_c1.
-exact Hden1.
-apply c0_cle_c1.
-repeat setoid_rewrite cmul_copp_r.
-apply copp_le_compat.
-apply cmul_le_compat_r.
-apply inv_cle.
-setoid_rewrite <- (cadd_assoc c1).
-apply clt_0_plus_compat.
-apply c0_clt_c1.
-exact Hden1.
-apply cplus_le_compat.
-repeat setoid_rewrite (cmul_sym (Coef_of_N n)).
-apply cplus_le_compat.
-apply cle_refl.
-apply cmul_le_compat_r.
-apply cpow_le_compat_l.
-apply clt_cle_weak; assumption.
-assumption.
-apply c0_cle_Coef.
-apply cle_trans with ( (v2 -- v1)** Pol_eval (diff_cpow_pol r2 n) (r2 -- r)).
-repeat setoid_rewrite (cmul_sym (v2--v1)).
-apply cmul_le_compat_r.
-apply cle_trans with (Pol_eval (diff_cpow_pol v2 n)(r2--r)).
-apply diff_cpow_pol_incry.
-apply clt_cle_weak; assumption.
-apply csub_le_0; apply clt_cle_weak; assumption.
-setoid_replace (v2--v1) with (v2++ -- v1).
-setoid_replace (r2 -- r) with (r2++ -- r).
-apply cplus_le_compat.
-assumption.
-apply copp_le_compat; assumption.
-setoid ring.
-setoid ring.
-apply diff_pow_pol_incrx.
-apply clt_cle_weak; assumption.
-assumption.
-apply csub_le_0; apply clt_cle_weak; assumption.
-apply csub_le_0; apply clt_cle_weak; assumption.
-apply cmul_le_compat_r.
-setoid_replace (v2--v1) with (v2++ -- v1).
-setoid_replace (r2 -- r) with (r2++ -- r).
-apply cplus_le_compat.
-assumption.
-apply copp_le_compat; assumption.
-setoid ring.
-setoid ring.
-apply diff_cpow_pol_pos.
-apply clt_cle_weak; apply clt_trans with r; assumption.
-apply csub_le_0; apply clt_cle_weak; assumption.
-apply cmul_le_0.
-apply cpow_pos.
-apply clt_cle_weak; assumption.
-apply no_alternation_positive.
-assumption.
-apply clt_cle_weak;assumption.
-apply clt_cle_weak; assumption.
 split.
 assumption.
 split.
 assumption.
 split.
-setoid_rewrite p; setoid_rewrite Pol_eval_mult;
-setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
-apply cmul_lt_0_lt_reg_r with (c1/cpow v1 n).
-apply clt_0_inv_pow; assumption.
-setoid_rewrite (cmul_sym (--eps)).
-setoid_rewrite <- cdiv_decompose.
-apply pos_non_c0;apply cpow_lt_0_compat_l; assumption.
-setoid_rewrite copp_div_l.
-apply cle_lt_trans with (--(eps/cpow r2 n)).
-apply cle_opp_div_r.
-apply clt_cle_weak; assumption.
-apply cpow_lt_0_compat_l; assumption.
-apply cpow_le_compat_l.
-apply clt_cle_weak; auto.
-apply clt_cle_weak; apply clt_le_trans with v2; assumption.
-setoid_rewrite (cmul_sym (cpow v1 n)); setoid_rewrite <- cmul_assoc.
-setoid_rewrite cmul_div_r.
-apply pos_non_c0; apply cpow_lt_0_compat_l; assumption.
-setoid_rewrite cmul_1_r.
-apply cle_lt_trans with (copp eps').
-apply copp_le_compat.
-intuition.
-assumption.
+setoid_rewrite p; assumption.
 split.
-setoid_rewrite p; setoid_rewrite Pol_eval_mult;
-setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
-apply cmul_lt_neg_r.
-apply cpow_lt_0_compat_l; assumption.
-assumption.
+setoid_rewrite p; assumption.
 split.
-setoid_rewrite p; setoid_rewrite Pol_eval_mult;
-setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
-apply cmul_le_0.
-apply cpow_pos;apply clt_cle_weak; assumption.
-assumption.
+setoid_rewrite p; assumption.
 split.
-setoid_rewrite p; setoid_rewrite Pol_eval_mult;
-setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
-apply cmul_lt_0_lt_reg_r with (c1/cpow v2 n).
-apply clt_0_inv_pow; assumption.
-setoid_rewrite (cmul_sym eps).
-setoid_rewrite <- cdiv_decompose.
-apply pos_non_c0;apply cpow_lt_0_compat_l; assumption.
-apply clt_le_trans with (eps/cpow r2 n).
-setoid_rewrite (cmul_sym (cpow v2 n)); setoid_rewrite <- cmul_assoc.
-setoid_rewrite cmul_div_r.
-apply pos_non_c0; apply cpow_lt_0_compat_l; assumption.
-setoid_rewrite cmul_1_r.
-apply clt_le_trans with eps'.
-assumption.
-intuition.
-apply cle_div_r.
-apply clt_cle_weak; assumption.
-apply cpow_lt_0_compat_l; assumption.
-apply cpow_le_compat_l.
-apply clt_cle_weak; assumption.
-assumption.
+setoid_rewrite p; assumption.
 split.
 intros x Hxp Hx.
-setoid_rewrite p; setoid_rewrite Pol_eval_mult;
-setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
-apply cmul_lt_neg_r.
-apply cpow_lt_0_compat_l; assumption.
+setoid_rewrite p.
 apply clt_trans with (2:= HPv1u).
 repeat (setoid_rewrite Pol_eval_plus; setoid_rewrite Pol_eval_c).
 repeat setoid_rewrite (cadd_sym a).
@@ -1776,10 +1546,7 @@ assumption.
 split; apply clt_cle_weak; assumption.
 split.
 intros x Hx.
-setoid_rewrite p; setoid_rewrite Pol_eval_mult;
-setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_X.
-apply cmul_lt_0.
-apply cpow_lt_0_compat_l; apply clt_trans with v2; assumption.
+setoid_rewrite p.
 apply cle_lt_trans with (Pol_eval (Pc a + X*P1) v2).
 assumption.
 apply HPincr.
@@ -1787,37 +1554,36 @@ apply cle_lt_trans with v1; assumption.
 assumption.
 intros x y Hx Hy.
 setoid_rewrite p.
-apply increase_pol_close_0_Xn with (r:= v1)(r2:= v2).
+repeat setoid_rewrite Pol_eval_plus; repeat setoid_rewrite Pol_eval_mult.
+repeat setoid_rewrite Pol_eval_X; repeat setoid_rewrite Pol_eval_c.
+apply cplus_le_lt_compat.
+apply cle_refl.
+apply cle_lt_trans with (x**Pol_eval P1 y).
+repeat setoid_rewrite (cmul_sym x).
+apply cmul_le_compat_r.
+apply no_alternation_increasing'.
+apply clt_cle_weak; assumption.
 assumption.
-apply clt_cle_weak; apply no_alternation_positive_strict; assumption.
-intros.
+split; apply clt_cle_weak.
+apply clt_trans with v1; assumption.
+assumption.
+apply clt_cle_weak; apply clt_trans with v1; assumption.
+apply cmul_lt_compat_r.
 apply no_alternation_positive_strict.
 assumption.
 assumption.
-apply clt_trans with v1; assumption.
-intros; apply no_alternation_increasing'.
-apply clt_cle_weak; assumption.
-assumption.
-split.
-apply clt_cle_weak; apply clt_le_trans with v1; assumption.
-assumption.
-assumption.
-assumption.
-apply cle_lt_trans with (1:= Hfr2fv2).
-apply cle_lt_trans with (--eps').
-setoid_rewrite copp_div_l.
-apply copp_le_compat.
-intuition.
-generalize HPv1l; setoid_rewrite Pol_eval_plus;
-setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_c;
-setoid_rewrite Pol_eval_X; auto; fail.
+apply cle_lt_trans with x.
+apply clt_cle_weak; apply clt_trans with v1; assumption.
 assumption.
 assumption.
 
 intros Hlnz eps Hp.
 assert (Han : ~a==c0).
 apply (cmul_n0 _ _ c).
-assert (Hal := least_non_zero_P4 P _ _ _ p  Han).
+assert (Hal : least_non_zero_coeff P == a).
+apply (least_non_zero_P4 P a 0 P1).
+unfold Pol_pow; setoid_rewrite p; setoid ring.
+assumption.
 assert (Haneg : a < c0).
 setoid_rewrite <- Hal; assumption.
 
@@ -1831,12 +1597,12 @@ destruct (IHone_alternation HP1l c1 c0_clt_c1) as
   [raux [raux2 [raux_pos [raux2_pos [_ [Praux_neg 
     [Praux2_pos [_ [Pauxneg [Pauxpos Pauxinc]]]]]]]]]]; 
 clear IHone_alternation.
-assert (Hbp1_pos : c0 < -- a/(raux2)).
+assert (Hbp1_pos : c0 < -- a/raux2).
 apply cdiv_lt_0_compat_l.
 apply clt_trans with raux; assumption.
 apply clt_0_copp; exact Haneg.
 destruct (intermediate_value_polynom P1 raux raux2 Praux_neg Praux2_pos 
-      raux2_pos (--a/(raux2)) Hbp1_pos) as
+      raux2_pos (--a/raux2) Hbp1_pos) as
   [r [r3 [Hrauxr [Hrr3 [Hr3raux2 [_
     [HP1rneg [HP1r3pos [HP1r3close _]]]]]]]]].
 assert (Hr2 :exists r2, r < r2 /\ c0 < Pol_eval P1 r2 /\
@@ -1954,31 +1720,18 @@ destruct Hr2 as
   [r2 [Hrr2 [HP1r2pos HP1r2close]]].
 clear r3 Hrr3 Hr3raux2 HP1r3pos HP1r3close.
 
-assert (Hrpos : c0 < r).
+assert (Hrpos : c0 < r) by (apply clt_le_trans with raux; assumption).
 
-apply clt_le_trans with raux; assumption.
-
-assert (Hr2pos : c0 < r2).
-apply clt_trans with r; assumption.
+assert (Hr2pos : c0 < r2) by (apply clt_trans with r; assumption).
+assert (Hr2pos' : c0 <= r2) by (apply clt_cle_weak; assumption).
 set (u := r2++c1 -- a/Pol_eval P1(r2++c1)).
-cut (exists eps',
-               0 < eps' /\
-               eps' <= eps/\
-               eps' <= (cpow r n ** Pol_eval P1 r2)/
-               (c1++Coef_of_N n ** cpow u (Npred n) ++
-               (u -- r2)**Pol_eval (diff_cpow_pol u n) (u--r2))**
-               cpow r2 n );
-  [intros Hex' | idtac].
-destruct Hex' as [eps' Heps'].
-assert (Hr2pos' : c0 <= r2).
-apply clt_cle_weak; apply clt_trans with r; intuition;fail.
-assert (Hincr_above_r2 : forall x y, r2 < x -> x<= y -> c0 < Pol_eval P1 x /\
-          Pol_eval P1 x <= Pol_eval P1 y).
 assert (Hinc : forall x y, r < x -> x < y -> Pol_eval P1 x < Pol_eval P1 y).
 intros; apply Pauxinc.
 apply cle_lt_trans with r; assumption.
 assumption.
-(* end of assert Hinc. *)
+
+assert (Hincr_above_r2 : forall x y, r2 < x -> x<= y -> c0 < Pol_eval P1 x /\
+          Pol_eval P1 x <= Pol_eval P1 y).
 
 intros x y Hx Hy; split.
 apply cle_lt_trans with (Pol_eval P1 r2).
@@ -1991,18 +1744,12 @@ apply clt_cle_weak; apply Hinc.
 apply clt_trans with r2; intuition; fail.
 apply clt_decompose; assumption.
 assert (Hexpos := Horner_step_positive a P1 Haneg r2 Hr2pos' Hincr_above_r2).
-clear Hr2pos' Hincr_above_r2.
 assert (HPr2neg : Pol_eval P r2 < c0).
 setoid_rewrite p.
-setoid_rewrite Pol_eval_mult.
-setoid_rewrite Pol_eval_pow.
 setoid_rewrite Pol_eval_plus.
 setoid_rewrite Pol_eval_c.
 setoid_rewrite Pol_eval_mult.
 setoid_rewrite Pol_eval_X.
-apply cmul_lt_neg_r.
-apply cpow_lt_0_compat_l.
-intuition;fail.
 setoid_replace c0 with (a++--a).
 apply cplus_le_lt_compat.
 apply cle_refl.
@@ -2035,67 +1782,49 @@ assumption.
 setoid ring.
 (* end of assert Hru *)
 
-assert (HPfpos : c0 <= Pol_eval P u).
-apply clt_cle_weak.
-setoid_rewrite p.
-setoid_rewrite Pol_eval_mult.
-apply cmul_lt_0.
-setoid_rewrite Pol_eval_pow.
-setoid_rewrite Pol_eval_X.
-apply cpow_lt_0_compat_l.
-apply clt_trans with r2; intuition; fail.
-assumption.
-destruct Heps' as [Heps'pos [Heps'lteps Heps'ltPf]].
+assert (HPfpos : c0 <= Pol_eval P u)
+   by (apply clt_cle_weak; setoid_rewrite p; assumption).
 
-destruct (intermediate_value_polynom P r2 u HPr2neg HPfpos Hr2u eps' Heps'pos)
+destruct (intermediate_value_polynom P r2 u HPr2neg HPfpos Hr2u eps Hp)
   as  [v1 [v2  Hv1v2]].
 exists v1.
 exists v2.
-assert (HincP1 : forall x y, r<x -> x< y -> Pol_eval P1 x < Pol_eval P1 y).
-intros; apply Pauxinc;[apply cle_lt_trans with r;assumption|assumption].
+assert (HincP1 : forall x y, r2<x -> x< y -> Pol_eval P1 x < Pol_eval P1 y).
+intros; apply Pauxinc.
+apply clt_trans with r2.
+apply cle_lt_trans with r; assumption.
+assumption.
+assumption.
 split.
 apply clt_le_trans with r2; intuition;fail.
 split.
 intuition;fail.
 split.
-apply cle_lt_trans with (--eps').
-apply copp_le_compat.
-intuition;fail.
 intuition;fail.
 split.
 intuition; fail.
 split.
 intuition; fail.
 split.
-apply clt_le_trans with eps'; intuition ; fail.
+intuition; fail.
 split.
 
 destruct Hv1v2 as [Hr2v1 [Hv1v2 [Hv2u [HPv1close [HPv1neg [HPv2pos [HPv2close
                    Hv2mv1]]]]]]].
 assert (HP'neg : a ++ v1 ** Pol_eval P1 v1 < c0).
-apply cmul_lt_0_lt_reg_r with (cpow v1 n).
-apply cpow_lt_0_compat_l.
-apply clt_le_trans with r2; intuition; fail.
-setoid_rewrite cmul_0_l.
-setoid_rewrite <- (cmul_sym (cpow v1 n)).
 generalize HPv1neg.
 setoid_rewrite p;
-setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_pow;
 setoid_rewrite Pol_eval_plus; setoid_rewrite Pol_eval_c;
 setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_X.
 auto.
 
 intros x Hxp Hxltv1.
 setoid_rewrite p.
-setoid_rewrite Pol_eval_mult.
-setoid_rewrite Pol_eval_pow.
 setoid_rewrite Pol_eval_plus.
 setoid_rewrite Pol_eval_c.
 setoid_rewrite Pol_eval_mult.
 setoid_rewrite Pol_eval_X.
 destruct (clt_le_dec r2 x) as [Hr2ltx|Hxler2].
-apply cmul_lt_neg_r.
-apply cpow_lt_0_compat_l; assumption.
 apply clt_trans with (a++v1**Pol_eval P1 v1).
 apply cplus_le_lt_compat.
 apply cle_refl.
@@ -2104,19 +1833,13 @@ repeat (setoid_rewrite (cmul_sym x)).
 apply cmul_lt_compat_r.
 assumption.
 
-apply HincP1.
-apply clt_trans with r2; assumption.
-assumption.
+apply HincP1; assumption.
 apply cmul_lt_compat_r.
 assert (HposP1 : forall x , r2 <x -> c0 < Pol_eval P1 x) by intuition.
 apply HposP1.
 apply clt_trans with x; assumption.
 assumption.
 apply HP'neg.
-
-apply cmul_lt_neg_r.
-apply cpow_lt_0_compat_l.
-assumption.
 
 destruct (clt_le_dec raux x) as [rauxltx | xleraux].
 destruct (clt_le_dec (Pol_eval P1 x) c0) as [P1xneg | P1xpos].
@@ -2157,25 +1880,6 @@ apply clt_le_trans with r2.
 assumption.
 intuition;fail.
 intuition;fail.
-assert (Hdenv1v2 : c0 < c1 ++ Coef_of_N n ** cpow v2 (Npred n) ++
-   (v2 -- v1) ** Pol_eval (diff_cpow_pol v2 n) (v2 -- v1)).
-setoid_rewrite <- (cadd_assoc c1).
-setoid_rewrite (cadd_sym c1).
-apply clt_0_le_lt_plus_compat.
-apply cle_0_plus.
-apply cmul_le_0.
-apply c0_cle_Coef.
-apply cpow_pos.
-apply clt_cle_weak; assumption.
-apply cmul_le_0.
-apply csub_le_0.
-apply clt_cle_weak; intuition;fail.
-apply diff_cpow_pol_pos.
-apply clt_cle_weak; assumption.
-apply csub_le_0.
-apply clt_cle_weak; intuition;fail.
-apply c0_clt_c1.
-(* end of assert Hdenv1v2 *)
 assert (Hdiffur2v1v2 : v2--v1 <=  u--r2).
 setoid_replace (u--r2) with (u ++ -- r2).
 setoid_replace (v2--v1) with (v2 ++ -- v1).
@@ -2184,70 +1888,16 @@ intuition; fail.
 apply copp_le_compat; intuition; fail.
 setoid ring.
 setoid ring.
-assert 
-  (Hdenur2 : c1 ++ Coef_of_N n ** cpow v2 (Npred n) ++
-              (v2 -- v1) ** Pol_eval (diff_cpow_pol v2 n) (v2 -- v1)
-             <= c1++ Coef_of_N n ** cpow u (Npred n) ++
-             (u -- r2)** Pol_eval (diff_cpow_pol u n) (u -- r2)).
-apply cplus_le_compat.
-apply cplus_le_compat.
-apply cle_refl.
-repeat setoid_rewrite (cmul_sym (Coef_of_N n)).
-apply cmul_le_compat_r.
-apply cpow_le_compat_l.
-apply clt_cle_weak; assumption.
-intuition; fail.
-apply c0_cle_Coef.
-apply cle_trans with ((v2--v1)**Pol_eval (diff_cpow_pol u n) (u--r2)).
-repeat setoid_rewrite (cmul_sym (v2--v1)).
-apply cmul_le_compat_r.
-apply cle_trans with (Pol_eval (diff_cpow_pol v2 n)(u--r2)).
-apply diff_cpow_pol_incry.
-apply clt_cle_weak; assumption.
-apply csub_le_0; apply clt_cle_weak; intuition; fail.
-assumption.
-apply diff_pow_pol_incrx.
-apply clt_cle_weak; assumption.
-intuition;fail.
-apply csub_le_0; apply cle_trans with v2.
-apply clt_cle_weak; apply cle_lt_trans with v1;intuition;fail.
-intuition;fail.
-apply csub_le_0; apply clt_cle_weak; intuition;fail.
-apply cmul_le_compat_r.
-assumption.
-apply diff_cpow_pol_pos.
-apply clt_cle_weak; apply clt_le_trans with v2; intuition;fail.
-apply csub_le_0.
-apply clt_cle_weak; apply clt_le_trans with v2.
-apply cle_lt_trans with v1; intuition;fail.
-intuition; fail.
 (* end assert Hdiffur2v1v2 *)
+assert (c0 < v1) by (apply clt_le_trans with r2;intuition).
 split.
 intros x Hxv2.
 apply cle_lt_trans with (Pol_eval P v2).
 intuition; fail.
 setoid_rewrite p; repeat setoid_rewrite Pol_eval_mult;
 repeat setoid_rewrite Pol_eval_plus; repeat setoid_rewrite Pol_eval_mult;
-repeat setoid_rewrite Pol_eval_pow; repeat setoid_rewrite Pol_eval_X.
+ repeat setoid_rewrite Pol_eval_X.
 repeat setoid_rewrite Pol_eval_c.
-apply cmul_le_lt_compat.
-apply cpow_lt_0_compat_l.
-assumption.
-apply cmul_lt_0_le_reg_r with (cpow v2 n).
-apply cpow_lt_0_compat_l.
-assumption.
-setoid_rewrite cmul_0_l.
-setoid_rewrite <- (cmul_sym (cpow v2 n)).
-cut (c0 <= Pol_eval P v2).
-setoid_rewrite p; repeat setoid_rewrite Pol_eval_mult;
-repeat setoid_rewrite Pol_eval_plus; repeat setoid_rewrite Pol_eval_mult;
-repeat setoid_rewrite Pol_eval_pow; repeat setoid_rewrite Pol_eval_X.
-repeat setoid_rewrite Pol_eval_c.
-auto.
-intuition;fail.
-apply cpow_le_compat_l.
-apply clt_cle_weak; assumption.
-apply clt_cle_weak; assumption.
 apply cplus_le_lt_compat.
 apply cle_refl.
 apply cmul_le_lt_compat.
@@ -2267,254 +1917,136 @@ intuition; fail.
 assumption.
 intros x y Hx Hy.
 setoid_rewrite p.
-
-assert (c0 <= Pol_eval (Pc a + X*P1) v2).
-apply cmul_lt_0_le_reg_r with (cpow v2 n).
-apply cpow_lt_0_compat_l.
-assumption.
-setoid_rewrite cmul_0_l.
-setoid_rewrite <- (cmul_sym (cpow v2 n)).
-cut (c0 <= Pol_eval P v2).
-setoid_rewrite p; setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_pow.
-setoid_rewrite Pol_eval_X; auto.
-intuition;fail.
-
-apply increase_pol_close_0_Xn with (r:= v1) (r2:= v2).
-apply clt_le_trans with r2; intuition;fail.
-apply clt_cle_weak; apply clt_le_trans with (Pol_eval P1 r2).
-assumption.
-destruct (ceq_dec r2 v1) as [Hr2v1 | Hv1r2].
-setoid_rewrite Hr2v1; apply cle_refl.
-apply clt_cle_weak; apply HincP1.
-assumption.
-apply clt_decompose; intuition; fail.
-intros;apply clt_trans with (Pol_eval P1 r2).
-assumption.
-
-apply Pauxinc.
-apply cle_lt_trans with r; assumption.
+ repeat setoid_rewrite Pol_eval_mult;
+repeat setoid_rewrite Pol_eval_plus; repeat setoid_rewrite Pol_eval_mult;
+ repeat setoid_rewrite Pol_eval_X.
+repeat setoid_rewrite Pol_eval_c.
+apply cplus_le_lt_compat.
+apply cle_refl.
+apply clt_trans with (x**Pol_eval P1 y).
+repeat setoid_rewrite (cmul_sym x).
+apply cmul_lt_compat_r.
+apply clt_trans with v1; assumption.
+apply HincP1.
 apply cle_lt_trans with v1; intuition;fail.
-intros x0 y0 Hx0 Hy0.
-destruct (ceq_dec x0 y0) as [Hx0y0 | Hdiff].
-setoid_rewrite Hx0y0; apply cle_refl.
-apply clt_cle_weak; apply Pauxinc.
-apply cle_lt_trans with r.
 assumption.
-apply clt_le_trans with r2.
-assumption.
-apply cle_trans with v1; intuition;fail.
-apply clt_decompose; assumption.
-intuition;fail.
-assumption.
-apply cmul_lt_0_lt_reg_r with (cpow v1 n).
-apply cpow_lt_0_compat_l.
-apply clt_le_trans with r2; intuition; fail.
-apply cle_lt_trans with (--eps').
-setoid_rewrite copp_div_l.
-setoid_rewrite mul_copp.
-apply copp_le_compat.
-apply cle_trans with (1:= Heps'ltPf).
-setoid_replace (cpow r n ** Pol_eval P1 r2 /
-   (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-    (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2))) with (cpow r n ** Pol_eval P1 r2 /
-   (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-    (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2))).
-setoid_rewrite (cdiv_decompose (cpow r n ** Pol_eval P1 r2)).
-apply pos_non_c0.
-setoid_replace (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-   (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2)) with
-    ((Coef_of_N n ** cpow u (Npred n) ++
-   (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2))++c1).
-apply clt_0_le_lt_plus_compat.
-assert (r2 <= u).
-unfold u.
-apply clt_cle_weak; apply Horner_step_positive_tech.
-assumption.
-intros x0 y0 Hx0 Hy0; split.
-apply clt_trans with (Pol_eval P1 r2).
-assumption.
+apply cmul_lt_compat_r.
+apply cle_lt_trans with (Pol_eval P1 r2).
+apply clt_cle_weak; assumption.
 apply Pauxinc.
-apply cle_lt_trans with r;assumption.
+apply cle_lt_trans with r; intuition;fail.
+apply cle_lt_trans with v1.
+intuition;fail.
+apply clt_trans with x; assumption.
 assumption.
-destruct (ceq_dec x0 y0) as [Hxy | Hxny].
-setoid_rewrite Hxy; apply cle_refl.
-apply clt_cle_weak; apply Pauxinc.
-apply clt_trans with r2.
-apply cle_lt_trans with r;assumption.
+
+intros lnz eps Hp.
+destruct (N_eq_dec n 0) as [Hn0 | Hnn0].
+rewrite Hn0 in p.
+unfold Pol_pow in p.
+setoid_replace (Pol_ring2.P1 * P1) with P1 in p.
+setoid_rewrite p in lnz.
+destruct (IHone_alternation lnz eps Hp) as
+  [v1 [v2 [Hv1 [Hv2 [HPv1n [HPv1close 
+    [HPv2p [HPv2close [HPn [HPp HPi]]]]]]]]]].
+exists v1; exists v2.
+split;[assumption | idtac].
+split;[assumption | idtac].
+split;[setoid_rewrite p; assumption | idtac].
+split;[setoid_rewrite p; assumption | idtac].
+split;[setoid_rewrite p; assumption | idtac].
+split;[setoid_rewrite p; assumption | idtac].
+split.
+intros x; setoid_rewrite p; exact (HPn x).
+split.
+intros x; setoid_rewrite p; exact (HPp x).
+intros x y; setoid_rewrite p; exact (HPi x y).
+setoid ring.
+cut ( forall P n P', P != X^n *P' -> least_non_zero_coeff P == least_non_zero_coeff P');[intros least_non_zero_P8 | idtac].
+assert (Hlnz1 : least_non_zero_coeff P1 < c0).
+setoid_rewrite <- (least_non_zero_P8 P n); assumption.
+destruct (IHone_alternation Hlnz1 eps Hp) as
+  [r [r2 [Hr [Hr2 [HP1rn [HP1rclose 
+    [HP1r2p [HP1r2close [HP1n [HPp1 HP1i]]]]]]]]]].
+assert (Hr2p : c0 < r2).
+apply clt_trans with r; assumption.
+assert (HPrn : Pol_eval P r < c0).
+setoid_rewrite p; setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_pow.
+setoid_rewrite Pol_eval_X.
+apply cmul_lt_neg_r.
+apply cpow_lt_0_compat_l; assumption.
 assumption.
-apply clt_decompose; assumption.
-assert (c0 <= u).
-apply cle_trans with r2.
+assert (HPr2pos : c0 <= Pol_eval P r2).
+setoid_rewrite p; setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_pow.
+setoid_rewrite Pol_eval_X.
+apply cmul_le_0.
+apply cpow_pos.
 apply clt_cle_weak; assumption.
 assumption.
-(* end of assert. *)
+assert (Hfpos : c0 < c1++Coef_of_N n ** cpow r2 (Npred n) ++
+          (r2 -- r) ** Pol_eval (diff_cpow_pol r2 n) (r2 -- r)).
+setoid_rewrite <- (cadd_assoc c1);
+setoid_rewrite (cadd_sym c1); apply clt_0_le_lt_plus_compat.
 apply cle_0_plus.
 apply cmul_le_0.
 apply c0_cle_Coef.
-apply cpow_pos; assumption.
-apply cmul_le_0.
-apply csub_le_0; assumption.
-apply diff_cpow_pol_pos.
-assumption.
-apply csub_le_0; assumption.
-apply c0_clt_c1.
-setoid ring.
-setoid_rewrite (cdiv_decompose (cpow v1 n ** Pol_eval P1 v1)).
-apply pos_non_c0.
-
-
-exact Hdenv1v2.
-apply cle_trans with (c1 /
-   (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-    (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2)) **
-   (cpow r n ** Pol_eval P1 r2)**cpow v1 n).
-repeat setoid_rewrite (cmul_sym (c1 /
-   (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-    (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2)) **
-   (cpow r n ** Pol_eval P1 r2))).
-apply cmul_le_compat_r.
-apply cpow_le_compat_l.
+apply cpow_pos.
 apply clt_cle_weak; apply clt_trans with r; assumption.
-intuition;fail.
 apply cmul_le_0.
-apply cdiv_le_0_compat_l.
-apply clt_le_trans with (1:=Hdenv1v2)(2:=Hdenur2).
-apply c0_cle_c1.
-apply cmul_le_0.
-apply cpow_pos.
-apply clt_cle_weak; assumption.
-apply clt_cle_weak; assumption.
-apply cmul_le_compat_r.
-apply cle_trans with (c1 /
-   (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-    (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2)) **
-   (cpow v1 n ** Pol_eval P1 v1)).
-repeat setoid_rewrite (cmul_sym (c1 /
-   (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-    (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2)))).
-apply cmul_le_compat_r.
-apply cle_trans with (cpow r n ** Pol_eval P1 v1).
-repeat setoid_rewrite (cmul_sym (cpow r n)).
-apply cmul_le_compat_r.
-
-
-destruct (ceq_dec r2 v1) as [Hr2v1 | Hv1r2].
-setoid_rewrite Hr2v1; apply cle_refl.
-apply clt_cle_weak; apply HincP1.
+apply csub_le_0; apply clt_cle_weak; assumption.
+apply diff_cpow_pol_pos.
+apply clt_cle_weak; apply clt_trans with r; assumption.
+apply csub_le_0; apply clt_cle_weak; assumption.
+apply c0_clt_c1.
+assert (Hex' : exists eps',
+          0 < eps' /\ eps' <= eps /\
+         eps' <= eps').
+exists eps.
+split.
 assumption.
-apply clt_decompose; intuition;fail.
-apply cpow_pos; apply clt_cle_weak; assumption.
+split; apply cle_refl.
+destruct Hex' as [eps' [Hp' [Heps Heps']]].
+assert (Hpowr2pos : c0 < cpow r2 n) by (apply cpow_lt_0_compat_l; assumption).
+(* assert (Hepscpow : eps'**cpow r2 n <= eps).
+apply cmul_lt_0_le_reg_r with (c1/cpow r2 n).
+apply cdiv_lt_0_compat_l.
+assumption.
+apply c0_clt_c1.
+setoid_rewrite <- cmul_assoc.
+setoid_rewrite cmul_div_r.
+apply pos_non_c0; assumption.
+setoid_rewrite cmul_1_r.
+setoid_rewrite cmul_sym; setoid_rewrite <- cdiv_decompose.
+apply pos_non_c0; assumption.
+assumption.
+*)
+destruct (intermediate_value_polynom P r r2 HPrn HPr2pos Hr2 eps' Hp')
+  as [v1 [v2 [Hv1 [Hv1v2 [Hv2r2 [HPv1close [HPv1neg [HPv2pos HPv2close]]]]]]]].
+exists v1; exists v2.
+split.
+apply clt_le_trans with r; assumption.
+split; [assumption | idtac].
+split.
+setoid_rewrite p.
+setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_pow;
+setoid_rewrite Pol_eval_X.
+apply cle_lt_trans with (cpow v1 n ** -- eps').
+setoid_rewrite cmul_copp_r.
+apply copp_le_compat.
+apply cle_trans with (2:= Hepscpow).
+setoid_rewrite (cmul_sym eps').
 apply cmul_le_compat_r.
 apply cpow_le_compat_l.
+apply clt_cle_weak; apply clt_le_trans with r; assumption.
+apply clt_cle_weak; apply clt_le_trans with v2; assumption.
 apply clt_cle_weak; assumption.
-apply clt_cle_weak; apply clt_le_trans with r2; intuition;fail.
-(* Proof that Pol_eval P1 v1 is positive *)
-apply cle_trans with (Pol_eval P1 r2).
-apply clt_cle_weak; assumption.
-destruct (ceq_dec r2 v1) as [Hxy | Hxny].
-setoid_rewrite Hxy; apply cle_refl.
-apply clt_cle_weak; apply Pauxinc.
-apply cle_lt_trans with r;assumption.
-apply clt_decompose; intuition; fail.
-apply cdiv_le_0_compat_l.
-apply clt_le_trans with (1:= Hdenv1v2)(2:=Hdenur2).
-apply c0_cle_c1.
-apply cmul_le_compat_r.
-apply inv_cle.
-exact Hdenv1v2.
-exact Hdenur2.
-apply cmul_le_0.
-apply cpow_pos.
-apply clt_cle_weak; apply clt_le_trans with r2; intuition;fail.
-(* Proof that Pol_eval P1 v1 is positive *)
-apply cle_trans with (Pol_eval P1 r2).
-apply clt_cle_weak; assumption.
-destruct (ceq_dec r2 v1) as [Hxy | Hxny].
-setoid_rewrite Hxy; apply cle_refl.
-apply clt_cle_weak; apply Pauxinc.
-apply cle_lt_trans with r;assumption.
-apply clt_decompose; intuition; fail.
-(* end of proof *)
-apply cpow_pos.
-apply clt_cle_weak; apply clt_le_trans with r2; intuition;fail.
-apply ceq_refl.
-setoid_rewrite <- (cmul_sym (cpow v1 n)).
-assert (HPv1close : --eps' < Pol_eval P v1) by intuition.
-generalize HPv1close; setoid_rewrite p;
-setoid_rewrite Pol_eval_mult;
- setoid_rewrite Pol_eval_pow; setoid_rewrite Pol_eval_plus; 
-setoid_rewrite Pol_eval_mult; setoid_rewrite Pol_eval_c; 
-setoid_rewrite Pol_eval_X; auto.
+repeat setoid_rewrite (cmul_sym (cpow v1 n)).
+apply cmul_lt_compat_r.
+apply cpow_lt_0_compat_l; apply clt_le_trans with r; assumption.
 assumption.
-assumption.
-assert (Hpos : forall x : Coef, r2 < x -> c0 < Pol_eval P1 x).
-intros; apply clt_trans with (Pol_eval P1 r2).
-intuition;fail.
-apply Pauxinc.
-apply cle_lt_trans with r; assumption.
-assumption.
-assert (Hr2u : r2 < u).
-apply clt_trans with (r2++c1).
-apply cplus_lt_r.
-apply c0_clt_c1.
-unfold u.
-setoid_replace (r2 ++ c1 -- a / Pol_eval P1 (r2 ++ c1)) with
-   (r2++c1 ++ -- (a/Pol_eval P1(r2++c1))).
-apply cplus_lt_r.
-setoid_rewrite <- copp_div_l.
-apply  cdiv_lt_0_compat_l.
+split
 
-apply Hpos.
-apply cplus_lt_r; apply c0_clt_c1.
-apply clt_0_copp.
-assumption.
-setoid ring.
 
-destruct (clt_le_dec eps (cpow r n ** Pol_eval P1 r2 /
-     (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-      (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2)) ** 
-     cpow r2 n)) as [Hef | Hfe].
-exists eps.
-
-split.
-assumption.
-split.
-apply cle_refl.
-apply clt_cle_weak; assumption.
-
-exists (cpow r n ** Pol_eval P1 r2 /
-   (c1 ++ Coef_of_N n ** cpow u (Npred n) ++
-    (u -- r2) ** Pol_eval (diff_cpow_pol u n) (u -- r2)) ** 
-   cpow r2 n).
-split.
-apply cmul_lt_0.
-apply cdiv_lt_0_compat_l.
-setoid_rewrite <- (cadd_assoc c1).
-setoid_rewrite (cadd_sym c1).
-apply clt_0_le_lt_plus_compat.
-apply cle_0_plus.
-apply cmul_le_0.
-apply c0_cle_Coef.
-apply cpow_pos.
-apply clt_cle_weak; apply clt_trans with r2; assumption.
-apply cmul_le_0.
-apply csub_le_0.
-apply clt_cle_weak; assumption.
-apply diff_cpow_pol_pos.
-apply clt_cle_weak; apply clt_trans with r2; assumption.
-apply csub_le_0.
-apply clt_cle_weak; assumption.
-apply c0_clt_c1.
-apply cmul_lt_0.
-apply cpow_lt_0_compat_l.
-assumption.
-assumption.
-apply cpow_lt_0_compat_l.
-assumption.
-split.
-assumption.
-apply cle_refl.
-Qed.
 
 
 
