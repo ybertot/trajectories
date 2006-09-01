@@ -663,7 +663,7 @@ Inductive no_alternation : Pol -> Set :=
 
 Inductive one_alternation : Pol -> Set :=
   one_alternation_here :
-    forall P a (n:N) P1, n<>0%N ->
+    forall P a (n:N) P1,
       P != (X^n *(Pc a + X * P1))%Pol ->
       a ** least_non_zero_coeff P1 < c0 -> no_alternation P1 ->
       one_alternation P

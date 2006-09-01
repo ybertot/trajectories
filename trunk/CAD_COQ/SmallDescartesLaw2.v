@@ -1490,7 +1490,6 @@ Theorem one_alternation_root_main :
       (forall x y, a < x -> x < y -> Pol_eval P x < Pol_eval P y).
 intros P H; induction H.
 intros HlnP eps Hp.
-rename n0 into n_non_0; rename n1 into n0.
 assert (Han:~a==0) by (apply (neg_cmul_n0 _ _ c)).
 assert (Hal : least_non_zero_coeff P == a) by 
  exact (least_non_zero_P4 P a n P1 p Han).
@@ -1558,8 +1557,9 @@ exists v2.
 assert (Hv1p : c0 < v1) by (apply clt_le_trans with r; intuition; fail).
 assert (Hv2p : c0 < v2) by 
    (apply clt_le_trans with v1;[assumption|apply clt_cle_weak; assumption]).
-assert (Hden1 : c0 < Coef_of_N n ** cpow v2 (Npred n) ++
+assert (Hden1 : n<>0%N -> c0 < Coef_of_N n ** cpow v2 (Npred n) ++
     (v2 -- v1) ** Pol_eval (diff_cpow_pol v2 n) (v2 -- v1)).
+intros n_non_0.
 apply cplus_lt_0_le_lt.
 apply cmul_lt_0.
 apply clt_le_trans with c1.
@@ -1582,17 +1582,18 @@ apply clt_cle_weak; assumption.
 apply diff_cpow_pol_pos.
 apply clt_cle_weak; assumption.
 apply csub_le_0; apply clt_cle_weak; assumption.
-assert(Hfr2fv2 : -- (cpow v1 n ** Pol_eval P1 v1) /
+assert(Hfr2fv2 : n<> 0%N -> -- (cpow v1 n ** Pol_eval P1 v1) /
    (c1++Coef_of_N n ** cpow v2 (Npred n) ++
     (v2 -- v1) ** Pol_eval (diff_cpow_pol v2 n) (v2 -- v1)) <=
    -- (cpow r n ** Pol_eval P1 r) /
    (c1++Coef_of_N n ** cpow r2 (Npred n) ++
     (r2 -- r) ** Pol_eval (diff_cpow_pol r2 n) (r2 -- r))).
+intros n_non_0.
 setoid_rewrite (cdiv_decompose (--(cpow v1 n** Pol_eval P1 v1))).
 setoid_rewrite <- (cadd_assoc c1).
 apply pos_non_c0; apply clt_0_plus_compat.
 apply c0_clt_c1.
-assumption.
+apply Hden1; assumption.
 setoid_rewrite (cdiv_decompose (--(cpow r n** Pol_eval P1 r))).
 setoid_rewrite <- (cadd_assoc c1); setoid_rewrite (cadd_sym c1);
 apply pos_non_c0; apply clt_0_le_lt_plus_compat.
@@ -1637,7 +1638,7 @@ apply cdiv_le_0_compat_l.
 setoid_rewrite <- (cadd_assoc c1).
 apply clt_0_plus_compat.
 apply c0_clt_c1.
-exact Hden1.
+exact (Hden1 n_non_0).
 apply c0_cle_c1.
 repeat setoid_rewrite cmul_copp_r.
 apply copp_le_compat.
@@ -1646,7 +1647,7 @@ apply inv_cle.
 setoid_rewrite <- (cadd_assoc c1).
 apply clt_0_plus_compat.
 apply c0_clt_c1.
-exact Hden1.
+exact (Hden1 n_non_0).
 apply cplus_le_compat.
 repeat setoid_rewrite (cmul_sym (Coef_of_N n)).
 apply cplus_le_compat.
@@ -1786,6 +1787,17 @@ apply HPincr.
 apply cle_lt_trans with v1; assumption.
 assumption.
 intros x y Hx Hy.
+destruct (N_eq_dec n 0) as [n_eq_0 | n_non_0].
+setoid_rewrite p.
+rewrite n_eq_0.
+repeat setoid_rewrite Pol_eval_mult; 
+repeat setoid_rewrite Pol_eval_pow.
+repeat setoid_rewrite cpow_0.
+repeat setoid_rewrite cmul_1_l.
+apply HPincr.
+apply cle_lt_trans with v1; assumption.
+assumption.
+
 setoid_rewrite p.
 apply increase_pol_close_0_Xn with (r:= v1)(r2:= v2).
 assumption.
@@ -1803,7 +1815,7 @@ apply clt_cle_weak; apply clt_le_trans with v1; assumption.
 assumption.
 assumption.
 assumption.
-apply cle_lt_trans with (1:= Hfr2fv2).
+apply cle_lt_trans with (1:= Hfr2fv2 n_non_0).
 apply cle_lt_trans with (--eps').
 setoid_rewrite copp_div_l.
 apply copp_le_compat.
