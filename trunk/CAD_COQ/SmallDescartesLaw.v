@@ -12,11 +12,8 @@ Require Import Qring.
 Require Import Qring.
 Require Import Pol_ring2.
 Require Import Recdef.
-
+Require Import Coef_props.
 Import Qnorm.
-
-Hint Resolve c0test_c PolEq_refl ceq_refl.
-Hint Immediate ceq_sym PolEq_sym.
 
 Theorem Npos_plus : forall x y, (Npos (x + y) = Npos x + Npos y)%N.
 intros; simpl; auto.
@@ -157,211 +154,6 @@ rewrite Nplus_comm; auto.
 apply NS_wf.
 Qed.
 
-Definition cdiv : Coef -> Coef -> Coef :=
-   Qdiv.
-
-Infix "/" := cdiv.
-
-Theorem cmul_div_r : 
-  forall p q, ~q==c0 -> cmul q (cdiv p q) == p.
-exact Qmult_div_r.
-Qed.
-
-Theorem cdiv_mul_l :
-  forall p q, ~q==c0 -> cdiv (cmul p q) q == p.
-exact Qdiv_mult_l.
-Qed.
-
-Definition cle : Coef -> Coef -> Prop := Qle.
-
-Infix "<=" := cle.
-
-Notation "x <= y <= z" := (cle x y /\ cle y z).
-
-Theorem cle_trans : forall x y z, cle x y -> cle y z -> cle x z.
-exact Qle_trans.
-Qed.
-
-Theorem cle_refl : forall x, cle x x.
-exact Qle_refl.
-Qed.
-
-Theorem cle_antisym : forall x y, x <= y -> y <= x -> x==y.
-exact Qle_antisym.
-Qed.
-
-Theorem cle_Qle : forall x y, cle x y -> Qle x y.
-auto.
-Qed.
-
-Theorem Qle_cle : forall x y, Qle x y -> cle x y.
-auto.
-Qed.
-
-Theorem cle_morph_aux : forall x1 x2 : Coef,
-   x1 == x2 -> forall x3 x4 : Coef, x3 == x4 -> cle x1 x3 -> cle x2 x4.
-unfold Coef_record.Ceq, ceq_compat, cle, Qle, Qeq.
-intros x1 x2 H1 x3 x4 H2 H.
-
-apply Zmult_le_reg_r with (Zpos (Qden x1)).
-unfold Zgt;auto.
-replace (Qnum x2 * ' Qden x4 * ' Qden x1)%Z with
-        (Qnum x2 * ' Qden x1 * ' Qden x4)%Z;[idtac | ring].
-rewrite <- H1.
-apply Zmult_le_reg_r with (Zpos (Qden x3)).
-compute; auto.
-replace (Qnum x4 * ' Qden x2 * ' Qden x1 * ' Qden x3)%Z with
-   (Qnum x4 * ' Qden x3 * ' Qden x2 * ' Qden x1)%Z;[idtac|ring].
-rewrite <- H2.
-replace (Qnum x1 * ' Qden x2 * ' Qden x4 * ' Qden x3)%Z with
-     (Qnum x1 * ' Qden x3 * ' Qden x4 * ' Qden x2)%Z;[idtac | ring].
-replace (Qnum x3 * ' Qden x4 * ' Qden x2 * ' Qden x1)%Z with
-     (Qnum x3 * ' Qden x1 * ' Qden x4 * ' Qden x2)%Z;[idtac | ring].
-apply Zmult_le_compat_r.
-apply Zmult_le_compat_r.
-assumption.
-compute; intros; discriminate.
-compute; intros; discriminate.
-Qed.
-Add Morphism cle with signature ceq ==> ceq ==> iff as Qle_morphism.
-intros x1 x2 H1 x3 x4 H2; split; intros H.
-apply cle_morph_aux with x1 x3; auto.
-apply cle_morph_aux with x2 x4; auto.
-Qed.
-
-Definition clt : Coef -> Coef -> Prop := Qlt.
-
-Infix "<" := clt.
-
-Lemma clt_le_dec : forall x y:Coef, {clt x y}+{cle y x}.
-exact Qlt_le_dec.
-Qed.
-
-Lemma clt_trans : forall x y z, clt x y -> clt y z -> clt x z.
-exact Qlt_trans.
-Qed.
-
-Lemma clt_decompose : forall x y, ~ceq x y -> cle x y -> clt x y.
-unfold Coef_record.Ceq, ceq_compat, cle, Qle, clt, Qlt, Qeq.
-intros; auto with zarith.
-Qed.
-
-Lemma clt_cle_weak : forall x y, x < y -> x <= y.
-unfold Coef_record.Ceq, ceq_compat, cle, Qle, clt, Qlt, Qeq.
-intros; auto with zarith.
-Qed.
-
-Theorem clt_morph_aux : forall x1 x2 : Coef,
-   x1 == x2 -> forall x3 x4 : Coef, x3 == x4 -> clt x1 x3 -> clt x2 x4.
-unfold Coef_record.Ceq, ceq_compat, cle, Qle, clt, Qlt, Qeq.
-intros x1 x2 H1 x3 x4 H2 H.
-
-apply Zmult_lt_reg_r with (Zpos (Qden x1)).
-unfold Zlt;auto.
-replace (Qnum x2 * ' Qden x4 * ' Qden x1)%Z with
-        (Qnum x2 * ' Qden x1 * ' Qden x4)%Z;[idtac | ring].
-rewrite <- H1.
-apply Zmult_lt_reg_r with (Zpos (Qden x3)).
-compute; auto.
-replace (Qnum x4 * ' Qden x2 * ' Qden x1 * ' Qden x3)%Z with
-   (Qnum x4 * ' Qden x3 * ' Qden x2 * ' Qden x1)%Z;[idtac|ring].
-rewrite <- H2.
-replace (Qnum x1 * ' Qden x2 * ' Qden x4 * ' Qden x3)%Z with
-     (Qnum x1 * ' Qden x3 * ' Qden x4 * ' Qden x2)%Z;[idtac | ring].
-replace (Qnum x3 * ' Qden x4 * ' Qden x2 * ' Qden x1)%Z with
-     (Qnum x3 * ' Qden x1 * ' Qden x4 * ' Qden x2)%Z;[idtac | ring].
-apply Zmult_lt_compat_r.
-compute; auto.
-apply Zmult_lt_compat_r.
-compute; auto.
-assumption.
-Qed.
-
-Add Morphism clt with signature ceq ==> ceq ==> iff as Qlt_morphism.
-intros x1 x2 H1 x3 x4 H2; split; intros H.
-apply clt_morph_aux with x1 x3; auto.
-apply clt_morph_aux with x2 x4; auto.
-Qed.
-
-Lemma cmul_le_compat_r : 
-   forall x y z:Coef, cle x y -> cle c0 z -> cle (x**z) (y**z).
-exact Qmult_le_compat_r.
-Qed.
-
-Lemma cmul_le_0 : forall x y, cle c0 x -> cle c0 y -> cle c0 (x**y).
-intros; setoid_replace c0 with (c0 ** y).
-apply cmul_le_compat_r; auto.
-setoid ring.
-Qed.
-
-Lemma cmul_lt_0_le_reg_r :
-  forall x y z, clt c0 z -> cle (x**z) (y**z) -> cle x y.
-exact Qmult_lt_0_le_reg_r.
-Qed.
-
-Lemma cle_0_mult :
-   forall x y, cle c0 x -> cle c0 y -> cle c0 (x ** y).
-intros x y Hx Hy; assert (ceq c0 (c0**y)).
-setoid ring.
-setoid_rewrite H.
-apply cmul_le_compat_r; auto.
-Qed.
-
-Lemma cplus_le_compat :
-    forall x y z t, cle x y -> cle z t -> cle (x++z) (y++t).
-exact Qplus_le_compat.
-Qed.
-
-Lemma cle_0_plus :
-  forall x y, cle c0 x -> cle c0 y -> cle c0 (x ++ y).
-intros x y Hx Hy.
-assert (ceq c0 (c0++c0)).
-setoid ring.
-setoid_rewrite H.
-apply cplus_le_compat; auto.
-Qed.
-
-Lemma Q0_le_1 : (0 <= 1)%Q.
-unfold Qle, Qnum, Qden; omega.
-Qed.
-
-Lemma c0_cle_c1: cle c0 c1.
-exact Q0_le_1.
-Qed.
-
-Lemma copp_le_compat :
-  forall p q, cle p q -> cle (copp q) (copp p).
-exact Qopp_le_compat.
-Qed.
-
-Lemma copp_le_0_compat :
-  forall p, cle c0 p -> cle (copp p) c0.
-intros; setoid_replace c0 with (copp c0).
-apply copp_le_compat; auto.
-setoid ring.
-Qed.
-
-Lemma cle_0_copp : forall x, x <= c0 -> c0 <= copp x.
-intros; setoid_replace c0 with (copp c0).
-apply copp_le_compat; auto.
-setoid ring.
-Qed.
-
-Lemma copp_le_0_compat_copp:
-  forall p, cle p c0 -> cle c0 (copp p).
-intros; setoid_replace c0 with (copp c0).
-apply copp_le_compat; auto.
-setoid ring.
-Qed.
-
-Lemma mul_copp : forall p q, copp p ** q == copp (p ** q).
-intros; setoid ring.
-Qed.
-
-Lemma copp_copp : forall p, copp (copp p) == p.
-intros; setoid ring.
-Qed.
-
 Theorem cpow_pos : forall (c:Coef)(n:N), cle c0 c -> cle c0 (cpow c n).
 intros c n H0; case n.
 setoid_rewrite cpow_0.
@@ -428,7 +220,6 @@ apply cle_trans with (y ** (cpow x (Npos p) ** cpow x (Npos p))).
 apply cmul_le_compat_r.
 assumption.
 apply cmul_le_0; auto.
-
 repeat setoid_rewrite (cmul_sym y).
 apply cmul_le_compat_r.
 apply cle_trans with (cpow x (Npos p) **cpow y (Npos p)).
@@ -450,22 +241,6 @@ apply cpow_pos; auto.
 repeat setoid_rewrite cpow_1; auto.
 Qed.
 
-Theorem  clt_neq : forall x y, x < y -> ~x==y.
-unfold clt, Qlt, Coef_record.Ceq, ceq_compat, Qeq.
-auto with zarith.
-Qed.
-
-Theorem cmul_lt_0 : forall x y, c0 < x -> c0 < y -> c0 < x ** y.
-intros x y Hx Hy.
-apply clt_decompose.
-unfold Coef_record.Ceq, ceq_compat; intros H; elim (Qmult_integral x y);
-intros.
-elim (clt_neq _ _ Hx); apply Qeq_sym; auto.
-elim (clt_neq _ _ Hy); apply Qeq_sym; auto.
-apply Qeq_sym; auto.
-apply cmul_le_0; apply clt_cle_weak; auto.
-Qed.
-
 Theorem cpow_lt_0_compat_l: forall x n, c0 < x -> c0 < cpow x n.
 intros x n Hx; case n.
 setoid_rewrite cpow_0.
@@ -485,159 +260,16 @@ apply cmul_lt_0; assumption.
 setoid_rewrite cpow_1; assumption.
 Qed.
 
-Theorem cplus_lt_0_le_lt : forall x y, c0 < x -> c0 <= y -> 0 < x ++ y.
-unfold clt, cle, Qlt, Qle, Coef_record.C0, ceq_compat, cops,
-  Coef_record.Cadd, Qplus.
-intros [x1 x2] [y1 y2]; unfold Qden, Qnum.
-repeat rewrite Zmult_0_l.
-repeat rewrite Zmult_1_r.
-intros; apply Zlt_le_trans with (x1 * Zpos y2)%Z.
-apply Zmult_lt_0_compat.
-assumption.
-compute; auto.
-assert (0 <= y1*Zpos x2)%Z.
-apply Zmult_le_0_compat.
-assumption.
-intros; discriminate.
-omega.
+
+Theorem clt_0_inv_pow : forall x n, c0 < x -> c0 < c1/cpow x n.
+intros.
+apply cdiv_lt_0_compat_l.
+apply cpow_lt_0_compat_l; assumption.
+apply c0_clt_c1.
 Qed.
 
-Theorem cdiv_le_0_compat_l :
-  forall p q, c0 < q -> c0 <= p -> c0 <= p/q.
-intros p q Hlt Hle.
-apply cmul_lt_0_le_reg_r with q.
-assumption.
-setoid_rewrite cmul_0_l.
-setoid_rewrite cmul_sym; setoid_rewrite cmul_div_r.
-assert (Habs:~c0==q) by (apply clt_neq; auto).
-intros Habs2; elim Habs; apply ceq_sym;auto.
-assumption.
-Qed.
-
-Theorem cdiv_lt_0_compat_l :
-  forall p q, c0 < q -> c0 < p -> c0 < p/q.
-intros p q Hlq Hlp.
-assert (Hqn0: ~ q == 0).
-intros H; elim (clt_neq _ _ Hlq); apply ceq_sym; exact H.
-unfold cdiv.
-unfold Qdiv.
-setoid_replace c0 with (0 * /q)%Q.
-apply Qmult_lt_compat_r.
-apply clt_decompose.
-intros H; elim (clt_neq _ _ Hlq).
-setoid_rewrite <- (cmul_1_l q).
-setoid_replace c1 with (q**/q).
-replace 0 with c0 in H.
-setoid_rewrite <- H; setoid ring.
-reflexivity.
-unfold Coef_record.Ceq, Coef_record.Cmul, ceq_compat, Coef_record.C1, cops.
-apply Qeq_sym; apply Qmult_inv_r.
-assumption.
-apply cmul_lt_0_le_reg_r with q.
-assumption.
-setoid_rewrite (cmul_sym (/q) q).
-setoid_replace (q**/q) with c1.
-setoid_replace (0**q) with c0.
-exact c0_cle_c1.
-change (c0**q==c0); apply cmul_0_l.
-unfold Coef_record.Ceq, Coef_record.Cmul, ceq_compat, Coef_record.C1, cops.
-apply Qmult_inv_r.
-exact Hqn0.
-exact Hlp.
-change (c0 == c0 ** /q).
-setoid ring.
-Qed.
-
-Theorem c0_clt_2 : c0 < c1++c1.
-apply cplus_lt_0_le_lt.
-apply clt_decompose; [apply c0_diff_c1 | apply c0_cle_c1].
-apply c0_cle_c1.
-Qed.
-
-Lemma cut_half : forall x, x == x/(c1++c1) ++ x/(c1++c1).
-intros x0; setoid_replace (x0/(c1++c1)++x0/(c1++c1)) with
-   ((c1++c1) ** (x0/(c1++c1))).
-setoid_rewrite cmul_div_r.
-intros Habs.
-elim (clt_neq _ _ c0_clt_2).
-auto.
-auto.
-setoid ring.
-Qed.
-
-Lemma cplus_pos_simplify : forall x y, c0 <= x -> y <= x ++ y.
-intros x y H;
-pose (u:=x++y); fold u.
-setoid_replace y with (c0 ++ y);[unfold u|setoid ring].
-apply cplus_le_compat;[assumption |apply cle_refl].
-Qed.
-
-Lemma mul_copp_copp : forall x y, copp x ** copp y == x ** y.
-intros; setoid ring.
-Qed.
-
-Lemma csub_diag : forall x, x -- x == c0.
-intros; setoid ring.
-Qed.
-
-Lemma cle_csub_cadd : forall a b c, a -- b <= c -> a <= b ++ c.
-intros; setoid_replace a with (b ++ (a--b));[idtac|setoid ring].
-apply cplus_le_compat;[apply cle_refl|assumption].
-Qed.
-
-Lemma cdiv_decompose :  forall x y, ~y==c0 -> x/y == c1/y**x.
-intros x y Hy; setoid_replace (x/y) with ((c1/y**y)**(x/y)).
-setoid_rewrite <- cmul_assoc.
-setoid_rewrite cmul_div_r.
-exact Hy.
-apply ceq_refl.
-setoid_rewrite (cmul_sym (c1/y) y).
-setoid_rewrite cmul_div_r.
-exact Hy.
-setoid ring.
-Qed.
-
-Lemma cdiv_assoc : forall x y z, ~y**z == c0 -> (x/y)/z == x/(y**z).
-intros x y z Hnz.
-assert (Hy:~y==c0).
-intros Ha; elim Hnz;setoid_rewrite Ha;setoid ring.
-assert (Hz:~z==c0).
-intros Ha; elim Hnz;setoid_rewrite Ha;setoid ring.
-setoid_replace ((x/y)/z) with ((y**z)**(c1/(y**z))**((x/y)/z)).
-setoid_rewrite (cmul_sym (y**z)).
-repeat setoid_rewrite <- cmul_assoc.
-setoid_rewrite cmul_div_r.
-assumption.
-setoid_rewrite cmul_div_r.
-assumption.
-setoid_rewrite (cdiv_decompose x (y**z)).
-assumption.
-apply ceq_refl.
-setoid_rewrite cmul_div_r.
-assumption.
-setoid ring.
-Qed.
-
-Lemma pos_non_c0 : forall x, c0 < x -> ~x==c0.
-intros x Hx Ha; elim (clt_neq _ _ Hx);setoid_rewrite Ha; auto.
-Qed.
-
-Lemma c0_clt_c1 : c0 < c1.
-apply clt_decompose.
-apply c0_diff_c1.
-apply c0_cle_c1.
-Qed.
-
-Definition ceq_dec : forall x y : Coef, {ceq x y} + {~ ceq x y}
-:= Qeq_dec.
-
-Lemma cadd_copp : forall x y : Coef, -- x ++ -- y == -- (x++y).
-intros; setoid ring.
-Qed.
-
-Lemma copp_csub : forall x y : Coef, --(x -- y) == y -- x.
-intros; setoid ring.
-Qed.
+Hint Resolve c0test_c PolEq_refl ceq_refl.
+Hint Immediate ceq_sym PolEq_sym.
 
 Opaque Coef_record.Czero_test Coef_record.C0 Coef_record.Ceq Coef_record.C1
        Coef_record.Cadd Coef_record.Csub Coef_record.Cmul Coef_record.Cpow.
