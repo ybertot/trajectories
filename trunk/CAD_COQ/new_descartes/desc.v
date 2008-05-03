@@ -77,12 +77,6 @@ rewrite <- Hy; assert (H0 : x * 0 == 0) by ring; rewrite H0; apply Qle_refl.
 rewrite <- Hx; assert (H0 : 0 * y == 0) by ring; rewrite H0; apply Qle_refl.
 Qed.
 
-Lemma Qmult_lt_0_compat :
-  forall x y, 0 < x -> 0 < y -> 0 < x * y.
-intros x y Hx Hy.
-assert (H0: 0 == 0 * y) by ring; rewrite H0.
-apply Qmult_lt_compat_r; auto.
-Qed.
   
 Lemma l1 : forall l, all_pos_or_zero l = true ->
   forall x, 0 < x -> 0 <= eval_pol l x.
@@ -93,7 +87,6 @@ discriminate.
 rewrite <- (Qplus_0_l 0).
 apply Qplus_le_compat; auto.
 apply Qmult_le_0_compat; auto.
-apply Qlt_le_weak; auto.
 Qed.
 
 Lemma l2 : forall l, all_pos_or_zero l = true ->
@@ -116,12 +109,6 @@ case (Qle_lt_or_eq _ _ (IHl Hl x y Hx Hy)); intros Hp.
 apply Qlt_le_weak; apply Qmult_lt_compat_r; auto.
 apply Qlt_trans with x; auto.
 rewrite Hp; apply Qle_refl.
-Qed.
-
-Add Morphism eval_pol with signature eq ==> Qeq ==> Qeq as eval_pol_mor.
-intros l x y; induction l.
-simpl; intros; apply Qeq_refl.
-simpl; intros Hxy; rewrite IHl; auto; rewrite Hxy; apply Qeq_refl.
 Qed.
 
 Lemma half_lt : forall a b, 0 < a -> 0 <  b -> a / ((2#1)* b) < a / b.
@@ -158,8 +145,8 @@ intros y z Hy Hyz; apply H2; auto.
 apply Qlt_le_trans with 1; auto.
 assert (Hdec : epsilon == (epsilon / eval_pol l 1) * eval_pol l 1).
 rewrite Qmult_comm; rewrite Qmult_div_r.
-intros Habs; unfold Qeq in Habs; unfold Qlt in Hp1; simpl in *; omega.
 auto with qarith.
+intros Habs; unfold Qeq in Habs; unfold Qlt in Hp1; simpl in *; omega.
 split; auto.
 rewrite Hdec; apply Qmult_lt_compat_r; auto.
 intros H1p1.
@@ -178,9 +165,9 @@ split; auto.
 apply Qlt_le_trans with (epsilon /eval_pol l 1 * eval_pol l 1).
 assert (Heps1: epsilon == epsilon / eval_pol l 1 * eval_pol l 1).
 rewrite Qmult_comm; rewrite Qmult_div_r.
+auto with qarith.
 assert (Habs : ~ 0 == eval_pol l 1) by (apply Qlt_not_eq; auto).
 intro H'; case Habs; rewrite H'; apply Qeq_refl.
-apply Qeq_refl.
 destruct (Qeq_dec (eval_pol l (epsilon / ((2#1)*eval_pol l 1))) 0)
   as [Hb1 |Hb1].
 rewrite Hb1; ring_simplify; rewrite <- Heps1; auto.
@@ -205,7 +192,6 @@ intros Hx; rewrite Hx; apply Qle_refl.
 rewrite Qmult_comm; rewrite Qmult_div_r; auto.
 assert (Hx: ~ 0 == eval_pol l 1) by (apply Qlt_not_eq; auto).
 intro Hy; case Hx; rewrite Hy; apply Qeq_refl.
-apply Qle_refl.
 intros; exists 1.
 split.
 intros y Hy Hy'.
@@ -215,7 +201,7 @@ rewrite Hy'; apply Qle_refl.
 split.
 intros y z Hy Hz; apply H2; auto.
 apply Qlt_le_trans with (1:= H01); auto.
-rewrite <- H; replace (1*0) with 0 by ring; auto.
+rewrite <- H; (setoid_replace (1*0) with 0 by ring); auto.
 Qed.
 
 Lemma add_1_lt : forall x, x < x + 1.
@@ -234,10 +220,10 @@ intros [ [| x| x] y]; unfold Qlt, Qinv; simpl; compute; auto.
 Qed.
 
 Axiom constructive_mvt :
-  forall l x y, x < y -> eval_pol l x <= 0 -> 0 <= eval_pol l y  ->
+  forall l x y, x < y -> eval_pol l x < 0 -> 0 < eval_pol l y  ->
        forall epsilon, 0 < epsilon ->
        exists x', exists y',  -epsilon < eval_pol l x' /\
-         eval_pol l x' <= 0 /\ 0 <= eval_pol l y' /\
+         eval_pol l x' < 0 /\ 0 < eval_pol l y' /\
          eval_pol l y' < epsilon /\ x < x' /\ x' < y' /\ y' < y.
 
 Definition inv2 (l:list Q) : Prop :=
@@ -269,12 +255,10 @@ destruct (il _ aneg) as [x [H1 [H2 [H3 [H4 H5]]]]].
 assert (eval_pol (a::l) x < 0).
 simpl.
 assert (H0 : 0 == a + - a) by ring; rewrite H0; apply Qplus_le_lt_compat; auto.
-apply Qle_refl.
 assert
   (H1' : forall y, 0 < y -> y <= x -> y * eval_pol l y <= x * eval_pol l x).
 intros y Hy Hyx; apply Qle_trans with (y * eval_pol l x).
 repeat rewrite (Qmult_comm y); apply Qmult_le_compat_r; auto.
-apply Qlt_le_weak; auto.
 apply Qmult_le_compat_r; auto; apply Qlt_le_weak; auto.
 assert (H2' : 
           forall y z, x <= y -> y < z -> y * eval_pol l y <= z * eval_pol l z).
@@ -297,16 +281,13 @@ apply add_1_lt.
 apply Qle_lt_trans with (1:=cmp); apply add_1_lt.
 destruct max_x_val as [y [yx val]].
 assert(posval : 0 < eval_pol (a::l) y).
-rewrite H0; simpl; apply Qplus_le_lt_compat.
-apply Qle_refl.
+rewrite H0; simpl; apply Qplus_le_lt_compat; auto.
 apply Qle_lt_trans with (-a /eval_pol l x * eval_pol l x).
-rewrite Qmult_comm; rewrite Qmult_div_r.
+rewrite Qmult_comm; rewrite Qmult_div_r; auto.
 apply Qpos_non_zero; auto.
-apply Qle_refl.
 apply Qle_lt_trans with (-a /eval_pol l x * eval_pol l y).
 repeat rewrite (Qmult_comm (-a/eval_pol l x)).
-apply Qmult_le_compat_r.
-apply H2; auto; apply Qle_refl.
+apply Qmult_le_compat_r; auto.
 apply Qlt_le_weak; apply Qdiv_lt_0_compat; auto.
 apply Qmult_lt_compat_r; auto.
 apply Qlt_le_trans with (1:= H4).
@@ -320,7 +301,6 @@ assert (H7: eval_pol (0::a::l) x == (x*eval_pol (a::l) x))
 rewrite H7.
 assert (H0' : 0 == 0 * x) by ring; rewrite H0'.
 rewrite Qmult_comm; apply Qmult_lt_compat_r; auto.
-assert (nv := Qlt_le_weak _ _ negval'); clear negval'; rename nv into negval'.
 assert (posval' : 0 < eval_pol (0::a::l) y).
 assert (H0' : 0 == 0 * y) by ring; set (u:=eval_pol (0 :: a::l) y);
  rewrite H0'; unfold u.
@@ -328,7 +308,6 @@ assert (H7: eval_pol (0::a::l) y == (y*eval_pol (a::l) y))
   by (simpl; rewrite Qplus_0_l; apply Qeq_refl).
 rewrite H7; rewrite (Qmult_comm y); apply Qmult_lt_compat_r; auto.
 apply Qlt_trans with x; auto.
-assert (pv := Qlt_le_weak _ _ posval'); clear posval'; rename pv into posval'.
 destruct (constructive_mvt (0::a::l) x y yx negval' posval' epsilon Hepsilon) as
   [dummy [v [_ [ _ [posv [smallv [xd [dv vy]]]]]]]].
 assert (xv : x < v) by (apply Qlt_trans with dummy; auto); clear xd dv dummy.
@@ -340,7 +319,6 @@ intros y'x.
 apply Qle_trans with (eval_pol (a::l) x).
 simpl; apply Qplus_le_compat; try apply Qle_refl.
 apply H1'; auto.
-apply Qlt_le_weak; auto.
 simpl; apply Qplus_le_compat; try apply Qle_refl.
 apply H2'; try apply Qle_refl.
 auto.
@@ -353,20 +331,13 @@ intros y' z vy' y'z; simpl; apply Qplus_le_compat; try apply Qle_refl.
 apply H2'; auto.
 apply Qlt_le_weak; apply Qlt_le_trans with v; auto.
 apply Qlt_trans with x; auto.
-Admitted.
-(*
-assert (H6 : 0 < 0 + v * eval_pol (a:: l) v) by exact posv.
-rewrite Qplus_0_l in H6.
-assert (H7:eval_pol (a::l) v == v * eval_pol(a::l) v/v).
-rewrite Qmult_comm; rewrite Qdiv_mult_l.
-apply Qpos_non_zero; apply Qlt_trans with x; auto.
-apply Qeq_refl.
-rewrite H7; unfold Qdiv.
-assert (H0' : 0 == 0 * /v) by ring; rewrite H0'.
-apply Qmult_lt_compat_r; auto.
-apply inv_pos; apply Qlt_trans with x; auto.
+assert (0 < v) by (apply Qlt_trans with x; auto).
+setoid_replace (eval_pol (a::l) v) with ((eval_pol (0::a::l) v)/v).
+apply Qmult_lt_0_compat; auto.
+simpl; field.
+apply Qpos_non_zero; auto.
 Qed.
-*)
+
 Lemma l4 : forall l, alternate_1 l = true -> inv2 l.
 induction l; simpl.
 intros; discriminate.
@@ -419,7 +390,6 @@ assert (H' : ~ 0 == a) by (apply Qlt_not_eq; auto); intro H''; case H';
 rewrite H'';apply Qeq_refl.
 rewrite Heq; ring.
 rewrite Heq; apply Qmult_le_compat_r; auto.
-apply Qlt_le_weak; auto.
 apply Qle_lt_trans with (2:= H4).
 apply Qle_trans with (1*(b*eval_pol l b)).
 apply Qmult_le_compat_r; auto.
@@ -449,9 +419,7 @@ split.
 intros y posy yx; simpl; rewrite Ha; repeat rewrite Qplus_0_l.
 apply Qle_trans with (y * eval_pol l x).
 repeat rewrite (Qmult_comm y);apply Qmult_le_compat_r;auto.
-apply Qlt_le_weak; auto.
 apply Qmult_le_compat_r; auto.
-apply Qlt_le_weak; auto.
 split.
 intros y z xy yz; simpl; rewrite Ha; repeat rewrite Qplus_0_l.
 apply Qle_trans with (y * eval_pol l z).
@@ -461,7 +429,6 @@ apply Qmult_le_compat_r.
 apply Qlt_le_weak; auto.
 apply Qlt_le_weak; apply Qlt_le_trans with (eval_pol l x); auto.
 apply H2; auto.
-apply Qle_refl.
 apply Qle_lt_trans with y; auto.
 split; auto.
 split.
@@ -472,16 +439,15 @@ apply Qlt_trans with (x*(epsilon/v)).
 repeat rewrite (Qmult_comm x); apply Qmult_lt_compat_r; auto.
 rewrite Qmult_comm; auto.
 apply Qmult_lt_compat_r; auto.
-rewrite Qmult_div_r.
+rewrite Qmult_div_r; auto.
 apply Qpos_non_zero; apply Qlt_trans with x; auto.
-apply Qle_refl.
 exists v; split.
 intros y posy yv; simpl; rewrite Ha; repeat rewrite Qplus_0_l.
 apply Qle_trans with (y * eval_pol l v).
 repeat rewrite (Qmult_comm y); apply Qmult_le_compat_r; auto.
-apply Qlt_le_weak; auto.
 apply Qmult_le_compat_r; auto; apply Qlt_le_weak; auto.
 split.
+
 intros y z vy yz; simpl; rewrite Ha; repeat rewrite Qplus_0_l.
 apply Qle_trans with (y * eval_pol l z).
 repeat rewrite (Qmult_comm y); apply Qmult_le_compat_r; auto.
@@ -505,9 +471,7 @@ apply Qmult_lt_compat_r; auto.
 apply Qle_lt_trans with (2:= H5).
 apply Qle_trans with (v*eval_pol l x).
 repeat rewrite (Qmult_comm v); apply Qmult_le_compat_r; auto.
-apply Qlt_le_weak; auto.
 apply Qmult_le_compat_r; auto.
-apply Qlt_le_weak; auto.
 Qed.
 
 Lemma Qlt_minus : forall x y, x < y -> 0 < y - x.
@@ -520,7 +484,7 @@ Lemma desc : forall l, alternate l = true ->
   exists x1, exists x2, exists k, 0 < x1 /\ x1 < x2 /\ 0 < k /\
    (forall x, 0 < x -> x <= x1 -> eval_pol l x < 0) /\
    (forall x y, x1 <= x -> x < y -> k * (y - x) <= eval_pol l y - eval_pol l x ) /\
-   0 <= eval_pol l x2.
+   0 < eval_pol l x2.
 induction l; simpl.
 intros; discriminate.
 destruct (Qlt_le_dec a 0) as [aneg | apos0]; intros Halt1.
@@ -554,22 +518,23 @@ apply Qle_trans with (y*eval_pol l x - x*eval_pol l x).
 assert (H0 : y*eval_pol l x - x*eval_pol l x ==
              (y-x)*eval_pol l x) by ring; rewrite H0; clear H0.
 rewrite (Qmult_comm (y-x)); apply Qmult_le_compat_r.
-destruct (Qle_lt_or_eq _ _ x1x) as [x1x' | x1x'];
- try (rewrite x1x'; apply Qle_refl) || apply H2x1; auto; apply Qle_refl.
+destruct (Qle_lt_or_eq _ _ x1x) as [x1x' | x1x'].
+ apply H2x1; auto; apply Qle_refl.
+rewrite x1x'; apply Qle_refl.
 apply Qlt_le_weak; apply Qlt_minus; auto.
 unfold Qminus; apply Qplus_le_compat; try apply Qle_refl.
 repeat rewrite (Qmult_comm y);apply Qmult_le_compat_r;
   try apply H2x1; eauto using Qlt_le_weak, Qlt_trans, Qlt_le_trans.
 assert (H0 : 0 == a + -a) by ring; rewrite H0; clear H0.
-apply Qplus_le_compat; try apply Qle_refl.
+apply Qplus_le_lt_compat; try apply Qle_refl.
 assert (p1p2 :  eval_pol l x1 <= eval_pol l x2).
 apply H2x1; auto; apply Qle_refl.
-apply Qle_trans with ((-a/eval_pol l x1 + 1)*eval_pol l x2).
+apply Qlt_le_trans with ((-a/eval_pol l x1 + 1)*eval_pol l x2).
 set (u:= -a/eval_pol l x1 + 1).
 assert (H0 : -a == -a + 0) by ring; rewrite H0; unfold u.
 rewrite Qmult_plus_distr_l; rewrite Qmult_1_l.
-apply Qplus_le_compat;[idtac |
-  apply Qle_trans with (1:=(Qlt_le_weak _ _ H4x1)); auto].
+apply Qplus_le_lt_compat;[idtac |
+  apply Qlt_le_trans with (1:=H4x1); auto].
 apply Qle_trans with (-a/eval_pol l x1 * eval_pol l x1).
 rewrite Qmult_comm; rewrite Qmult_div_r; try apply Qle_refl; 
  apply Qpos_non_zero; auto.
@@ -584,7 +549,6 @@ assert (H0 : x1 == x1 *eval_pol l x1 /eval_pol l x1)
  rewrite H0; clear H0.
 apply Qlt_trans with (2:=vx2').
 unfold Qdiv; apply Qmult_lt_compat_r; auto; apply inv_pos; auto.
-
 destruct (Qeq_dec a 0) as [Ha | an0];[idtac | discriminate].
 destruct (IHl Halt1) as [v1 [v2 [k [v1pos [v1v2 [kpos [low [incr pos]]]]]]]].
 assert (negval : eval_pol l v1 < 0) by (apply low; auto; apply Qle_refl).
@@ -592,7 +556,7 @@ assert (v2pos : 0 < v2) by (apply Qlt_trans with v1; eauto).
 assert (epsv2 : 0 < k * v1 / (2#1)) by
   (apply Qdiv_lt_0_compat; try (apply Qmult_lt_0_compat; auto);
   unfold Qlt; simpl; omega).
-destruct (constructive_mvt l v1 v2 v1v2 (Qlt_le_weak _ _ negval) pos _ epsv2) as
+destruct (constructive_mvt l v1 v2 v1v2 negval pos _ epsv2) as
   [x1 [x2 [x1close [px1neg [px2pos [px2close [v1x1 [x1x2 x2v2]]]]]]]].
 set (k' := k*v1/(2#1)).
 exists x1; exists x2; exists k'; split.
@@ -606,7 +570,7 @@ repeat rewrite (Qmult_comm x); apply Qmult_lt_compat_r; auto;
 destruct (Qlt_le_dec x v1) as [xv1 | v1x].
 apply low; auto; apply Qlt_le_weak; auto.
 case (Qle_lt_or_eq _ _ xx1); clear xx1; intros xx1.
-apply Qlt_le_trans with (eval_pol l x1); auto.
+apply Qlt_trans with (eval_pol l x1); auto.
 assert (H0:eval_pol l x == eval_pol l x + 0) by ring; rewrite H0; clear H0;
 assert (H0:eval_pol l x1 == eval_pol l x + (eval_pol l x1 -eval_pol l x))
  by ring; rewrite H0; clear H0; apply Qplus_le_lt_compat; try apply Qle_refl.
@@ -658,7 +622,6 @@ apply Qlt_le_weak; auto.
 apply Qlt_le_weak; apply Qlt_minus.
 apply Qle_lt_trans with x; auto.
 apply incr; auto.
-apply Qlt_le_weak; auto.
 apply Qle_lt_trans with x; auto.
 apply Qlt_le_weak; apply Qlt_minus; auto.
 rewrite Ha; rewrite Qplus_0_l.
