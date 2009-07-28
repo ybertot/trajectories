@@ -709,7 +709,7 @@ unfold Qle; simpl; omega.
 apply Qlt_le_weak; apply Qinv_lt_0_compat; unfold Qlt; simpl; omega.
 assert (bb': b' <= b).
 setoid_replace b with (a + (b-a) * (n#1) * /(n#1)) by
- field; unfold Qeq; simpl; omega.
+ field; unfold Qeq; simpl; try omega.
 (setoid_replace b' with (a' + (b' - a')) by ring); rewrite A1, A4.
 rewrite <- Qplus_assoc; apply Qplus_le_compat; try apply Qle_refl.
 unfold Qdiv;
