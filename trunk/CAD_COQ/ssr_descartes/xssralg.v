@@ -74,8 +74,14 @@ Reserved Notation "x <<! y" (at level 70, no associativity) .
 Section Compatible .
   Variable R : ringType .
 
-  Definition compatible (r : R -> R -> bool) :=
+(* assia : I don't like the "compatible" name, turned temp. to lcompat, added rcompat*)
+  Definition lcompatible (r : R -> R -> bool) :=
     forall (x y₁ y₂ : R), r 0 x -> r y₁ y₂ -> r (x * y₁) (x * y₂) .
+
+  Definition rcompatible (r : R -> R -> bool) :=
+    forall (x y₁ y₂ : R), r 0 x -> r y₁ y₂ -> r (y₁* x) (y₂ * x) .
+
+
 End Compatible .
 
 (* -------------------------------------------------------------------- *)
@@ -89,7 +95,7 @@ Module GOrderedField .
       _   : forall x y, leb x y -> forall z, leb (x+z) (y+z);
       _   : forall x y, ltb x y = (leb x y) && (x != y);
       _   : forall x y, (leb x y) || (leb y x);
-      _   : compatible leb
+      _   : lcompatible leb
     } .
 
     Record class_of (R : Type) : Type := Class {
@@ -178,8 +184,11 @@ Module GOrderedField .
     Lemma ler_total : forall x y, (x <<= y) || (y <<= x) .
     Proof . by case G => [T [? []]] . Qed .
 
-    Lemma ler_compat : compatible (@leb G) .
+    Lemma ler_lcompat : lcompatible (@leb G) .
     Proof . by case G => [T [? []]] . Qed .
+
+    Lemma ler_rcompat : rcompatible (@leb G).
+    Proof. move=> x y z; rewrite mulrC [z * _]mulrC; exact: ler_lcompat. Qed.
 
     Lemma eq_ler : forall x y, (x == y) = (x <<= y) && (y <<= x) .
     Proof .
@@ -234,15 +243,20 @@ Module GOrderedField .
         by rewrite eq_ler Hyz Hxy .
     Qed .
 
-    Lemma ltr_compat : compatible (@ltb G) .
+    Lemma ltr_lcompat : lcompatible (@ltb G) .
     Proof .
       move=> x y₁ y₂ Hx Hy; rewrite ltr_lerne; apply/andP; split .
-      + by apply ler_compat; apply ltrW .
+      + by apply ler_lcompat; apply ltrW .
       + apply/eqP; rewrite /not; move/(congr1 ( *%R x^-1)) .
         rewrite !mulrA mulVf ?mul1r; first apply/eqP .
         by rewrite (ltr_ne Hy) . by rewrite eq_sym (ltr_ne Hx) .
     Qed .
 
+    Lemma ltr_rcompat : rcompatible (@ltb G).
+      Proof.
+        move=> x y z; rewrite mulrC [z * _]mulrC; exact: ltr_lcompat.
+      Qed.
+      
     (* ------------------------------------------------------------------ *)
     Lemma lerNgtr : forall x y, (x <<= y) = ~~ (y <<! x).
     Proof .
@@ -317,12 +331,41 @@ Module GOrderedField .
       by move=> x y Hx Hy; rewrite -[0]addr0; apply lerT .
     Qed .
 
-    Lemma lterT :
+
+    Lemma ler0T :
+      forall (x y : G), x <<= 0 -> y <<= 0 -> x + y <<= 0.
+    Proof .
+      by move=> x y Hx Hy; rewrite -[0]add0r; apply lerT .
+    Qed .
+      
+    Lemma ltrT :
+      forall (x₁ y₁ x₂ y₂ : G), x₁ <<! y₁ -> x₂ <<! y₂ -> x₁+x₂ <<! y₁+y₂ .
+    Proof .
+      move=> x₁ y₁ x₂ y₂ H1 H2; apply ltr_ler_trans with (y₁ + x₂) .
+      - by apply ltrTl .
+      - by apply: lerT; rewrite ?ler_refl //; apply: ltrW.
+    Qed .
+
+    Lemma ltr_lerT :
       forall (x₁ y₁ x₂ y₂ : G), x₁ <<! y₁ -> x₂ <<= y₂ -> x₁+x₂ <<! y₁+y₂ .
     Proof .
       move=> x₁ y₁ x₂ y₂ H1 H2; apply ltr_ler_trans with (y₁ + x₂) .
       by apply ltrTl . by apply lerTr .
     Qed .
+
+    Lemma ltrT0 :
+      forall (x y : G), 0 <<! x -> 0 <<! y -> 0 <<! x + y .
+    Proof .
+      move=> x y Hx Hy; rewrite -[0]addr0; apply ltrT => //.
+    Qed .
+
+    Lemma ltr0T :
+      forall (x y : G), x <<! 0 -> y <<! 0 -> x + y <<! 0.
+    Proof .
+      by move=> x y Hx Hy; rewrite -[0]add0r; apply ltrT .
+    Qed .
+
+
 
     (* ------------------------------------------------------------------ *)
     Lemma ler_oppger : forall x y, (-x <<= -y) = (y <<= x) .
@@ -345,22 +388,52 @@ Module GOrderedField .
     Lemma lt0r_gtNr0 : forall x, (0 <<! -x) = (x <<! 0) .
     Proof . by move=> x; rewrite -{1}oppr0 ltr_oppgtr . Qed .
 
+    Lemma opp_ler_ler0 : forall x, ( -x <<= x) = (0 <<= x).
+      Proof.
+        move=> x;rewrite -(lerTlb x) addNr. 
+        case e : (0 <<= x); first by rewrite lerT0 //.
+        by apply: negbTE; rewrite lerNgtr negbK ltr0T // ltrNger e.
+      Qed.
+
+    Lemma opp_lrr_lrr0 : forall x, ( -x <<! x) = (0 <<! x).
+      Proof.
+        move=> x;rewrite -(ltrTlb x) addNr. 
+        case e : (0 <<! x); first by rewrite ltrT0 //.
+        by apply: negbTE; rewrite ltrNger negbK ler0T // lerNgtr e.
+      Qed.
+
+    Lemma ler_opp_ler0 : forall x, ( x <<= -x) = (x <<= 0).
+      Proof.
+        move=> x;rewrite -(lerTlb x) addNr. 
+        case e : (x <<= 0); first by rewrite ler0T //.
+        by apply: negbTE; rewrite lerNgtr negbK ltrT0 // ltrNger e.
+      Qed.
+
+    Lemma lrr_opp_lrr0 : forall x, ( x <<! -x) = (x <<! 0).
+      Proof.
+        move=> x;rewrite -(ltrTlb x) addNr. 
+        case e : (x <<! 0); first by rewrite ltr0T //.
+        by apply: negbTE; rewrite ltrNger negbK lerT0 // lerNgtr e.
+      Qed.
+
+
+
     (* ------------------------------------------------------------------ *)
-    Lemma ler_0_compat : forall x y, 0 <<= x -> 0 <<= y -> 0 <<= x * y .
+    Lemma ler_0_lcompat : forall x y, 0 <<= x -> 0 <<= y -> 0 <<= x * y .
     Proof .
-      by move=> x y Hx Hy; rewrite -[0](mulr0 x); apply ler_compat .
+      by move=> x y Hx Hy; rewrite -[0](mulr0 x); apply ler_lcompat .
     Qed .
 
-    Lemma ler_neg0_compat : forall x y, x <<= 0 -> y <<= 0 -> 0 <<= x * y .
+    Lemma ler_neg0_lcompat : forall x y, x <<= 0 -> y <<= 0 -> 0 <<= x * y .
     Proof .
       move=> x y Hx Hy .
-      by rewrite -mulrNN; apply ler_0_compat; rewrite le0r_geNr0 .
+      by rewrite -mulrNN; apply ler_0_lcompat; rewrite le0r_geNr0 .
     Qed .
 
-    Lemma ltr_0_compat : forall x y, 0 <<! x -> 0 <<! y -> 0 <<! x * y .
+    Lemma ltr_0_lcompat : forall x y, 0 <<! x -> 0 <<! y -> 0 <<! x * y .
     Proof .
       move=> x y Hx Hy; rewrite ltr_lerne; apply/andP; split .
-      + by apply ler_0_compat; apply ltrW .
+      + by apply ler_0_lcompat; apply ltrW .
       + rewrite eq_sym mulf_eq0 negb_or .
         by rewrite ![_ == 0]eq_sym (ltr_ne Hx) (ltr_ne Hy) .
     Qed .
@@ -369,8 +442,9 @@ Module GOrderedField .
     Proof .
       rewrite ltr_lerne /negb eq_sym oner_eq0 andbT .
       case/orP: (ler_total 0 1) => // H .
-      by rewrite -[1](mulr1 1); apply ler_neg0_compat .
+      by rewrite -[1](mulr1 1); apply ler_neg0_lcompat .
     Qed .
+
 
     (* ------------------------------------------------------------------ *)
     Lemma ler_add_0l : forall x y, 0 <<= x -> 0 <<= y -> x+y = 0 -> x = 0 .
@@ -494,18 +568,18 @@ Module GOrderedField .
     Proof .
       move=> x y; case: (compareP 0 x) .
       + case: (compareP 0 y) => Hy Hx .
-        * by rewrite !sign_posR ?mul1r //; apply ltr_0_compat .
+        * by rewrite !sign_posR ?mul1r //; apply ltr_0_lcompat .
         * rewrite [sign x]sign_posR // !sign_negR ?mul1r // .
-          rewrite -lt0r_gtNr0 -mulrN; apply ltr_0_compat => // .
+          rewrite -lt0r_gtNr0 -mulrN; apply ltr_0_lcompat => // .
           by rewrite lt0r_gtNr0 .
         * by rewrite -Hy mulr0 sign0 mulr0 .
       + case: (compareP 0 y) => Hy Hx .
         * rewrite [sign y]sign_posR // !sign_negR ?mulr1 // .
-          rewrite -lt0r_gtNr0 -mulNr; apply ltr_0_compat => // .
+          rewrite -lt0r_gtNr0 -mulNr; apply ltr_0_lcompat => // .
           by rewrite lt0r_gtNr0 .
         * rewrite [sign x]sign_negR // [sign y]sign_negR // .
           rewrite sign_posR; first by rewrite ?mulrNN ?mulr1 .
-          by rewrite -mulrNN; apply ltr_0_compat; rewrite lt0r_gtNr0 .
+          by rewrite -mulrNN; apply ltr_0_lcompat; rewrite lt0r_gtNr0 .
         * by rewrite -Hy mulr0 sign0 mulr0 .
       + by move=> <-; rewrite mul0r sign0 mul0r .
     Qed .
@@ -526,19 +600,19 @@ Module GOrderedField .
       by move=> Hx; rewrite -(invrK x); apply HP .
     Qed .
 
-    Lemma ler_Icompat_r :
+    Lemma ler_Ilcompat_r :
       forall x y₁ y₂, 0 <<! x -> x * y₁ <<= x * y₂ -> y₁ <<= y₂ .
     Proof .
       move=> x y₁ y₂ Hx Hy .
       rewrite -[y₁](mul1r) -[y₂](mul1r) -[1](@mulVf _ x) 1?eq_sym ?(ltr_ne Hx) //.
-      by rewrite -!mulrA; apply ler_compat => //; apply ltrW; rewrite invr_ltr .
+      by rewrite -!mulrA; apply ler_lcompat => //; apply ltrW; rewrite invr_ltr .
     Qed .
 
     (* ------------------------------------------------------------------ *)
     Lemma Ndiscrete01 : exists x, (0 <<! x) && (x <<! 1) .
     Proof .
       have H : 0 <<! 1/(1+1) .
-      + apply ltr_0_compat; first exact: ltr_0_1 .
+      + apply ltr_0_lcompat; first exact: ltr_0_1 .
         by rewrite invr_ltr; apply: (χ0_ltr 1) .
 
       exists (1/(1+1)); apply/andP; split=> // .
@@ -552,10 +626,10 @@ Module GOrderedField .
     Proof .
       move=> x z Hxz; elim Ndiscrete01=> y; case/andP => Hylow Hyhi .
       exists (y * (z-x) + x); apply/andP; split .
-      + rewrite -{1}[x]add0r ltrTlb; apply ltr_0_compat => // .
+      + rewrite -{1}[x]add0r ltrTlb; apply ltr_0_lcompat => // .
         by rewrite -[0](addrN x) ltrTlb .
       + rewrite -(ltrTlb (-x)) -addrA addrN addr0 .
-        rewrite mulrC -{2}[z-x]mulr1; apply ltr_compat => // .
+        rewrite mulrC -{2}[z-x]mulr1; apply ltr_lcompat => // .
         by rewrite -[0](addrN x) ltrTlb .
     Qed .
 
@@ -603,6 +677,30 @@ Module GOrderedField .
       move=> x y; rewrite !absr_sign mulr_sign .
       by rewrite -[_ * x * _]mulrA -[x * (_ * _)]mulrCA !mulrA .
     Qed .
+
+    Lemma absr_addr :
+      forall x y, absr (x + y) <<= (absr x) + (absr y).
+      move=> x y; rewrite !absr_sign.
+      case: (compareP x 0) => hx.
+      - rewrite (sign_negR hx) mulN1r; case: (compareP y 0) => hy.
+        + rewrite (sign_negR hy) mulN1r mulr_addr.
+          rewrite (_ : sign _ = -1) ?mulN1r ?ler_refl //; apply/sign_neg.
+          by apply: ltr0T.
+        + rewrite (sign_posR hy) mul1r ; case: (compareP (x + y) 0) => hxy.
+          * by rewrite (sign_negR hxy) mulr_addr !mulN1r lerTrb opp_ler_ler0 ltrW.
+          * by rewrite (sign_posR hxy) mul1r lerTlb ler_opp_ler0 ltrW.
+          * by rewrite hxy sign0 mul0r lerT0 // ?le0r_geNr0 ltrW.
+        + by rewrite hy mulr0 !addr0 (sign_negR hx) mulN1r ler_refl.
+      - rewrite (sign_posR hx) mul1r;  case: (compareP y 0) => hy.
+        + rewrite (sign_negR hy) mulN1r mulr_addr; case: (compareP (x + y) 0) => hxy.
+          * by rewrite (sign_negR hxy) !mulN1r lerTlb opp_ler_ler0 ltrW.
+          * by rewrite (sign_posR hxy) !mul1r lerTrb ler_opp_ler0 ltrW.
+          * by rewrite hxy sign0 !mul0r addr0 lerT0 // ?le0r_geNr0 ltrW.
+        + rewrite (sign_posR hy) mul1r (_ : sign _ = 1) ?mul1r ?ler_refl //.
+          by apply/sign_pos; apply: ltrT0.
+        + by rewrite hy mulr0 !addr0 (sign_posR hx) mul1r ler_refl.
+      - by rewrite hx mulr0 !add0r ler_refl.
+    Qed. 
 
     (* ------------------------------------------------------------------ *)
     Lemma ler_addl_abs :

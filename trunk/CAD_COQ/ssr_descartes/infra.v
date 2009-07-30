@@ -392,7 +392,7 @@ Proof .
   by case (Zle_bool_total z1 z2) => ->; rewrite ?orbT .
 Qed .
 
-Lemma qleb_compatible : compatible Qcb_leb .
+Lemma qleb_lcompatible : lcompatible Qcb_leb .
 Proof .
   move=> [x Hx] [y Hy] [z Hz] .
   move/Qcb_leb_iff=> H0x; move/Qcb_leb_iff => Hyz .
@@ -403,7 +403,7 @@ Qed .
 
 Definition Qcb_orderedFieldMixin :=
   OfieldMixin
-  qleb_orderb qleb_Tr qleb_qltne qleb_total qleb_compatible .
+  qleb_orderb qleb_Tr qleb_qltne qleb_total qleb_lcompatible .
 
 Canonical Structure Qcb_orderedFieldType :=
   Eval hnf in OfieldType Qcb_orderedFieldMixin .

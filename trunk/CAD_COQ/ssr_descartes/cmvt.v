@@ -38,102 +38,37 @@ Fixpoint abs_pol (l : seq Qcb) : seq Qcb :=
 (* The value of the absolute polynomial is always larger than the value
  of the initial polynomial. *)
 
-Lemma abs_pol_bound :
+Lemma ler_absr_eval_pol :
   forall l x, absr (eval_pol l x) <<= eval_pol (abs_pol l) (absr x).
+Proof.
 elim => [|y s IHs] x /=; first by rewrite absr0.
-Admitted.
-
-(*
-(* ici il faut montrer l' inégalité triangulaire dans xssralg *)
-Search "absr".
-
-induction l; intros x; simpl; unfold Qabs, Qmax;
-  try solve [case (Qlt_le_dec 0 (-0)); simpl; intros; apply Qle_refl].
-destruct (Qlt_le_dec (a + x * eval_pol l x) (-(a+x*eval_pol l x))) as
- [test|test]; (case_eq (Qlt_le_dec a (-a)); [intros aneg ta | intros apos ta]);
-(case_eq (Qlt_le_dec x (-x)); [intros xneg tx | intros xpos tx]).
-rewrite Qopp_plus; apply Qplus_le_compat; try apply Qle_refl.
-setoid_replace (-(x*eval_pol l x)) with (-x*eval_pol l x) by ring.
-repeat rewrite (Qmult_comm (-x));apply Qmult_le_compat_r.
-replace (-x) with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto).
-apply Qle_trans with (Qabs (eval_pol l x)); auto.
-replace (-x) with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); auto.
-rewrite Qopp_plus; apply Qplus_le_compat; try apply Qle_refl.
-setoid_replace (-(x*eval_pol l x)) with (x*-eval_pol l x) by ring.
-repeat rewrite (Qmult_comm x);apply Qmult_le_compat_r.
-set (u:=-eval_pol l x);
-  replace x with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); unfold u.
-apply Qle_trans with (Qabs (eval_pol l x)); auto.
-replace x with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); auto.
-rewrite Qopp_plus; apply Qplus_le_compat; auto.
-setoid_replace (-(x*eval_pol l x)) with (-x*eval_pol l x) by ring.
-repeat rewrite (Qmult_comm (-x));apply Qmult_le_compat_r.
-replace (-x) with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto).
-apply Qle_trans with (Qabs (eval_pol l x)); auto.
-replace (-x) with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); auto.
-rewrite Qopp_plus; apply Qplus_le_compat; auto.
-setoid_replace (-(x*eval_pol l x)) with (x*-eval_pol l x) by ring.
-repeat rewrite (Qmult_comm x);apply Qmult_le_compat_r.
-set (u:=-eval_pol l x);
-  replace x with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); unfold u.
-apply Qle_trans with (Qabs (eval_pol l x)); auto.
-replace x with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); auto.
-apply Qplus_le_compat; try (apply Qlt_le_weak; assumption).
-setoid_replace (x*eval_pol l x) with (-x*-eval_pol l x) by ring.
-repeat rewrite (Qmult_comm (-x));apply Qmult_le_compat_r.
-replace (-x) with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto).
-apply Qle_trans with (Qabs (eval_pol l x)); auto.
-replace (-x) with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); auto.
-apply Qplus_le_compat; try (apply Qlt_le_weak; assumption).
-repeat rewrite (Qmult_comm x);apply Qmult_le_compat_r.
-set (u:=eval_pol l x);
-  replace x with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); unfold u.
-apply Qle_trans with (Qabs (eval_pol l x)); auto.
-replace x with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto);auto.
-apply Qplus_le_compat; try apply Qle_refl.
-setoid_replace (x*eval_pol l x) with (-x*-eval_pol l x) by ring.
-repeat rewrite (Qmult_comm (-x));apply Qmult_le_compat_r.
-replace (-x) with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto).
-apply Qle_trans with (Qabs (eval_pol l x)); auto.
-replace (-x) with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); auto.
-apply Qplus_le_compat; try apply Qle_refl.
-repeat rewrite (Qmult_comm x);apply Qmult_le_compat_r.
-set (u:=eval_pol l x);
-  replace x with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); unfold u.
-apply Qle_trans with (Qabs (eval_pol l x)); auto.
-replace x with (Qabs x) by (unfold Qabs, Qmax; rewrite tx; auto); auto.
+by apply: (ler_trans (absr_addr _ _)); rewrite lerTrb absr_mulr ler_lcompat ?absrpos.
 Qed.
 
-Lemma Qabs_pol_pos :
-  forall l x, 0 <= x -> 0 <= eval_pol (Qabs_pol l) x.
-induction l; intros x px; simpl;
-  [apply Qle_refl | apply Qle_trans with (0+0*x)].
-ring_simplify; apply Qle_refl.
-apply Qplus_le_compat; [apply Qabs_le_0 | rewrite (Qmult_comm x)].
-apply Qmult_le_compat_r; auto.
+Lemma ler0_eval_pol_abs_pol :
+  forall l x, 0 <<= x -> 0 <<= eval_pol (abs_pol l) x.
+Proof.
+elim => [| y s Ihs] x hx /=; first by rewrite ler_refl.
+by apply: lerT0; rewrite ?absrpos // ler_0_lcompat // Ihs.
 Qed.
 
-Lemma Qabs_pol_increase :
-  forall l x y, 0 <= x -> x <= y ->
-    eval_pol (Qabs_pol l) x <= eval_pol (Qabs_pol l) y.
-induction l; intros x y px xy; simpl.
-apply Qle_refl.
-apply Qplus_le_compat; 
-  [apply Qle_refl | apply Qle_trans with (x*eval_pol (Qabs_pol l) y)].
-repeat rewrite (Qmult_comm x); apply Qmult_le_compat_r; auto.
-apply Qmult_le_compat_r; auto.
-apply Qabs_pol_pos; apply Qle_trans with x; auto.
+Lemma eval_pol_abs_pol_increase : 
+  forall l x y, 0 <<= x -> x <<= y ->
+    eval_pol (abs_pol l) x <<= eval_pol (abs_pol l) y.
+elim=> [|u s Ihs] x y hx hy /=; first by rewrite ler_refl.
+rewrite lerTrb; apply ler_trans with (y * eval_pol (abs_pol s) x).
+  by rewrite ler_rcompat // ler0_eval_pol_abs_pol.
+by rewrite ler_lcompat // ?Ihs // (ler_trans hx).
 Qed.
 
 (* A polynomial that has distinct values cannot be the null
  polynomial. *)
 
 Lemma cm1 :
-  forall l x y, eval_pol l x < eval_pol l y  -> exists a, l = a::(tail l).
-intros l; case l.
-simpl;intros x y abs; case (Qlt_not_le _ _ abs); apply Qle_refl.
-intros a l' x y _; exists a; auto.
+  forall l x y, eval_pol l x <<! eval_pol l y  -> exists a, l = a :: (behead l).
+by move=> [| u l] x y /=; rewrite ?ltr_irrefl //; move=> h; exists u.
 Qed.
+
 
 (* To describe polynomial addition, multiplication by a scalar, and
   multiplication, we simply specify these operations so that their
@@ -141,62 +76,50 @@ Qed.
   scalar operation. *)
 
 Definition add_pol :
-  forall l1 l2, {l' | forall x, eval_pol l1 x + eval_pol l2 x ==
+  forall l1 l2, {l' | forall x, eval_pol l1 x + eval_pol l2 x =
   eval_pol l' x}.
-induction l1 as [ | a l1 IHl1]; destruct l2 as [ | b l2].
-exists (@nil Q); simpl; intros; ring.
-exists (b::l2); simpl; intros; ring.
-exists (a::l1); simpl; intros; ring.
-destruct (IHl1 l2) as [l' q].
-exists ((a+b)::l'); simpl; intros; rewrite <- q; ring.
+elim=> [|a l1 Ihl1] [|b l2].
+- by exists [::]; rewrite /= addr0.
+- by exists (b :: l2); move=> /= x; rewrite add0r.
+- by exists (a :: l1); move=> /= x; rewrite addr0.
+- (* ring needed!*)
+  case: (Ihl1 l2)=> [l' hl']; exists ((a + b) :: l'); move=> /= x.
+  rewrite [b + _]addrC addrA -[a + _ + _]addrA -mulr_addr hl'.
+  by rewrite -addrA [_ + b]addrC addrA.
 Defined.
+
 
 Definition s_mult_pol :
-  forall a l, {l' | forall x, a * eval_pol l x == eval_pol l' x}.
-intros a; induction l as [ | b l IHl]; simpl.
-exists (@nil Q); simpl; intros; ring.
-destruct IHl as [l' q]; exists ((a*b)::l'); simpl; intros; rewrite <- q; ring.
+  forall a l, {l' | forall x, a * eval_pol l x = eval_pol l' x}.
+move=> a; elim=> [| b l Ihl] /=.
+- by exists [::]; rewrite /= mulr0.
+- case: Ihl => l' hl'; exists ((a * b) :: l'); move=> /= x.
+  by rewrite -hl' mulr_addr 2!mulrA [x * _]mulrC.
 Defined.
 
-Lemma mult_pol :
-  forall l1 l2, {l' | forall x, eval_pol l1 x * eval_pol l2 x ==
+Definition mult_pol :
+  forall l1 l2, {l' | forall x, eval_pol l1 x * eval_pol l2 x =
    eval_pol l' x}.
-induction l1 as [ | a l1 IHl1].
-exists (@nil Q); simpl; intros; ring.
-simpl.
-intros l2; destruct (s_mult_pol a l2) as [l2a q].
-destruct (IHl1 (0::l2)) as [l1l2x q1].
-destruct (add_pol l1l2x l2a) as [l' q2].
-exists l'; simpl; intros.
-rewrite <- q2; rewrite <- q1; rewrite <- q; simpl; ring.
-Qed.
+elim=> [|a l1 Ihl1] /=.
+- by exists [::]; move=> /= x; rewrite mul0r.
+- move=> l2; case (s_mult_pol a l2) => l2a h.
+  case (Ihl1 (0 :: l2)) => l1l2x h1; case (add_pol l1l2x l2a)=> l' h2.
+  exists l'; move=> /= x; rewrite -h2 -h1 -h /= add0r mulr_addl.
+  by rewrite mulrA [_ * x]mulrC [a*_ + _]addrC.
+Defined.
+
 
 Lemma translate_pol :
-  forall l a, exists l', forall x, eval_pol l x == eval_pol l' (x - a).
-induction l as [ | b l IHl]; intros a; simpl.
-exists (@nil Q); simpl; intros; ring.
-destruct (IHl a) as [l' q].
-destruct (mult_pol (a::1::nil) l') as [l2 q2].
-destruct (add_pol (b::nil) l2) as [l3 q3].
-exists l3; intros x; rewrite <- q3; simpl;
-   rewrite <- q2; rewrite q; simpl; ring.
+  forall l a, exists l', forall x, eval_pol l x = eval_pol l' (x - a).
+elim=> [| b l Ihl]; move=> a /=.
+- by exists [::].
+- case (Ihl a) => l' h; case (mult_pol [:: a ; 1] l') => l2 h2.
+  case (add_pol [:: b] l2) => l3 h3.
+  exists l3; move=> x; rewrite -h3 -h2 h /= mulr0 !addr0 mulr1.
+  by rewrite (_ : a + (x - a) = x) // -oppr_sub oppr_add addrA addrN add0r opprK.
 Qed.
 
-Add Morphism Qabs with signature Qeq ==> Qeq as Qabs_mor.
-intros x1 x2 x1x2; unfold Qabs, Qmax; 
-  destruct (Qlt_le_dec x1 (-x1)) as [hx1 | hx1];
-  destruct (Qlt_le_dec x2 (-x2)) as [hx2 | hx2];
-  rewrite x1x2 in hx1 |- *; intros; try apply Qeq_refl.
-case Qlt_not_le with (1:= hx1); auto.
-case Qlt_not_le with (1:= hx2); auto.
-Qed.
-
-Add Morphism eval_pol with signature @eq (list Q) ==> Qeq ==> Qeq as eval_pol_mor.
-intros l x y; induction l.
-simpl; intros; apply Qeq_refl.
-simpl; intros Hxy; rewrite IHl; auto; rewrite Hxy; apply Qeq_refl.
-Qed.
-
+(*
 Lemma cm2 :
   forall l b, { c |
   forall x, 0 <= x -> x <= b -> Qabs (eval_pol l x - eval_pol l 0) <= c * x}.
