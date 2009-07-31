@@ -1,5 +1,5 @@
 Require Import pol QArith ZArith Zwf Recdef Omega.
-Require Import ssreflect eqtype ssrbool ssrnat fintype seq ssrfun .
+Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun .
 Require Import bigops groups choice .
 Require Export ssralg xssralg infra .
 
@@ -119,34 +119,31 @@ elim=> [| b l Ihl]; move=> a /=.
   by rewrite (_ : a + (x - a) = x) // -oppr_sub oppr_add addrA addrN add0r opprK.
 Qed.
 
-(*
+
 Lemma cm2 :
   forall l b, { c |
-  forall x, 0 <= x -> x <= b -> Qabs (eval_pol l x - eval_pol l 0) <= c * x}.
-intros l b.
-destruct l as [ | a l].
-exists 0; simpl; intros; ring_simplify; apply Qle_refl.
-simpl; exists (eval_pol (Qabs_pol l) b); intros x px xb; simpl.
-match goal with |- Qabs(?v) <= _ =>
-  assert (q: v == x*eval_pol l x) by ring; rewrite q
-end.
-rewrite Qabs_mult; rewrite (pos_Qabs x); auto; rewrite (Qmult_comm x).
-apply Qmult_le_compat_r; auto.
-apply Qle_trans with (2 := Qabs_pol_increase l x b px xb).
-pattern x at 2; replace x with (Qabs x); [apply Qabs_pol_bound | idtac].
-apply pos_Qabs; auto.
-Defined.
+  forall x, 0 <<= x -> x <<= b -> absr (eval_pol l x - eval_pol l 0) <<= c * x}.
+Proof.
+move=> l b; case: l =>[| a l].
+- by exists 0; move=> /= x; rewrite mul0r oppr0 addr0 absr0 ler_refl.
+- exists (eval_pol (abs_pol l) b) => x px xb /=; rewrite mul0r addr0.
+  rewrite addrC addKr absr_mulr absr_nneg // mulrC ler_rcompat //.
+  rewrite (ler_trans (ler_absr_eval_pol _ _)) //.
+  by rewrite eval_pol_abs_pol_increase // ?absrpos // absr_nneg.
+Qed.
 
-Lemma QZ_bound : forall x:Q, 0 <= x -> {n | x <= n#1}.
+(* Cannot be abstracted since not every ordered ring has a floor ring *)
+Lemma QZ_bound : forall x:Q, (0 <= x)%Q -> {n : Z | x <= n#1}%Q.
 intros [n d]; exists(Zdiv n (Zpos d)+1)%Z.
 assert (dpos : (('d) > 0)%Z) by apply (refl_equal Gt).
 unfold Qle; simpl; rewrite Zmult_1_r; rewrite Zmult_plus_distr_l.
-pattern n at 1; rewrite (Z_div_mod_eq n ('d)); auto.
+rewrite Zmult_1_l {1}(Z_div_mod_eq n ('d)) //.
 rewrite (Zmult_comm ('d)); apply Zplus_le_compat; auto with zarith.
-rewrite Zmult_1_l; destruct (Z_mod_lt n ('d)) as [_ H2]; auto; 
-apply Zlt_le_weak; apply H2.
+destruct (Z_mod_lt n ('d)) as [_ H2]; auto.
+by apply Zlt_le_weak.
 Defined.
 
+(* Not used but should also be treated in xssralg
 Lemma Qdiv_lt_0_compat : forall x y, 0 < x -> 0 < y -> 0 < x / y.
 intros x [[ | p | p] d] Hx Hy; unfold Qdiv, Qinv; simpl.
 unfold Qlt in Hy; simpl in Hy; elimtype False; omega.
@@ -155,12 +152,15 @@ assert (H0 : 0 == 0 * x) by ring; rewrite H0.
 apply Qmult_lt_compat_r; auto.
 unfold Qlt in Hy; simpl in Hy; discriminate Hy.
 Qed.
+*)
 
 Lemma cm3 :
-  forall b, 0 < b -> forall l, 
-   {c |
-    forall x y, 0 <= x -> x <= y -> y <= b -> 
-    Qabs (eval_pol l y - eval_pol l x) <= c*(y-x)}.
+  forall b, 0 <<! b -> forall l, 
+   {c | forall x y, 0 <<= x -> x <<= y -> y <<= b -> 
+    absr (eval_pol l y - eval_pol l x) <<= c*(y-x)}.
+Admitted.
+
+(*
 intros b pb; induction l.
 exists 0; intros x y px xy yb; simpl; ring_simplify.
 assert (d0 : 0-0 == 0) by ring.

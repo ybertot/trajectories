@@ -608,6 +608,58 @@ Module GOrderedField .
       by rewrite -!mulrA; apply ler_lcompat => //; apply ltrW; rewrite invr_ltr .
     Qed .
 
+    Lemma ler_Ilcompat_l :
+      forall x y₁ y₂, 0 <<! x -> y₁ * x <<= y₂ * x -> y₁ <<= y₂ .
+    Proof .
+      move=> x y₁ y₂; rewrite mulrC [y₂ * _]mulrC; exact: ler_Ilcompat_r.
+    Qed .
+
+    Lemma ltr_Ilcompat_r :
+      forall x y₁ y₂, 0 <<! x -> x * y₁ <<! x * y₂ -> y₁ <<! y₂ .
+    Proof .
+      move=> x y₁ y₂ Hx Hy .
+      rewrite -[y₁](mul1r) -[y₂](mul1r) -[1](@mulVf _ x) 1?eq_sym ?(ltr_ne Hx) //.
+      by rewrite -!mulrA; apply ltr_lcompat => //; rewrite invr_ltr .
+    Qed .
+
+    Lemma ltr_Ilcompat_l :
+      forall x y₁ y₂, 0 <<! x -> y₁ * x <<! y₂ * x -> y₁ <<! y₂ .
+    Proof .
+      move=> x y₁ y₂; rewrite mulrC [y₂ * _]mulrC; exact: ltr_Ilcompat_r.
+    Qed .
+
+
+    Lemma invr1_ltr0_ltr1 : forall x, 0 <<! x -> (x <<! 1) = (1 <<! x^-1).
+      Proof.
+        move=> x hx; move:(hx); rewrite ltr_lerne eq_sym; case/andP=> hx1 hx2.
+        rewrite -{1}(divff hx2) -{1}(mulr1 x); case e: (1 <<! x^-1).
+          by rewrite ltr_lcompat.
+        by rewrite ltrNger ler_lcompat // lerNgtr e.
+      Qed.
+
+    Lemma invr1_ltr0_1ltr : forall x, 0 <<! x -> (1 <<! x) = (x^-1 <<! 1).
+      Proof.
+        move=> x hx; apply/idP/idP => h1.
+          apply: (ltr_Ilcompat_r hx); rewrite divff // ?mulr1 //.
+          by move: hx; rewrite ltr_lerne eq_sym; case/andP.
+        move:(hx); rewrite -invr_ltr=> hIx; apply: (ltr_Ilcompat_r hIx).
+        by rewrite mulr1 mulVf //; move: hx; rewrite ltr_lerne eq_sym; case/andP.
+      Qed.
+
+    Lemma invr1_0ltr_ltr1I : forall x, x <<! 0 -> (x <<! -1) = (-1 <<! x^-1).
+      Proof.
+        move=> x; rewrite -(opprK x).
+      rewrite invrN !ltr_oppgtr -lt0r_gtNr0 opprK; exact: invr1_ltr0_1ltr.
+      Qed.
+
+    Lemma invr1_0ltr_ltrI1 : forall x, x <<! 0 -> (-1 <<! x) = (x^-1 <<! -1).
+      Proof.
+        move=> x; rewrite -(opprK x).
+      rewrite invrN !ltr_oppgtr -lt0r_gtNr0 opprK; exact: invr1_ltr0_ltr1.
+      Qed.
+
+      (* We cannot define a theory of floor since some ordered field do not have...*)
+
     (* ------------------------------------------------------------------ *)
     Lemma Ndiscrete01 : exists x, (0 <<! x) && (x <<! 1) .
     Proof .
