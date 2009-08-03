@@ -8,6 +8,7 @@ Import GRing.Theory .
 Import GOrderedField.
 Open Local Scope ring_scope .
 
+Set Printing Width 50.
 (* After a use of simpl, products of positive integers are replaced by
  products of positive numbers encapsulated in a Zpos constructor.  This
  precludes uses of some theorems.  We can undo this using the following
@@ -157,42 +158,31 @@ Qed.
 Lemma cm3 :
   forall b, 0 <<! b -> forall l, 
    {c | forall x y, 0 <<= x -> x <<= y -> y <<= b -> 
-    absr (eval_pol l y - eval_pol l x) <<= c*(y-x)}.
-Admitted.
-
-(*
-intros b pb; induction l.
-exists 0; intros x y px xy yb; simpl; ring_simplify.
-assert (d0 : 0-0 == 0) by ring.
-rewrite d0; apply Qle_refl.
-destruct IHl as [c cp].
-exists (eval_pol (Qabs_pol l) b+c*b); intros x y px xy yb; simpl.
-match goal with |- Qabs (?e) <= _ =>
-  setoid_replace e with 
-     ((y-x)*eval_pol l y + x*(eval_pol l y - eval_pol l x)) by ring end.
-apply Qle_trans with
-   (1:= Qabs_plus ((y-x)*eval_pol l y) (x*(eval_pol l y - eval_pol l x))).
-rewrite Qmult_plus_distr_l; apply Qplus_le_compat.
-assert (xmy: 0 <= y - x).
-setoid_replace 0 with (x+ -x) by ring.
-unfold Qminus; apply Qplus_le_compat; auto.
-rewrite Qabs_mult; rewrite (pos_Qabs (y-x)); auto.
-rewrite (Qmult_comm (y-x)); apply Qmult_le_compat_r; auto.
-assert (py: 0 <= y) by (apply Qle_trans with x; auto).
-apply Qle_trans with (2:= Qabs_pol_increase l y b py yb).
-pattern y at 2; rewrite <- (pos_Qabs y py).
-apply Qabs_pol_bound.
-setoid_replace (c*b*(y-x)) with (b * (c*(y-x))) by ring.
-rewrite Qabs_mult; rewrite (pos_Qabs x px).
-apply Qle_trans with (b*Qabs (eval_pol l y - eval_pol l x)).
-apply Qmult_le_compat_r; auto.
-apply Qle_trans with y; auto.
-repeat rewrite (Qmult_comm b); apply Qmult_le_compat_r; auto.
+    absr (eval_pol l y - eval_pol l x) <<= c * (y - x)}.
+move=>b pb; elim=> [|u l [c cp]] /=.
+  by exists 0 => x y; rewrite subrr absr0 mul0r ler_refl.
+exists ((eval_pol (abs_pol l) b) + c * b) => x y px hxy hyb. 
+rewrite addrAC oppr_add addrA subrr add0r addrC.
+set el := eval_pol l in cp *.
+rewrite (_ : y *_ - _ = y * el y - x * el y + x * el y - x * el x); last first.
+  by rewrite -[_ - _ + _]addrA addNr addr0.
+have py : 0 <<= y by rewrite (ler_trans px).
+have psyx : 0 <<= y - x by rewrite -(subrr x) lerTl.
+rewrite -addrA; apply: (ler_trans (absr_addr _ _)).
+rewrite -mulNr -mulr_addl -mulrN -mulr_addr !absr_mulr (absr_nneg px).
+rewrite absr_nneg // [_ * (y - x)]mulr_addl; apply: lerT.
+  rewrite mulrC ler_rcompat //; apply: (ler_trans (ler_absr_eval_pol l y)).
+  by rewrite eval_pol_abs_pol_increase // ?absrpos // absr_nneg.
+rewrite (mulrC c); apply ler_trans with (x * c * (y - x)).
+  by rewrite -mulrA ler_lcompat ?cp.
+rewrite -!mulrA ler_rcompat // ?(ler_trans hxy) //.
+by rewrite  (ler_trans (absrpos (el y - el x))) // cp.
 Qed.
 
+(* later...
 Definition find_pair : forall A:Type, forall P:A->Prop, forall Q:A->A->Prop,
     forall l:list A, forall a b:A, P a -> ~P b ->
-    (forall l1 l2 x y, a::l++b::nil=l1++x::y::l2 -> Q x y) ->
+    (forall l1 l2 x y, a::l ++ b::nil= l1 ++ x :: y :: l2 -> Q x y) ->
     (forall x, In x l -> {P x}+{~P x}) ->
     {c :A & { d | Q c d /\ P c /\ ~P d}}.
 intros A P Q; induction l; simpl; intros a' b' Pa Pb connect dec.
@@ -206,11 +196,30 @@ exists c; exists d; auto.
 exists a'; exists a; split; auto.
 apply (connect nil (l++b'::nil)); auto.
 Qed.
+*)
 
-Function ns (p n:Z) {measure Zabs_nat n} : list Z :=
-   if Z_le_dec n 0 then p::nil else (p-n)%Z::ns p (n-1)%Z.
-intros; apply Zabs_nat_lt; omega.
-Defined.
+
+(*
+Function ns (p n:Z) {measure Zabs_nat n} : seq Z :=
+   if Z_le_dec n 0 then p::nil else (p - n)%Z :: ns p (n - 1)%Z.
+*)
+
+Fixpoint nat_ns (p : Z)(n : nat) :=
+  match n with
+    |0 => [:: p]
+    |m.+1 => (p - (Z_of_nat m))%Z :: nat_ns p m
+  end.
+
+Definition ns p n :=
+  match n with
+    |Zpos q => nat_ns p (nat_of_pos q)
+    |_ => [:: p]
+  end.
+
+Lemma ns_head :  forall p n :Z, (0 <= n)%Z -> exists l, ns p n = (p - n)%Z :: l.
+Proof.
+move=> p n.
+
 
 Lemma ns_head : forall p n, (0 <= n)%Z -> exists l, ns p n = (p - n)%Z::l.
 intros p n; functional induction ns p n.
