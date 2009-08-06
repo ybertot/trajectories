@@ -2,10 +2,8 @@ Require Import ssreflect eqtype ssrbool ssrnat fintype seq ssrfun .
 Require Import bigops groups choice .
 Require Export ssralg .
 
-(* -------------------------------------------------------------------- *)
 Set   Implicit Arguments.
 Unset Strict Implicit.
-
 Import Prenex Implicits.
 
 Import GroupScope .
@@ -13,50 +11,6 @@ Import GRing.Theory .
 
 Open Local Scope ring_scope .
 
-(* -------------------------------------------------------------------- *)
-Reserved Notation "λ · x" (at level 35, right associativity) .
-
-Module VsLaw .
-  Section VsLaw .
-    Variables T U : Type .
-
-    Section AddDistributive .
-      Variable  eop : T -> U -> U .
-      Variable  iop : U -> U -> U .
-
-      Notation "x + y" := (iop x y) .
-      Notation "λ · x" := (eop λ x) (at level 35, right associativity) .
-
-      Definition edistr :=
-        forall (l : T) (x₁ x₂ : U), l · (x₁ + x₂) = l · x₁ + l · x₂ .
-    End AddDistributive .
-
-    Section Def .
-      Variable  zero : U .
-      Variable  iop  : Monoid.law zero .
-
-      Structure vs_law : Type := VsLaw {
-        eoperator :> T -> U -> U;
-        _ : edistr eoperator (Monoid.operator iop);
-        _ : forall λ, eoperator λ zero = zero
-      } .
-    End Def .
-
-    Section Equations .
-      Variable zero   : U .
-      Variable monoid : Monoid.law zero .
-      Variable elaw   : vs_law monoid .
-
-      Lemma emul_distrl : edistr (elaw : T -> U -> U) monoid .
-      Proof . by case elaw . Qed .
-
-      Lemma emul_exoabs : forall λ, elaw λ zero = zero .
-      Proof . by case elaw . Qed .
-    End Equations .
-  End VsLaw .
-End VsLaw .
-
-(* -------------------------------------------------------------------- *)
 Structure orderb (M : Type) (R : M -> M -> bool) : Type := Orderb {
   reflb    : reflexive R;
   antisymb : antisymmetric R;
@@ -84,10 +38,11 @@ Section Compatible .
 
 End Compatible .
 
+
 (* -------------------------------------------------------------------- *)
-Module GOrderedComring .
+Module GOrdered .
   (* ------------------------------------------------------------------ *)
-  Module OComRing .
+  Module OComRing.
 
     Record mixin_of (G : GRing.Ring.type) : Type := Mixin {
       leb : G -> G -> bool;
@@ -120,13 +75,11 @@ Module GOrderedComring .
     Definition choiceType      cT := Choice.Pack               (class cT) cT.
     Definition zmodType        cT := GRing.Zmodule.Pack        (class cT) cT.
     Definition ringType        cT := GRing.Ring.Pack           (class cT) cT.
-  (*  Definition comringType        cT := GComring.Comring.Pack           (class cT) cT.
-    Definition comComringType     cT := GComring.ComComring.Pack        (class cT) cT.
-    Definition unitComringType    cT := GComring.UnitComring.Pack       (class cT) cT.
-    Definition comUnitComringType cT := GComring.ComUnitComring.Pack    (class cT) cT.
-    Definition iddomainType    cT := GComring.IntegralDomain.Pack (class cT) cT.
-*)
     Coercion comringType cT := GRing.ComRing.Pack (class cT) cT.
+
+    Definition EtaMixin R leb ltb ltr_sorderb leb_addr leb_ltb_eq leb_total ltb_lcompatible :=
+      let _ := @Mixin R leb ltb ltr_sorderb leb_addr leb_ltb_eq leb_total ltb_lcompatible in
+        @Mixin (GRing.Ring.Pack (GRing.Ring.class R) R) leb ltb ltr_sorderb leb_addr leb_ltb_eq leb_total ltb_lcompatible.
 
   End OComRing .
 
@@ -134,57 +87,60 @@ Module GOrderedComring .
   Canonical Structure OComRing.choiceType.
   Canonical Structure OComRing.zmodType.
   Canonical Structure OComRing.ringType.
- Canonical Structure OComRing.comringType.
-(*  Canonical Structure OComring.unitComringType.
-  Canonical Structure OComring.comUnitComringType.
-  Canonical Structure OComring.iddomainType.
-*)
+  Canonical Structure OComRing.comringType.
 
   Bind Scope comring_scope with OComRing.sort .
 
+  Definition ltbDef (R : OComRing.type) : R -> R -> bool := OComRing.ltb (OComRing.class R).
+  Notation ltb := (@ltbDef _).
 
-  Definition leb (R : OComRing.type) : R -> R -> bool
-    := (OComRing.leb (OComRing.class R) : R -> R -> bool).
-  Definition ltb (R : OComRing.type) : R -> R -> bool
-    := (OComRing.ltb (OComRing.class R) : R -> R -> bool) .
+  Definition lebDef (R : OComRing.type) : R -> R -> bool := OComRing.leb (OComRing.class R).
+  Notation leb := (@lebDef _).
 
-  Notation Local "x <<= y" := (leb x y) .
-  Notation Local "x <<! y" := (ltb x y) .
+(*  Definition leb R := OComRing.leb (OComRing.class R).*)
+(*  Definition ltb R := OComRing.ltb (OComRing.class R).*)
 
-  (* -------------------------------------------------------------------- *)
-  Module Abs .
-    Section Defs .
-      Variable R : OComRing.type .
-      Implicit Types x y : R .
+  Local Notation "x <<= y" := (leb x y) .
+  Local Notation "x <<! y" := (ltb x y) .
 
-      Definition absr x := if x <<! 0 then -x else x .
-    End Defs .
-  End Abs .
+  Definition absrDef (R : OComRing.type) (x : R) := 
+    if (ltb x 0) then -x else x .
+  Notation absr := (@absrDef _).
 
-  Notation absr := (@Abs.absr _) .
+  Definition signDef (R : OComRing.type) (x : R) : R := 
+  if (0 <<! x) then 1 else (if (x <<! 0) then (-1) else 0) .
+
+  Notation sign := (@signDef _).
+
+(*Definition sign R x := 
+  if (@ltb R 0 x) then 1 else (if (@ltb R x 0) then (-1) else (0 : R)) .
+*)
 
   (* -------------------------------------------------------------------- *)
   Section OComringTheory .
     Variable G : OComRing.type .
     Implicit Types x y z : G .
 
+
+
+(*
     Notation Local "x <<= y" := (@leb G x y) .
     Notation Local "x <<! y" := (@ltb G x y) .
-
+*)
     (* ------------------------------------------------------------------ *)
-    Lemma ltr_sorderb : sorderb (@ltb G) .
+    Lemma ltr_sorderb : sorderb (@ltbDef G) .
     Proof . by case G => [T [? []]] . Qed .
 
-    Lemma ltr_irrefl : irreflexive (@ltb G).
+    Lemma ltr_irrefl : irreflexive (@ltbDef G).
     Proof . by case ltr_sorderb . Qed .
       
-    Lemma ltr_trans : transitive (@ltb G) .
+    Lemma ltr_trans : transitive (@ltbDef G) .
     Proof . by case ltr_sorderb . Qed .
 
-    Lemma ltr_lcompat : lcompatible (@ltb G) .
+    Lemma ltr_lcompat : lcompatible (@ltbDef G) .
     Proof . by case G => [T [? []]] . Qed .
 
-    Lemma ltr_rcompat : rcompatible (@ltb G).
+    Lemma ltr_rcompat : rcompatible (@ltbDef G).
     Proof. by move=> x y z; rewrite mulrC [z * _]mulrC; exact: ltr_lcompat. Qed.
 
       
@@ -199,7 +155,7 @@ Module GOrderedComring .
     Qed .
 *)
 
-    Lemma ler_refl : reflexive (@leb G) .
+    Lemma ler_refl : reflexive (@lebDef G) .
     Proof. by move=> x; rewrite ler_ltreq eqxx orbT. Qed.
 
     Lemma ler_antisym : forall (x y : G), x <<= y -> y <<= x -> x = y .
@@ -210,7 +166,7 @@ Module GOrderedComring .
       by move: (h4 _ _ _ hxy hyx); rewrite (h3 x).
     Qed .
 
-    Lemma ler_trans : transitive (@leb G) .
+    Lemma ler_trans : transitive (@lebDef G) .
     Proof .
       case: ltr_sorderb=> h1 h2.
       move=> x y z; rewrite !ler_ltreq; case/orP; last first.
@@ -219,7 +175,7 @@ Module GOrderedComring .
       by move=> hxz; rewrite (h2 _ _ _ hyx).
     Qed.
 
-    Lemma ler_order : orderb (@leb G) .
+    Lemma ler_order : orderb (@lebDef G) .
     Proof . 
       constructor.
       - exact: ler_refl.
@@ -230,7 +186,7 @@ Module GOrderedComring .
     Lemma ler_total : forall x y, (x <<= y) || (y <<= x) .
     Proof . by case G => [T [? []]] . Qed .
 
-    Lemma ler_lcompat : lcompatible (@leb G) .
+    Lemma ler_lcompat : lcompatible (@lebDef G) .
     Proof . 
       move=> x y z; rewrite !ler_ltreq => px.
       case/orP; last by move/eqP->; rewrite eqxx orbT.
@@ -238,7 +194,7 @@ Module GOrderedComring .
       by rewrite -(eqP hx) !mul0r eqxx orbT.
     Qed.
 
-    Lemma ler_rcompat : rcompatible (@leb G).
+    Lemma ler_rcompat : rcompatible (@lebDef G).
     Proof. by move=> x y z; rewrite mulrC [z * _]mulrC; exact: ler_lcompat. Qed.
 
     Lemma eq_ler : forall x y, (x == y) = (x <<= y) && (y <<= x) .
@@ -280,6 +236,16 @@ Module GOrderedComring .
         by rewrite eq_ler Hyz Hxy .
     Qed .
 
+
+    Lemma ler_ltr_trans : forall x y z,
+      x <<= y -> y <<! z -> x <<! z.
+    Proof.
+      move=> x y z Hxy Hyz; rewrite ltr_lerne; apply/andP; split .
+      + by apply ler_trans with y; last apply ltrW .
+      + apply/eqP; move=> H; subst z .
+        rewrite ltr_lerne in Hyz; case/andP: Hyz => Hyz .
+        by rewrite eq_ler Hyz Hxy .
+      Qed.
     (* ------------------------------------------------------------------ *)
 
     Lemma ltrN : forall x y, x <<! y -> ~~ (y <<! x).
@@ -396,6 +362,9 @@ Module GOrderedComring .
     Lemma le0r_geNr0 : forall x, (0 <<= -x) = (x <<= 0) .
     Proof . by move => x; rewrite -{1}oppr0 ler_oppger . Qed .
 
+      Lemma ger0_leNr0 : forall x, (0 <<= x) = (- x <<= 0).
+      Proof. by move=> x; rewrite -{2}oppr0 ler_oppger. Qed.
+
     Lemma ltr_oppgtr : forall x y, (-x <<! -y) = (y <<! x) .
     Proof .
       move=> x y .
@@ -406,6 +375,9 @@ Module GOrderedComring .
 
     Lemma lt0r_gtNr0 : forall x, (0 <<! -x) = (x <<! 0) .
     Proof . by move=> x; rewrite -{1}oppr0 ltr_oppgtr . Qed .
+
+      Lemma gtr0_ltNr0 : forall x, (0 <<! x) = (- x <<! 0).
+      Proof. by move=> x; rewrite -[x]opprK lt0r_gtNr0 opprK. Qed.
 
     Lemma opp_ler_ler0 : forall x, ( -x <<= x) = (0 <<= x).
       Proof.
@@ -449,16 +421,7 @@ Module GOrderedComring .
       by rewrite -mulrNN; apply ler_0_lcompat; rewrite le0r_geNr0 .
     Qed .
 
-(* to be postponed to idomains or fields 
-    Lemma ltr_0_lcompat : forall x y, 0 <<! x -> 0 <<! y -> 0 <<! x * y .
-    Proof .
-      move=> x y Hx Hy; rewrite ltr_lerne; apply/andP; split .
-      + by apply ler_0_lcompat; apply ltrW .
-      + rewrite eq_sym mulf_eq0 negb_or .
-        by rewrite ![_ == 0]eq_sym (ltr_ne Hx) (ltr_ne Hy) .
-    Qed .*)
-
-    Lemma ltr_0_1 : 0 <<! 1 .
+    Lemma ltr_0_1 : 0 <<! (1 : G) .
     Proof .
       rewrite ltr_lerne /negb eq_sym oner_eq0 andbT .
       case/orP: (ler_total 0 1) => // H .
@@ -520,44 +483,300 @@ Module GOrderedComring .
 
     (* ------------------------------------------------------------------ *)
 
-    Lemma χ0_ltr : forall n, 0 <<! 1 *+ (n.+1) .
-      have HnSn : forall n, n%:R <<! n.+1%:R .
+    Lemma χ0_ltr : forall n, (0 : G) <<! 1 *+ (n.+1).
+      have HnSn : forall n, (n%:R : G) <<! n.+1%:R .
       + by elim=> [|n IH]; [apply ltr_0_1 | rewrite 2!mulrS; apply ltrTr] .
       elim=> [|n IH]; [by apply ltr_0_1 | apply: ltr_trans] .
       by apply IH . by rewrite 2!mulrS; apply ltrTr; apply HnSn .
     Qed .
 
-    Lemma χ0 : forall n, 1 *+ n.+1 != 0 :> G .
+    Lemma χ0 : forall n, 1 *+ n.+1 != 0 :> G.
     Proof .
       move=> n; case D: (n.+1%:R == 0) => //= .
       by move/eqP: D => D; have H := χ0_ltr n; rewrite D ltr_irrefl in H .
     Qed .
 
 
-    Definition sign x : G :=
-      if 0 <<! x then 1 else (if x <<! 0 then (-1) else 0) .
+    Lemma sign_posR : forall x, 0 <<! x -> sign x = 1 .
+    Proof . by move=> x hx; rewrite /sign hx. Qed.
 
-(* to be postponed to idomains or fields
+
+    Lemma sign_negR : forall x, x <<! 0 -> sign x = -1 .
+    Proof . by move=> x hx; rewrite /sign hx (negbTE (ltrN hx)). Qed.
+
+    Lemma sign0 : sign 0 = 0 :> G.
+    Proof . by rewrite /sign !ltr_irrefl . Qed .
+
+    Lemma sign0P : forall x, reflect (sign x = 0) (x == 0) .
+    Proof .
+      move=> x; rewrite /sign; case: (compareP 0 x)=> H; last first.
+      + by rewrite -H eqxx; constructor.
+      + rewrite (negbTE (ltr_ne H)); constructor.
+        by  apply/eqP; rewrite oppr_eq0 nonzero1r.
+      + rewrite eq_sym (negbTE (ltr_ne H)); constructor.
+        by  apply/eqP; rewrite nonzero1r.
+      Qed.
+
+
+    Lemma sign_codomP :
+      forall x, [\/ sign x = 1, sign x = -1 | sign x = 0] .
+    Proof .
+      move=> x; case: (compareP 0 x) => H; [apply Or31 | apply Or32 | apply Or33] .
+      - by apply: sign_posR.
+      - by apply: sign_negR. 
+      - by rewrite -H sign0 .
+    Qed .
+
+
+    (* ------------------------------------------------------------------ *)
+    Lemma absr_nneg : forall x, 0 <<= x -> absr x = x .
+    Proof .
+      move=> x Hx; rewrite /absr ltrNger .
+
+      by case D: (0 <<= x) => //=; rewrite Hx in D .
+    Qed .
+
+    Lemma absr_npos : forall x, x <<= 0 -> absr x = -x .
+    Proof .
+      move=> x Hx; rewrite /absr ltrNger; case Hx': (0 <<= x) => //= .
+      have Hx0: x = 0 by apply/eqP; rewrite eq_ler Hx Hx' .
+      by rewrite Hx0 oppr0 .
+    Qed .
+
+    Lemma absr_neg : forall x, x <<! 0 -> absr x = -x .
+    Proof . by move=> x Hx; apply absr_npos; apply ltrW . Qed .
+
+    Lemma absr0 : absr 0 = 0 :> G .
+    Proof . by rewrite /absr ltr_irrefl . Qed .
+
+    Lemma absrpos : forall x, 0 <<= absr x .
+    Proof .
+      move=> x; case: (ltrP x 0) => H .
+      + by rewrite absr_neg // le0r_geNr0; apply ltrW .
+      + by rewrite absr_nneg.
+    Qed .
+
+    Lemma absrK : forall x, absr (absr x) = absr x .
+    Proof . by move=> x; rewrite absr_nneg // absrpos . Qed .
+
+
+    Lemma absr_sign : forall x , (absr x) = (sign x) * x .
+    Proof .
+      move=> x; case: (compareP x 0) => h.
+      + by rewrite /absr h; move/sign_negR: h=> ->; rewrite mulN1r.
+      + by rewrite absr_nneg ?ltrW //; move/sign_posR: h=> ->; rewrite mul1r .
+      + by rewrite h sign0 absr0 mul0r.
+    Qed .
+
+
+
+    Lemma absr_addr :
+      forall x y, absr (x + y) <<= (absr x) + (absr y).
+      move=> x y; rewrite !absr_sign.
+      case: (compareP x 0) => hx.
+      - rewrite (sign_negR hx) mulN1r; case: (compareP y 0) => hy.
+        + rewrite (sign_negR hy) mulN1r mulr_addr.
+          rewrite (_ : sign _ = -1) ?mulN1r ?ler_refl //; apply: sign_negR.
+          by apply: ltr0T.
+        + rewrite (sign_posR hy) mul1r ; case: (compareP (x + y) 0) => hxy.
+          * by rewrite (sign_negR hxy) mulr_addr !mulN1r lerTrb opp_ler_ler0 ltrW.
+          * by rewrite (sign_posR hxy) mul1r lerTlb ler_opp_ler0 ltrW.
+          * by rewrite hxy sign0 mul0r lerT0 // ?le0r_geNr0 ltrW.
+        + by rewrite hy mulr0 !addr0 (sign_negR hx) mulN1r ler_refl.
+      - rewrite (sign_posR hx) mul1r;  case: (compareP y 0) => hy.
+        + rewrite (sign_negR hy) mulN1r mulr_addr; case: (compareP (x + y) 0) => hxy.
+          * by rewrite (sign_negR hxy) !mulN1r lerTlb opp_ler_ler0 ltrW.
+          * by rewrite (sign_posR hxy) !mul1r lerTrb ler_opp_ler0 ltrW.
+          * by rewrite hxy sign0 !mul0r addr0 lerT0 // ?le0r_geNr0 ltrW.
+        + rewrite (sign_posR hy) mul1r (_ : sign _ = 1) ?mul1r ?ler_refl //.
+          by apply: sign_posR; apply: ltrT0.
+        + by rewrite hy mulr0 !addr0 (sign_posR hx) mul1r ler_refl.
+      - by rewrite hx mulr0 !add0r ler_refl.
+    Qed. 
+
+
+Lemma absr_lt : forall x y, absr x <<! y -> x <<! y.
+Proof.
+move=> x y h. 
+have py : 0 <<! y by apply: (ler_ltr_trans (absrpos x)).
+case: (compareP x 0) => h2.
+- by rewrite (ltr_trans h2).
+- by rewrite -[x]absr_nneg // ltrW.
+- by rewrite h2.
+Qed.
+
+Lemma absr_le : forall x y, absr x <<= y -> x <<= y.
+Proof.
+move=> x y h. 
+have py : 0 <<= y by apply: (ler_trans (absrpos x)).
+case: (compareP x 0) => h2.
+- by rewrite ltrW // (ltr_ler_trans h2).
+- by rewrite -[x]absr_nneg // ltrW.
+- by rewrite h2.
+Qed.
+
+Lemma lt_absr : forall x y, absr x <<! y -> - y <<! x.
+Proof.
+move=> x y h.
+have py : 0 <<! y by apply: (ler_ltr_trans (absrpos x)).
+case: (compareP x 0) => h2.
+- by rewrite -[x]opprK ltr_oppgtr -[- x]absr_npos // ltrW.
+- by rewrite -[x]opprK -ltr_oppgtr !opprK; apply: ltr_trans py; rewrite -gtr0_ltNr0.
+- by rewrite h2 -gtr0_ltNr0.
+Qed.
+
+Lemma le_absr : forall x y, absr x <<= y -> - y <<= x.
+Proof.
+move=> x y h.
+have py : 0 <<= y by apply: (ler_trans (absrpos x)).
+case: (compareP x 0) => h2.
+- by rewrite -[x]opprK ler_oppger -[- x]absr_npos // ltrW.
+- by rewrite -[x]opprK -ler_oppger !opprK; apply: ler_trans py; rewrite -ger0_leNr0 ltrW.
+- by rewrite h2 -ger0_leNr0.
+Qed.
+
+(* ------------------------------------------------------------------ *)
+Lemma ler_addl_abs :
+  forall x₁ x₂, x₁ <<= x₂ ->
+    forall y, (absr y) <<= (x₂ - x₁) ->
+      x₁ <<= x₂ + y .
+Proof.
+move=> x1 x2 hx12 y; move/le_absr. rewrite -(@lerTlb x2) addrC oppr_add opprK.
+by rewrite  addrA addrN add0r addrC.
+Qed.
+
+
+    Lemma ler0_addl_abs :
+      forall x y, 0 <<= x -> (absr y) <<= x -> 0 <<= x + y .
+    Proof .
+      by move=> x y Hx Hy; apply ler_addl_abs; last rewrite oppr0 addr0 .
+    Qed .
+  End OComringTheory .
+
+(*
+  Module OField .
+
+    Record class_of (R : Type) : Type := Class {
+      base1 :> GRing.Field.class_of R;
+      ext :> OComRing.mixin_of (GRing.Field.Pack base1 R)
+    } .
+
+(*    Coercion base2 R m := OComRing.Class (@ext R m).*)
+    Coercion base2 R m := @OComRing.Class R _ (@ext R m).
+
+
+    Structure type : Type := Pack {sort :> Type; _ : class_of sort; _ : Type}.
+
+    Definition class cT := let: Pack _ c _ := cT return class_of cT in c.
+    Definition unpack K (k : forall T (c : class_of T), K T c) cT :=
+      let: Pack T c _ := cT return K _ (class cT) in k _ c.
+    Definition repack cT : _ -> Type -> type :=
+      let k T c p := p c in unpack k cT.
+
+(* Mixin here ? *)
+    Definition pack := 
+      let k T c m := Pack (@Class T c m) T in GRing.Field.unpack k.
+
+    Definition eqType          cT := Equality.Pack             (class cT) cT.
+    Definition choiceType      cT := Choice.Pack               (class cT) cT.
+    Definition zmodType        cT := GRing.Zmodule.Pack        (class cT) cT.
+    Definition ringType        cT := GRing.Ring.Pack           (class cT) cT.
+    Definition unitRingType    cT := GRing.UnitRing.Pack       (class cT) cT.
+    Definition comRingType     cT := GRing.ComRing.Pack (class cT) cT.
+    Definition comUnitRingType cT := GRing.ComUnitRing.Pack       (class cT) cT.
+    Definition idomainType     cT := GRing.IntegralDomain.Pack (class cT) cT.
+    Coercion   fieldType       cT := GRing.Field.Pack (class cT) cT.
+    Coercion   oComRingType    cT := OComRing.Pack (class cT) cT.
+    Definition oFieldType cT :=
+      @OComRing.Pack (fieldType cT) (class cT) cT.
+
+  End OField .
+
+  Canonical Structure OField.eqType.
+  Canonical Structure OField.choiceType.
+  Canonical Structure OField.zmodType.
+  Canonical Structure OField.ringType.
+  Canonical Structure OField.comRingType.
+  Canonical Structure OField.unitRingType.
+  Canonical Structure OField.comUnitRingType.
+  Canonical Structure OField.idomainType.
+  Canonical Structure OField.fieldType.
+  
+  Bind Scope comring_scope with OField.sort .
+*)
+  Module OField .
+
+    Record class_of (R : Type) : Type := Class {
+      base1 :> GRing.Field.class_of R;
+      ext :> OComRing.mixin_of (GRing.Field.Pack base1 R)
+    } .
+
+    Coercion base2 R m := @OComRing.Class R _ (@ext R m).
+
+    Structure type : Type := Pack {sort :> Type; _ : class_of sort; _ : Type}.
+
+    Definition class cT := let: Pack _ c _ := cT return class_of cT in c.
+    Definition unpack K (k : forall T (c : class_of T), K T c) cT :=
+      let: Pack T c _ := cT return K _ (class cT) in k _ c.
+    Definition repack cT : _ -> Type -> type :=
+      let k T c p := p c in unpack k cT.
+
+(* Mixin here ? *)
+    Definition pack := 
+      let k T c m := Pack (@Class T c m) T in GRing.Field.unpack k.
+
+    Definition eqType          cT := Equality.Pack             (class cT) cT.
+    Definition choiceType      cT := Choice.Pack               (class cT) cT.
+    Definition zmodType        cT := GRing.Zmodule.Pack        (class cT) cT.
+    Definition ringType        cT := GRing.Ring.Pack           (class cT) cT.
+    Definition unitRingType    cT := GRing.UnitRing.Pack       (class cT) cT.
+    Definition comRingType     cT := GRing.ComRing.Pack (class cT) cT.
+    Definition comUnitRingType cT := GRing.ComUnitRing.Pack       (class cT) cT.
+    Definition idomainType     cT := GRing.IntegralDomain.Pack (class cT) cT.
+    Coercion   fieldType       cT := GRing.Field.Pack (class cT) cT.
+    Coercion   oComRingType    cT := OComRing.Pack (class cT) cT.
+    Definition oFieldType cT :=
+      @OComRing.Pack (fieldType cT) (class cT) cT.
+
+  End OField .
+
+  Canonical Structure OField.eqType.
+  Canonical Structure OField.choiceType.
+  Canonical Structure OField.zmodType.
+  Canonical Structure OField.ringType.
+  Canonical Structure OField.comRingType.
+  Canonical Structure OField.unitRingType.
+  Canonical Structure OField.comUnitRingType.
+  Canonical Structure OField.idomainType.
+  Canonical Structure OField.fieldType.
+  Canonical Structure OField.oComRingType.
+
+Bind Scope ring_scope with OField.sort.
+
+Section OrderedFieldTheory.
+
+    Variable G : OField.type .
+    Implicit Types x y : G.
+
+    Lemma ltr_0_lcompat : forall x y, 0 <<! x -> 0 <<! y -> 0 <<! x * y .
+    Proof .
+      move=> x y Hx Hy; rewrite ltr_lerne; apply/andP; split .
+      + by apply ler_0_lcompat; apply ltrW .
+      + rewrite eq_sym mulf_eq0 negb_or .
+        by rewrite ![_ == 0]eq_sym (ltr_ne Hx) (ltr_ne Hy) .
+    Qed .
+
     Lemma oppreq_0 : forall x, (x == -x) = (x == 0) .
     Proof .
       move=> x; apply/eqP/eqP => [|->]; last by rewrite oppr0 .
       move/(congr1 (+%R x)); rewrite addrN -{1 2}[x](mul1r) -mulr_addl .
       move/eqP; rewrite mulf_eq0; case/orP; last by move/eqP => -> .
-      by rewrite (negbTE (χ0 1)) .
-    Qed .
-
+      by rewrite (negbTE (χ0 G 1%nat)).
+    Qed.
 
     Lemma sign_pos : forall x, reflect (sign x = 1) (0 <<! x) .
     Proof .
       move=> x; rewrite /sign; case: (compareP 0 x) => h; constructor => //.
-      + apply/eqP; rewrite eq_sym nonzero1r.
-      + by apply/eqP; rewrite eq_sym nonzero1r.
-    Qed .
-
-
-    Lemma sign_pos : forall x, reflect (sign x = 1) (0 <<! x) .
-    Proof .
-      move=> x; rewrite /sign; case: (compareP 0 x) => _; constructor => //.
       + by apply/eqP; rewrite eq_sym oppreq_0 nonzero1r.
       + by apply/eqP; rewrite eq_sym nonzero1r.
     Qed .
@@ -570,38 +789,6 @@ Module GOrderedComring .
         by rewrite eq_sym (negbTE (nonzero1r _)) .
     Qed .
 
-*)
-
-    Lemma sign_posR : forall x, 0 <<! x -> sign x = 1 .
-    Proof . by move=> x hx; rewrite /sign hx. Qed.
-
-
-    Lemma sign_negR : forall x, x <<! 0 -> sign x = -1 .
-    Proof . by move=> x hx; rewrite /sign hx (negbTE (ltrN hx)). Qed.
-
-    Lemma sign0 : sign 0 = 0 .
-    Proof . by rewrite /sign !ltr_irrefl . Qed .
-
-    Lemma sign0P : forall x, reflect (sign x = 0) (x == 0) .
-    Proof .
-      move=> x; rewrite /sign; case: (compareP 0 x)=> H; last first.
-      + by rewrite H eqxx; constructor.
-      + rewrite (negbTE (ltr_ne H)); constructor; apply/eqP.
-        by rewrite oppr_eq0 nonzero1r.
-      + rewrite eq_sym (negbTE (ltr_ne H)); constructor; apply/eqP.
-        by rewrite nonzero1r.
-    Qed.
-
-    Lemma sign_codomP :
-      forall x, [\/ sign x = 1, sign x = -1 | sign x = 0] .
-    Proof .
-      move=> x; case: (compareP 0 x) => H; [apply Or31 | apply Or32 | apply Or33] .
-      - by apply: sign_posR.
-      - by apply: sign_negR. 
-      - by rewrite -H sign0 .
-    Qed .
-
-(* postpone to idomains or fields
     Lemma mulr_sign : forall x y, sign (x * y) = (sign x) * (sign y) .
     Proof .
       move=> x y; case: (compareP 0 x) .
@@ -621,10 +808,10 @@ Module GOrderedComring .
         * by rewrite -Hy mulr0 sign0 mulr0 .
       + by move=> <-; rewrite mul0r sign0 mul0r .
     Qed .
-*)
+
     (* ------------------------------------------------------------------ *)
 
-(* postpone to idomains or fields
+
     Lemma invr_ltr : forall x, (0 <<! x^-1) = (0 <<! x) .
     Proof .
       have Hsign : forall x, x != 0 -> sign (x^-1 * x) = 1 .
@@ -701,19 +888,18 @@ Module GOrderedComring .
       (* We cannot define a theory of floor since some ordered comring do not have...*)
 
     (* ------------------------------------------------------------------ *)
-    Lemma Ndiscrete01 : exists x, (0 <<! x) && (x <<! 1) .
+    Lemma Ndiscrete01 : exists x : G, (0 <<! x) && (x <<! 1) .
     Proof .
-      have H : 0 <<! 1/(1+1) .
+      have H : (0 : G) <<! 1/(1+1).
       + apply ltr_0_lcompat; first exact: ltr_0_1 .
-        by rewrite invr_ltr; apply: (χ0_ltr 1) .
-
+        rewrite invr_ltr; apply: (χ0_ltr _ 1%nat) .
       exists (1/(1+1)); apply/andP; split=> // .
       rewrite -(ltrTlb (-1)) addrN .
-      rewrite -{4}[1](@mulfV _ (1+1)); last exact: (χ0 1) .
+      rewrite -{4}[1](@mulfV _ (1+1)); last exact: (χ0 _ 1) .
       rewrite -mulNr -mulr_addl -mulN1r mulr_addr mulN1r .
       by rewrite addrA addrN add0r mulNr -ltr_oppgtr oppr0 opprK .
     Qed .
-
+ 
     Lemma Ndiscrete : forall x z, x <<! z -> exists y, (x <<! y) && (y <<! z) .
     Proof .
       move=> x z Hxz; elim Ndiscrete01=> y; case/andP => Hylow Hyhi .
@@ -724,111 +910,46 @@ Module GOrderedComring .
         rewrite mulrC -{2}[z-x]mulr1; apply ltr_lcompat => // .
         by rewrite -[0](addrN x) ltrTlb .
     Qed .
-*)
-    (* ------------------------------------------------------------------ *)
-    Lemma absr_sign : forall x , (absr x) = (sign x) * x .
-    Proof .
-      move=> x; rewrite /absr; case: (compareP 0 x) .
-      + by move/sign_posR=> ->; rewrite mul1r .
-      + by move/sign_negR => ->; rewrite mulN1r .
-      + by move=> <-; rewrite mulr0 .
-    Qed .
 
-    Lemma absr_nneg : forall x, 0 <<= x -> absr x = x .
-    Proof .
-      move=> x Hx; rewrite /absr ltrNger .
-      by case D: (0 <<= x) => //=; rewrite Hx in D .
-    Qed .
 
-    Lemma absr_npos : forall x, x <<= 0 -> absr x = -x .
-    Proof .
-      move=> x Hx; rewrite /absr ltrNger; case Hx': (0 <<= x) => //= .
-      have Hx0: x = 0 by apply/eqP; rewrite eq_ler Hx Hx' .
-      by rewrite Hx0 oppr0 .
-    Qed .
-
-    Lemma absr_neg : forall x, x <<! 0 -> absr x = -x .
-    Proof . by move=> x Hx; apply absr_npos; apply ltrW . Qed .
-
-    Lemma absr0 : absr 0 = 0 :> G .
-    Proof . by rewrite /absr ltr_irrefl . Qed .
-
-    Lemma absrpos : forall x, 0 <<= absr x .
-    Proof .
-      move=> x; case: (ltrP x 0) => H .
-      + by rewrite absr_neg // le0r_geNr0; apply ltrW .
-      + by rewrite absr_nneg // .
-    Qed .
-
-    Lemma absrK : forall x, absr (absr x) = absr x .
-    Proof . by move=> x; rewrite absr_nneg // absrpos . Qed .
-
-(* postpone ...
     Lemma absr_mulr :
       forall x y, absr (x * y) = (absr x) * (absr y) .
     Proof .
       move=> x y; rewrite !absr_sign mulr_sign .
       by rewrite -[_ * x * _]mulrA -[x * (_ * _)]mulrCA !mulrA .
     Qed .
-*)
-    Lemma absr_addr :
-      forall x y, absr (x + y) <<= (absr x) + (absr y).
-      move=> x y; rewrite !absr_sign.
-      case: (compareP x 0) => hx.
-      - rewrite (sign_negR hx) mulN1r; case: (compareP y 0) => hy.
-        + rewrite (sign_negR hy) mulN1r mulr_addr.
-          rewrite (_ : sign _ = -1) ?mulN1r ?ler_refl //; apply: sign_negR.
-          by apply: ltr0T.
-        + rewrite (sign_posR hy) mul1r ; case: (compareP (x + y) 0) => hxy.
-          * by rewrite (sign_negR hxy) mulr_addr !mulN1r lerTrb opp_ler_ler0 ltrW.
-          * by rewrite (sign_posR hxy) mul1r lerTlb ler_opp_ler0 ltrW.
-          * by rewrite hxy sign0 mul0r lerT0 // ?le0r_geNr0 ltrW.
-        + by rewrite hy mulr0 !addr0 (sign_negR hx) mulN1r ler_refl.
-      - rewrite (sign_posR hx) mul1r;  case: (compareP y 0) => hy.
-        + rewrite (sign_negR hy) mulN1r mulr_addr; case: (compareP (x + y) 0) => hxy.
-          * by rewrite (sign_negR hxy) !mulN1r lerTlb opp_ler_ler0 ltrW.
-          * by rewrite (sign_posR hxy) !mul1r lerTrb ler_opp_ler0 ltrW.
-          * by rewrite hxy sign0 !mul0r addr0 lerT0 // ?le0r_geNr0 ltrW.
-        + rewrite (sign_posR hy) mul1r (_ : sign _ = 1) ?mul1r ?ler_refl //.
-          by apply: sign_posR; apply: ltrT0.
-        + by rewrite hy mulr0 !addr0 (sign_posR hx) mul1r ler_refl.
-      - by rewrite hx mulr0 !add0r ler_refl.
-    Qed. 
 
-    (* ------------------------------------------------------------------ *)
-    Lemma ler_addl_abs :
-      forall x₁ x₂, x₁ <<= x₂ ->
-        forall y, (absr y) <<= (x₂ - x₁) ->
-          x₁ <<= x₂ + y .
-    Proof .
-      move=> x₁ x₂ H y; rewrite /absr; case: (ltrP y 0) => Hy Hysub .
-      + rewrite -(@lerTlb (-y)) -addrA addrN addr0 .
-        by rewrite -(@lerTlb (-x₁)) addrAC addrN add0r.
-      + by rewrite -[x₁](addr0); apply lerT .
-    Qed .
 
-    Lemma ler0_addl_abs :
-      forall x y, 0 <<= x -> (absr y) <<= x -> 0 <<= x + y .
-    Proof .
-      by move=> x y Hx Hy; apply ler_addl_abs; last rewrite oppr0 addr0 .
-    Qed .
-  End OComringTheory .
-End GOrderedComring .
 
-Bind Scope comring_scope with GOrderedComring.OComRing.sort .
+End OrderedFieldTheory.
 
-Canonical Structure GOrderedComring.OComRing.eqType.
-Canonical Structure GOrderedComring.OComRing.choiceType.
-Canonical Structure GOrderedComring.OComRing.zmodType.
-Canonical Structure GOrderedComring.OComRing.ringType.
-Canonical Structure GOrderedComring.OComRing.comringType.
+End GOrdered .
 
-Notation ocomringType  := (GOrderedComring.OComRing.type) .
-Notation OcomringType  := (GOrderedComring.OComRing.pack) .
-Notation OcomringMixin := (GOrderedComring.OComRing.Mixin) .
+Bind Scope comring_scope with GOrdered.OComRing.sort .
 
-Notation "x <<= y" := (GOrderedComring.leb x y) .
-Notation "x <<! y" := (GOrderedComring.ltb x y) .
+Canonical Structure GOrdered.OComRing.eqType.
+Canonical Structure GOrdered.OComRing.choiceType.
+Canonical Structure GOrdered.OComRing.zmodType.
+Canonical Structure GOrdered.OComRing.ringType.
+Canonical Structure GOrdered.OComRing.comringType.
+
+Notation ocomringType  := (GOrdered.OComRing.type) .
+Notation OcomringType  := (GOrdered.OComRing.pack) .
+Notation OcomringMixin := (GOrdered.OComRing.Mixin) .
+
+Canonical Structure GOrdered.OField.eqType.
+Canonical Structure GOrdered.OField.choiceType.
+Canonical Structure GOrdered.OField.zmodType.
+Canonical Structure GOrdered.OField.ringType.
+Canonical Structure GOrdered.OField.comRingType.
+Canonical Structure GOrdered.OField.unitRingType.
+Canonical Structure GOrdered.OField.comUnitRingType.
+Canonical Structure GOrdered.OField.idomainType.
+Canonical Structure GOrdered.OField.fieldType.
+Canonical Structure GOrdered.OField.oComRingType.
+
+Notation "x <<= y" := (GOrdered.leb x y) .
+Notation "x <<! y" := (GOrdered.ltb x y) .
 
 (* -------------------------------------------------------------------- *)
 Module Min .
@@ -857,7 +978,7 @@ Notation minB := (@Min.minB _ _) .
 Section MinTheory .
   Variable R : ocomringType .
 
-  Import GOrderedComring .
+  Import GOrdered .
 
   Lemma minrC : commutative (@Min.minr R) .
   Proof . by move=> x y; rewrite /minr; case: (compareP x y) . Qed .
