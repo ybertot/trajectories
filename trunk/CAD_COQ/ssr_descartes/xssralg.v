@@ -81,6 +81,7 @@ Module GOrdered .
       let _ := @Mixin R leb ltb ltr_sorderb leb_addr leb_ltb_eq leb_total ltb_lcompatible in
         @Mixin (GRing.Ring.Pack (GRing.Ring.class R) R) leb ltb ltr_sorderb leb_addr leb_ltb_eq leb_total ltb_lcompatible.
 
+  
   End OComRing .
 
   Canonical Structure OComRing.eqType.
@@ -947,6 +948,10 @@ Canonical Structure GOrdered.OField.comUnitRingType.
 Canonical Structure GOrdered.OField.idomainType.
 Canonical Structure GOrdered.OField.fieldType.
 Canonical Structure GOrdered.OField.oComRingType.
+
+Notation ofieldType  := (GOrdered.OField.type) .
+Notation OfieldType  := (GOrdered.OField.pack) .
+
 
 Notation "x <<= y" := (GOrdered.leb x y) .
 Notation "x <<! y" := (GOrdered.ltb x y) .

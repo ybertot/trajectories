@@ -1,7 +1,7 @@
 Require Import QArith List Omega ZArith seq xssralg infra.
 
 Import GRing.Theory .
-Import GOrderedField.
+Import GOrdered.
 Open Local Scope ring_scope .
 
 Fixpoint eval_pol (l : seq Qcb)(x : Qcb) {struct l} : Qcb :=

@@ -5,7 +5,7 @@ Require Export ssralg xssralg infra .
 
 Import GroupScope .
 Import GRing.Theory .
-Import GOrderedField.
+Import GOrdered.
 Open Local Scope ring_scope .
 
 Set Printing Width 50.
@@ -207,98 +207,152 @@ Function ns (p n:Z) {measure Zabs_nat n} : seq Z :=
 Fixpoint nat_ns (p : Z)(n : nat) :=
   match n with
     |0 => [:: p]
-    |m.+1 => (p - (Z_of_nat m))%Z :: nat_ns p m
+    |m.+1 => (p - (Z_of_nat m.+1)) :: nat_ns p m
   end.
 
 Definition ns p n :=
   match n with
-    |Zpos q => nat_ns p (nat_of_pos q)
+    |Zpos q => nat_ns p (nat_of_P q)
     |_ => [:: p]
   end.
 
-Lemma ns_head :  forall p n :Z, (0 <= n)%Z -> exists l, ns p n = (p - n)%Z :: l.
+Lemma ltb_Zneg0 : forall x, (Zneg x) <<! 0.
+Proof. move=> x; apply/ Zlt_is_lt_bool; exact: Zlt_neg_0. Qed.
+
+Lemma leb_Zneg0N : forall x, 0 <<= (Zneg x) = false.
+Proof. by move=> x; rewrite lerNgtr ltb_Zneg0. Qed.
+
+Lemma nat_ns_head : forall (p : Z) n, 
+  exists l, nat_ns p n = (p - (Z_of_nat n)) :: l.
 Proof.
-move=> p n.
-
-
-Lemma ns_head : forall p n, (0 <= n)%Z -> exists l, ns p n = (p - n)%Z::l.
-intros p n; functional induction ns p n.
-intros; assert (n = 0)%Z by omega; subst n; ring_simplify (p-0)%Z; exists nil; auto.
-intros _; destruct IHl  as [l' pl'].
-omega.
-exists ((p-(n-1))%Z::l'); rewrite pl'; auto.
+move=> p; elim=>[|n [l Ih]] /=.
+  by rewrite oppr0 addr0; exists [::].
+by rewrite Ih; exists [:: p - Z_of_nat n & l].
 Qed.
 
-Lemma ns_step : forall p n, forall l1 l2 x y, (0 <= n)%Z ->
-  ns p n = l1++x::y::l2 -> y = (x + 1)%Z.
-intros p n; functional induction ns p n.
-intros; repeat (destruct l1; try discriminate).
-assert (np1 : (0 <= n-1)%Z) by omega.
-intros l1 l2 x y np q; destruct l1 as [ | a l1].
-destruct (ns_head p (n-1)  np1) as [l' ql'].
-rewrite ql' in q; simpl in q; injection q; intros; subst y x; ring.
-apply (IHl l1 l2); auto.
-simpl in q; injection q; auto.
+Lemma ns_head :  forall p n :Z, (0 <<= n) -> exists l, ns p n = (p - n) :: l.
+Proof.
+move=> p [|n|n] /=; last 1 first.
+- by rewrite leb_Zneg0N.
+- by exists [::]; rewrite oppr0 addr0.
+- move=> _; set m := nat_of_P n; case: (nat_ns_head p m)=> l' ->; exists l'.
+  by rewrite /m Zpos_eq_Z_of_nat_o_nat_of_P.
 Qed.
 
-Lemma ns_tail : forall p n, exists l, ns p n = l++p::nil.
-intros p n; functional induction ns p n.
-exists nil; auto.
-destruct IHl as [l ql]; rewrite ql; exists ((p-n)%Z::l); auto.
+Lemma nat_ns_step : forall p n, forall l1 l2 x y,
+  nat_ns p n = l1 ++ [:: x, y & l2] -> y = x + 1.
+Proof.
+move=> p; elim=> [|n Ihn] l1 l2 x y /=.
+  by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
+case: l1 => [|u l3] /=; last by case=> _; move/Ihn.
+case=> <-; case: (nat_ns_head p n)=> [l' ->]; case=> <- _.
+rewrite Zpos_P_of_succ_nat /Zsucc /= -[(_ + 1)%Z]/((Z_of_nat n) + 1) oppr_add addrA.
+by rewrite addrK.
 Qed.
 
-Lemma ns_bounds : forall p n x l1 l2, (0 <= n)%Z -> ns p n = l1++x::l2 -> 
-        (p -n <= x <= p)%Z.
-intros p n; functional induction ns p n.
-intros x [ | a l1].
-simpl; intros l2 np q; injection q;intros; omega.
-intros; destruct l1; discriminate.
-intros x [ | a l1];
-simpl; intros l2 np q; injection q; intros; try omega.
-assert (p - (n-1) <= x <= p)%Z.
-apply (IHl x l1 l2); auto; omega.
-omega.
+
+Lemma ns_step : forall p n, forall l1 l2 x y, 0 <<= n ->
+  ns p n = l1 ++ [:: x, y & l2] -> y = x + 1.
+Proof.
+move=> p [|n|n] /=; last 1 first.
+- by rewrite leb_Zneg0N.
+- move=> ? ? ? ? ?.
+  by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
+- move=> l1 l2 x y _; exact: nat_ns_step.
 Qed.
 
+Lemma nat_ns_tail : forall p n, exists l, nat_ns p n = l ++ [:: p].
+Proof.
+move=> p; elim=> [|n [l' Ihn]] /=.
+- by exists [::]; rewrite cat0s.
+- by rewrite Ihn; exists [:: (p - (' P_of_succ_nat n)%Z) & l']; rewrite cat_cons.
+Qed.
+  
+Lemma ns_tail : forall p n, exists l, ns p n = l ++ p ::nil.
+Proof.
+move=> p [|n|n] /=. 
+- by exists [::]; rewrite cat0s.
+- by case: (nat_ns_tail p (nat_of_P n))=> l' ->; exists l'.
+- by exists [::]; rewrite cat0s.
+Qed.
+
+(* Lemmas about minus are missing in xssralg .. .*)
+Lemma nat_ns_bounds : forall p n x l1 l2, nat_ns p n = l1 ++ [:: x & l2] -> 
+        (p - Z_of_nat n <<= x) && (x <<= p).
+Proof.
+move=> p; elim=> [|n Ihn] x l1 l2 /= h.
+- rewrite oppr0 addr0. 
+  suff exp : p = x by rewrite exp ler_refl.
+  case: l1 h => /=; first by case.
+  move=> z s.
+  by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
+- case: l1 h => [| u l1] /=.
+  + set sn := (' _)%Z; case=> h _; rewrite -h ler_refl /= -(lerTlb (- p)) addrN.
+    by rewrite addrC addKr ltrW // ltb_Zneg0.
+  + case=> _; move/Ihn; case/andP=> h1 h2; rewrite h2 andbT; apply: ler_trans h1.
+    rewrite -(lerTrb (- p)) !addrA addNr !add0r ler_oppger Zpos_P_of_succ_nat /Zsucc.
+    rewrite -(lerTlb (- (Z_of_nat n))) addrN -[Zplus _ _]/(Z_of_nat n + 1).
+    by rewrite -addrAC addrN add0r ltrW // ltr_0_1.
+Qed.
+
+Lemma ns_bounds : forall p n x l1 l2, 0 <<= n -> ns p n = l1 ++ x::l2 -> 
+        (p - n <<= x) && ( x <<= p).
+Proof.
+move=> p [| n | n] x l1 l2 /=.
+- move=> _ h; rewrite oppr0 addr0.
+  suff exp : p = x by rewrite exp ler_refl.
+  case: l1 h => /=; first by case.
+  move=> z s.
+  by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
+- by move=> _; move/nat_ns_bounds; rewrite Zpos_eq_Z_of_nat_o_nat_of_P.
+- by rewrite leb_Zneg0N.
+Qed. 
 
 Lemma map_contiguous :
-forall A B : Type, forall f : A -> B, forall l,
-forall l1 l2 a b, map f l = l1++a::b::l2 ->
-  {l'1 :list A & {l'2 : list A & {x:A & {y:A | l1 = map f l'1 /\ l2= map f l'2 /\ a = f x /\
-        b = f y /\ l = l'1++x::y::l'2}}}}.
-intros A B f l; induction l.
-simpl; intros; destruct l1; discriminate.
-intros l1 l2 b1 b2; destruct l1 as [ | a' l1].
-  simpl; intros q.
-destruct l as [|a'' l]; try discriminate q; simpl in q.
-injection q; intros.
-exists nil; exists l; exists a; exists a''; auto.
-simpl; intros q.
-injection q; intros q' q''.
-destruct (IHl _ _ _ _ q') as [r1 [r2 [x [y [q1 [ q2 [qx [qy ql]]]]]]]].
-exists (a::r1); exists r2; exists x; exists y; repeat apply conj; auto.
-simpl; rewrite q'', q1; auto.
-simpl; rewrite ql; auto.
+forall (A B : Type)(f : A -> B) l l1 l2 a b,
+  map f l = l1 ++ [:: a, b & l2] ->
+  {l'1 : seq A & 
+    {l'2 : seq A & 
+      {x : A & 
+        {y : A | [/\ l1 = map f l'1, l2= map f l'2, a = f x,
+          b = f y & l = l'1 ++ [:: x, y & l'2]]}}}}.
+Proof.
+intros A B f; elim=> [|x l Ihl] /= l1 l2 a b h; first by case: l1 h.
+case: l Ihl h => [|a' l'] /= h.
+- by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
+- case: l1 h => [|a1 l1] /= h.
+    by case=> <- <- <-; exists [::]; exists l'; exists x; exists a' => /=.
+  case=> e1; move/h => [l1' [l2' [x' [y' [h1 h2 h3 h4 h5]]]]].
+  exists [:: x & l1']; rewrite /= -h1 h2 e1; exists l2'; exists x'; exists y'.
+  by split=> //; rewrite h5.
 Qed.
 
+(*This is map_cat.
 Lemma map_app :
   forall A B:Type, forall f : A -> B, forall l1 l2, map f (l1++l2) = map f l1 ++ map f l2.
 intros A B f l1; induction l1; simpl; auto.
 intros l2; rewrite IHl1; auto.
 Qed.
+*)
+
 
 Lemma non_empty_tail : 
-  forall (A:Type) (a:A) l, exists l', exists b, a::l = l'++(b::nil).
-intros A a l; generalize a; clear a; induction l.
-exists nil; exists a; auto.
-intros a'; destruct (IHl a) as [l' [b q]]; rewrite q.
-exists (a'::l'); exists b; auto.
+  forall (A : Type) (a : A) l, exists l', exists b, [:: a & l] = l' ++ [::b].
+Proof.
+move=> A a l; elim: l a => [| x l  Ihl] a.
+- by exists [::]; exists a.
+- case: (Ihl x)=> s [b Ihb]; rewrite Ihb; exists [:: a & s]; exists b.
+  by rewrite cat_cons.
 Qed.
 
-Lemma Qfrac_add_Z_l : forall a b c, (a#1) + (b#c) == (a*'c+b#c).
+(* wait and see ...
+Lemma Qfrac_add_Z_l : forall a b c,
+  (a # 1) + (b # c)%Q = ( a * ' c + b # c)%Q :> Qcb.
 intros;unfold Qeq; simpl; ring.
 Qed.
+*)
 
+(*
 Lemma constructive_mvt :
   forall l x y, x < y -> eval_pol l x < 0 -> 0 <= eval_pol l y  ->
        forall epsilon, 0 < epsilon ->

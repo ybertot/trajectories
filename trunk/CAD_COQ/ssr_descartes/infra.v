@@ -99,8 +99,114 @@ Canonical Structure z_choiceType :=
 Canonical Structure z_countType :=
   Eval hnf in CountType  z_countMixin.
 
+
+Lemma ZplusA : associative Zplus.
+Proof. by exact Zplus_assoc . Qed .
+
+Lemma ZplusC : commutative Zplus .
+Proof . by exact Zplus_comm. Qed .
+
+Lemma Zplus0 : left_id (0%Z) Zplus .
+Proof . by exact Zplus_0_l. Qed .
+
+Lemma ZplusNr : left_inverse  0%Z Zopp Zplus .
+Proof . exact Zplus_opp_l. Qed. 
+
+Lemma ZplusrN : right_inverse 0%Z Zopp Zplus .
+Proof . exact Zplus_opp_r. Qed.
+
+Definition Z_zmodMixin :=
+  ZmodMixin ZplusA ZplusC Zplus0 ZplusNr .
+
+Canonical Structure Z_zmodType :=
+  Eval hnf in ZmodType Z_zmodMixin .
+
+(* Z Ring *)
+Lemma ZmultA : associative Zmult .
+Proof . exact: Zmult_assoc . Qed .
+
+Lemma Zmult1q : left_id 1%Z Zmult .
+Proof . exact: Zmult_1_l. Qed .
+
+Lemma Zmultq1 : right_id 1%Z Zmult .
+Proof . exact: Zmult_1_r . Qed .
+
+Lemma Zmultq0 : forall (q : Z), Zmult q 0%Z = 0%Z.
+Proof . exact: Zmult_0_r . Qed .
+
+Lemma Zmult_addl : left_distributive Zmult Zplus .
+Proof . exact: Zmult_plus_distr_l . Qed .
+
+Lemma Zmult_addr : right_distributive Zmult Zplus .
+Proof . exact: Zmult_plus_distr_r . Qed .
+
+Lemma nonzeroZ1 : 1%Z != 0%Z .
+Proof . by []. Qed.
+
+Definition Z_ringMixin :=
+  RingMixin ZmultA Zmult1q Zmultq1 Zmult_addl Zmult_addr nonzeroZ1 .
+
+Canonical Structure Z_ringType :=
+  Eval hnf in RingType Z_ringMixin .
+
+(* Z commutative ring *)
+Lemma ZmultC : commutative Zmult .
+Proof . exact: Zmult_comm . Qed .
+
+Canonical Structure Z_comRingType := ComRingType ZmultC .
+
+Lemma  Zlt_bool_sorderb  : sorderb Zlt_bool.
+Proof.
+constructor.
+  move=> x; apply/negP; move/Zlt_is_lt_bool; exact: Zlt_irrefl.
+move=> x y z; move/Zlt_is_lt_bool=> h1; move/Zlt_is_lt_bool=> h2.
+by apply/ Zlt_is_lt_bool; apply: Zlt_trans h2.
+Qed.
+
+Lemma Zle_bool_Tr : forall x y : Z, (Zle_bool x y)%Z ->
+    forall z, (Zle_bool (x + z)%Z (y + z))%Z .
+Proof. 
+move=> x y; move/Zle_is_le_bool=> h z; apply/Zle_is_le_bool.
+exact: Zplus_le_compat_r. 
+Qed.
+
+
+Lemma Zle_bool_total : total Zle_bool.
+Proof. 
+move=> x y; case: (Z_lt_le_dec x y).
+  by move/Zlt_le_weak; move/Zle_is_le_bool->.
+by move/Zle_is_le_bool->; rewrite orbT.
+Qed.
+
+Lemma Zle_Zlt_bool_eq : forall x y, Zle_bool x y = (Zlt_bool x y) || (x == y).
+Proof.
+move=> x y; apply/idP/orP.
+  move/Zle_is_le_bool; move/Zle_lt_or_eq; case.
+  - by move/Zlt_is_lt_bool; left.
+  - by move/eqP; right.
+case.
+   by move/Zlt_is_lt_bool; move/Zlt_le_weak; move/Zle_is_le_bool.
+by move/eqP->; apply/Zle_is_le_bool; exact: Zle_refl.
+Qed.
+
+Lemma Zlt_bool_lcompatible : lcompatible Zlt_bool.
+Proof.
+move=> x y z; move/Zlt_is_lt_bool=> h1; move/Zlt_is_lt_bool=> h2.
+apply/Zlt_is_lt_bool; exact: Zmult_lt_compat_l.
+Qed.
+
+Definition Z_OComRingMixin :=
+  GOrdered.OComRing.Mixin
+  Zlt_bool_sorderb Zle_bool_Tr Zle_Zlt_bool_eq Zle_bool_total Zlt_bool_lcompatible .
+
+Canonical Structure Z_OComRingType :=
+  Eval hnf in OcomringType Z_OComRingMixin .
+
+
+
 Definition eqq (x y : Q) : bool :=
   match x, y with
+
     | (xn # xd)%Q, (yn # yd)%Q => (xn == yn) && (xd == yd)
   end.
 
@@ -277,7 +383,7 @@ Proof . by qcb ring . Qed .
 
 Canonical Structure Qcb_comRingType := ComRingType QcbmultC .
 
-(* Q/== ==> unitary ring *)
+(* Q/== ==> ring with units *)
 Lemma Qcb_mulVx :
     forall x:Qcb, x != (Q2Qcb 0) -> Qcbmult (Qcbinv x) x = (Q2Qcb 1) .
 Proof .
@@ -353,6 +459,11 @@ Local Notation "x <<! y" := (Qcb_ltb x y) .
 Lemma Qcb_leb_iff : forall (x y : Qcb), (x <<= y) <-> (x <= y)%Q .
 Proof . by move=> x y; apply: Qle_bool_iff . Qed .
 
+Lemma Qcb_ltbP : forall x y : Qcb, reflect  (x < y)%Q (x <<! y).
+Proof . 
+by move=> x y; rewrite /Qcb_ltb; apply: (iffP idP); move/Zlt_is_lt_bool.
+Qed.
+
 Lemma qleb_orderb : orderb Qcb_leb .
 Proof .
   split => [x|x y|x y z Hxy Hyz] .
@@ -361,6 +472,15 @@ Proof .
     by apply Qle_antisym; apply/Qcb_leb_iff .
   + by apply/Qcb_leb_iff; apply Qle_trans with x; apply/Qcb_leb_iff .
 Qed .
+
+Lemma qltb_sorderb : sorderb Qcb_ltb.
+Proof.
+constructor=> [x | x y].
+- rewrite /Qcb_ltb; apply: negbTE; apply/negP; move/Zlt_is_lt_bool.
+  exact: Zlt_irrefl.
+- move=> z; move/Qcb_ltbP=> h1; move/Qcb_ltbP=> h2; apply/Qcb_ltbP.
+  by apply: Qlt_trans h2.
+Qed.
 
 Lemma qleb_Tr :
   forall (x y : Qcb), (x <<= y) ->
@@ -384,12 +504,31 @@ Proof .
     move/Zcompare_Eq_iff_eq=> Hdiscr; congruence .
 Qed .
 
+Lemma qleb_qltb_eq : forall x y : Qcb,
+  (x <<= y) = (x <<! y) || (x == y).
+Proof.
+move=> x y; rewrite qleb_qltne; case e: (x == y) => /=.
+  by rewrite andbF /= (eqP e); apply/Qcb_leb_iff; apply Qle_refl .
+by rewrite andbT orbF.
+Qed.
+
+
+
 Lemma qleb_total : forall (x y : Qcb), (x <<= y) || (y <<= x) .
 Proof .
   move=> x y; rewrite /Qcb_leb .
   generalize (Qnum x * ' Qden y)%Z => z1 .
   generalize (Qnum y * ' Qden x)%Z => z2 .
-  by case (Zle_bool_total z1 z2) => ->; rewrite ?orbT .
+  by case: (Zle_bool_total z1 z2).
+Qed .
+
+Lemma qltb_lcompatible : lcompatible Qcb_ltb .
+Proof .
+  move=> [x Hx] [y Hy] [z Hz] .
+  move/Qcb_ltbP=> H0x; move/Qcb_ltbP => Hyz .
+  apply/Qcb_ltbP; rewrite !qcb_val_E /= in H0x Hyz .
+  rewrite ![QcbMake Hx * _]mulrC !qcb_val_E; setoid_rewrite Qred_correct .
+  exact: Qmult_lt_compat_r .
 Qed .
 
 Lemma qleb_lcompatible : lcompatible Qcb_leb .
@@ -401,12 +540,16 @@ Proof .
   exact: Qmult_le_compat_r .
 Qed .
 
-Definition Qcb_orderedFieldMixin :=
-  OfieldMixin
-  qleb_orderb qleb_Tr qleb_qltne qleb_total qleb_lcompatible .
+Definition Qcb_OComRingMixin :=
+  GOrdered.OComRing.Mixin
+  qltb_sorderb qleb_Tr qleb_qltb_eq qleb_total qltb_lcompatible .
 
-Canonical Structure Qcb_orderedFieldType :=
-  Eval hnf in OfieldType Qcb_orderedFieldMixin .
+Canonical Structure Qcb_OComRingType :=
+  Eval hnf in OcomringType Qcb_OComRingMixin .
+
+Canonical Structure Qcb_OFieldType :=
+  GOrdered.OField.pack  Qcb_OComRingMixin.
+
 
 (* -------------------------------------------------------------------- *)
 Reserved Notation "'δ_ ( i , j )"
