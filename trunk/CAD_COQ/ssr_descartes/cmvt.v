@@ -352,7 +352,193 @@ intros;unfold Qeq; simpl; ring.
 Qed.
 *)
 
+
+Lemma Qcb_Z : forall n : Z, Qred (Qmake n 1) == Qmake n 1.
+Proof.
+move=> n; apply/eqP; apply: Qcanon.Qred_identity => /=.
+rewrite Znumtheory.Zgcd_1_rel_prime.
+apply Znumtheory.rel_prime_sym.
+apply Znumtheory.rel_prime_1.
+Qed.
+
+Canonical Structure Qcb_make (n : Z) := QcbMake (Qcb_Z n).
+
+Lemma Qcb_make0 : Qcb_make 0 = 0.
+Proof. exact: val_inj. Qed.
+
+Lemma Qcb_make1 : Qcb_make 1 = 1.
+Proof. exact: val_inj. Qed.
+
+
+Lemma constructive_mvt :
+  forall l x y, x <<! y -> eval_pol l x <<! 0%R -> 0%R <<= eval_pol l y  ->
+       forall epsilon, 0 <<! epsilon ->
+       exists x', exists y',  - epsilon <<= eval_pol l x' /\
+         eval_pol l x' <<! 0 /\ 0 <<= eval_pol l y' /\
+         eval_pol l y' <<= epsilon /\ x <<= x' /\ x' <<! y' /\ y' <<= y.
+Proof.
+move=> l a b ab nla plb.
+have ba' : 0 <<! b - a by rewrite -(addrN a) ltrTlb.
+(*have mpolapos : 0 <<! - eval_pol l a by rewrite gtr0_ltNr0 opprK.*)
+have evalba : 0 <<! eval_pol l b - eval_pol l a. 
+  rewrite  -(ltrTlb (eval_pol l a)) add0r -addrA addNr addr0.
+  exact: ltr_ler_trans plb.
+case: (translate_pol l a) => l' q.
+case: (@cm3 (b - a) ba' l') => /= c pc.
+have cpos : 0 <<! c.
+  apply: (ltr_Ilcompat_l ba'); rewrite mul0r -[b -a]addr0 -{2}oppr0.
+  apply: ltr_ler_trans (pc 0 (b - a) _ _ _); rewrite ?ler_refl ?ltrW //.
+  by rewrite -{2}(addrN a) -!q absr_nneg ?ltrW.
+move=> eps pe.
+have pdiv : (0 <<! (b - a) * c / eps).
+  by apply: ltr_0_lcompat; rewrite ?invr_ltr // ltr_0_lcompat.
+move: (pdiv); move/ltrW; move/Qcb_lebP; case/QZ_bound => n qn.
+(* assia : canonical structures are missing here for Z -> Qcb *)
+have admit1 : 0 <<! n by admit.
+have mkl: 
+  exists l, forall l1 l2 x y, 
+    [:: a & l] ++ [:: b] = l1 ++ [:: x, y & l2] ->
+    y - x = (b - a) / (Qcb_make n) /\ 
+    exists k : Z, 
+      x = a + (b - a)* (Qcb_make k)/ (Qcb_make n) /\ 
+      (0<<= k) /\ (k <<= n - 1).
+  case en : (n == 1).
+  - rewrite (eqP en); exists [::] => l1 l2 x y /=; case: l1 => [| t1 ql1] /=.
+      case=> e1 e2 e3; rewrite e1 e2 Qcb_make1 invr1 mulr1; split=> //.
+      by exists 0; rewrite addrN ler_refl Qcb_make0 mulr0 mul0r addr0; split.
+    by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
+  - exists (map  (fun x => a + (b-a)*((Qcb_make x)/(Qcb_make n))) (ns (n-1) (n-2))).
+    move=> l1 l2 x y; case: l1 => [|t1 ql1] /=.
+      have h1 : 0 <<= n - 2%Z by admit.
+      case: (ns_head (n - 1) (n - 2) h1) => a1 qa1.
+      rewrite qa1 /= (_ : (n - 1) - (n - 2)%Z = 1) ?Qcb_make1; last first.
+      by rewrite addrAC [-(n - 2%Z)]oppr_add addrA opprK addrN add0r. 
+      case => -> <- /=; split.
+        by rewrite addrAC addrN add0r mulrA mulr1.
+      have admit2 : leb 0 (n - 1) by admit.
+      exists 0; rewrite Qcb_make0 mulr0 mul0r addr0 ler_refl; split=> //; split=> //.
+      case=> ->; case: l2 => [|d l2] /=.
+      rewrite -[[:: x, y & [::]]]/([::x]++[:: y]) catA.
+      rewrite !cats1 -!rot1_cons; move/rot_inj; case=> <-.
+      case: (ns_tail (n - 1) (n - 2))=> l3 ->; rewrite map_cat /=.
+      rewrite cats1 -rot1_cons; move/rot_inj; case=> <- h2.
+      have admit3 : (Qcb_make (n - 1) / Qcb_make n) = 1 - (Qcb_make n)^-1.
+         admit.
+      rewrite admit3 mulr_addr mulr1 oppr_add !addrA oppr_add addrA addrN add0r.
+      rewrite -mulrN opprK; split=> //.
+      exists (n - 1); split.
+        by rewrite  -mulrA admit3 mulr_addr mulr1 !addrA.
+      rewrite ler_refl.
+      have admit4 : leb 0 (n - 1) by admit.
+      done.
+    case: (non_empty_tail  _ d l2) => l3 [e qe]; rewrite qe.
+    rewrite -[ql1 ++ [:: x, y & l3 ++ [:: e]]]/(ql1 ++ [:: x, y & l3] ++ [:: e]).
+    rewrite [_ ++ _ ++ [:: e]]catA !cats1 -!rot1_cons; move/rot_inj; case=> -> q''.
+    case: (map_contiguous _ _ (fun x => t1+(e-t1)*((Qcb_make x)/(Qcb_make n)))
+             _ _ _ _ _ q'') =>  [l'1 [l'2 [n1 [n2 [_ [_ [qx [qy st]]]]]]]].
+    rewrite qx qy.
+Admitted.
 (*
+subst x y; setoid_replace (n2#1) with ((n1#1)+1).
+split.
+ring.
+exists n1; split. 
+rewrite Qmult_assoc; apply Qeq_refl.
+apply ns_bounds in st; omega.
+rewrite Qfrac_add_Z_l; rewrite Zmult_1_r.
+apply ns_step in st; try omega; rewrite st; apply Qeq_refl.
+rewrite app_ass; auto.
+destruct mkl as [sl qsl].
+destruct (find_pair Q (fun x => eval_pol l x < 0) 
+                  (fun x y => y - x == (b-a)/(n#1) /\
+                     exists k, x == a + (b-a)*(k#1) /(n#1) /\
+                     (0 <= k <= n-1)%Z)
+                 sl a b) 
+  as [a' [b' [[A1 [k [A4 A5]]][A2 A3]]]]; auto.
+apply Qle_not_lt; auto.
+intros x _; case (Qlt_le_dec (eval_pol l x) 0); auto.
+intros H; right; apply Qle_not_lt; auto.
+clear qsl sl.
+exists a'; exists b'.
+assert (aa':a <= a').
+(setoid_replace a with (a+0) by ring); rewrite A4.
+apply Qplus_le_compat; try apply Qle_refl.
+repeat apply Qmult_le_0_compat; auto.
+unfold Qle; simpl; omega.
+apply Qlt_le_weak; apply Qinv_lt_0_compat; unfold Qlt; simpl; omega.
+assert (bb': b' <= b).
+setoid_replace b with (a + (b-a) * (n#1) * /(n#1)) by
+ field; unfold Qeq; simpl; try omega.
+(setoid_replace b' with (a' + (b' - a')) by ring); rewrite A1, A4.
+rewrite <- Qplus_assoc; apply Qplus_le_compat; try apply Qle_refl.
+unfold Qdiv;
+ match goal with |- ?f <= _ => setoid_replace f with ((b-a)* ((k#1)+1) * /(n#1))
+ end.
+apply Qmult_le_compat_r.
+repeat rewrite (Qmult_comm (b-a)); apply Qmult_le_compat_r.
+rewrite Qfrac_add_Z_l; unfold Qle; simpl; omega.
+auto.
+apply Qlt_le_weak; apply Qinv_lt_0_compat; unfold Qlt; simpl; omega.
+field; unfold Qeq; simpl; omega.
+assert (ab': a' < b').
+setoid_replace a' with (a' + 0) by ring.
+(setoid_replace b' with (a' + (b' - a')) by ring); rewrite A1.
+apply Qplus_le_lt_compat; try apply Qle_refl; apply Qmult_lt_0_compat; auto.
+apply Qinv_lt_0_compat; unfold Qlt; simpl; omega.
+assert (epsban: (b-a)*c / (n#1) <= epsilon).
+apply Qmult_lt_0_le_reg_r with ((n#1) / epsilon).
+apply Qmult_lt_0_compat; auto.
+unfold Qlt; simpl; omega.
+match goal with |- ?f1 <= ?f2 =>
+  (setoid_replace f2 with (n#1) by field; auto);
+  (setoid_replace f1 with ((b-a)*c /epsilon) by
+   (field; split; auto; unfold Qeq; simpl; omega)); auto
+end.
+split;[idtac | split; auto].
+(* start with epsilon and a'. *)
+apply Qopp_le_rl.
+apply Qle_trans with (eval_pol l b' - eval_pol l a').
+setoid_replace (-eval_pol l a') with (0 - eval_pol l a') by ring.
+apply Qplus_le_compat; auto; apply Qnot_lt_le; auto.
+repeat rewrite q.
+rewrite <- (pos_Qabs (eval_pol l' (b'-a) - eval_pol l' (a'-a))).
+apply Qle_trans with (c*((b'-a)-(a'-a))).
+apply pc; auto.
+(setoid_replace 0 with (a - a) by ring); apply Qplus_le_compat; auto; apply Qle_refl.
+apply Qplus_le_compat; auto.
+apply Qplus_le_compat; auto.
+setoid_replace (b' -a -(a'-a)) with (b' -a') by ring.
+rewrite A1.
+unfold Qdiv; rewrite Qmult_assoc; rewrite (Qmult_comm c); exact epsban.
+repeat rewrite <- q.
+(setoid_replace 0 with (0+0) by ring);apply Qplus_le_compat.
+apply Qnot_lt_le; auto.
+apply Qopp_le_lr.
+(setoid_replace 0 with (-0) by ring);apply Qlt_le_weak; assumption.
+split.
+apply Qnot_lt_le; auto.
+split; auto.
+apply Qle_trans with (eval_pol l' (b' -a) -eval_pol l' (a' -a)).
+setoid_replace (eval_pol l b') with (eval_pol l b' + 0) by ring.
+apply Qplus_le_compat.
+rewrite q; apply Qle_refl.
+rewrite <- q; apply Qopp_le_lr; auto.
+rewrite <- (pos_Qabs (eval_pol l' (b'-a) - eval_pol l' (a'-a))).
+apply Qle_trans with (c*((b'-a)-(a'-a))).
+apply pc; auto.
+(setoid_replace 0 with (a - a) by ring); apply Qplus_le_compat; auto; apply Qle_refl.
+apply Qplus_le_compat; auto.
+apply Qplus_le_compat; auto.
+setoid_replace (b' -a -(a'-a)) with (b' -a') by ring.
+rewrite A1.
+unfold Qdiv; rewrite Qmult_assoc; rewrite (Qmult_comm c); exact epsban.
+repeat rewrite <- q.
+(setoid_replace 0 with (0+0) by ring);apply Qplus_le_compat.
+apply Qnot_lt_le; auto.
+apply Qopp_le_lr.
+apply Qlt_le_weak; assumption.
+Qed.
+
 Lemma constructive_mvt :
   forall l x y, x < y -> eval_pol l x < 0 -> 0 <= eval_pol l y  ->
        forall epsilon, 0 < epsilon ->

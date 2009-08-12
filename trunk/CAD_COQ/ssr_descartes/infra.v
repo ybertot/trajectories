@@ -450,21 +450,24 @@ Canonical Structure Qcb_fieldType :=
   Eval hnf in @FieldType (IdomainType Qcb_idomainMixin) Qcb_fieldMixin .
 
 (* Q/== ==> non-discrete ordered field *)
-Definition Qcb_leb  (x y : Qcb) := (Zle_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z .
-Definition Qcb_ltb  (x y : Qcb) := (Zlt_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z .
+Definition Qcb_leb  (x y : Q) := (Zle_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z .
+Definition Qcb_ltb  (x y : Q) := (Zlt_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z .
 
 Local Notation "x <<= y" := (Qcb_leb x y) .
 Local Notation "x <<! y" := (Qcb_ltb x y) .
 
-Lemma Qcb_leb_iff : forall (x y : Qcb), (x <<= y) <-> (x <= y)%Q .
+Lemma Qcb_leb_iff : forall (x y : Q), (x <<= y) <-> (x <= y)%Q .
 Proof . by move=> x y; apply: Qle_bool_iff . Qed .
 
-Lemma Qcb_ltbP : forall x y : Qcb, reflect  (x < y)%Q (x <<! y).
+Lemma Qcb_lebP : forall x y : Q, reflect  (x <= y)%Q (x <<= y).
+Proof . by move=> x y; apply: (iffP idP); move/Qcb_leb_iff. Qed.
+
+Lemma Qcb_ltbP : forall x y : Q, reflect  (x < y)%Q (x <<! y).
 Proof . 
 by move=> x y; rewrite /Qcb_ltb; apply: (iffP idP); move/Zlt_is_lt_bool.
 Qed.
 
-Lemma qleb_orderb : orderb Qcb_leb .
+Lemma qleb_orderb : @orderb Qcb Qcb_leb .
 Proof .
   split => [x|x y|x y z Hxy Hyz] .
   + apply/Qcb_leb_iff; apply Qle_refl .
@@ -473,7 +476,8 @@ Proof .
   + by apply/Qcb_leb_iff; apply Qle_trans with x; apply/Qcb_leb_iff .
 Qed .
 
-Lemma qltb_sorderb : sorderb Qcb_ltb.
+
+Lemma qltb_sorderb : @sorderb Qcb Qcb_ltb.
 Proof.
 constructor=> [x | x y].
 - rewrite /Qcb_ltb; apply: negbTE; apply/negP; move/Zlt_is_lt_bool.
@@ -522,7 +526,7 @@ Proof .
   by case: (Zle_bool_total z1 z2).
 Qed .
 
-Lemma qltb_lcompatible : lcompatible Qcb_ltb .
+Lemma qltb_lcompatible : @lcompatible Qcb_ringType Qcb_ltb .
 Proof .
   move=> [x Hx] [y Hy] [z Hz] .
   move/Qcb_ltbP=> H0x; move/Qcb_ltbP => Hyz .
@@ -531,7 +535,7 @@ Proof .
   exact: Qmult_lt_compat_r .
 Qed .
 
-Lemma qleb_lcompatible : lcompatible Qcb_leb .
+Lemma qleb_lcompatible : @lcompatible Qcb_ringType Qcb_leb .
 Proof .
   move=> [x Hx] [y Hy] [z Hz] .
   move/Qcb_leb_iff=> H0x; move/Qcb_leb_iff => Hyz .
