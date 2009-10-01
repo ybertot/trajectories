@@ -362,6 +362,27 @@ Proof. exact: val_inj. Qed.
 Lemma Qcb_make1 : Qcb_make 1 = 1.
 Proof. exact: val_inj. Qed.
 
+Lemma leb_Z : forall x y:Z, leb x y -> leb (Qcb_make x) (Qcb_make y).
+Proof. 
+  move => x y xy; rewrite Qcb_leb_iff 
+       /qcb_val /Qcb_make /Qle /Qnum /Qden 2!Zmult_1_r.
+  rewrite -[leb _ _]/(Zle_bool _ _) in xy.
+  by move: (Zle_cases x y); rewrite xy.
+Qed.
+
+Lemma leb_0_Z : forall y, leb 0%Z y -> leb 0 (Qcb_make y).
+Proof. by move => y yp; apply: leb_Z. Qed.
+
+Lemma ltb_Z : forall x y:Z, ltb x y -> ltb (Qcb_make x) (Qcb_make y).
+Proof. 
+  move => x y xy; apply/Qcb_ltbP. rewrite 
+       /qcb_val /Qcb_make /Qlt /Qnum /Qden 2!Zmult_1_r.
+  rewrite -[ltb _ _]/(Zlt_bool _ _) in xy.
+  by move: (Zlt_cases x y); rewrite xy.
+Qed.
+
+Lemma ltb_0_Z : forall y, ltb 0%Z y -> ltb 0 (Qcb_make y).
+Proof. by move => y yp; apply: ltb_Z. Qed.
 
 Lemma constructive_mvt :
   forall l x y, x <<! y -> eval_pol l x <<! 0%R -> 0%R <<= eval_pol l y  ->
@@ -436,7 +457,7 @@ have mkl:
       rewrite n21 [t1 + _]addrC -addrA oppr_add [t1 + _]addrA addrN add0r
        -mulrN -mulr_addr -mulNr -[_ * _^-1 + _]mulr_addl.
       have tmp: Qcb_make (n1 + 1) - Qcb_make n1 = 1.
-        by rewrite -[_ - _]/(Q2Qcb(Qcb_make _ + Qcbopp(Qcb_make _)))
+        by rewrite -[_ - _]/(Q2Qcb (Qcb_make _ + Qcbopp(Qcb_make _)))
           /Qcbopp /Qcb_make 4!qcb_val_E /Qopp /Qden /Qnum {2}/Q2Qcb qcb_val_E
           (eqP (Qcb_Z _)) /Qplus /Qden /Qnum /Pmult 2!Zmult_1_r -Zplus_assoc
           [Zplus _ (Zopp _)]Zplus_comm Zplus_assoc Zplus_opp_r Zplus_0_l.
@@ -446,7 +467,7 @@ have mkl:
       have tmp : (n - 1) - (n - 2%Z) = 1
         by rewrite oppr_add opprK addrA [ _ - n]addrC addKr.
       by rewrite -{1}tmp; apply: ns_bounds _ _ _ _ _ admit5 st.
-    move/andP: bds => [bds1 bds2];split; last done.
+    move/andP: bds => [bds1 bds2];split; last by [].
     have admit6: leb 0 n1 by admit.
     by [].
   case: mkl => [sl qsl].
@@ -456,17 +477,19 @@ have mkl:
                 (exists k, x = a + (b-a)*Qcb_make k / Qcb_make n /\
                         leb 0 k /\ leb k (n-1))) sl a b nla admit7 qsl) =>
              [a' [b' [[A1 [k [A4 A5]]] [A2 A3]]]] {qsl sl}.
-exists a'; exists b'.
-have aa' : leb a a'.
+  exists a'; exists b'.
+  have aa' : leb a a'.
+    rewrite -(addr0 a) A4; apply: lerT; first by apply ler_refl.
+    apply: ler_0_lcompat; first apply:ler_0_lcompat.
+        by rewrite ler_ltreq; apply/orP; left.
+      by apply: leb_0_Z; move: A5 => [A5 _].
+    by rewrite ler_ltreq; apply/orP; left; rewrite invr_ltr; apply: ltb_Z.
+  have bb' : leb b' b.
+    have bdec : b = a + (b - a) * (Qcb_make n) / (Qcb_make n).
+      have nn0 : Qcb_unit (Qcb_make n).
+        apply/negP.
 Admitted.
 (*
-exists a'; exists b'.
-assert (aa':a <= a').
-(setoid_replace a with (a+0) by ring); rewrite A4.
-apply Qplus_le_compat; try apply Qle_refl.
-repeat apply Qmult_le_0_compat; auto.
-unfold Qle; simpl; omega.
-apply Qlt_le_weak; apply Qinv_lt_0_compat; unfold Qlt; simpl; omega.
 assert (bb': b' <= b).
 setoid_replace b with (a + (b-a) * (n#1) * /(n#1)) by
  field; unfold Qeq; simpl; try omega.

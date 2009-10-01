@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 SSRLIB   = $(shell coqc -where)/../ssreflect
-INCFLAGS = -I . -I xssr
+INCFLAGS = -I . -I xssr -I $(SSRLIB)
 
 COQC     = "$(COQBIN)ssrcoq"
 COQDEP   = "$(COQBIN)coqdep -c ${INCFLAGS} -I ${SSRLIB}"
@@ -15,7 +15,7 @@ all:
 
 config:
 	coq_makefile -no-install \
-	    $(shell find . -name '*.v' -a \! -wholename './trash/*') \
+	    $(shell find . -name '*.v' -a) \
 	    COQC = $(COQC) COQDEP = $(COQDEP) COQFLAGS = $(COQFLAGS) \
 	    > Makefile.coq
 	$(COQMAKE) depend

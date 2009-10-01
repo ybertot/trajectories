@@ -305,7 +305,7 @@ Module GOrdered .
 
     (* ------------------------------------------------------------------ *)
     Lemma lerT :
-      forall (x₁ y₁ x₂ y₂ : G), x₁ <<= y₁ -> x₂ <<= y₂ -> x₁+x₂ <<= y₁+y₂ .
+      forall (x₁ y₁ x₂ y₂ : G), x₁ <<= y₁ -> x₂ <<= y₂ -> x₁ + x₂ <<= y₁ + y₂ .
     Proof .
       move=> x₁ y₁ x₂ y₂ Hx Hy; apply ler_trans with (x₁+y₂) .
       by apply lerTr . by apply lerTl .
@@ -325,7 +325,7 @@ Module GOrdered .
     Qed .
       
     Lemma ltrT :
-      forall (x₁ y₁ x₂ y₂ : G), x₁ <<! y₁ -> x₂ <<! y₂ -> x₁+x₂ <<! y₁+y₂ .
+      forall (x₁ y₁ x₂ y₂ : G), x₁ <<! y₁ -> x₂ <<! y₂ -> x₁ + x₂ <<! y₁ + y₂ .
     Proof .
       move=> x₁ y₁ x₂ y₂ H1 H2; apply ltr_ler_trans with (y₁ + x₂) .
       - by apply ltrTl .
@@ -333,7 +333,7 @@ Module GOrdered .
     Qed .
 
     Lemma ltr_lerT :
-      forall (x₁ y₁ x₂ y₂ : G), x₁ <<! y₁ -> x₂ <<= y₂ -> x₁+x₂ <<! y₁+y₂ .
+      forall (x₁ y₁ x₂ y₂ : G), x₁ <<! y₁ -> x₂ <<= y₂ -> x₁ + x₂ <<! y₁ + y₂ .
     Proof .
       move=> x₁ y₁ x₂ y₂ H1 H2; apply ltr_ler_trans with (y₁ + x₂) .
       by apply ltrTl . by apply lerTr .
