@@ -1,5 +1,5 @@
-Require Import pol QArith ZArith Zwf Recdef Omega.
-Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun .
+Require Import QArith ZArith Zwf Recdef Omega.
+Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun pol.
 Require Import bigops groups choice .
 Require Export ssralg xssralg infra .
 
@@ -179,30 +179,23 @@ rewrite -!mulrA ler_rcompat // ?(ler_trans hxy) //.
 by rewrite  (ler_trans (absrpos (el y - el x))) // cp.
 Qed.
 
-(* later...
-Definition find_pair : forall A:Type, forall P:A->Prop, forall Q:A->A->Prop,
-    forall l:list A, forall a b:A, P a -> ~P b ->
+
+Definition find_pair : forall A:eqType, forall P:A->bool, forall Q:A->A->Prop,
+    forall l:seq A, forall a b:A, P a -> ~P b ->
     (forall l1 l2 x y, a::l ++ b::nil= l1 ++ x :: y :: l2 -> Q x y) ->
-    (forall x, In x l -> {P x}+{~P x}) ->
     {c :A & { d | Q c d /\ P c /\ ~P d}}.
-intros A P Q; induction l; simpl; intros a' b' Pa Pb connect dec.
-exists a'; exists b'; split; auto.
-apply (connect nil nil); auto.
-case (dec a); auto.
-intros Pa1; destruct (IHl a b' Pa1 Pb) as [c [d [cd [Pc Pd]]]].
-intros l1 l2 x y q; apply (connect (a'::l1) l2); rewrite q; simpl;auto.
-intros x inx; apply (dec x); auto.
-exists c; exists d; auto.
-exists a'; exists a; split; auto.
-apply (connect nil (l++b'::nil)); auto.
+move => A P Q l; elim: l => [ | a l IHl] a' b' Pa Pb connect. 
+  by exists a'; exists b'; split => //; apply: (connect [::] [::]).
+case Pa1: (P a).
+  have tmp :
+     forall l1 l2 x y,  a :: l ++ [:: b' ]= l1 ++ [::x, y & l2] -> Q x y.
+    by move => l1 l2 x y q; apply: (connect (a'::l1) l2); rewrite /= q.
+  move: (IHl a b' Pa1 Pb tmp) => [c [d [cd Pc]]].
+  by exists c; exists d.
+exists a'; exists a; split.
+  by apply (connect nil (l++b'::nil)).
+by split; first done; rewrite Pa1.
 Qed.
-*)
-
-
-(*
-Function ns (p n:Z) {measure Zabs_nat n} : seq Z :=
-   if Z_le_dec n 0 then p::nil else (p - n)%Z :: ns p (n - 1)%Z.
-*)
 
 Fixpoint nat_ns (p : Z)(n : nat) :=
   match n with
@@ -437,28 +430,36 @@ have mkl:
     case: (map_contiguous _ _ (fun x => t1+(e-t1)*((Qcb_make x)/(Qcb_make n)))
              _ _ _ _ _ q'') =>  [l'1 [l'2 [n1 [n2 [_ [_ [qx [qy st]]]]]]]].
     rewrite qx qy.
+    have admit5 : leb 0 (n - 2%Z) by admit.
+    have n21 : n2 = n1 + 1 by apply: ns_step st.
+    split.
+      rewrite n21 [t1 + _]addrC -addrA oppr_add [t1 + _]addrA addrN add0r
+       -mulrN -mulr_addr -mulNr -[_ * _^-1 + _]mulr_addl.
+      have tmp: Qcb_make (n1 + 1) - Qcb_make n1 = 1.
+        by rewrite -[_ - _]/(Q2Qcb(Qcb_make _ + Qcbopp(Qcb_make _)))
+          /Qcbopp /Qcb_make 4!qcb_val_E /Qopp /Qden /Qnum {2}/Q2Qcb qcb_val_E
+          (eqP (Qcb_Z _)) /Qplus /Qden /Qnum /Pmult 2!Zmult_1_r -Zplus_assoc
+          [Zplus _ (Zopp _)]Zplus_comm Zplus_assoc Zplus_opp_r Zplus_0_l.
+      by rewrite tmp mul1r.
+    exists n1; split; first by rewrite mulrA.
+    have bds : leb 1 n1 && leb n1 (n-1).
+      have tmp : (n - 1) - (n - 2%Z) = 1
+        by rewrite oppr_add opprK addrA [ _ - n]addrC addKr.
+      by rewrite -{1}tmp; apply: ns_bounds _ _ _ _ _ admit5 st.
+    move/andP: bds => [bds1 bds2];split; last done.
+    have admit6: leb 0 n1 by admit.
+    by [].
+  case: mkl => [sl qsl].
+  have admit7 : ~ ltb (eval_pol l b) 0 by admit.
+  case: (find_pair _ (fun x => ltb (eval_pol l x) 0)
+             (fun x y => y - x = (b-a)/Qcb_make n /\
+                (exists k, x = a + (b-a)*Qcb_make k / Qcb_make n /\
+                        leb 0 k /\ leb k (n-1))) sl a b nla admit7 qsl) =>
+             [a' [b' [[A1 [k [A4 A5]]] [A2 A3]]]] {qsl sl}.
+exists a'; exists b'.
+have aa' : leb a a'.
 Admitted.
 (*
-subst x y; setoid_replace (n2#1) with ((n1#1)+1).
-split.
-ring.
-exists n1; split. 
-rewrite Qmult_assoc; apply Qeq_refl.
-apply ns_bounds in st; omega.
-rewrite Qfrac_add_Z_l; rewrite Zmult_1_r.
-apply ns_step in st; try omega; rewrite st; apply Qeq_refl.
-rewrite app_ass; auto.
-destruct mkl as [sl qsl].
-destruct (find_pair Q (fun x => eval_pol l x < 0) 
-                  (fun x y => y - x == (b-a)/(n#1) /\
-                     exists k, x == a + (b-a)*(k#1) /(n#1) /\
-                     (0 <= k <= n-1)%Z)
-                 sl a b) 
-  as [a' [b' [[A1 [k [A4 A5]]][A2 A3]]]]; auto.
-apply Qle_not_lt; auto.
-intros x _; case (Qlt_le_dec (eval_pol l x) 0); auto.
-intros H; right; apply Qle_not_lt; auto.
-clear qsl sl.
 exists a'; exists b'.
 assert (aa':a <= a').
 (setoid_replace a with (a+0) by ring); rewrite A4.
