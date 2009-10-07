@@ -15,7 +15,7 @@ all:
 
 config:
 	coq_makefile -no-install \
-	    $(shell find . -name '*.v' -a) \
+	    $(shell find . \( -name trash -a -prune \) -o \( -name '*.v' -a -print \) ) \
 	    COQC = $(COQC) COQDEP = $(COQDEP) COQFLAGS = $(COQFLAGS) \
 	    > Makefile.coq
 	$(COQMAKE) depend
