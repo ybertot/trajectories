@@ -9,15 +9,6 @@ Import GOrdered.
 Open Local Scope ring_scope .
 
 Set Printing Width 50.
-(* After a use of simpl, products of positive integers are replaced by
- products of positive numbers encapsulated in a Zpos constructor.  This
- precludes uses of some theorems.  We can undo this using the following
- tactic. *)
-
-Ltac expand_Zpos_mult := 
-  repeat match goal with |- context [Zpos(?a * ?b)] => 
-     change (Zpos(a*b)) with ((Zpos a)*(Zpos b))%Z
-  end.
 
 (* We want to prove a simple and contructive approximation of the
  middle value theorem: if a polynomial is negative in a and positive in b,
@@ -28,40 +19,6 @@ Ltac expand_Zpos_mult :=
  of each coefficient.
 *)
 
-(* Polynomial are only represented by the list of their coefficients.
-  To any polynomial, we associate the absolute polynomial, whose
-  coefficients are the absolute values of the initial coefficients. *)
-
-
-Fixpoint abs_pol (l : seq Qcb) : seq Qcb :=
- match l with nil => nil | a :: tl => (absr a) :: (abs_pol tl) end.
-
-(* The value of the absolute polynomial is always larger than the value
- of the initial polynomial. *)
-
-Lemma ler_absr_eval_pol :
-  forall l x, absr (eval_pol l x) <<= eval_pol (abs_pol l) (absr x).
-Proof.
-elim => [|y s IHs] x /=; first by rewrite absr0.
-by apply: (ler_trans (absr_addr _ _)); rewrite lerTrb absr_mulr ler_lcompat ?absrpos.
-Qed.
-
-Lemma ler0_eval_pol_abs_pol :
-  forall l x, 0 <<= x -> 0 <<= eval_pol (abs_pol l) x.
-Proof.
-elim => [| y s Ihs] x hx /=; first by rewrite ler_refl.
-by apply: lerT0; rewrite ?absrpos // ler_0_lcompat // Ihs.
-Qed.
-
-Lemma eval_pol_abs_pol_increase : 
-  forall l x y, 0 <<= x -> x <<= y ->
-    eval_pol (abs_pol l) x <<= eval_pol (abs_pol l) y.
-elim=> [|u s Ihs] x y hx hy /=; first by rewrite ler_refl.
-rewrite lerTrb; apply ler_trans with (y * eval_pol (abs_pol s) x).
-  by rewrite ler_rcompat // ler0_eval_pol_abs_pol.
-by rewrite ler_lcompat // ?Ihs // (ler_trans hx).
-Qed.
-
 (* A polynomial that has distinct values cannot be the null
  polynomial. *)
 
@@ -71,54 +28,6 @@ by move=> [| u l] x y /=; rewrite ?ltr_irrefl //; move=> h; exists u.
 Qed.
 
 
-(* To describe polynomial addition, multiplication by a scalar, and
-  multiplication, we simply specify these operations so that their
-  interpretation through polynomial evaluation returns the corresponding
-  scalar operation. *)
-
-Definition add_pol :
-  forall l1 l2, {l' | forall x, eval_pol l1 x + eval_pol l2 x =
-  eval_pol l' x}.
-elim=> [|a l1 Ihl1] [|b l2].
-- by exists [::]; rewrite /= addr0.
-- by exists (b :: l2); move=> /= x; rewrite add0r.
-- by exists (a :: l1); move=> /= x; rewrite addr0.
-- (* ring needed!*)
-  case: (Ihl1 l2)=> [l' hl']; exists ((a + b) :: l'); move=> /= x.
-  rewrite [b + _]addrC addrA -[a + _ + _]addrA -mulr_addr hl'.
-  by rewrite -addrA [_ + b]addrC addrA.
-Defined.
-
-
-Definition s_mult_pol :
-  forall a l, {l' | forall x, a * eval_pol l x = eval_pol l' x}.
-move=> a; elim=> [| b l Ihl] /=.
-- by exists [::]; rewrite /= mulr0.
-- case: Ihl => l' hl'; exists ((a * b) :: l'); move=> /= x.
-  by rewrite -hl' mulr_addr 2!mulrA [x * _]mulrC.
-Defined.
-
-Definition mult_pol :
-  forall l1 l2, {l' | forall x, eval_pol l1 x * eval_pol l2 x =
-   eval_pol l' x}.
-elim=> [|a l1 Ihl1] /=.
-- by exists [::]; move=> /= x; rewrite mul0r.
-- move=> l2; case (s_mult_pol a l2) => l2a h.
-  case (Ihl1 (0 :: l2)) => l1l2x h1; case (add_pol l1l2x l2a)=> l' h2.
-  exists l'; move=> /= x; rewrite -h2 -h1 -h /= add0r mulr_addl.
-  by rewrite mulrA [_ * x]mulrC [a*_ + _]addrC.
-Defined.
-
-
-Lemma translate_pol :
-  forall l a, exists l', forall x, eval_pol l x = eval_pol l' (x - a).
-elim=> [| b l Ihl]; move=> a /=.
-- by exists [::].
-- case (Ihl a) => l' h; case (mult_pol [:: a ; 1] l') => l2 h2.
-  case (add_pol [:: b] l2) => l3 h3.
-  exists l3; move=> x; rewrite -h3 -h2 h /= mulr0 !addr0 mulr1.
-  by rewrite (_ : a + (x - a) = x) // -oppr_sub oppr_add addrA addrN add0r opprK.
-Qed.
 
 (* Theorem binding the slope between two points inside an interval. *)
 Lemma cm2 :
@@ -244,7 +153,6 @@ rewrite Zpos_P_of_succ_nat /Zsucc /= -[(_ + 1)%Z]/((Z_of_nat n) + 1) oppr_add ad
 by rewrite addrK.
 Qed.
 
-
 Lemma ns_step : forall p n, forall l1 l2 x y, 0 <<= n ->
   ns p n = l1 ++ [:: x, y & l2] -> y = x + 1.
 Proof.
@@ -279,7 +187,8 @@ move=> p; elim=> [|n Ihn] x l1 l2 /= h.
   suff exp : p = x by rewrite exp ler_refl.
   case: l1 h => /=; first by case.
   move=> z s.
-  by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
+  by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP;
+      rewrite eqSS.
 - case: l1 h => [| u l1] /=.
   + set sn := (' _)%Z; case=> h _; rewrite -h ler_refl /= -(lerTlb (- p)) addrN.
     by rewrite addrC addKr ltrW // ltb_Zneg0.
@@ -391,6 +300,90 @@ by rewrite-[(Qcb_make _ + _)%R]/(Q2Qcb(Qplus (qcb_val (Qcb_make x))
                                   (qcb_val (Qcb_make y)))) /Qcb_make
    !qcb_val_E /Qplus /Qnum /Qden !Zmult_1_r Pmult_1_r /Q2Qcb qcb_val_E
    (eqP (Qcb_Z _)).
+Qed.
+
+Lemma half_lt : forall a b, 0 <<! a -> 0 <<!  b ->
+   a / (Qcb_make 2 * b) <<! a / b.
+move => a b Ha Hb; apply: ltr_lcompat; first by [].
+have bn0: ~~ (b == 0) by apply/negP => b0; rewrite (eqP b0) ltr_irrefl in Hb.
+apply: (ltr_Ilcompat_l Hb) => //.
+ by rewrite invr_mul // (mulrC (b^-1)) -mulrA mulVr //.
+Qed.
+
+Lemma cut_epsilon : forall eps:Qcb, 0 <<! eps ->
+  exists eps1, exists eps2, 0 <<! eps1 /\ 0 <<! eps2 /\ eps1 + eps2 <<= eps /\
+      eps1 <<! eps /\ eps2 <<! eps.
+move => eps p; exists (eps/Qcb_make 2); exists (eps/Qcb_make 2).
+have p1 : 0 <<! eps/Qcb_make 2 by apply: ltr_0_lcompat.
+split; first done; split; first done; split.
+  rewrite -mulr_addr.
+  have q2 : (Qcb_make 2)^-1 + (Qcb_make 2)^-1 == 1 by [].
+  by rewrite (eqP q2) mulr1 ler_refl.
+have cmp : eps/Qcb_make 2 <<! eps.
+  by rewrite -[Qcb_make 2]mulr1 -{2}[eps]mulr1; apply half_lt.
+by [].
+Qed.
+
+Lemma pol_cont : forall l (x:Qcb) eps, 0 <<! eps ->
+  exists delta, 0 <<! delta /\ forall y, absr (y - x) <<! delta ->
+    absr (eval_pol l y - eval_pol l x) <<! eps.
+have side :  forall l (x:Qcb) eps, 0 <<! eps ->
+  exists delta, 0 <<! delta /\ forall y, x <<= y -> absr (y - x) <<! delta ->
+    absr (eval_pol l y - eval_pol l x) <<! eps.
+  move => l x e ep; move: (translate_pol l (x-1)) => [l' pl'].
+  have zlt2 : (0:Qcb) <<! 1 + 1 by rewrite -[0]addr0 ltrT // ltr_0_1 //.
+  move: (cm3 _ zlt2  l') => [c pc].
+  have yxx1 : forall y, y - x = y - (x - 1) - (x - (x - 1)).
+    by move => y; rewrite !oppr_add !opprK !addrA addrNK addrK.
+  have leb0 : 0 <<= x - (x - 1).
+    by rewrite oppr_add opprK addrA addrN add0r ltrW // ltr_0_1.
+  case c0 : (c == 0).
+    exists 1; split; first by apply: ltr_0_1.
+    move => y xy1 ycx.
+    have cxy : (c * (y - x) <<! e) by rewrite (eqP c0) mul0r. 
+    rewrite !pl'; apply: ler_ltr_trans cxy. 
+    rewrite yxx1; apply: pc => //; rewrite ?oppr_add ?addrA ?lerTlb // ltrW //.
+    by apply: absr_lt.
+  have cp : (0 <<! c); move: (negbT c0) =>{c0} c0.
+    rewrite ltr_lerne; rewrite eq_sym c0 andbC /=.
+    have tmp : (1:Qcb) <<= 1 + 1 by [].
+    have := pc 0 1 (ler_refl _) (ltrW (ltr_0_1 _)) tmp; move {tmp}.
+    by rewrite oppr0 addr0 mulr1=>tmp; apply: ler_trans tmp; apply absrpos.
+  have ecp: (0 <<! e / c) by rewrite ltr_0_lcompat ?invr_ltr.
+  have ie1: exists e1, 0 <<! e1 /\ e1 <<= 1 /\ e1 <<= e/c.
+    case cmp : (e/c <<! 1).
+      exists (e/c).
+      by split; first done; split; last apply:ler_refl; apply ltrW.
+    exists 1; split; first done; split; first apply:ler_refl.
+    by move: (negbT cmp); rewrite lerNgtr.
+  move: ie1 => [e1 [e1p [e11 e1ec]]].
+  exists e1; split; first by [].
+  move => y xy xcy.
+  rewrite absr_nneg in xcy; last by rewrite -(lerTlb x) addrNK add0r.
+  have cp' : ltb 0 c^-1 by rewrite invr_ltr.  
+  have xcy' : ltb (c * (y - x)) e.
+    have e1ce : c*e1 <<= e by rewrite (ler_Ilcompat_l cp') // [c * _]mulrC mulrK.
+    by apply: ltr_ler_trans e1ce; apply: ltr_lcompat.
+  apply: ler_ltr_trans xcy'; rewrite (yxx1 y) !pl'.
+  apply: pc; rewrite // ?lerTl // oppr_add addrA opprK lerT // ltrW //.
+  by apply: ltr_ler_trans e11.
+move => l x e ep.
+move: (side l x e ep) => [delta1 [dp1 de1]].
+move: (mirror_pol l) => [l' pl'].
+move: (side l' (-x) e ep) => [delta2 [dp2 de2]].
+have : exists delta, 0 <<! delta /\ delta <<= delta1 /\ delta <<= delta2.
+  case cmp: (delta1 <<! delta2).
+    by exists delta1; split; last (split; first apply:ler_refl; apply: ltrW).
+  exists delta2; split; first done; last (split; last apply:ler_refl).
+  by move: (negbT cmp) => {cmp}; rewrite lerNgtr.
+move => [delta [dp [dd1 dd2]]].
+  exists delta; split; first by [].
+move => y ycx; case cmp: (y <<! x).
+  rewrite -(opprK x) -(opprK y) !pl'.
+  apply: de2; first by rewrite ler_oppger ltrW.
+  by rewrite addrC -absr_oppr oppr_add !opprK addrC; apply: ltr_ler_trans dd2.
+move/negbT: cmp; rewrite -lerNgtr => cmp; apply de1; first by [].
+by apply: ltr_ler_trans dd1.
 Qed.
 
 Lemma constructive_mvt :
