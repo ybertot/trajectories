@@ -560,6 +560,15 @@ Module GOrdered .
     Lemma absrK : forall x, absr (absr x) = absr x .
     Proof . by move=> x; rewrite absr_nneg // absrpos . Qed .
 
+    Lemma absr_oppr : forall x, absr(-x) = absr x.
+    Proof.
+      move=> x.
+      case a : (0 <<! x).
+        by rewrite (absr_nneg (ltrW a)) absr_npos ?opprK // 
+             -oppr0 ler_oppger ltrW.
+        move: (negbT a); rewrite -lerNgtr => a'; rewrite (absr_npos a').
+        by rewrite absr_nneg // -ler_oppger opprK oppr0.
+    Qed.
 
     Lemma absr_sign : forall x , (absr x) = (sign x) * x .
     Proof .
