@@ -554,12 +554,12 @@ case aneg: (a <<! 0) => alt1;
   split.
     move => x y x1x xy; rewrite [a + _]addrC oppr_add addrA addrK.
     have y0: 0 <<! y by apply: ltr_trans xy; apply: ltr_ler_trans x1x.
-    have t:= ler_lcompat (ltrW y0) (H2x1 _ _ x1x xy).
+    have t:= ler_lcompat (ltrW y0) (H2x1 _ _ x1x (ltrW xy)).
     have t1 := lerTl t; have t2 := t1 (- (x *  eval_pol l x)) => {t1 t}.
     apply: ler_trans t2. rewrite -(mulNr x) -mulr_addl [(y - x) * _]mulrC.
     apply: ler_rcompat; first by rewrite -(addrN x) lerTl ?ltrW.
     rewrite ler_ltreq in x1x; move/orP: x1x => [x1x | x1x].
-      by apply: H2x1 x1 x (ler_refl _) x1x.
+      by apply: H2x1 x1 x (ler_refl _) (ltrW x1x).
     by rewrite (eqP x1x) ler_refl.
   have vx2' : -a + eval_pol l x1 <<= x2 * eval_pol l x2.
     have vx2' : x2 * eval_pol l x1 <<= x2 * eval_pol l x2.
