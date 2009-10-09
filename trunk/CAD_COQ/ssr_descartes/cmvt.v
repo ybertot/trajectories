@@ -545,12 +545,10 @@ have main: eval_pol l b' - eval_pol l a' <<= eps.
   rewrite -!q; apply: lerT0; first by rewrite lerNgtr; move/negP: A3.
   by rewrite -ler_oppger oppr0 opprK ler_ltreq A2.
 split; last (split; first exact A2).
-  rewrite -ler_oppger opprK.
-    have tmp: 0 - eval_pol l a' <<= eval_pol l b' - eval_pol l a'.
-    by apply: lerTl; move/negP: A3; rewrite ltrNger negb_involutive.
-  by rewrite add0r in tmp; apply: ler_trans tmp _.
+  rewrite -ler_oppger opprK -[- _]add0r; apply:ler_trans main.
+  by apply: lerTl; rewrite lerNgtr; apply/negP.
 split; first by rewrite lerNgtr; move/negP: A3.
 split; last by auto.
- apply: ler_trans main; rewrite -{1}(addr0 (eval_pol l b')); apply: lerTr.
+apply: ler_trans main; rewrite -{1}(addr0 (eval_pol l b')); apply: lerTr.
 by rewrite -ler_oppger opprK oppr0 ler_ltreq A2.
 Qed.
