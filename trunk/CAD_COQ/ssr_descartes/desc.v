@@ -117,53 +117,15 @@ Definition inv (l:seq Qcb) : Prop :=
 Lemma l3 : forall l, all_pos_or_zero l = true -> inv l.
 Proof.
 move => l Hl eps Heps; move: (l1 l Hl) (l2 l Hl) => H1 H2.
-have Hp1: 0 <<= eval_pol l 1 by  apply: H1.
-rewrite ler_ltreq in Hp1; case/orP: Hp1 => Hp1.
-  have pol1p: eval_pol l 1 != 0.
-    by apply/negP => q; rewrite (eqP q) ltr_irrefl in Hp1.
-  case H1p1: (1 <<! eps / eval_pol l 1).
-    exists 1; split.
-      move => y yp; rewrite ler_ltreq; move/orP => [y1 | y1].
-        by apply: H2; last apply: ltrW.
-      by rewrite (eqP y1) ler_refl.
-    split.
-      by move => y z y1 yz; apply: H2; first by apply: ler_trans y1.
-    split; first by [].
-    have hp2 := Hp1.
-      rewrite -invr_ltr in hp2.
-    by apply: (ltr_Ilcompat_l hp2); rewrite mulrK.
-  exists (eps / (Qcb_make 2 * eval_pol l 1)).
-  have epspl1 : 0 <<= eps / (Qcb_make 2 * eval_pol l 1).
-    apply: ltrW; apply: ltr_0_lcompat; first done.
-    rewrite invr_mul //; apply ltr_0_lcompat; last done.
-    by rewrite invr_ltr.
-  have half: eps/(Qcb_make 2 * eval_pol l 1) <<! eps/eval_pol l 1.
-     by apply: half_lt.
-  split.
-    move => y y0; rewrite ler_ltreq; move/orP=> [y2 | y2].
-      by apply: H2; last apply: ltrW.
-    by rewrite (eqP y2) ler_refl.
-  split.
-    move => y z y' yz; apply: H2; last done.
-    by apply: ler_trans y'.
-  split; first done.
-  case px0: (eval_pol l (eps / (Qcb_make 2 * eval_pol l 1)) == 0).
-    by rewrite (eqP px0) mulr0.
-  move: (negbT px0) => {px0} px0 .
-  have tmp: eps /eval_pol l 1 * eval_pol l 1 <<= eps.
-   by rewrite mulrVK // ler_refl.
-  apply: ltr_ler_trans tmp.
-  move: (negbT H1p1); rewrite -lerNgtr {H1p1} => H1p1.
-  apply ltr_ler_2compat0l => //; apply: H2 => //; apply: ler_trans H1p1.
-  by apply:ltrW.
-exists 1; split.
-  move => y y0 y1; case h: (y==1); first by rewrite (eqP h) ler_refl.
-  by apply: H2 => //; rewrite ltr_lerne y1 h.
-split; first by move => y z y1 yz; apply: H2 => //; apply: ler_trans y1.
-split; first by [].
-by rewrite -(eqP Hp1) mul1r.
+move: (pol_cont (0::l) 0 _ Heps) => [x [xp lx]].
+move: (cut_epsilon _ xp) => [x1 [_ [x1p [_ [_ [xx1 _]]]]]].
+exists x1; split; first by move => y; apply: H2.
+split; first by move => y z x1y; apply: H2; apply: ltrW (ltr_ler_trans _ x1y).
+split; first by apply: ltrW.
+rewrite -(addr0 (x1 * _)) -oppr0 -(addr0 0) -{2}(mul0r (eval_pol l 0))
+  -(add0r (x1 * _)); apply absr_lt; apply lx; rewrite oppr0 addr0 absr_nneg //.
+by apply: ltrW.
 Qed.
-
 
 Definition inv2_internal l epsilon P :=
       exists x, (forall y, 0 <<= y -> y <<= x -> eval_pol l y <<= eval_pol l x) /\
@@ -222,63 +184,22 @@ Qed.
 
 Lemma l5 : forall a l, a <<! 0 -> inv2 l -> inv2 (a::l).
 move => a l aneg il; have aneg' := aneg; rewrite -ltr_oppgtr oppr0 in aneg.
-move: (il _ aneg) => [x [H1 [H2 [H3 [H4 H5]]]]].
-have ix' : exists x', x <<! x' /\ 0 <<! eval_pol l x' /\
-              x' * eval_pol l x' <<! (-a).
-  have H4': 0 <<! -a -x*eval_pol l x.
-    by rewrite -(addrN (x * eval_pol l x)) ltrTl.
-  move : (pol_cont l x _ H4) => [d1 [d1p pd1]].
-  move : (pol_cont (0::l) x _ H4') => [d2 [d2p pd2]].
-  have: exists d, 0 <<! d /\ d <<= d1 /\ d <<= d2.
-    case cmp: (d1 <<! d2).
-      exists d1.
-      by split; first done; split; first apply:ler_refl; apply: ltrW.
-    move/negbT : cmp; rewrite -lerNgtr => cmp.
-    by exists d2; split; first done; split; first done; apply:ler_refl.
-  move => [d' [dp' [dd1 dd2]]]; move: (cut_epsilon _ dp') =>
-    [d [_ [dp [_ [_ [dd' _]]]]]].
-  exists (x + d).
-  split; first by rewrite -{1}[x]addr0 ltrTr.
-  split.
-    rewrite -(@ltrTlb _ (eval_pol l x - eval_pol l (x + d))) add0r
-        addrA [_ + eval_pol l x]addrC addrK; apply: absr_lt.
-    rewrite -absr_oppr oppr_add opprK addrC; apply pd1.
-    by rewrite [x+_]addrC addrK absr_nneg ?ltrW //; apply: ltr_ler_trans dd1.
-  rewrite -(@ltrTlb _ (-(x * eval_pol l x))); apply: absr_lt.
-  have t: absr (x + d -x) <<! d2.
-    by rewrite [x+_]addrC addrK absr_nneg ?ltrW //; apply: ltr_ler_trans dd2.
-  by move: (pd2 _ t); rewrite /= !add0r.
-move: ix' => [x' [xx' [vx'pos smallvx']]].
-have x'pos : 0 <<! x' by apply: ler_ltr_trans xx'.
+move: (il _ aneg) => inv_i.
+move: (inv2_shift l _ aneg inv_i) => [x [H1 [H2 [H3 [H4 H5]]]]].
 have pxn : eval_pol (a::l) x <<! 0.
   by rewrite /= -(addrN a); apply: ltrTr.
-have H1' : forall y, 0 <<= y -> y <<= x ->
-   y * eval_pol l y <<= x * eval_pol l x.
-  move => y y0 yx.
-  (apply: ler_2compat0l => //; last by apply: H1); by apply: ltrW.
-have H2' : forall y z, x <<= y -> y <<= z -> 
-             y * eval_pol l y <<= z * eval_pol l z.
-  move => y z xy yz; apply: ler_2compat0l => //.
-      by apply: ler_trans xy.
-    apply: ler_trans (ltrW H4) _; apply: H2.
-      by apply: ler_refl.
-    by apply: ler_trans yz.
-  by apply: H2.
-have negval : eval_pol (a::l) x' <<! 0.
-  by rewrite -(addrN a) /= ltrTrb.
-have max_x_val : exists b, (x' <<! b) && (-a/eval_pol l x' <<! b).
+have max_x_val : exists b, (x <<! b) && (-a/eval_pol l x <<! b).
   have p1 : forall x, x <<! x + 1.
     move => A x0; rewrite -{1}(addr0 x0); apply: (ltrTr (ltr_0_1 _)).
-  case cmp: (x' <<! (-a/eval_pol l x')).
-    exists (-a/eval_pol l x' + 1); rewrite p1 andbC /=.
+  case cmp: (x <<! (-a/eval_pol l x)).
+    exists (-a/eval_pol l x + 1); rewrite p1 andbC /=.
     by apply: ltr_trans cmp _; apply: p1.
-  exists (x' + 1); rewrite p1 /=.
+  exists (x + 1); rewrite p1 /=.
   move: (negbT cmp); rewrite -lerNgtr {cmp} => cmp.
     by apply: ler_ltr_trans cmp _; apply: p1.
 move: max_x_val => [y]; move/andP => [yx val]; have yx':= ltrW yx.
 have pyp: 0 <<! eval_pol l y.
-  apply: ltr_ler_trans H4 _; apply: H2; first apply: ler_refl.
-   by apply: ler_trans yx'; apply: ltrW.
+  by apply: ltr_ler_trans H4 _; apply: H2; first apply: ler_refl.
 have posval : 0 <<= eval_pol (a::l) y.
   rewrite -(addrN a) /=; apply: lerTr.
   apply: (@ler_Ilcompat_l _ (eval_pol l y)^-1); first by rewrite invr_ltr.
@@ -287,132 +208,71 @@ have posval : 0 <<= eval_pol (a::l) y.
   rewrite mulrK; last by [].
   apply: ltrW; apply: ler_ltr_trans val.
   apply: ler_lcompat; first by apply: ltrW.
-  have pxp : eval_pol l x' != 0.
-    by apply/negP; move/eqP => q; rewrite q ltr_irrefl in vx'pos.
-  apply: (@ler_Ilcompat_l _ (eval_pol l x')); first by [].
+  have pxp : eval_pol l x != 0.
+    by apply/negP; move/eqP => q; rewrite q ltr_irrefl in H4.
+  apply: (@ler_Ilcompat_l _ (eval_pol l x)); first by [].
   rewrite mulVr; last by [].
   apply: (@ler_Ilcompat_r _ (eval_pol l y)); first by [].
-  rewrite mulVKr // mulr1; apply: H2 => //; first by apply:ltrW.
+  by rewrite mulVKr // mulr1; apply: H2 => //; apply: ler_refl.
 intros epsilon Hepsilon.
 have posval' : 0 <<= eval_pol (0::a::l) y.
-  by rewrite /= add0r; apply: ler_0_lcompat; first (apply: ler_trans yx'; apply: ltrW).
-have ieps : exists eps', eps' <<! epsilon /\ 0 <<! eps'.
-  by move: (cut_epsilon _ Hepsilon) => [e [_ [p [_ [_ [d _]]]]]]; exists e.
-move: ieps => [eps' [eps2 Heps']].
-have iv' : exists v', 0 <<= eval_pol (0::a::l) v' /\
-                eval_pol (0::a::l) v' <<= eps' /\ v' <<= y /\ x' <<= v'.
-  have negval' :  eval_pol (0::a::l) x' <<! 0.
-    rewrite /= add0r -ltr_oppgtr oppr0 -mulrN; apply: ltr_0_lcompat => //. 
-    by rewrite -oppr0 ltr_oppgtr.
-  move: (constructive_mvt (0::a::l) x' y yx negval' posval' eps' Heps') =>
-    [dummy [v' [_ [_ [posv' [smallv' [xd [dv' v'y]]]]]]]].
-  exists v'; split; first done; split; first done; split; first done.
-  by apply: ltrW; apply:ler_ltr_trans dv'.
-move: iv' => [v' [posv' [smallv' [v'y xv']]]].
+  by rewrite /= add0r; apply: ler_0_lcompat;
+    first (apply: ler_trans yx'; apply: ltrW).
+move: (cut_epsilon _ Hepsilon) => [e1 [e2 [He1 [He2 [s12 [e1e e2e]]]]]].
+have negval' :  eval_pol (0::a::l) x <<! 0.
+  rewrite /= add0r -ltr_oppgtr oppr0 -mulrN; apply: ltr_0_lcompat => //. 
+  by rewrite -oppr0 ltr_oppgtr.
+move: (constructive_mvt (0::a::l) x y yx negval' posval' e1 He1) =>
+  [dummy [v' [_ [_ [posv' [smallv' [xd [dv' v'y]]]]]]]].
+have {xd dv'} xv' : x <<! v'  by apply: ler_ltr_trans xd dv'.
 move: posv' smallv'; rewrite /= !add0r => posv' smallv'.
-have pv' : 0 <<! v' by apply:ltr_ler_trans xv'.
-have iv : exists v, x <<! v /\ v * eval_pol (a::l) v <<= eps' /\
-          0 <<= eval_pol (a::l) v.
-  rewrite ler_ltreq in posv'; move/orP: posv' => [posv' | nulv'].
-    rewrite -(mulr0 v') in posv'.
-    move: (ltr_Ilcompat_r pv' posv') => {posv'} posv'.
-    have t: x <<! v' by apply: ltr_ler_trans xv'.
-    have posv'2 := ltrW posv'.
-    by exists v' => //.    
-  move: (pol_cont (0::a::l) v' eps' Heps') => [delta1 [dp Hp]].
-  move: (cut_epsilon _ dp) => [delta [_ [dp2 [_ [_ [dd _]]]]]].
-  case vdy: (v' + delta <<= y).
-    have vvd : v' <<! v' + delta by rewrite -{1}[v']addr0; apply: ltrTr.
-    exists (v'+delta).
-    split; first by apply: ltr_trans vvd; apply: ltr_ler_trans xx' _.
-    split.
-      rewrite -[_ * _]addr0 -oppr0 (eqP nulv') .
-      have Hp': absr (eval_pol [:: 0, a & l] (v' + delta) - 
-                       eval_pol [::0, a & l] v') <<! eps'.
-        by apply Hp; rewrite [v' + _]addrC addrK absr_nneg // ltrW.
-      by rewrite /= !add0r in Hp'; apply: absr_le; apply ltrW.
-    have pv0 : 0 == a+v'*eval_pol l v'.
-      have uv': v' != 0. 
-        by apply/negP; move/eqP => q; rewrite q ltr_irrefl in pv'.
-      by rewrite -(mulr0 v'^-1) (eqP nulv') mulKr // eq_refl.
-    rewrite (eqP pv0) /= lerTr // -[v' * _]add0r mulr_addl [(v' * _) + _]addrC.
-    apply: lerT. 
-      apply: ler_0_lcompat; apply: ltrW; first by [].
-      apply: ltr_ler_trans vx'pos _; apply: H2; first by apply: ltrW.
-      by apply: ler_trans xv' _; rewrite -{1}[v']addr0 lerTr // ltrW.
+have pv' : 0 <<! v' by apply:ltr_trans xv'.
+move: (pol_cont (0::a::l) v' e2 He2) => [d' [dp' pd']].
+move: (cut_epsilon _ dp') => [d [_ [dp [_ [_ [dd _]]]]]].
+have vvd : v' <<= v' + d.
+  by rewrite -{1}[v']addr0; apply: lerT; first apply: ler_refl; apply: ltrW.
+have xvd : x <<= v' + d by apply:ltrW; apply: ltr_ler_trans vvd.
+have v'0 : 0 <<! v' by apply: ltr_trans xv'.
+have lv'd : 0 <<! eval_pol l (v' + d).
+  by apply: ltr_ler_trans H4 _; apply: H2; first apply: ler_refl.
+have pv'd0 : 0 <<! eval_pol (a::l) (v' + d).
+  apply: ltr_Ilcompat_r pv' _; rewrite mulr0. 
+  rewrite /= mulr_addl addrA mulr_addr.
+  apply: ler_ltr_trans (_ : v' * (a + v' * eval_pol l (v' + d)) + 0 <<! _).
+    rewrite addr0; apply: ler_trans posv' _.
     apply: ler_lcompat; first by apply: ltrW.
-    apply: H2.
-      by apply: ltrW; apply: ltr_ler_trans xv'. 
-    by rewrite -{1}[v']addr0 lerTr // ltrW.
-  exists y.
-  split; first by apply: ltr_trans yx.
-  split; last by [].
-  have Hp' : 
-    absr (eval_pol[:: 0, a & l] y - eval_pol [:: 0, a & l] v') <<! eps'.
-    have vyd : y - v' <<! delta1.
-      apply: ltr_trans dd; move: (negbT vdy).
-      by rewrite -ltrNger -{1}[y]addr0 -(addNr v') addrA [_ + v']addrC ltrTrb.
-    by apply: Hp; rewrite absr_nneg // -(addrN v') lerTl //.
-  apply absr_le; move: Hp'; rewrite /= !add0r -(eqP nulv') oppr0 addr0.
-  by apply: ltrW.
-case: iv => v [xv [pvep]]; rewrite ler_ltreq orbC; move/orP => [pv0 | pvp].
-  move: (pol_cont (0::a::l) v _ Heps') => [delta [pd dp]].
-  move: (cut_epsilon _ pd) => [delta' [_ [pd' [_ [_ [dd' _]]]]]].
-  have vvd : v <<! v + delta' by rewrite -{1}[v]addr0 ltrTr //.
-  exists (v + delta'); split.
-    move => y' y'0 y'vd; apply: lerTr.
-    case y'x: (y' <<! x).
-      apply: ler_trans (_ :  x*eval_pol l x <<= _).
-        by apply: H1'; first done; rewrite ?ltrW.
-      by apply: H2';first apply:ler_refl; apply: ltrW (ltr_trans xv _).
-    move/negbT: y'x; rewrite -lerNgtr => xy'.
-    by apply: H2'.
-  split.
-    move => y' z vdy' y'z; apply: lerTr; apply: H2'; last by [].
-    by apply: ltrW; apply: ltr_ler_trans vdy'; apply: ltr_trans xv _.
-  split; first by apply: ltrW (ltr_trans (ler_ltr_trans _ xv) _).
-  split.
-    rewrite /= mulr_addl addrA.
-    apply: ler_ltr_trans (_ : a + v * eval_pol l (v + delta') <<! _).
-      have v0 : 0 <<= v by apply: ler_trans (ltrW xv).
-      by rewrite (eqP pv0) /= lerTr //; apply ler_lcompat => //; apply: H2;
-        apply: ltrW.
-    rewrite (_ : forall x y, (x <<! y) = ((x + 0) <<! y));
-      last by move => *; rewrite addr0.
-    apply: ltrTr; apply: ltr_0_lcompat; first done.
-    apply: ltr_ler_trans H4 _; apply: H2; first apply: ler_refl; apply: ltrW.
-    by apply: ltr_trans vvd.
-  apply: ltr_trans eps2; apply: absr_lt; rewrite -[_ * _]add0r.
-  rewrite -[0 + _]addr0 -{2}oppr0 -{2}(mulr0 v) -[v * 0]add0r {3}(eqP pv0).
-  apply: dp; rewrite [v + _]addrC addrK.
-  by rewrite absr_nneg // ltrW.
-exists v.
-have pv : 0 <<! v by apply:ler_ltr_trans xv.
-have pvp': 0 <<! eval_pol l v.
-  apply: ltr_Ilcompat_r pv _; rewrite mulr0; apply: ltr_ler_trans aneg _.
-  by rewrite -(lerTrb a) addrN ltrW.
+    apply: lerTr; apply: ler_lcompat; first by apply: ltrW.
+    by apply: H2; first by apply ltrW.
+  by apply ltrTr; apply: ltr_0_lcompat; first done; apply: ltr_0_lcompat.
+exists (v' + d).
+move => {y yx val yx' pyp posval posval' v'y}.
 split.
-  move => y' posy' y'v /=; case y'x : (y' <<= x).
-    apply: ltrW (ler_ltr_trans _ pvp); apply: ler_trans (ltrW pxn) => /=.
-    by apply: lerTr; apply: H1'.
-  apply: lerTr; apply: ler_2compat0l => //.
-    apply: (ler_Ilcompat_r pv); rewrite mulr0.
-    apply: ltrW; apply: ltr_ler_trans aneg _.
-    by have := ltrW pvp; rewrite -(addrN a) /= lerTrb => psv'.
-  rewrite ler_ltreq in y'v; case/orP: y'v => y'v.
-    move: (negbT y'x) => {y'x} y'x; rewrite -ltrNger in y'x.
-    by apply: H2 => //; apply: ltrW.
-  by rewrite (eqP y'v) ler_refl.
+  move => y y0 yvd.
+  case cmp: (y <<= x); last (move/negbT: cmp; rewrite -ltrNger => cmp).
+    apply: ler_trans (_ : eval_pol (a::l) x <<= _).
+      rewrite /= lerTrb; apply: ler_2compat0l => //; first apply: ltrW => //.
+      by apply: H1.
+    rewrite /= lerTrb; apply: ler_2compat0l => //; first by apply: ltrW.
+      by apply:ltrW.
+    by apply: H2; first apply: ler_refl.
+  rewrite /= lerTrb; apply: ler_2compat0l => //.
+    by apply: ltrW.
+  by apply: H2; first apply:ltrW.
 split.
-  move => {v'y val posval posval' yx yx' y pyp} y z vy yz.
-  apply: lerTr; apply: ler_2compat0l => //.
-      by apply: ltrW; apply: ltr_ler_trans vy.
-    apply: ler_trans (ltrW pvp') _.
-    by apply: H2; [apply: ltrW | apply: ler_trans yz].
-  by apply: H2; last done; apply: ltrW; apply: ltr_ler_trans vy.
-split; first by apply: ltrW.
-split; last by apply: ler_ltr_trans pvep _.
-by [].
+  move => y z vdy yz /=; apply: lerTr; apply: ler_2compat0l => //.
+      by apply: ler_trans (ltrW pv') (ler_trans vvd vdy).
+    apply: ltrW (ltr_ler_trans H4 _); apply: H2; first apply ler_refl.
+    by apply: ler_trans _ (ler_trans vdy _).
+  by apply: H2; first apply: ler_trans vdy.
+split; first by apply: ltrW (ltr_ler_trans _ vvd).
+split; first by [].
+apply: ltr_ler_trans s12.
+apply: ler_ltr_trans (_ : e1 + (v'+d)*eval_pol (a::l) (v'+d) -
+                               v'*eval_pol (a::l) v' <<! _).
+  rewrite -{1}[(v'+d)*_](addrK (v'*eval_pol (a::l) v')) {1}[(v'+d)*_ + _]addrC.
+  by rewrite -!addrA lerTlb.
+rewrite -!addrA ltrTrb -[v' * _]add0r -[(v'+d) * _]add0r; apply: absr_lt.
+by apply: pd'; rewrite [v' + _]addrC addrK absr_nneg // ltrW.
 Qed.
 
 Lemma l4 : forall l, alternate_1 l = true -> inv2 l.
