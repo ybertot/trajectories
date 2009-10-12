@@ -19,16 +19,6 @@ Set Printing Width 50.
  of each coefficient.
 *)
 
-(* A polynomial that has distinct values cannot be the null
- polynomial. *)
-
-Lemma cm1 :
-  forall l x y, eval_pol l x <<! eval_pol l y  -> exists a, l = a :: (behead l).
-by move=> [| u l] x y /=; rewrite ?ltr_irrefl //; move=> h; exists u.
-Qed.
-
-
-
 (* Theorem binding the slope between two points inside an interval. *)
 Lemma cm2 :
   forall l b, { c |
@@ -254,23 +244,6 @@ Lemma Qfrac_add_Z_l : forall a b c,
 intros;unfold Qeq; simpl; ring.
 Qed.
 *)
-
-
-Lemma Qcb_Z : forall n : Z, Qred (Qmake n 1) == Qmake n 1.
-Proof.
-move=> n; apply/eqP; apply: Qcanon.Qred_identity => /=.
-rewrite Znumtheory.Zgcd_1_rel_prime.
-apply Znumtheory.rel_prime_sym.
-apply Znumtheory.rel_prime_1.
-Qed.
-
-Canonical Structure Qcb_make (n : Z) := QcbMake (Qcb_Z n).
-
-Lemma Qcb_make0 : Qcb_make 0 = 0.
-Proof. exact: val_inj. Qed.
-
-Lemma Qcb_make1 : Qcb_make 1 = 1.
-Proof. exact: val_inj. Qed.
 
 Lemma leb_Z : forall x y:Z, x <<= y -> Qcb_make x <<= Qcb_make y.
 Proof. 
