@@ -135,9 +135,16 @@ Definition qpower := nosimpl qpower_rec.
 
 Notation "x ^ y" := (qpower x y).
 
+Lemma qpowerr0: forall x, x ^ 0 = 1.
+Proof. by []. Qed.
+
 Definition translate_pol' (l :seq Qcb) (a:Qcb) :=
   mkseq (fun i:nat =>
      \sum_(k < (size l).+1) Qbin k i * nth 0 l k * a ^ (k - i)) (size l).
+
+Lemma size_translate_pol' : forall l a, size (translate_pol' l a)  = size l.
+by move => l a; rewrite /translate_pol' size_mkseq.
+Qed.
 
 Lemma mkseq_shift :
   forall T (f : nat ->T) n, mkseq f n.+1 = f 0%nat::mkseq (fun x => f x.+1) n.
@@ -145,26 +152,41 @@ move => T f n; rewrite /mkseq -[n.+1]/(1+n)%nat iota_add addnC iota_addl /=.
 by congr (cons (f 0%nat)); rewrite -map_comp; apply: eq_in_map; move => x _ /=.
 Qed.
 
-Require Import String.
-Open Scope string_scope.
-Definition case_name (x:string) := True.
-
-Ltac Name_case s :=
-  match goal with
-     _ : case_name ?s' |- _ =>
-     let u:= eval compute in (s' ++ " not finished") in fail 1 u
- | |- _ => assert (case_name s); [solve[exact I] | ]
- end.
-
 Lemma eval_pol_big :
   forall l x, eval_pol l x = \sum_(i < size l) nth 0 l i * x ^ i.
+Proof.
 move => l x; elim: l=> [ | a l IHl].
-Admitted.
+  by rewrite big_ord0.
+rewrite /= big_ord_recl /qpower /= mulr1 -/qpower IHl; congr (fun v => a + v).
+by rewrite big_distrr; apply:eq_bigr => i _; rewrite mulrA [_ * x]mulrC -mulrA.
+Qed.
+
+Lemma Pascal :
+  forall x a n, (x + a) ^ n = \sum_(i < n.+1) Qbin n i * x^ i * a ^ (n - i).
+move => x a n; elim: n => [ | p IHp].
+  by rewrite big_ord_recl big_ord0 addr0 /ord0 /= Qbin0.
+rewrite (_: (x+a)^p.+1 = (x+a)^p * (x + a)).
+  rewrite IHp mulr_addr !big_distrl.
+  have lm: \sum_(i < p.+1) Qbin p i * x ^i * a ^ (p - i) * x =
+         (\sum_(i < p.+2) (if i == ord0 then 0 else Qbin p (i-1)) * x ^i * a ^ (p.+1 - i)).
+    rewrite (big_ord_recl p.+1).
+    rewrite Qbin0 /ord0 /= subn0 mul0r add0r.
+    apply eq_bigr => i _.
+    rewrite /bump leq0n /nat_of_bool /subn /= -/subn subn0.
+    by rewrite /qpower /=-!mulrA [_* x]mulrC [x * _]mulrA [_ * (x * _)]mulrA
+      [x * _]mulrC.
+  have rm: \sum_(i < p.+1) Qbin p i * x ^ i * a ^(p-i) * a =
+         \sum_(i < p.+1) Qbin p i * x ^ i * a ^(p.+1 - i).
+    apply: eq_bigr => i _; rewrite -!mulrA.
+    congr (fun u => Qbin p i * (x ^ i * u)).
+    case: i => i' ip /=; rewrite -[p.+1]/(1 + p)%N -addn_subA //.
+    by rewrite /qpower /= -/qpower mulrC.
+
 
 Lemma translate_pol'q :
   forall l a x, eval_pol (translate_pol' l a) x = eval_pol l (x + a).
-move => l a; elim: l => [ | b l' IHl' x]; first by [].
-  have -> : eval_pol (b::l') (x+a) = b + (x + a) * eval_pol l' (x + a) by [].
+move => l a x(* ; elim: l => [ | b l' IHl' x]; first by [] *).
+rewrite !eval_pol_big size_translate_pol' /translate_pol'.
   rewrite /translate_pol'.
   have -> : size (b::l') = (1+(size l'))%N by [].
 rewrite mkseq_shift.
