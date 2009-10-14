@@ -1,7 +1,8 @@
 Require Import QArith ZArith Zwf Omega.
 Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun.
 Require Import bigops groups choice binomial.
-Require Export ssralg xssralg infra .
+Require Export ssralg xssralg infra.
+Locate "_ ^ _".
 
 Import GroupScope .
 Import GRing.Theory .
@@ -30,7 +31,8 @@ Lemma ler_absr_eval_pol :
   forall l x, absr (eval_pol l x) <<= eval_pol (abs_pol l) (absr x).
 Proof.
 elim => [|y s IHs] x /=; first by rewrite absr0.
-by apply: (ler_trans (absr_addr _ _)); rewrite lerTrb absr_mulr ler_lcompat ?absrpos.
+by apply: (ler_trans (absr_addr _ _));
+   rewrite lerTrb absr_mulr ler_lcompat ?absrpos.
 Qed.
 
 Lemma ler0_eval_pol_abs_pol :
@@ -127,20 +129,11 @@ Definition Qbin m n := Qcb_make (Z_of_nat (bin m n)).
 
 Axiom QbinS : forall m n, Qbin m.+1 n.+1 = Qbin m n.+1 + Qbin m n.
 Axiom Qbin0 : forall m, Qbin m 0 = 1.
-
-Fixpoint qpower_rec (x :Qcb) (n:nat) :=
-   match n with 0%nat => 1 | S p => x * qpower_rec x p end.
-
-Definition qpower := nosimpl qpower_rec.
-
-Notation "x ^ y" := (qpower x y).
-
-Lemma qpowerr0: forall x, x ^ 0 = 1.
-Proof. by []. Qed.
+Axiom Qbinn : forall n, Qbin n n = 1.
 
 Definition translate_pol' (l :seq Qcb) (a:Qcb) :=
   mkseq (fun i:nat =>
-     \sum_(k < (size l).+1) Qbin k i * nth 0 l k * a ^ (k - i)) (size l).
+     \sum_(k < (size l).+1) Qbin k i * nth 0 l k * a ^+ (k - i)) (size l).
 
 Lemma size_translate_pol' : forall l a, size (translate_pol' l a)  = size l.
 by move => l a; rewrite /translate_pol' size_mkseq.
@@ -153,42 +146,35 @@ by congr (cons (f 0%nat)); rewrite -map_comp; apply: eq_in_map; move => x _ /=.
 Qed.
 
 Lemma eval_pol_big :
-  forall l x, eval_pol l x = \sum_(i < size l) nth 0 l i * x ^ i.
+  forall l x, eval_pol l x = \sum_(i < size l) nth 0 l i * x ^+ i.
 Proof.
 move => l x; elim: l=> [ | a l IHl].
   by rewrite big_ord0.
-rewrite /= big_ord_recl /qpower /= mulr1 -/qpower IHl; congr (fun v => a + v).
-by rewrite big_distrr; apply:eq_bigr => i _; rewrite mulrA [_ * x]mulrC -mulrA.
+rewrite /= big_ord_recl /= mulr1 IHl; congr (fun v => a + v).
+ rewrite big_distrr; apply:eq_bigr => i _.
+ by rewrite /bump /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
 Qed.
 
-Lemma Pascal :
-  forall x a n, (x + a) ^ n = \sum_(i < n.+1) Qbin n i * x^ i * a ^ (n - i).
-move => x a n; elim: n => [ | p IHp].
-  by rewrite big_ord_recl big_ord0 addr0 /ord0 /= Qbin0.
-rewrite (_: (x+a)^p.+1 = (x+a)^p * (x + a)).
-  rewrite IHp mulr_addr !big_distrl.
-  have lm: \sum_(i < p.+1) Qbin p i * x ^i * a ^ (p - i) * x =
-         (\sum_(i < p.+2) (if i == ord0 then 0 else Qbin p (i-1)) * x ^i * a ^ (p.+1 - i)).
-    rewrite (big_ord_recl p.+1).
-    rewrite Qbin0 /ord0 /= subn0 mul0r add0r.
-    apply eq_bigr => i _.
-    rewrite /bump leq0n /nat_of_bool /subn /= -/subn subn0.
-    by rewrite /qpower /=-!mulrA [_* x]mulrC [x * _]mulrA [_ * (x * _)]mulrA
-      [x * _]mulrC.
-  have rm: \sum_(i < p.+1) Qbin p i * x ^ i * a ^(p-i) * a =
-         \sum_(i < p.+1) Qbin p i * x ^ i * a ^(p.+1 - i).
-    apply: eq_bigr => i _; rewrite -!mulrA.
-    congr (fun u => Qbin p i * (x ^ i * u)).
-    case: i => i' ip /=; rewrite -[p.+1]/(1 + p)%N -addn_subA //.
-    by rewrite /qpower /= -/qpower mulrC.
-
+Theorem pascal : forall a b n,
+  (a + b) ^+ n = \sum_(i < n.+1) (Qbin n i * (a ^+ (n - i) * b ^+ i)).
+Proof.
+move=> a b; elim=> [|n IHn]; first by rewrite big_ord_recl big_ord0.
+rewrite big_ord_recr big_ord_recl /= exprS {}IHn mulr_addl !big_distrr.
+rewrite big_ord_recl big_ord_recr /= !Qbin0 !Qbinn !subn0 !subnn !mul1r !mulr1.
+rewrite -!exprS addrA; congr (_ + _); rewrite -addrA -big_split; congr (_ + _).
+apply: eq_bigr => i _ /=; rewrite 2!(mulrCA b) (mulrCA a) (mulrA a) -!exprS.
+by rewrite -leq_subS ?ltn_ord // -mulr_addl -QbinS.
+Qed.
 
 Lemma translate_pol'q :
   forall l a x, eval_pol (translate_pol' l a) x = eval_pol l (x + a).
 move => l a x(* ; elim: l => [ | b l' IHl' x]; first by [] *).
 rewrite !eval_pol_big size_translate_pol' /translate_pol'.
-  rewrite /translate_pol'.
-  have -> : size (b::l') = (1+(size l'))%N by [].
-rewrite mkseq_shift.
+apply sym_equal.
+apply: trans_equal (_ : (\sum_(i < size l)
+                    \sum_(j < i.+1) l`_i * Qbin i j * (x^+(i-j) * a ^+j)) = _).
+apply: eq_bigr => i _; rewrite pascal big_distrr; apply: eq_bigr => j _.
+by rewrite /= !mulrA.
+
 Admitted.
 
