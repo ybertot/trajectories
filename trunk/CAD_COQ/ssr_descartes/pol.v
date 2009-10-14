@@ -2,7 +2,6 @@ Require Import QArith ZArith Zwf Omega.
 Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun.
 Require Import bigops groups choice binomial.
 Require Export ssralg xssralg infra.
-Locate "_ ^ _".
 
 Import GroupScope .
 Import GRing.Theory .
@@ -127,9 +126,22 @@ Proof. exact: val_inj. Qed.
 
 Definition Qbin m n := Qcb_make (Z_of_nat (bin m n)).
 
-Axiom QbinS : forall m n, Qbin m.+1 n.+1 = Qbin m n.+1 + Qbin m n.
-Axiom Qbin0 : forall m, Qbin m 0 = 1.
-Axiom Qbinn : forall n, Qbin n n = 1.
+Lemma Qcb_makeadd: forall n m:Z, Qcb_make (n + m) = Qcb_make n +  
+Qcb_make m.
+Proof.
+move=> n m; apply : val_inj.
+by rewrite /=  -(eqP (Qcb_Z _)) /= !Zmult_1_r.
+Qed.
+
+Lemma QbinS : forall m n, Qbin m.+1 n.+1 = Qbin m n.+1 + Qbin m n.
+Proof. move=> m n; by rewrite  /Qbin binS inj_plus Qcb_makeadd. Qed.
+
+Lemma  Qbin0 : forall m, Qbin m 0 = 1.
+Proof. by move=> m;rewrite /Qbin bin0 Qcb_make1. Qed.
+
+Lemma Qbinn : forall n, Qbin n n = 1.
+Proof. move=> n; by rewrite /Qbin binn Qcb_make1. Qed.
+
 
 Definition translate_pol' (l :seq Qcb) (a:Qcb) :=
   mkseq (fun i:nat =>
@@ -170,11 +182,20 @@ Lemma translate_pol'q :
   forall l a x, eval_pol (translate_pol' l a) x = eval_pol l (x + a).
 move => l a x(* ; elim: l => [ | b l' IHl' x]; first by [] *).
 rewrite !eval_pol_big size_translate_pol' /translate_pol'.
+apply: trans_equal (_ : \sum_(i < size l)
+                      (\sum_(k < (size l).+1) Qbin k i* l`_k * a^+ (k - i))
+                      * x ^+ i = _).
+  by apply: eq_bigr => i _; rewrite nth_mkseq.
 apply sym_equal.
-apply: trans_equal (_ : (\sum_(i < size l)
-                    \sum_(j < i.+1) l`_i * Qbin i j * (x^+(i-j) * a ^+j)) = _).
-apply: eq_bigr => i _; rewrite pascal big_distrr; apply: eq_bigr => j _.
-by rewrite /= !mulrA.
+apply: trans_equal (_ : \sum_(i < size l)
+                    \sum_(j < i.+1) l`_i * Qbin i j * (x^+(i-j) * a ^+j) = _).
+  apply: eq_bigr => i _; rewrite pascal big_distrr; apply: eq_bigr => j _.
+  by rewrite /= !mulrA.
 
+(* use big_mkcond and the fact that Qbin k l = 0 if k < l,
+   big_mkord, big_cat_nat?
+   Then one of the exchange lemmas *)
+  
+                     
 Admitted.
 
