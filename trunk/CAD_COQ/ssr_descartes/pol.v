@@ -142,6 +142,11 @@ Proof. by move=> m;rewrite /Qbin bin0 Qcb_make1. Qed.
 Lemma Qbinn : forall n, Qbin n n = 1.
 Proof. move=> n; by rewrite /Qbin binn Qcb_make1. Qed.
 
+Lemma Qbin_sub : forall n m, m <= n -> Qbin n m = Qbin n (n - m).
+Proof. by move=> n m nlm; rewrite /Qbin bin_sub. Qed.
+   
+Lemma Qbin_small : forall m n, m < n -> Qbin m n = 0.
+Proof. by move=> m n mln; rewrite /Qbin bin_small // Qcb_make0. Qed.
 
 Definition translate_pol' (l :seq Qcb) (a:Qcb) :=
   mkseq (fun i:nat =>
@@ -182,20 +187,49 @@ Lemma translate_pol'q :
   forall l a x, eval_pol (translate_pol' l a) x = eval_pol l (x + a).
 move => l a x(* ; elim: l => [ | b l' IHl' x]; first by [] *).
 rewrite !eval_pol_big size_translate_pol' /translate_pol'.
-apply: trans_equal (_ : \sum_(i < size l)
-                      (\sum_(k < (size l).+1) Qbin k i* l`_k * a^+ (k - i))
-                      * x ^+ i = _).
-  by apply: eq_bigr => i _; rewrite nth_mkseq.
+apply: trans_equal (_ : \sum_(k < (size l).+1)
+                      (\sum_(i < size l) Qbin k i* l`_k * a^+ (k - i) * x^+ i)
+                       = _).
+  rewrite exchange_big /=.
+  by apply: eq_bigr => i _; rewrite nth_mkseq //= big_distrl.
 apply sym_equal.
 apply: trans_equal (_ : \sum_(i < size l)
-                    \sum_(j < i.+1) l`_i * Qbin i j * (x^+(i-j) * a ^+j) = _).
-  apply: eq_bigr => i _; rewrite pascal big_distrr; apply: eq_bigr => j _.
-  by rewrite /= !mulrA.
-
-(* use big_mkcond and the fact that Qbin k l = 0 if k < l,
-   big_mkord, big_cat_nat?
-   Then one of the exchange lemmas *)
-  
-                     
-Admitted.
-
+                \sum_(0 <= j < i.+1) l`_i * Qbin i j * (x^+(i-j) * a ^+j) = _).
+  apply: eq_bigr => i _; rewrite big_mkord pascal big_distrr /=.
+  by apply: eq_bigr => j _; rewrite /= !mulrA.
+have jgti : forall i : 'I_(size l),
+      \sum_(i.+1 <= j < size l) l`_i * Qbin i j * (x ^+ (i - j) * a ^+ j) = 0.
+  move => i; apply: big1_seq => j /=; rewrite mem_index_iota.
+  by move/andP => [ilj _]; rewrite Qbin_small // mulr0 mul0r.
+apply: trans_equal (_ : \sum_(i < size l)
+        \sum_(j < size l) l`_i * Qbin i j * (x ^+ (i - j) * a ^+ j) = _).
+  apply: eq_bigr => i _.
+  rewrite -(@big_mkord Qcb 0 +%R (size l) (fun i => true)
+   (fun j => l`_i * Qbin i j *(x ^+ (i - j) * a ^+ j))).
+  by rewrite  (@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0.
+rewrite big_ord_recr /=.
+have -> : \sum_(i < size l) Qbin (size l) i * l`_(size l) *
+             a ^+ (size l - i) * x ^+i = 0.
+  by apply: big1 => i _; rewrite nth_default // mulr0 !mul0r.
+rewrite addr0; apply eq_bigr => i _.
+rewrite -(@big_mkord Qcb 0 +%R (size l) (fun i => true)
+   (fun j => l`_i * Qbin i j *(x ^+ (i - j) * a ^+ j))).
+rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0.
+rewrite -(@big_mkord Qcb 0 +%R (size l) (fun i => true)
+   (fun j => Qbin i j * l`_i * a ^+ (i - j) * x ^+ j)).
+have jgti' :
+   \sum_(i.+1 <= j < size l) Qbin i j * l`_i * a^+(i - j) * x ^+ j = 0.
+  apply: big1_seq => j /=; rewrite mem_index_iota.
+  by move/andP => [ilj _]; rewrite Qbin_small // !mul0r.
+rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti' addr0.
+rewrite !big_mkord.
+set f := fun j:'I_i.+1 => (Ordinal ((leq_subr j i): (i - j) < i.+1)).
+have finv: forall j:'I_i.+1, xpredT j -> f (f j) = j.
+  by move => j _; apply: val_inj => /=; rewrite subKn //; have : j < i.+1.
+rewrite (reindex_onto f f finv) /=.
+have tmp :(fun j => f (f j) == j) =1 xpredT.
+  by move=> j /=; apply/eqP; apply finv.
+rewrite (eq_bigl _ _ tmp); apply: eq_bigr => j _.
+  have jli : j <= i by have : j < i.+1. 
+  by rewrite subKn // [x ^+ _ * _]mulrC [Qbin i j * _]mulrC !mulrA -Qbin_sub.
+Qed.
