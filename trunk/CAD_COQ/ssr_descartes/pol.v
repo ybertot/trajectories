@@ -165,11 +165,10 @@ Qed.
 Lemma eval_pol_big :
   forall l x, eval_pol l x = \sum_(i < size l) nth 0 l i * x ^+ i.
 Proof.
-move => l x; elim: l=> [ | a l IHl].
-  by rewrite big_ord0.
+move => l x; elim: l=> [ | a l IHl]; first by rewrite big_ord0.
 rewrite /= big_ord_recl /= mulr1 IHl; congr (fun v => a + v).
- rewrite big_distrr; apply:eq_bigr => i _.
- by rewrite /bump /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
+rewrite big_distrr; apply:eq_bigr => i _.
+by rewrite /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
 Qed.
 
 Theorem pascal : forall a b n,
@@ -185,8 +184,7 @@ Qed.
 
 Lemma translate_pol'q :
   forall l a x, eval_pol (translate_pol' l a) x = eval_pol l (x + a).
-move => l a x(* ; elim: l => [ | b l' IHl' x]; first by [] *).
-rewrite !eval_pol_big size_translate_pol' /translate_pol'.
+move => l a x; rewrite !eval_pol_big size_translate_pol' /translate_pol'.
 apply: trans_equal (_ : \sum_(k < (size l).+1)
                       (\sum_(i < size l) Qbin k i* l`_k * a^+ (k - i) * x^+ i)
                        = _).
@@ -214,15 +212,14 @@ have -> : \sum_(i < size l) Qbin (size l) i * l`_(size l) *
 rewrite addr0; apply eq_bigr => i _.
 rewrite -(@big_mkord Qcb 0 +%R (size l) (fun i => true)
    (fun j => l`_i * Qbin i j *(x ^+ (i - j) * a ^+ j))).
-rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0.
+rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0 big_mkord.
 rewrite -(@big_mkord Qcb 0 +%R (size l) (fun i => true)
    (fun j => Qbin i j * l`_i * a ^+ (i - j) * x ^+ j)).
 have jgti' :
-   \sum_(i.+1 <= j < size l) Qbin i j * l`_i * a^+(i - j) * x ^+ j = 0.
+   \sum_(i.+1 <= j < size l) Qbin i j * l`_i * a ^+ (i - j) * x ^+ j = 0.
   apply: big1_seq => j /=; rewrite mem_index_iota.
   by move/andP => [ilj _]; rewrite Qbin_small // !mul0r.
-rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti' addr0.
-rewrite !big_mkord.
+rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti' addr0 big_mkord.
 set f := fun j:'I_i.+1 => (Ordinal ((leq_subr j i): (i - j) < i.+1)).
 have finv: forall j:'I_i.+1, xpredT j -> f (f j) = j.
   by move => j _; apply: val_inj => /=; rewrite subKn //; have : j < i.+1.
@@ -230,6 +227,29 @@ rewrite (reindex_onto f f finv) /=.
 have tmp :(fun j => f (f j) == j) =1 xpredT.
   by move=> j /=; apply/eqP; apply finv.
 rewrite (eq_bigl _ _ tmp); apply: eq_bigr => j _.
-  have jli : j <= i by have : j < i.+1. 
-  by rewrite subKn // [x ^+ _ * _]mulrC [Qbin i j * _]mulrC !mulrA -Qbin_sub.
+have jli : j <= i by have : j < i.+1. 
+by rewrite subKn // [x ^+ _ * _]mulrC [Qbin i j * _]mulrC !mulrA -Qbin_sub.
 Qed.
+
+Definition reciprocate_pol (l: seq Qcb) := rev l.
+
+Lemma size_reciprocate : forall l, size (reciprocate_pol l) = size l.
+Proof. by move=> l; rewrite /reciprocate_pol size_rev. Qed.
+
+Lemma reciprocateq :
+  forall l x, 0 <<! x -> 
+     eval_pol (reciprocate_pol l) x = x ^+ (size l) * eval_pol l (x^-1).
+move=> [ | a l] x xp; rewrite !eval_pol_big size_reciprocate.
+  by rewrite !big_ord0 mulr0.
+rewrite big_distrr /=.
+set f := fun j:'I_(size l).+1 =>
+          Ordinal (leq_subr j (size l):size l - j <(size l).+1).
+have finv: forall j:'I_(size l).+1, xpredT j -> f (f j) = j.
+  by move => j _; apply: val_inj => /=; rewrite subKn //;
+      have : j < (size l).+1.
+rewrite (reindex_onto f f finv) /=.
+have tmp :(fun j => f (f j) == j) =1 xpredT.
+  by move=> j /=; apply/eqP; apply finv.
+rewrite (eq_bigl _ _ tmp); apply: eq_bigr => j _.
+rewrite /reciprocate_pol nth_rev.
+
