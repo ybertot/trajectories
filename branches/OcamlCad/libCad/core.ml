@@ -113,6 +113,24 @@ let sum_pow q n =
 (* -------------------------------------------------------------------- *)
 (* signs *)
 
+(* number of sign changes in l, sign being computed by the sign function f*)
+let sign_changes f l =
+  (* res accumulates the number of sign changes already computed, sx is the sign of x, computes res + sign_changes (x :: l)*)
+  let rec aux_rec ll sx res =
+    match ll with
+      |[] -> res 
+      |y :: tl -> 
+         let sy = f y in
+           if sy = 0 then
+             aux_rec tl sy res
+           else if sx = sy then aux_rec tl sy res
+           else aux_rec tl sy (1 + res)
+  in
+    match l with
+      |[] -> 0
+      | x :: tl ->
+          aux_rec tl x 0
+            
 type sign = Zero | Neg | Pos | Unknown
 
 

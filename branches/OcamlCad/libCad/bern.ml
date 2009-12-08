@@ -72,11 +72,12 @@ let bern_split blist c d e =
    - the list of bernstein coefficients of p in basis (deg p) with
    parameters a and b *)
 type alg = {
-  mutable lbound : coef;
-  mutable rbound : coef;
-  mutable pannul : poly
+   lbound : coef;
+   rbound : coef;
+   pannul : poly
 }
 
+let mk_alg a b p = {lbound = a; rbound = b; pannul = p}
 (* A sample point in the _one dimensional_ cad output is either:
    - a rational point, witness for the mandatory minus infty component
    - or a rational point, discovered as root of a polynomial
@@ -283,6 +284,7 @@ let happroxP p z =
    (_, b). If there is one, use these coefs to split them and take the
    second resuling list
    3) else initializes a bernstein computation
+
 *)
 
 let hbern_coefsP p a b =
@@ -300,14 +302,20 @@ let hbern_coefsP p a b =
             let n = find_at llbounds a in
             let (_, c) = List.nth lints n in
             let (_, _, bl) = List.nth llb n in
-              fst (bern_split bl a c b)
+            let (bll, blr) = bern_split bl a c b in
+              Hashtbl.add hbernP p (a, c, bll); 
+              Hashtbl.add hbernP p (c, b, blr); 
+              bll
           else
         let lrbounds = List.map snd lints in
           if List.mem b lrbounds then 
             let n = find_at lrbounds b in
             let (c, _) = List.nth lints n in
             let (_, _, bl) = List.nth llb n in
-              snd (bern_split bl c b a)
+            let (bll, blr) = bern_split bl a c b in
+              Hashtbl.add hbernP p (a, b, bll); 
+              Hashtbl.add hbernP p (c, b, blr); 
+              blr
           else
             let lb = bern_init p (current_deg p) a b 
             in Hashtbl.add hbernP p (a, b, lb); lb
@@ -315,15 +323,106 @@ let hbern_coefsP p a b =
     let lb = bern_init p (current_deg p) a b
     in Hashtbl.add hbernP p (a, b, lb); lb
         
-        
-(* Brute force dyadic refinement of a sample point : for each
-   algebraic coordinate, the interval is halved *)
-let rec sample_point_refine1 z =
+(* bl is the bernstein coefficients of p with parameter a, b.
+   returns the pair of new bernstein coefficients of p with parameters
+   a and c, and c and b, and stores the results in the table *) 
+let hbern_splitsP p a b c bl = 
+  let llb = Hashtbl.find_all hbernP p in
+  let lints = List.map (fun (x, y, _) -> (x, y)) llb in
+    (* warning lint is listed twice, which is too much *)
+    (* first case: both coef lists are already in the table *)
+    if (List.mem (a, c) lints) && (List.mem (c, b) lints)  then
+      let n = find_at lints (a, c) in
+      let m = find_at lints (c, b) in
+      let (_, _, b') = List.nth llb n in
+      let (_, _, b'') = List.nth llb m in
+            (b', b'')
+    (* else we need a bern_split *)
+    else
+      let (bll, blr) = bern_split bl a b c in
+        Hashtbl.add hbernP p (a, c, bll); 
+        Hashtbl.add hbernP p (c, b, blr); 
+        (bll, blr)
+          
 
-    
+(* we recursively define:
+   - the refinement of a sample poin. Refinement recursively affects all the
+   algebraic coordinates of sp by halving them
+   - with the determination of the sign of poly p at a sample point sp
+
+   Warning, not tail rec, but the number of variables, hence the
+   length of the list sp should unfortunately never exceed 10...
+*)
+
+(*
+let rec sample_point_refine sp =
+  match sp with
+      [] -> []
+    |z :: sp_tl ->
+       (* recursively refined tail *)
+       let ref_sp_tl = sample_point_refine sp in
+       match zp with
+         |Minf c -> z :: sample_point_refine sp_tl
+         |Rroot r -> z :: sample_point_refine sp_tl
+         |Between b -> z :: sample_point_refine sp_tl
+         |Aroot alg ->
+            let a = alg.lbound in
+            let b = alg.rbound in
+            let p = alg.pannul in
+            let mid = middle a b in
+            let smid = pol_sign_at (Root smid)::[] p in
+              (* first case: the mid is the exact value of the root *)
+              if smid = 0 then (Root smid) :: ref_sp_tl
+              (* second case: we have to halve ]a b[*)
+              else
+                let lb = hbern_coefsP p a b in
+                let (b', b'') =  hbern_splitsP p a b mid in
+                  (* recursive call to pol_sign_at to compute
+                     the sign of the coefficients we pass along
+                     ref_sp_tl so that it gets more and more refined *)
+                let (ref_sp_tl', nsc') = sign_changes ref_sp_tl b' in
+                  (* we know that either nsc' or nsc'' is 1 *)
+                  if nsc' = 1 then (mk_alg a mid p) :: ref_sp_tl'
+                  else (mk_alg mid b p) :: ref_sp_tl'
+
+(* returns a pair (sp', n), n is the number of sign changes in the list
+   of poly l evaluated at sp, and sp' is a refinement of sp.
+   That one could be defined not in a mutually recursive way but we
+   put it her for sake of readability *)
+and sign_changes sp lp =
+    match sp with
+      |[] -> 
+         (* base case, polynomials in lp should all have a single
+          variable, no refinement here *)
+       (* sign of a constant pol *)
+         (let sign_of_cst_coef p =
+           match p with
+             |Prec c -> coef_sign c 
+             | _ -> raise IllFormedPoly
+         in
+           (* recursive count of sign changes, without ref *)
+         let rec scount_rec ll sx res =
+           match ll with
+             |[] -> res 
+             |y :: tl -> 
+                let sy = sign_of_cst_coef y in
+                  if sy = 0 then
+                    aux_rec tl sy res
+                  else if sx = sy then aux_rec tl sy res
+                  else aux_rec tl sy (1 + res)
+         in
+           match lp with
+             |[] -> ([], 0)
+             | x :: tl -> ([], scount_rec tl x 0))
+      |_ ->
+         
 (* determination of the sign of p(z). possibly refines z by side
    effect *)
-and pol_sign_at z p = 
+       and pol_sign_at sp p = 
+  match p with
+    |Pint c -> coef_sign c
+    |Prec (x, t) ->
+
   match z with
     |[] -> failwith "empty sample point?"
        (* univariate case: *)
@@ -342,3 +441,5 @@ and pol_sign_at z p =
               
 
           |
+
+*)
