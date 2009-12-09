@@ -16,7 +16,7 @@ let bern_init p n a b =
   let q = translateP (revP (dilateP (translateP p a) (sub_coef b a))) coef1 in
   let ares =
     match q with
-      |Pint c -> let t = Array.make (n + 1) p0 in t.(0) <- (cf c); t
+      |Pc c -> let t = Array.make (n + 1) p0 in t.(0) <- (cf c); t
       |Prec (_, t) -> 
          Array.mapi (fun i ti -> div_pol_int ti (coef_of_int (binomial n i))) t
   in
@@ -77,7 +77,6 @@ type alg = {
    pannul : poly
 }
 
-let mk_alg a b p = {lbound = a; rbound = b; pannul = p}
 (* A sample point in the _one dimensional_ cad output is either:
    - a rational point, witness for the mandatory minus infty component
    - or a rational point, discovered as root of a polynomial
@@ -175,12 +174,12 @@ let div_approx a1 a2 =
 let coefs_of_svarpol p =
   let extract pi =
     match pi with
-      |Pint c -> c
+      |Pc c -> c
       |_ -> raise MoreThanOneVar
   in
     Array.map extract p
 
-(* - t should be an array of Pint _, coding a pol in one var,
+(* - t should be an array of Pc _, coding a pol in one var,
    otherwise, an excpt is raised
    - x is this variable
    - z is a sample point
@@ -212,7 +211,7 @@ let approx_of_approx_pol_at_approx t a1 =
 (* Computation of the approx value of p at z a sample point *)
 let rec approx_of_pol_at_spoint z p = 
   match p with
-    |Pint c -> Exact c
+    |Pc c -> Exact c
     |Prec (x, t) ->
        match z with
          |[] -> failwith "ill formed (empty?) sample point"
@@ -242,10 +241,13 @@ let hvalP = (Hashtbl.create 12345 : (poly * sample_point, approx) Hashtbl.t)
 *)
 
 (* Cache for the bernstein coefficients of a polynomial *)
-let hbernP = (Hashtbl.create 12345 : (poly, coef * coef * poly list) Hashtbl.t)
+let bern_htbl = (Hashtbl.create 12345 : (poly, coef * coef * poly list) Hashtbl.t)
 
-(* Cache for square free part of polys *)
-let hsquare_freeP = (Hashtbl.create 12345 : (poly, poly) Hashtbl.t)
+(* Cache for square free parts of polys *)
+let square_free_htbl = (Hashtbl.create 12345 : (poly, poly) Hashtbl.t)
+
+(* Cache for gcds of polys *)
+let gcd_htbl = (Hashtbl.create 12345 : (poly * poly, poly) Hashtbl.t)
 (*----------------------------------------------------------------------------*)
 (***  caching functions ***)
 (*----------------------------------------------------------------------------*)
@@ -254,14 +256,40 @@ let hsquare_freeP = (Hashtbl.create 12345 : (poly, poly) Hashtbl.t)
 (* Gets the square free part of poly p
    - first asking the hash table
    - if not already stored in the hastable, then computes, stores and return
-   the value *)
+   the value. Note that if the computation is not trival (deg <= 1),
+   the result is also stored in the gcd table *)
+
 let hsqfreeP p =
-  let res = try Hashtbl.find hsquare_freeP p with
+  let res = try Hashtbl.find square_free_htbl p with
       NotFound ->
         match p with
-          |Pint _ -> p
-          |Prec(x, _) -> square_free p x
-  in res
+          |Pc _ -> p
+          |Prec(x, _) ->
+             if (deg x p) <= 1 then p 
+             else
+               let p' = deriv x p in
+                 div_pol p (gcd_pol p p' x) x 
+  in
+    Hashtbl.add gcd_htbl ((p, p'), res);
+    Hashtbl.add square_free_htbl p res; 
+    res
+
+(* alg constructor. we ensure the polynomial is always square free *)
+let mk_alg a b p = {lbound = a; rbound = b; pannul = hsqfreeP p}
+
+
+(* Gets the gcd of two polynomials
+   - first asking the hashtable
+   - if not already stored in the hastable, then computes, stores and return
+   the value. *)
+let gcd_htbl p q =
+  let res = try Hashtbl.find gcd_htbl (p, q) with
+      NotFound ->
+        let g = gcdP p q in
+          Hashtbl.add gcd_htbl (p, q) g; 
+          g
+
+
 (* Gets the value of poly p at sample_point z :
    - first asking the hash table
    - if not already stored in the hastable, then computes, stores and return
@@ -288,8 +316,8 @@ let happroxP p z =
 *)
 
 let hbern_coefsP p a b =
-  if Hashtbl.mem hbernP p then 
-    let llb = Hashtbl.find_all hbernP p in
+  if Hashtbl.mem bern_htbl p then 
+    let llb = Hashtbl.find_all bern_htbl p in
     let lints = List.map (fun (x, y, _) -> (x, y)) llb in
       (* warning lint is listed twice, which is too much *)
       if List.mem (a, b) lints  then
@@ -303,8 +331,8 @@ let hbern_coefsP p a b =
             let (_, c) = List.nth lints n in
             let (_, _, bl) = List.nth llb n in
             let (bll, blr) = bern_split bl a c b in
-              Hashtbl.add hbernP p (a, c, bll); 
-              Hashtbl.add hbernP p (c, b, blr); 
+              Hashtbl.add bern_htbl p (a, c, bll); 
+              Hashtbl.add bern_htbl p (c, b, blr); 
               bll
           else
         let lrbounds = List.map snd lints in
@@ -313,21 +341,21 @@ let hbern_coefsP p a b =
             let (c, _) = List.nth lints n in
             let (_, _, bl) = List.nth llb n in
             let (bll, blr) = bern_split bl a c b in
-              Hashtbl.add hbernP p (a, b, bll); 
-              Hashtbl.add hbernP p (c, b, blr); 
+              Hashtbl.add bern_htbl p (a, b, bll); 
+              Hashtbl.add bern_htbl p (c, b, blr); 
               blr
           else
             let lb = bern_init p (current_deg p) a b 
-            in Hashtbl.add hbernP p (a, b, lb); lb
+            in Hashtbl.add bern_htbl p (a, b, lb); lb
   else 
     let lb = bern_init p (current_deg p) a b
-    in Hashtbl.add hbernP p (a, b, lb); lb
+    in Hashtbl.add bern_htbl p (a, b, lb); lb
         
 (* bl is the bernstein coefficients of p with parameter a, b.
    returns the pair of new bernstein coefficients of p with parameters
    a and c, and c and b, and stores the results in the table *) 
 let hbern_splitsP p a b c bl = 
-  let llb = Hashtbl.find_all hbernP p in
+  let llb = Hashtbl.find_all bern_htbl p in
   let lints = List.map (fun (x, y, _) -> (x, y)) llb in
     (* warning lint is listed twice, which is too much *)
     (* first case: both coef lists are already in the table *)
@@ -340,8 +368,8 @@ let hbern_splitsP p a b c bl =
     (* else we need a bern_split *)
     else
       let (bll, blr) = bern_split bl a b c in
-        Hashtbl.add hbernP p (a, c, bll); 
-        Hashtbl.add hbernP p (c, b, blr); 
+        Hashtbl.add bern_htbl p (a, c, bll); 
+        Hashtbl.add bern_htbl p (c, b, blr); 
         (bll, blr)
           
 
@@ -385,61 +413,131 @@ let rec sample_point_refine sp =
                   if nsc' = 1 then (mk_alg a mid p) :: ref_sp_tl'
                   else (mk_alg mid b p) :: ref_sp_tl'
 
-(* returns a pair (sp', n), n is the number of sign changes in the list
+(* sign changes in a list obtained by mapping evaluation at sample
+   point sp over the list of polynomials lp.
+   returns a pair (sp', n), n is the number of sign changes in the list
    of poly l evaluated at sp, and sp' is a refinement of sp.
-   That one could be defined not in a mutually recursive way but we
+   That one could be defined outside, not in a mutually recursive way but we
    put it her for sake of readability *)
 and sign_changes sp lp =
     match sp with
       |[] -> 
-         (* base case, polynomials in lp should all have a single
-          variable, no refinement here *)
-       (* sign of a constant pol *)
-         (let sign_of_cst_coef p =
-           match p with
-             |Prec c -> coef_sign c 
-             | _ -> raise IllFormedPoly
-         in
-           (* recursive count of sign changes, without ref *)
-         let rec scount_rec ll sx res =
-           match ll with
-             |[] -> res 
-             |y :: tl -> 
-                let sy = sign_of_cst_coef y in
-                  if sy = 0 then
-                    aux_rec tl sy res
-                  else if sx = sy then aux_rec tl sy res
-                  else aux_rec tl sy (1 + res)
-         in
-           match lp with
-             |[] -> ([], 0)
-             | x :: tl -> ([], scount_rec tl x 0))
+         (* base case, polynomials in lp should all be constants, no
+   refinement here *)
+         (* sign of a constant pol *)
+         (let sign_of_cst_poly p =
+            match p with
+              |Prec c -> coef_sign c 
+              | _ -> raise IllFormedPoly
+          in
+           (* recursive count of sign changes, without refinement.
+              returns res + number of sign changes in x :: l, for an
+              x with sign sx *)
+          let rec sign_count_rec ll sx res =
+            match ll with
+              |[] -> res 
+              |y :: tl -> 
+                 let sy = sign_of_cst_poly y in
+                   if sy = 0 then
+                     sign_count_rec tl sx res
+                   else if sx = sy then sign_count_rec tl sy res
+                   else sign_count_rec tl sy (1 + res)
+          in
+            match lp with
+              |[] -> ([], 0)
+              | x :: tl -> 
+                  let sx = sign_of_cst_poly x in 
+                    ([], sign_count_rec tl sx 0))
       |_ ->
-         
-(* determination of the sign of p(z). possibly refines z by side
-   effect *)
-       and pol_sign_at sp p = 
-  match p with
-    |Pint c -> coef_sign c
-    |Prec (x, t) ->
-
-  match z with
-    |[] -> failwith "empty sample point?"
-       (* univariate case: *)
-    | z1 :: [] ->
-        match z1 with
-            (* The only meaningful case is the one of an algebraic
-               point *)
-          |Aroot a -> 
-             let a = alg.lbound in
-             let b = alg.rbound in
-             let p = alg.pannul in
-             let mid = middle a b in               
-             (* In the other cases, we know the exact value of the
-                unique coordinate *)
-          | _ -> z
-              
-
-          |
-
+         (* recursively computes (sp', n), where n is res.1 + the
+            sumber of sign changes in the values of polys in ll
+            evaluated at res.2 and sp' is a refinement of sp.2 *)
+         (let rec sign_count_rec ll sx res =
+            match ll with
+              |[] -> res
+              | y :: tl ->
+                  let (sp_res, n_res) = res in
+                  let (sp_res', sy) = pol_sign_at sp_res y in
+                    if sy  = 0 then sign_count_rec tl sx (sp_res', n_res)
+                    else if sx = sy then sign_count_res tl sy (sp_res', n_res)
+                    else sign_count_rec tl sy (sp_res', n_res + 1)
+          in
+            match lp with
+              |[] -> ([], 0)
+              | x :: tl -> 
+                  let sx = pol_sign_at sp x in 
+                    ([], sign_count_rec tl x (sp, 0)))
+         )
+(* determination of the sign of p(sp). possibly refines sp
+   hence computes a (sp' ,  s) where sp' resfines sp and s is
+   -1, 0, or 1, the sign of p at sp.
+   First case: sp is in fact a root of p. Second case: it is not.
+   To discriminate the two cases, we need to compute bernstein coefs
+   for some gcds.
+   In the second case, the approx p(sp) is refined, untill its
+   rational bounds have the same sign, which is the sign of p(sp).
+ *)
+and pol_sign_at sp p = 
+    match p with
+        (* trivial case of a constant pol *)
+      |Pc c -> coef_sign c
+      | _ -> 
+          (* non trivial polynomial *)
+          match sp with
+            |[] -> failwith "empty sample point ?"
+            |sp1 :: sptl ->
+               (* recursive case : a non triv pol and a non triv
+                  sample point:
+                  - in the three first cases, sp1 is a rational
+                  constant. the partial eval of p with xn+1 = sp1
+                  leads to a simple recursive call *)
+               match sp1 with
+                 |Minf c ->
+                    let pc = evalP p c in pol_sign_at sptl pc
+                 |Rroot r ->
+                    let pr = evalP p r in pol_sign_at sptl pr
+                 |Between b ->
+                    let pb = evalP p b in pol_sign_at sptl pb
+                 |Aroot alg ->
+                    (* recursive case : a non triv pol and a non triv
+                       sample point:
+                       - in the last case, sp1 is an algebraic
+                       point. *)
+                    let lb = alg.lbound in
+                    let rb = alg.rbound in
+                    let palg = alg.pannul in
+                      (* we need to decide whether p (sp) = 0 or
+                         not. p(sp) = 0 iff sp1 is a common root to
+                         p(sptl) and palg(sptl), ie if g(sp) has a
+                         root in ]lb, rb[, where g = gcd (p,
+                         palg). Since multiplicity does not affect the
+                         result of root counting, we use the square free parts
+                         of the polys involved in bern computations *)
+                    let palg_bar = hsqfreeP palg in
+                    let p_bar = hsqfreeP p in
+                    let g = gcd_htbl palg_bar p_bar in
+                    let dg = current_deg  g in
+                    let gbl = hbern_coefsP g lb rb in
+                    let (sptl', nsc_gbl) = sign_changes sptl gbl in
+                      (* first case : g has no root in ]lr, br[ : 
+                         we refine the approx of p (sp) until the
+                         bounds have the same sign, which is the sign
+                         of p (sp)*)
+                      if nsc_gbl = 0 then 
+                        let psp = approx_of_pol_at_spoint sp p in
+                          match psp with
+                            |Exact x -> coef_sign x
+                            |Approx (xa, xb) ->
+                               if xa = 0 then (sptl',1)
+                               else if xb = 0 then (sptl', -1)
+                               else if coef_sign (coef_mlut xa xb) = 1
+                               then (sptl', coef_sign xa)
+                               else 
+                        (* second case : g has 1! root in ]lr, br[ :
+                           p(sp) is zero *)
+                      else if nsc_gbl = 1 then 
+                        (* third case : we don't know yet how many
+                           roots g has in ]lr, br[, we refine sp and
+                           repeat the sign determination process *)
+                      else 
 *)

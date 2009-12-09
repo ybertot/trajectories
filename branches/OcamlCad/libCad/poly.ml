@@ -23,7 +23,7 @@ let coef_sign = Num.sign_num
 (* type of polynomials *)
 
 type poly = 
-    Pint of coef                       (* constant poly *)
+    Pc of coef                       (* constant poly *)
   | Prec of variable * (poly array)    (* coefficients increasing deg *)
 
 
@@ -59,7 +59,7 @@ let string_of_var x =
 (* poly printer *)
 let rec string_of_P p =
   match p with
-    |Pint a -> 
+    |Pc a -> 
        if le_coef coef0 a
        then string_of_coef a
        else "("^(string_of_coef a)^")" (* paren for neg coefs *)
@@ -111,38 +111,38 @@ let print_lpoly lp = print_tpoly (Array.of_list lp)
 
 
 (* cst pol *)
-let cf x = Pint x
+let cf x = Pc x
 
 let p1 = cf coef1
 
 let p0 = cf coef0
 (* cst pol to cste *)
-let int_of_Pint = 
+let int_of_Pc = 
   function 
-    |Pint x ->x
+    |Pc x ->x
     |_ -> failwith "not constant"
 
 (* tests if a (normal) poly is cst *)
 let is_constantP p = 
   match p with
-    |Pint _ -> true
+    |Pc _ -> true
     |Prec (_, _) -> false
 
 
 (* tests if a (normal) poly is zero *)
 let is_zero p =
-  match p with Pint n -> if eq_coef n coef0 then true else false |_-> false
+  match p with Pc n -> if eq_coef n coef0 then true else false |_-> false
 
 (* tests is a pol has only one variable, rejects cst pols *)
 let single_var_test p =
   match p with
-    |Pint _ -> false
+    |Pc _ -> false
     |Prec (_, t) -> Array.fold_right (&&) (Array.map is_constantP t) true
 
 (* constant coef of a normal poly *)
 let rec coef_constant p =
   match p with
-      Pint a -> a
+      Pc a -> a
     |Prec(_, q) -> coef_constant q.(0)
 
 
@@ -152,10 +152,10 @@ let x n = Prec (n,[|cf coef0; cf coef1|])
 (* the monomial v^n *)
 let mon v n = 
   match n with
-    | 0 -> Pint coef1;
+    | 0 -> Pc coef1;
     |_ ->
-       let tmp = Array.make (n + 1) (Pint coef0) in
-         tmp.(n) <- Pint coef1;
+       let tmp = Array.make (n + 1) (Pc coef0) in
+         tmp.(n) <- Pc coef1;
          Prec (v, tmp)
 
 (* coefficient of deg i in var v, v <= max var of p *)
@@ -163,8 +163,8 @@ let coef v i p =
   match p with 
     | Prec (x, p1) when x = v  -> 
         if i < (Array.length p1) then p1.(i) 
-        else Pint coef0
-    |_ -> if i = 0 then p else Pint coef0
+        else Pc coef0
+    |_ -> if i = 0 then p else Pc coef0
 
 (* deg in var v of pol p, v <= max var of p *)
 let rec deg v p =
@@ -183,7 +183,7 @@ let lcoef v p = coef v (deg v p) p
 (* leading coef in current variable *)
 let current_lcoef p =
   match p with
-    |Pint c -> Pint c
+    |Pc c -> Pc c
     |Prec (_, t) -> 
        let n = Array.length t in t.(n - 1)
          
@@ -191,14 +191,14 @@ let current_lcoef p =
 (* max variable *)
 let max_var_pol p = 
   match p with 
-      Pint _ -> 0
+      Pc _ -> 0
     |Prec(x,_) -> x
 
 
 (* same but the argument need not be normalized *)
 let rec max_var_pol2 p =
   match p with 
-      Pint _ -> 0
+      Pc _ -> 0
     |Prec(v,c)-> Array.fold_right (fun q m -> max (max_var_pol2 q) m) c v
 
 
@@ -210,13 +210,13 @@ let rec head_int_coef p =
   let v = max_var_pol p in
     if v>0
     then head_int_coef (lcoef v p)
-    else (match p with | Pint a -> a |_ -> assert false)
+    else (match p with | Pc a -> a |_ -> assert false)
 
 
 
 (* sorted list of the variables of a pol *)
 let rec vars = function
-    Pint _->[]
+    Pc _->[]
   |Prec (x, l) -> merge_clean ([x]::(Array.to_list (Array.map vars l)))
 
 
@@ -232,7 +232,7 @@ let rec deg_total p =
 (* copy of a pol *)
 let rec copyP p =
   match p with
-      Pint i -> Pint i
+      Pc i -> Pc i
     |Prec(x, q) -> Prec(x, Array.map copyP q)
        
 
@@ -240,7 +240,7 @@ let rec copyP p =
    One should not use = since it does not work on Big_int ... *)
 let rec eqP p q =
   match (p, q) with 
-      (Pint a, Pint b) -> eq_coef a b
+      (Pc a, Pc b) -> eq_coef a b
     |(Prec (x, p1), Prec (y, q1)) ->
        if x <> y then false
        else if (Array.length p1) <> (Array.length q1) then false
@@ -256,17 +256,17 @@ let rec eqP p q =
 cleans head zeros and if it becomes cst, computes the cst *)
 let rec norm p = 
   match p with
-    Pint _ -> p
+    Pc _ -> p
   |Prec (x,a)->
      let d = (Array.length a -1) in
      let n = ref d in 
-       while !n > 0 && (eqP a.(!n) (Pint coef0)) do
+       while !n > 0 && (eqP a.(!n) (Pc coef0)) do
 	 n:=!n - 1;
        done;
-       if !n < 0 then Pint coef0
+       if !n < 0 then Pc coef0
        else if !n = 0 then a.(0) 
        else if !n = d then p
-       else (let b=Array.make (!n+1) (Pint coef0) in
+       else (let b=Array.make (!n+1) (Pc coef0) in
                for i=0 to !n do b.(i)<-a.(i);done;
                Prec(x,b))
 
@@ -277,7 +277,7 @@ let rec norm p =
 (* opposite *)
 let rec oppP p =
   match p with 
-      Pint a -> Pint (minus_coef a)
+      Pc a -> Pc (minus_coef a)
     |Prec(x,p1) -> Prec(x,Array.map oppP p1)
 
 
@@ -285,11 +285,11 @@ let rec oppP p =
 let rec addP p q =
   let res =
     (match (p,q) with
-	 (Pint a,Pint b) -> Pint (add_coef a b)
-       |(Pint a, Prec (y,q1)) -> let q2=Array.map copyP q1 in
+	 (Pc a,Pc b) -> Pc (add_coef a b)
+       |(Pc a, Prec (y,q1)) -> let q2=Array.map copyP q1 in
            q2.(0)<- addP p q1.(0);
            Prec (y,q2)
-       |(Prec (x,p1),Pint b) -> let p2=Array.map copyP p1 in
+       |(Prec (x,p1),Pc b) -> let p2=Array.map copyP p1 in
            p2.(0)<- addP p1.(0) q;
            Prec (x,p2)
        |(Prec (x,p1),Prec (y,q1)) -> 
@@ -301,7 +301,7 @@ let rec addP p q =
                               Prec (x,p2))
           else 
             (let n=max (deg x p) (deg x q) in 
-             let r=Array.make (n+1) (Pint coef0) in
+             let r=Array.make (n+1) (Pc coef0) in
                for i=0 to n do
                  r.(i)<- addP (coef x i p) (coef x i q);
                done;
@@ -315,19 +315,19 @@ let subP p q=addP p (oppP q)
 
 let rec mult_cst a p =
   match p with
-    |Pint c -> Pint (mult_coef a c)
+    |Pc c -> Pc (mult_coef a c)
     |Prec (x, t) -> Prec (x, Array.map (mult_cst a) t)
 
 (* product of p by v^n, v <= max_var p *)
 let rec multx n v p =
   match p with
-      Prec (x,p1) when x=v -> let p2= Array.make ((Array.length p1)+n) (Pint coef0) in
+      Prec (x,p1) when x=v -> let p2= Array.make ((Array.length p1)+n) (Pc coef0) in
         for i=0 to (Array.length p1)-1 do
           p2.(i+n)<-p1.(i);
         done;
         Prec (x,p2)
-    |_ -> if p = (Pint coef0) then (Pint coef0) 
-       else (let p2=Array.make (n+1) (Pint coef0) in 
+    |_ -> if p = (Pc coef0) then (Pc coef0) 
+       else (let p2=Array.make (n+1) (Pc coef0) in 
                p2.(n)<-p;
                Prec (v,p2))
 
@@ -335,14 +335,14 @@ let rec multx n v p =
 (* product *)
 let rec multP p q =
   match (p,q) with
-      (Pint a,Pint b) -> Pint (mult_coef a b)
-    |(Pint a, Prec (y,q1)) ->
-       if eq_coef a coef0 then Pint coef0
+      (Pc a,Pc b) -> Pc (mult_coef a b)
+    |(Pc a, Prec (y,q1)) ->
+       if eq_coef a coef0 then Pc coef0
        else let q2 = Array.map (fun z-> multP p z) q1 in
          Prec (y,q2)
            
-    |(Prec (x,p1), Pint b) ->
-       if eq_coef b coef0 then Pint coef0
+    |(Prec (x,p1), Pc b) ->
+       if eq_coef b coef0 then Pc coef0
        else let p2 = Array.map (fun z-> multP z q) p1 in
          Prec (x,p2)
     |(Prec (x,p1), Prec(y,q1)) ->
@@ -352,7 +352,7 @@ let rec multP p q =
        else if x>y
        then (let p2 = Array.map (fun z-> multP z q) p1 in
                Prec (x,p2))
-       else Array.fold_left addP (Pint coef0)
+       else Array.fold_left addP (Pc coef0)
          (Array.mapi (fun i z-> (multx i x (multP z q))) p1)
 
 
@@ -381,16 +381,18 @@ let (^^) a b = powP a b
 (* Sum of the squares of the coefficents in the current variable *)
 let sum_square_coefs p =
   match p with
-    |Pint c -> Pint (mult_coef c c)
+    |Pc c -> Pc (mult_coef c c)
     |Prec (_, t) -> Array.fold_left (fun x y -> x ++ (y @@ y)) p0 t
 (*----------------------------------------------------------------------------*)
 (*** Evaluation ***)
 (*----------------------------------------------------------------------------*)
 
-(* (possibly partial) evaluation of p at a constant point a *)
+(* exact evaluation of p at a rational point a *)
+(* if p \in R[x1, ..., xn+1], evalP p a \in R[x1, ..., xn] and is in
+   normal form*)
 let rec evalP p a =
   match p with
-    |Pint c -> p
+    |Pc c -> p
     |Prec (_, t) -> 
        let tmp = Array.mapi (fun i ti -> mult_cst (pow_coef a i) ti) t
        in Array.fold_left addP p0 tmp
@@ -422,14 +424,14 @@ let tailP v p =
 let trunc_list p =
   let rec aux_rec p resp resc = 
     match p with
-      |Pint c -> 
+      |Pc c -> 
          (* shall we do something special when c = 0 ? *)
          (p :: resp, resc)
       |Prec (x, t) -> 
          let n = Array.length t in
          let lcoef = t.(n - 1) in
            match lcoef with
-             |Pint c ->
+             |Pc c ->
                 if eq_coef c coef0 then failwith "Not In Normal Form"
                 else (p :: resp, resc)
              |Prec (x1, t1) ->
@@ -446,7 +448,7 @@ let trunc_list p =
 
 let translateP p t =
   match p with
-    |Pint c -> p
+    |Pc c -> p
     |Prec (v, q) ->
        let tmp = Array.mapi (fun i ti -> (ti @@ (x v ++ (cf t))^^i)) q in
          Array.fold_left addP p0 tmp
@@ -456,7 +458,7 @@ let translateP p t =
 (*----------------------------------------------------------------------------*)
 let dilateP p t = 
   match p with 
-    |Pint c -> p
+    |Pc c -> p
     |Prec (v, q) ->
        let tmp = Array.mapi (fun i ti -> (ti @@ ((x v) @@ (cf t))^^i)) q in
          Array.fold_left addP p0 tmp
@@ -468,7 +470,7 @@ let dilateP p t =
 (*----------------------------------------------------------------------------*)
 let revP p =
   match p with
-    |Pint c -> p
+    |Pc c -> p
     |Prec (v, q) -> Prec (v, Array.of_list (List.rev (Array.to_list q)))
        
 (*----------------------------------------------------------------------------*)
@@ -478,17 +480,17 @@ let revP p =
 (* v smaller than max_var p*)
 let rec deriv v p =
   match p with 
-      Pint a -> Pint coef0
+      Pc a -> Pc coef0
     |Prec(x,p1) when x=v ->
        let d = Array.length p1 -1 in
          if d=1 then p1.(1)
          else
-           (let p2 = Array.make d (Pint coef0) in
+           (let p2 = Array.make d (Pc coef0) in
               for i=0 to d-1 do
-		p2.(i)<- multP (Pint (coef_of_int (i+1))) p1.(i+1);
+		p2.(i)<- multP (Pc (coef_of_int (i+1))) p1.(i+1);
               done;
               Prec (x,p2))
-    |Prec(x,p1)-> Pint coef0
+    |Prec(x,p1)-> Pc coef0
 
 (*----------------------------------------------------------------------------*)
 (*** Divisibility ***)
@@ -499,9 +501,9 @@ let rec deriv v p =
 let rec quo_rem_pol p q x =
   if x = 0
   then (match (p,q) with 
-          |(Pint a, Pint b) -> (Pint (div_coef a b), cf (coef0))
+          |(Pc a, Pc b) -> (Pc (div_coef a b), cf (coef0))
 	     (*if eq_coef (mod_coef a b) coef0
-             then (Pint (div_coef a b), cf 0)
+             then (Pc (div_coef a b), cf 0)
              else failwith "div_pol1"*)
 	  |_ -> assert false)
   else 
@@ -534,7 +536,7 @@ and div_pol p q x =
 (* divides every coef of p by the cst a *)
 let rec div_pol_int p a=
   match p with
-      Pint b -> Pint (div_coef b a)
+      Pc b -> Pc (div_coef b a)
     |Prec(x,p1) -> Prec(x,Array.map (fun x -> div_pol_int x a) p1)
 
 
@@ -562,8 +564,8 @@ and gcd_coef_pol c p x =
        
 and gcd_pol_rec p q x =
   match (p,q) with
-      (Pint a,Pint b) -> (*Pint (gcd (abs_coef a) (abs_coef b))*)
-        Pint (div_coef a b)
+      (Pc a,Pc b) -> (*Pc (gcd (abs_coef a) (abs_coef b))*)
+        Pc (div_coef a b)
     |_ -> if eqP p (cf coef0)
        then q
        else if eqP q (cf coef0)
@@ -645,8 +647,9 @@ let square_free p x =
 (* For sake of compatibility, we reproduce here the code coming from
    the Coq implementation for subresultant coefficients and
    polynomial.
-   The above implem of gcd shold be tested against an ocaml version
-   of the extended subresultant pols based implem of the Coq, since
+   This is a brain dead translation from the Coq code.
+   The above implem of gcd should be tested against an ocaml version
+   based on the extended subresultant Coq code, since
    the def or  subresultants slightlty changes *)
 
 (* We follow BPR notations : 

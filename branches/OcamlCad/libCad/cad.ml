@@ -122,7 +122,7 @@ let rec sign_find p col =
    sign col for the elim family at sample point z  *)
 let non_deg_pol z sz p = 
   match p with
-    |Pint _ -> p
+    |Pc _ -> p
     |Prec (x, t) -> 
        (* list of coefs of p, leading first *)
        let lt = List.rev (Array.to_list t) in
@@ -131,7 +131,7 @@ let non_deg_pol z sz p =
            |[] -> []
            |lc :: tl -> 
               match lc with
-                |Pint c -> if eq_coef c coef0 then skip_vanishing tl
+                |Pc c -> if eq_coef c coef0 then skip_vanishing tl
                   else l
                 |Prec (_, _) ->
                    let s = sign_find lc sz in
@@ -148,22 +148,10 @@ let non_deg_pol z sz p =
 
 
 (* Sign of NON DEGENERATED polynomial p(z)(x) at -infty, simply obtained
-   from the parity of the degree *)
+   from the parity of the degree, and the sign of the leading coefficient
 let sign_at_minfty z p =
   let n = current_deg p in
     if n mod 2 = 0 then Pos else Neg
-
-
-
-
-
-
-
-
-
-
-
-
-
+ *)
 type cad_output = 
     Leaf of sample_point * sign_col | Node of cad_output array
