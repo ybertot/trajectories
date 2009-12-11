@@ -18,7 +18,7 @@ let coef_of_int = Num.num_of_int
 let string_of_coef = Num.string_of_num
 let coef0 = Num.num_zero
 let coef1 = Num.num_one
-let coef_sign = Num.sign_num
+let sign_coef = Num.sign_num
 
 (* type of polynomials *)
 

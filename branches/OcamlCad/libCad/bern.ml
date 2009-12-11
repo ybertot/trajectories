@@ -130,6 +130,11 @@ let add_approx a1 a2 =
     |Int (a1, b1), Int (a2, b2) -> 
        let (a, b) = (add_int (a1, b1) (a2, b2)) in Int (a, b)
 
+let add_approx_num a x =
+  match a with
+    |Exact e -> Exact (add_coef e x)
+    |Int (a, b) -> Int (add_coef a x, add_coef b x)
+
 let mult_approx a1 a2 =
   match a1, a2 with
     |Exact e1, Exact e2 -> Exact (mult_coef e1 e2)
@@ -266,13 +271,14 @@ let hsqfreeP p =
           |Pc _ -> p
           |Prec(x, _) ->
              if (deg x p) <= 1 then p 
-             else
+             else 
                let p' = deriv x p in
-                 div_pol p (gcd_pol p p' x) x 
+               let sqfree = div_pol p (gcd_pol p p' x) x in
+                 Hashtbl.add gcd_htbl (p, p') sqfree; 
+                 Hashtbl.add square_free_htbl p sqfree; sqfree
   in
-    Hashtbl.add gcd_htbl ((p, p'), res);
-    Hashtbl.add square_free_htbl p res; 
-    res
+     res
+                 
 
 (* alg constructor. we ensure the polynomial is always square free *)
 let mk_alg a b p = {lbound = a; rbound = b; pannul = hsqfreeP p}
@@ -282,25 +288,14 @@ let mk_alg a b p = {lbound = a; rbound = b; pannul = hsqfreeP p}
    - first asking the hashtable
    - if not already stored in the hastable, then computes, stores and return
    the value. *)
+
 let gcd_htbl p q =
   let res = try Hashtbl.find gcd_htbl (p, q) with
       NotFound ->
         let g = gcdP p q in
-          Hashtbl.add gcd_htbl (p, q) g; 
-          g
-
-
-(* Gets the value of poly p at sample_point z :
-   - first asking the hash table
-   - if not already stored in the hastable, then computes, stores and return
-   the value *)
-(*
-let happroxP p z =
-  let res = try Hashtbl.find hvalP (p, z) with
-      NotFound -> let a = approx_of_pol_at_spoint z p in
-        Hashtbl.add hvalP (p, z) a; a
+          Hashtbl.add gcd_htbl (p, q) g; g
   in res
-*)
+
 (* Gets the coef of poly p in the bernstein basis of degree the
    current degree of p and parameter a b, by
    - first asking the hash table
@@ -314,6 +309,8 @@ let happroxP p z =
    3) else initializes a bernstein computation
 
 *)
+
+
 
 let hbern_coefsP p a b =
   if Hashtbl.mem bern_htbl p then 
@@ -354,6 +351,7 @@ let hbern_coefsP p a b =
 (* bl is the bernstein coefficients of p with parameter a, b.
    returns the pair of new bernstein coefficients of p with parameters
    a and c, and c and b, and stores the results in the table *) 
+
 let hbern_splitsP p a b c bl = 
   let llb = Hashtbl.find_all bern_htbl p in
   let lints = List.map (fun (x, y, _) -> (x, y)) llb in
@@ -371,7 +369,7 @@ let hbern_splitsP p a b c bl =
         Hashtbl.add bern_htbl p (a, c, bll); 
         Hashtbl.add bern_htbl p (c, b, blr); 
         (bll, blr)
-          
+
 
 (* we recursively define:
    - the refinement of a sample poin. Refinement recursively affects all the
@@ -382,36 +380,36 @@ let hbern_splitsP p a b c bl =
    length of the list sp should unfortunately never exceed 10...
 *)
 
-(*
+
 let rec sample_point_refine sp =
   match sp with
       [] -> []
-    |z :: sp_tl ->
+    |sp1 :: sp_tl ->
        (* recursively refined tail *)
        let ref_sp_tl = sample_point_refine sp in
-       match zp with
-         |Minf c -> z :: sample_point_refine sp_tl
-         |Rroot r -> z :: sample_point_refine sp_tl
-         |Between b -> z :: sample_point_refine sp_tl
+       match sp1 with
+         |Minf c -> sp1 :: sample_point_refine sp_tl
+         |Rroot r -> sp1 :: sample_point_refine sp_tl
+         |Between b -> sp1 :: sample_point_refine sp_tl
          |Aroot alg ->
             let a = alg.lbound in
             let b = alg.rbound in
             let p = alg.pannul in
             let mid = middle a b in
-            let smid = pol_sign_at (Root smid)::[] p in
+            let (_, smid) = pol_sign_at [Rroot mid] p in
               (* first case: the mid is the exact value of the root *)
-              if smid = 0 then (Root smid) :: ref_sp_tl
-              (* second case: we have to halve ]a b[*)
+              if smid = 0 then (Rroot mid) :: ref_sp_tl
+              (* second case: we have to halve ]a b[ *)
               else
                 let lb = hbern_coefsP p a b in
-                let (b', b'') =  hbern_splitsP p a b mid in
+                let (b', b'') = hbern_splitsP p a b mid lb in
                   (* recursive call to pol_sign_at to compute
                      the sign of the coefficients we pass along
                      ref_sp_tl so that it gets more and more refined *)
                 let (ref_sp_tl', nsc') = sign_changes ref_sp_tl b' in
                   (* we know that either nsc' or nsc'' is 1 *)
-                  if nsc' = 1 then (mk_alg a mid p) :: ref_sp_tl'
-                  else (mk_alg mid b p) :: ref_sp_tl'
+                  if nsc' = 1 then (Aroot (mk_alg a mid p)) :: ref_sp_tl'
+                  else (Aroot (mk_alg mid b p)) :: ref_sp_tl'
 
 (* sign changes in a list obtained by mapping evaluation at sample
    point sp over the list of polynomials lp.
@@ -427,7 +425,7 @@ and sign_changes sp lp =
          (* sign of a constant pol *)
          (let sign_of_cst_poly p =
             match p with
-              |Prec c -> coef_sign c 
+              |Pc c -> sign_coef c 
               | _ -> raise IllFormedPoly
           in
            (* recursive count of sign changes, without refinement.
@@ -459,15 +457,14 @@ and sign_changes sp lp =
                   let (sp_res, n_res) = res in
                   let (sp_res', sy) = pol_sign_at sp_res y in
                     if sy  = 0 then sign_count_rec tl sx (sp_res', n_res)
-                    else if sx = sy then sign_count_res tl sy (sp_res', n_res)
+                    else if sx = sy then sign_count_rec tl sy (sp_res', n_res)
                     else sign_count_rec tl sy (sp_res', n_res + 1)
           in
             match lp with
               |[] -> ([], 0)
               | x :: tl -> 
-                  let sx = pol_sign_at sp x in 
-                    ([], sign_count_rec tl x (sp, 0)))
-         )
+                  let (sp', sx) = pol_sign_at sp x in 
+                    sign_count_rec tl sx (sp', 0))
 (* determination of the sign of p(sp). possibly refines sp
    hence computes a (sp' ,  s) where sp' resfines sp and s is
    -1, 0, or 1, the sign of p at sp.
@@ -475,12 +472,12 @@ and sign_changes sp lp =
    To discriminate the two cases, we need to compute bernstein coefs
    for some gcds.
    In the second case, the approx p(sp) is refined, untill its
-   rational bounds have the same sign, which is the sign of p(sp).
- *)
+   rational bounds have the same sign, which is the sign of p(sp).*)
+
 and pol_sign_at sp p = 
     match p with
         (* trivial case of a constant pol *)
-      |Pc c -> coef_sign c
+      |Pc c -> (sp, sign_coef c)
       | _ -> 
           (* non trivial polynomial *)
           match sp with
@@ -526,18 +523,32 @@ and pol_sign_at sp p =
                       if nsc_gbl = 0 then 
                         let psp = approx_of_pol_at_spoint sp p in
                           match psp with
-                            |Exact x -> coef_sign x
-                            |Approx (xa, xb) ->
-                               if xa = 0 then (sptl',1)
-                               else if xb = 0 then (sptl', -1)
-                               else if coef_sign (coef_mlut xa xb) = 1
-                               then (sptl', coef_sign xa)
+                            |Exact x -> (sp1::sptl', sign_coef x)
+                            |Int (xa, xb) ->
+                               (* 1st case: approx is ]0, xb[ *)
+                               if xa = coef0 then (sp1::sptl',1)
+                               (* 2nd case: approx is ]xa, 0[ *)
+                               else if xb = coef0 then (sp1::sptl', -1)
+                                 (* 3rd case: approx is ]xa, xb[ with
+                                    xa >0 or xb < 0 *)
+                               else if sign_coef (mult_coef xa xb) = 1
+                               then (sp1::sptl', sign_coef xa)
+                                 (* 4th case: approx contains 0, we
+                                    need to refine further *)
                                else 
+                                 let sp' = sample_point_refine (sp1 :: sptl') in
+                                   pol_sign_at sp' p 
                         (* second case : g has 1! root in ]lr, br[ :
-                           p(sp) is zero *)
-                      else if nsc_gbl = 1 then 
+                           p(sp) is zero. we can also refine sp1 by replacing palg by g *)
+                      else if nsc_gbl = 1 then
+                        let sp1' = Aroot (mk_alg lb rb g) in 
+                        (sp1' :: sptl', 0)
                         (* third case : we don't know yet how many
                            roots g has in ]lr, br[, we refine sp and
-                           repeat the sign determination process *)
+                           repeat the sign determination process. Can
+                           we be more clever in the refinement strategy? *)
                       else 
-*)
+                        let sp' = sample_point_refine (sp1 :: sptl') in
+                          pol_sign_at sp' p
+
+
