@@ -374,15 +374,13 @@ let (@@) a b = multP a b
 
 let (--) a b = subP a b
 
-let (++) a b = addP a b
-
 let (^^) a b = powP a b
 
 (* Sum of the squares of the coefficents in the current variable *)
 let sum_square_coefs p =
   match p with
     |Pc c -> Pc (mult_coef c c)
-    |Prec (_, t) -> Array.fold_left (fun x y -> x ++ (y @@ y)) p0 t
+    |Prec (_, t) -> Array.fold_left (fun x y -> addP x (y @@ y)) p0 t
 (*----------------------------------------------------------------------------*)
 (*** Evaluation ***)
 (*----------------------------------------------------------------------------*)
@@ -450,7 +448,7 @@ let translateP p t =
   match p with
     |Pc c -> p
     |Prec (v, q) ->
-       let tmp = Array.mapi (fun i ti -> (ti @@ (x v ++ (cf t))^^i)) q in
+       let tmp = Array.mapi (fun i ti -> (ti @@ (addP (x v) (cf t))^^i)) q in
          Array.fold_left addP p0 tmp
 
 (*----------------------------------------------------------------------------*)

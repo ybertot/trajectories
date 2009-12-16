@@ -40,7 +40,7 @@ let  next_diag_bern c d e diag b =
             match l with
 	      |[] -> [] (*should never happen*)
 	      |rhd :: rtl ->
-	         ((mult_cst alpha hd) ++ (mult_cst beta rhd)) :: l
+	         (addP (mult_cst alpha hd) (mult_cst beta rhd)) :: l
    in next_diag_bern_aux diag b
 
 (* Main function : from blist a list of bern coefs in the basis
@@ -495,14 +495,14 @@ and pol_sign_at sp p =
                     let pr = evalP p r in pol_sign_at sptl pr
                  |Between b ->
                     let pb = evalP p b in pol_sign_at sptl pb
-                 |Aroot alg ->
+                 |Aroot ralg ->
                     (* recursive case : a non triv pol and a non triv
                        sample point:
                        - in the last case, sp1 is an algebraic
                        point. *)
-                    let lb = alg.lbound in
-                    let rb = alg.rbound in
-                    let palg = alg.pannul in
+                    let lb = ralg.lbound in
+                    let rb = ralg.rbound in
+                    let palg = ralg.pannul in
                       (* we need to decide whether p (sp) = 0 or
                          not. p(sp) = 0 iff sp1 is a common root to
                          p(sptl) and palg(sptl), ie if g(sp) has a
