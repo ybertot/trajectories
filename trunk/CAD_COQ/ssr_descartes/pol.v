@@ -99,6 +99,7 @@ Defined.
   
 Lemma translate_pol :
   forall l a, {l' | forall x, eval_pol l x = eval_pol l' (x - a)}.
+Proof.
 elim=> [| b l Ihl]; move=> a /=.
 - by exists [::].
 - case (Ihl a) => l' h; case (mult_pol [:: a ; 1] l') => l2 h2.
@@ -126,8 +127,7 @@ Proof. exact: val_inj. Qed.
 
 Definition Qbin m n := Qcb_make (Z_of_nat (bin m n)).
 
-Lemma Qcb_makeadd: forall n m:Z, Qcb_make (n + m) = Qcb_make n +  
-Qcb_make m.
+Lemma Qcb_makeadd: forall n m:Z, Qcb_make (n + m) = Qcb_make n + Qcb_make m.
 Proof.
 move=> n m; apply : val_inj.
 by rewrite /=  -(eqP (Qcb_Z _)) /= !Zmult_1_r.
@@ -153,11 +153,11 @@ Definition translate_pol' (l :seq Qcb) (a:Qcb) :=
      \sum_(k < (size l).+1) Qbin k i * nth 0 l k * a ^+ (k - i)) (size l).
 
 Lemma size_translate_pol' : forall l a, size (translate_pol' l a)  = size l.
-by move => l a; rewrite /translate_pol' size_mkseq.
-Qed.
+Proof. by move => l a; rewrite /translate_pol' size_mkseq. Qed.
 
 Lemma mkseq_shift :
   forall T (f : nat ->T) n, mkseq f n.+1 = f 0%nat::mkseq (fun x => f x.+1) n.
+Proof.
 move => T f n; rewrite /mkseq -[n.+1]/(1+n)%nat iota_add addnC iota_addl /=.
 by congr (cons (f 0%nat)); rewrite -map_comp; apply: eq_in_map; move => x _ /=.
 Qed.
@@ -171,7 +171,7 @@ rewrite big_distrr; apply:eq_bigr => i _.
 by rewrite /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
 Qed.
 
-Theorem pascal : forall a b n,
+Lemma pascal : forall a b n,
   (a + b) ^+ n = \sum_(i < n.+1) (Qbin n i * (a ^+ (n - i) * b ^+ i)).
 Proof.
 move=> a b; elim=> [|n IHn]; first by rewrite big_ord_recl big_ord0.
@@ -184,6 +184,7 @@ Qed.
 
 Lemma translate_pol'q :
   forall l a x, eval_pol (translate_pol' l a) x = eval_pol l (x + a).
+Proof.
 move => l a x; rewrite !eval_pol_big size_translate_pol' /translate_pol'.
 apply: trans_equal (_ : \sum_(k < (size l).+1)
                       (\sum_(i < size l) Qbin k i* l`_k * a^+ (k - i) * x^+ i)
@@ -237,8 +238,9 @@ Lemma size_reciprocate : forall l, size (reciprocate_pol l) = size l.
 Proof. by move=> l; rewrite /reciprocate_pol size_rev. Qed.
 
 Lemma reciprocateq :
-  forall l x, 0 <<! x -> 
-     eval_pol (reciprocate_pol l) x = x ^+ (size l) * eval_pol l (x^-1).
+  forall l x, GRing.unit x -> 
+     eval_pol (reciprocate_pol l) x = x ^+ (size l - 1) * eval_pol l (x^-1).
+Proof.
 move=> [ | a l] x xp; rewrite !eval_pol_big size_reciprocate.
   by rewrite !big_ord0 mulr0.
 rewrite big_distrr /=.
@@ -250,6 +252,33 @@ have finv: forall j:'I_(size l).+1, xpredT j -> f (f j) = j.
 rewrite (reindex_onto f f finv) /=.
 have tmp :(fun j => f (f j) == j) =1 xpredT.
   by move=> j /=; apply/eqP; apply finv.
-rewrite (eq_bigl _ _ tmp); apply: eq_bigr => j _.
-rewrite /reciprocate_pol nth_rev.
+rewrite (eq_bigl _ _ tmp) {tmp}; apply: eq_bigr => j _.
+have jls : j < (size l).+1 by [].
+rewrite /reciprocate_pol nth_rev; last by apply: leq_subr.
+rewrite /= !subSS subKn // subn0 mulrA [(x ^+ (size l)) * _]mulrC -mulrA.
+congr ((a :: l)`_j * _).
+have tmp : size l = ((size l - j) + j)%N by rewrite subnK //.
+by rewrite {3}tmp {tmp} expr_inv exprn_addr mulrK //; apply: unitr_exp.
+Qed.
+
+Definition expand (l : seq Qcb) (r : Qcb) :=
+  mkseq (fun i => l`_i * r ^+i) (size l).
+
+(* This lemma is important for the view of polynomial evaluation as an instance
+ of a big operation. *)
+Lemma size_expand : forall l r, size (expand l r) = size l.
+Proof. by move=> l r; rewrite /expand size_mkseq. Qed.
+
+(* The correction lemma for expand. *)
+Lemma eval_expand : forall l r x, eval_pol (expand l r) x = eval_pol l (r * x).
+Proof.
+move => l r x; rewrite !eval_pol_big size_expand; apply: eq_bigr => i _.
+by rewrite /expand nth_mkseq /= // exprn_mull mulrA. 
+Qed.
+
+(* The Berstein coefficients of polyniomal l for the interval (a, b) *)
+
+Definition Bernstein_coeffs (l: seq Qcb)(a b : Qcb) : seq Qcb :=
+  translate_pol' (reciprocate_pol (expand (translate_pol' l a) (1/(b-a)))) 1.
+
 
