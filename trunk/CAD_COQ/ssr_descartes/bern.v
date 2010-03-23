@@ -10,6 +10,23 @@ Open Local Scope ring_scope .
 
 Set Printing Width 50.
 
+(* Two predicates to describe that a polynomial has only one root,
+  one_root1 l a b :
+     there exists c, d, and k, so that a,c,d,b is ordered, k is positive,
+     the polynomial value is positive between a and c, negative between d and b
+     the slope is less than -k between c and d.
+  This statement is specifically suited to speak about roots inside the
+  interval a b.
+
+  one_root2 l a :
+     there exists c, d, and k, so that a is smaller than c, k is positive,
+     the polynomical value is negative between a and c, and the slope is
+     larger than k above c.
+
+  A consequence of one_root2 is that there can be only one root above c, hence
+  only one root above a.
+    
+*)
 Definition one_root1 (l : seq Qcb) (a b : Qcb) :=
   exists c, exists d, exists k, 
      a <<! c /\ c <<! d /\ d <<! b /\ 0 <<! k /\
@@ -25,8 +42,7 @@ Definition one_root2 (l : seq Qcb) (a : Qcb) :=
      (forall x y, c <<= x -> x <<! y -> 
          k * (y - x) <<= eval_pol l y - eval_pol l x).
 
-Lemma alt_one_root2 :
-  forall l, alternate l = true -> one_root2 l 0.
+Lemma alt_one_root2 : forall l, alternate l -> one_root2 l 0.
 move => l a;
   move: (desc l a) => [x1 [x2 [k [x1p [x1x2 [kp [neg [sl pos]]]]]]]].
 exists x1; exists k.
@@ -208,7 +224,41 @@ split.
     apply: ler_0_lcompat; first by apply: ltrW.
     by rewrite -(lerTlb x^-1) addrNK add0r ltrW.
   by apply: sl; first apply: ltrW.
+move=> x z b1z xz za1; rewrite ler_ltreq orbC in xz; move/orP: xz => [xz | xz].
+  by rewrite (eqP xz) !addrN mulr0 ler_refl.
+have x0: 0 <<! x by apply: ltr_trans b1z; rewrite invr_ltr.
+have xm1 : 0 <<! x^-1 by rewrite invr_ltr.
+have xe0: 0 <<! x^-1^+(size l - 1) by apply: ltr_exp.
+apply (ler_Ilcompat_r xe0).
+rewrite (mulr_addr _ (eval_pol _ _)) mulrN.
+rewrite (_ : eval_pol l x = eval_pol l (x^-1)^-1); last by rewrite invrK.
+have ux: GRing.unit x by apply/negP;move/eqP=>q; rewrite q ltr_irrefl in x0.
+have x10 : GRing.unit x^-1 by rewrite unitr_inv.
+rewrite -reciprocateq; last by [].
+have xz0 : 0 <<! x * z by apply: ltr_0_lcompat => //; apply: (ltr_trans x0).
+have z0 : 0 <<! z by apply (ltr_trans x0).
+have uz: GRing.unit z by apply/negP;move/eqP=>q; rewrite q ltr_irrefl in z0.
+have invzltinvx: z^-1 <<! x^-1.
+  by apply: (ltr_Ilcompat_r xz0); rewrite {2}[x*_]mulrC !mulrK //.
+have ze0 : 0 <<! z^-1 ^+ (size l - 1) by apply: ltr_exp; rewrite invr_ltr.
+case pzpos : (0 <<! eval_pol l z); move: pzpos; last first.
+  rewrite ltrNger; move/negbFE => pzneg.
 
 
 
+Admitted.
 
+Lemma Bernstein_isolate : forall a b l, a <<! b ->
+   alternate (Bernstein_coeffs l a b) -> one_root1 l a b.
+Proof.
+rewrite /Bernstein_coeffs => a b l altb alt.
+rewrite (_ : a = a + (a - a)); last by rewrite addrN addr0.
+rewrite (_ : b = a + (b - a)); last by rewrite (addrC b) addrA addrN add0r.
+apply one_root1_translate.
+rewrite addrN (_ : (b-a) = (b-a) * 1); last by rewrite mulr1.
+rewrite (_ : 0 =  (b-a) * 0); last by rewrite mulr0.
+apply one_root1_expand; first by rewrite -(addrN a) ltrTlb.
+apply one_root_reciprocate.
+rewrite -[1]addr0; apply one_root2_translate.
+by apply: alt_one_root2.
+Qed.
