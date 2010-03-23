@@ -254,8 +254,6 @@ set t3 := (eval_pol _ _ - _).
 set t2 := t3 * _.
 rewrite -k1k2q mulr_addl.
 apply lerT; last first.
-
-
   have maj' : t3 * b^-1 ^+ (size l - 1) <<= t3 * z^+ (size l - 1).
     have maj : leb (b^-1 ^+(size l - 1)) (z ^+ (size l - 1)).
       by admit.
@@ -267,6 +265,11 @@ apply lerT; last first.
   apply ler_trans with (k * (x^-1 - z^-1)).
   rewrite ![k * _]mulrC mulrAC.
     apply ler_compatl.
+      by admit.
+    by rewrite ltrW.
+  apply sl.
+    by admit.
+  by admit.
 Admitted.
 
 Lemma Bernstein_isolate : forall a b l, a <<! b ->
