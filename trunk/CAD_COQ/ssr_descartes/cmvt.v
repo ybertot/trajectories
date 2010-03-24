@@ -47,6 +47,7 @@ Lemma cm3 :
   forall b, 0 <<! b -> forall l, 
    {c | forall x y, 0 <<= x -> x <<= y -> y <<= b -> 
     absr (eval_pol l y - eval_pol l x) <<= c * (y - x)}.
+Proof.
 move=>b pb; elim=> [|u l [c cp]] /=.
   by exists 0 => x y; rewrite subrr absr0 mul0r ler_refl.
 exists ((eval_pol (abs_pol l) b) + c * b) => x y px hxy hyb. 
