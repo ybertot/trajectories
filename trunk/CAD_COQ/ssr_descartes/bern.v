@@ -136,6 +136,61 @@ move=> x n; elim: n => [ | p IHp] x0; first by [].
 by rewrite exprS; apply: ltr_0_lcompat; last apply: IHp.
 Qed.
 
+Lemma ler_expr : forall n (x y:Qcb), 0 <<= x -> x <<= y -> x ^+ n <<= y ^+ n.
+move => n; elim: n => {n} [ x y x0 xy | n IHn x y x0 xy].
+  by apply: ler_refl.
+have: 0 <<= y by apply: ler_trans xy.
+rewrite ler_ltreq; case/orP => [y0 | y0].
+rewrite !exprS; apply: ler_trans (_ : x * y ^+ n <<= _).
+  apply ler_2compat0l => //; first by apply ler_refl.
+      by apply: ltrW; apply ltr_exp.
+    by apply: IHn.
+  apply ler_2compat0l => //; last by apply ler_refl.
+  by apply: ltrW; apply ltr_exp.
+rewrite -(eqP y0) in xy.
+by rewrite (ler_antisym xy x0) -(eqP y0) !exprS !mul0r ler_refl.
+Qed.
+    
+Lemma diff_xn_ub :
+  forall n z, 0 <<! z -> exists k, 0 <<= k /\
+   forall x y:Qcb, 0 <<! x -> x <<! y -> y <<! z ->
+      y ^+ n - x ^+ n <<= k * (y - x).
+move => n; elim: n => {n} [z z0| n IHn z z0].
+  by exists 0.
+case: (IHn z z0) => k [k0 kp].
+exists (z*k + z ^+ n); split => [ | x y x0 xy yz].
+  apply: lerT0.
+    apply: ler_0_lcompat; last by [].
+    by apply: ltrW.
+  by apply: ltrW; apply: ltr_exp.
+rewrite !exprS.
+rewrite (_: _ * _ - _ =  y * (y ^+ n - x ^+ n) + (y - x) * x ^+ n); last first.
+  by rewrite mulr_addl mulr_addr addrA mulrN mulNr addrNK.
+rewrite [_ * (y-x)]mulr_addl; apply lerT.
+  apply: ler_trans (_ : y * k * (y-x) <<= _).
+    rewrite -mulrA; apply: ler_2compat0l => //.
+          by apply: ltrW; apply: ltr_trans xy.
+        by apply: ler_refl.
+      apply: ler_0_lcompat; first by []. 
+      by rewrite -(addrN x) lerTl // ltrW.
+    by apply: kp.
+  apply:ler_2compat0l.
+        apply ler_0_lcompat; last by [].
+        by apply: ltrW; apply: ltr_trans xy.
+      apply ler_2compat0l => //.
+          by apply: ltrW; apply: ltr_trans xy.
+        by apply: ltrW.
+      by apply: ler_refl.
+    by rewrite -(addrN x) lerTl // ltrW.
+  by apply: ler_refl.
+rewrite mulrC; apply: ler_2compat0l.
+      by apply: ltrW; apply: ltr_exp.
+    apply ler_expr; first by apply:ltrW.
+    by apply: ltrW; apply: ltr_trans yz.
+  by rewrite -(addrN x) lerTl // ltrW.
+by apply: ler_refl.
+Qed.
+
 Lemma one_root_reciprocate :
   forall l, one_root2 (reciprocate_pol l) 1 -> one_root1 l 0 1.
 Proof.
@@ -164,20 +219,35 @@ pose n := Qcb_make (Z_of_nat (size l)) - 1.
 have [e [ep pe]] : exists e, 0 <<! e /\ e <<! k/ (n * y^+(size l)).
   by admit.
 move: (cut_epsilon _ ep) => [e1 [e2 [e1p [e2p [e1e2 [e1e e2e]]]]]].
+pose k' :=  (k * y ^+ 2 * y ^- 1 ^+ (size l - 1))/(1+1).
+pose k2 := k' + k'.
+have times2 : forall a:Qcb, a + a = (1 + 1) * a.
+  by move => a; rewrite mulr_addl !mul1r.
+have k2p : k2 = (k * y ^+ 2 * y ^- 1 ^+ (size l - 1)).
+  rewrite /k2 /k' times2 -(mulrC (1 + 1)^-1) mulrA mulrV; last first.
+    have twop : 0 <<! ((1 + 1):Qcb) by apply: ltrT0.
+    by apply/negP; move/eqP=>q; rewrite q ltr_irrefl in twop.
+  by rewrite mul1r.
+pose k1 := -k'.
+have y0 : 0 <<! y.
+  by apply: ltr_trans y1; apply: ltr_trans x1gt1.
+have k'p : 0 <<! k'.
+  rewrite /k'; apply: ltr_0_lcompat.
+    apply ltr_0_lcompat.
+      apply ltr_0_lcompat; first by [].
+      by apply: ltr_exp.
+    by apply: ltr_exp; rewrite invr_ltr.
+  by apply: invr_ltr.
 move: (constructive_mvt (reciprocate_pol l) _ _ y1 x1neg (ltrW ypos) _ e1p) =>
-  [a [b' [cla [nega [posb' [clb' [x1a [ab b'y]]]]]]]].
+  [a [b' [cla [nega [posb' [clb' [x1a [ab' b'y]]]]]]]].
 (* A strange computation to find a b, where reciprocate_pol l has a
    positive value that is still smaller than e2. *)
 move: (cm2 (reciprocate_pol l) y) => [c pc].
-have [b [b'b clb]] : exists b, b' <<! b /\ c * (b - b') <<! e2.
+have [b [b'b clb]] : exists b, b' <<! b /\ c * (b - b') <<! e2 /\ b <<! y.
   by admit.
-have [k' [k'p pk']] :
-  exists k', 0 <<! k' /\ k' <<! k/(n * b^+(size l)).
-  by admit.
-(* The choice of k is not sure yet. *)
 exists (b^-1); exists (a^-1); exists (k').
 have a0 : 0 <<! a by apply:ltr_ler_trans x1a; first apply: ltr_trans x1gt1. 
-have b'0 : 0 <<! b' by apply: ltr_trans ab.
+have b'0 : 0 <<! b' by apply: ltr_trans ab'.
 have b0 : 0 <<! b by apply:ltr_trans b'b.
 have ua: GRing.unit a by apply/negP; move/eqP=> q; rewrite q ltr_irrefl in a0.
 have ub' : GRing.unit b'
@@ -246,13 +316,11 @@ rewrite (_ : _ * _ - _ = (x ^+ (size l - 1) - z ^+ (size l - 1)) *
                       eval_pol (reciprocate_pol l) z ^-1) *
                       z ^+ (size l - 1)); last first.
   by rewrite !mulr_addl !mulNr ![eval_pol _ _ * _]mulrC !addrA addrNK.
-pose k2 :=  k * b ^+ 2 * b ^- 1 ^+ (size l - 1).
-pose k1 := -k2 / (1+1).
-have k1k2q : k1 + k2 = k' by admit.
 set t1 := _ * eval_pol _ _.
 set t3 := (eval_pol _ _ - _).
 set t2 := t3 * _.
-rewrite -k1k2q mulr_addl.
+rewrite (_ : k' = k1 + k2); last by rewrite /k1 /k2 addrA addNr add0r.
+rewrite mulr_addl.
 apply lerT; last first.
   have maj' : t3 * b^-1 ^+ (size l - 1) <<= t3 * z^+ (size l - 1).
     have maj : leb (b^-1 ^+(size l - 1)) (z ^+ (size l - 1)).
@@ -261,7 +329,10 @@ apply lerT; last first.
   apply: ler_trans maj'; rewrite /t3.
   have ler_compatl : forall u v w, u <<= v -> 0 <<= w -> u * w <<= v * w.
     by admit.
-  rewrite mulrAC; apply ler_compatl; last by admit.
+  rewrite k2p mulrAC.
+  apply: ler_trans (_ : k * b ^+ 2 * (z - x) * b ^-1 ^+ (size l - 1) <<= _).
+    by admit.
+ apply ler_compatl; last by admit.
   apply ler_trans with (k * (x^-1 - z^-1)).
   rewrite ![k * _]mulrC mulrAC.
     apply ler_compatl.
@@ -270,6 +341,12 @@ apply lerT; last first.
   apply sl.
     by admit.
   by admit.
+rewrite /t1 /k1 /k' {t2 t3}.
+case: (lerP 0 (eval_pol (reciprocate_pol l) x^-1)) => sign; last by admit.
+(* At this point, one should rework the use ofc onstructive_mvt,
+  making sure its epsilon argument is so connected to the slope upper bound
+  given by diff_xn_ub.  A case distinction on the degree, represented
+  by (size l - 1) may also be needed. *)
 Admitted.
 
 Lemma Bernstein_isolate : forall a b l, a <<! b ->
