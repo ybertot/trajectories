@@ -279,6 +279,6 @@ Qed.
 (* The Berstein coefficients of polyniomal l for the interval (a, b) *)
 
 Definition Bernstein_coeffs (l: seq Qcb)(a b : Qcb) : seq Qcb :=
-  translate_pol' (reciprocate_pol (expand (translate_pol' l a) (1/(b-a)))) 1.
+  translate_pol' (reciprocate_pol (expand (translate_pol' l a) (b-a))) 1.
 
 
