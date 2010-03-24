@@ -43,6 +43,7 @@ Definition one_root2 (l : seq Qcb) (a : Qcb) :=
          k * (y - x) <<= eval_pol l y - eval_pol l x).
 
 Lemma alt_one_root2 : forall l, alternate l -> one_root2 l 0.
+Proof.
 move => l a;
   move: (desc l a) => [x1 [x2 [k [x1p [x1x2 [kp [neg [sl pos]]]]]]]].
 exists x1; exists k.
@@ -137,6 +138,7 @@ by rewrite exprS; apply: ltr_0_lcompat; last apply: IHp.
 Qed.
 
 Lemma ler_expr : forall n (x y:Qcb), 0 <<= x -> x <<= y -> x ^+ n <<= y ^+ n.
+Proof.
 move => n; elim: n => {n} [ x y x0 xy | n IHn x y x0 xy].
   by apply: ler_refl.
 have: 0 <<= y by apply: ler_trans xy.
@@ -155,6 +157,7 @@ Lemma diff_xn_ub :
   forall n z, 0 <<! z -> exists k, 0 <<= k /\
    forall x y:Qcb, 0 <<! x -> x <<! y -> y <<! z ->
       y ^+ n - x ^+ n <<= k * (y - x).
+Proof.
 move => n; elim: n => {n} [z z0| n IHn z z0].
   by exists 0.
 case: (IHn z z0) => k [k0 kp].
