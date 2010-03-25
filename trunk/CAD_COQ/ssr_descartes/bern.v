@@ -194,10 +194,31 @@ rewrite mulrC; apply: ler_2compat0l.
 by apply: ler_refl.
 Qed.
 
+Lemma one_root2_size : forall a l, one_root2 l a -> 1 < size l.
+Admitted.
+
+Lemma reciprocate_size :  forall l, size (reciprocate_pol l) = size l.
+Admitted.
+
+Lemma ler_lcompat : forall x y z: Qcb_OComRingType,
+   0 <<= x -> y <<= z -> x * y <<= x * z.
+Proof.
+move => x y z x0 yz.
+Admitted.
+
+Lemma ler_rcompat : forall x y z: Qcb_OComRingType,
+   0 <<= y -> x <<= z -> x * y <<= z * y.
+Proof.
+by move => x y z x0 xz; rewrite ![_ * y]mulrC; apply: ler_lcompat.
+Qed.
+
 Lemma one_root_reciprocate :
   forall l, one_root2 (reciprocate_pol l) 1 -> one_root1 l 0 1.
 Proof.
-move=> l [x1 [k [x1gt1 [kp [neg sl]]]]].
+move=> l hor.
+have: 1 < size (reciprocate_pol l) by apply: one_root2_size hor.
+rewrite reciprocate_size => hs.
+move: hor => [x1 [k [x1gt1 [kp [neg sl]]]]].
 have x11 : x1 <<! x1 + 1 by rewrite -{1}[x1]addr0 ltrTrb.
 have uk : GRing.unit k by apply/negP;move/eqP=>q; rewrite q ltr_irrefl in kp.
 set y' := x1 - eval_pol (reciprocate_pol l) x1 / k.
@@ -219,29 +240,42 @@ have  {y' y'y} ypos : 0 <<! eval_pol (reciprocate_pol l) y.
   by apply: sl; first apply ler_refl.
 have x1neg := neg _ x1gt1 (ler_refl _).
 pose n := Qcb_make (Z_of_nat (size l)) - 1.
-have [e [ep pe]] : exists e, 0 <<! e /\ e <<! k/ (n * y^+(size l)).
+have ltr1 : 0 <<! (1:Qcb) by [].
+move: (diff_xn_ub (size l - 1) 1 ltr1) => [u [u0 up]].
+have [u' [u1 u'u]] : exists u', 1<<= u' /\ u <<= u' by admit.
+have u'0: 0 <<! u' by apply: ltr_ler_trans u1.
+have u'unit : GRing.unit u'. 
+  by apply/negP; move => q; rewrite (eqP q) ltr_irrefl in u'0.
+have divu_ltr : forall x, 0 <<= x -> x / u' <<= x.
+   move => x x0; rewrite -{2}(mulr1 x); apply ler_lcompat; first by [].
+   by admit.
+(* If we prove that the value is positive, we probably don't need to go
+  through an existence proof. *)
+have [e [ep pe]] : 
+  exists e, 0 <<! e /\ e =
+        ((k * y ^+ 2 * y ^- 1 ^+ (size l - 1) /(1 + 1)))/ u'.
   by admit.
+(* The cut is probably useless, I guess everything can be done with only e. *)
 move: (cut_epsilon _ ep) => [e1 [e2 [e1p [e2p [e1e2 [e1e e2e]]]]]].
-pose k' :=  (k * y ^+ 2 * y ^- 1 ^+ (size l - 1))/(1+1).
+have y0 : 0 <<! y by apply: ltr_trans y1; apply: ltr_trans x1gt1.
+pose k' :=  ((k * y ^+ 2 * y ^- 1 ^+ (size l - 1))/(1+1)).
 pose k2 := k' + k'.
 have times2 : forall a:Qcb, a + a = (1 + 1) * a.
   by move => a; rewrite mulr_addl !mul1r.
-have k2p : k2 = (k * y ^+ 2 * y ^- 1 ^+ (size l - 1)).
+have k2p : k2 = (k * y ^+ 2 * y ^-1 ^+ (size l - 1)).
   rewrite /k2 /k' times2 -(mulrC (1 + 1)^-1) mulrA mulrV; last first.
     have twop : 0 <<! ((1 + 1):Qcb) by apply: ltrT0.
     by apply/negP; move/eqP=>q; rewrite q ltr_irrefl in twop.
   by rewrite mul1r.
 pose k1 := -k'.
-have y0 : 0 <<! y.
-  by apply: ltr_trans y1; apply: ltr_trans x1gt1.
 have k'p : 0 <<! k'.
   rewrite /k'; apply: ltr_0_lcompat.
-    apply ltr_0_lcompat.
-      apply ltr_0_lcompat; first by [].
+    apply: ltr_0_lcompat.
+      apply: ltr_0_lcompat; first by [].
       by apply: ltr_exp.
     by apply: ltr_exp; rewrite invr_ltr.
   by apply: invr_ltr.
-move: (constructive_mvt (reciprocate_pol l) _ _ y1 x1neg (ltrW ypos) _ e1p) =>
+move: (constructive_mvt (reciprocate_pol l) _ _ y1 x1neg (ltrW ypos) _ ep) =>
   [a [b' [cla [nega [posb' [clb' [x1a [ab' b'y]]]]]]]].
 (* A strange computation to find a b, where reciprocate_pol l has a
    positive value that is still smaller than e2. *)
@@ -258,7 +292,7 @@ have ub' : GRing.unit b'
 have ub: GRing.unit b by apply/negP; move/eqP=> q; rewrite q ltr_irrefl in b0.
 split; first by rewrite invr_ltr.
 split.
-  apply (ltr_Ilcompat_r a0); apply (ltr_Ilcompat_l b0); rewrite mulrVK //.
+  apply: (ltr_Ilcompat_r a0); apply: (ltr_Ilcompat_l b0); rewrite mulrVK //.
   by rewrite mulrV // mul1r; apply: ltr_trans b'b.
 split; first by rewrite -invr1_ltr0_1ltr; first apply: ltr_ler_trans x1a.
 split; first by [].
@@ -273,13 +307,13 @@ split.
     apply: ler_ltr_trans xb _; apply: (ltr_Ilcompat_r bb'0).
     by rewrite mulrK // [b * _]mulrC mulrK //.
   have xexp0 : 0 <<! x^-1 ^+ (size l - 1) by apply: ltr_exp; rewrite invr_ltr.
-  apply (ltr_Ilcompat_r xexp0); rewrite mulr0.
+  apply: (ltr_Ilcompat_r xexp0); rewrite mulr0.
   rewrite -{2}[x]invrK -reciprocateq; last by rewrite unitr_inv.
   apply: ler_ltr_trans posb' _.
   rewrite -(ltrTlb (-(eval_pol (reciprocate_pol l) b'))) addrN.
   apply: ltr_ler_trans (_ : k*(x^-1 - b') <<= _).
     by apply: ltr_0_lcompat; first done; rewrite -(ltrTlb b') add0r addrNK.
-  by apply sl; first apply: ltrW(ler_ltr_trans x1a _).
+  by apply: sl; first apply: ltrW(ler_ltr_trans x1a _).
 split.
   move=> x a1x xgt1.
   have x0 : 0 <<! x by apply: ltr_trans a1x; rewrite invr_ltr.
@@ -305,13 +339,12 @@ move=> x z b1z xz za1; rewrite ler_ltreq orbC in xz; move/orP: xz => [xz | xz].
 have invo_rec :
   forall l, reciprocate_pol (reciprocate_pol l) = l.
   by admit.
+have xmz0: 0 <<= z - x by rewrite -(addrN x); apply: lerTl; apply: ltrW.
 have x0: 0 <<! x by apply: ltr_trans b1z; rewrite invr_ltr.
 have ux: GRing.unit x by apply/negP;move/eqP=>q; rewrite q ltr_irrefl in x0.
-have z0 : 0 <<! z by apply (ltr_trans x0).
+have z0 : 0 <<! z by apply: (ltr_trans x0).
 have uz: GRing.unit z by apply/negP;move/eqP=>q; rewrite q ltr_irrefl in z0.
 rewrite -(invo_rec l) (reciprocateq _ x) // (reciprocateq _ z) //.
-have reciprocate_size :  forall l, size (reciprocate_pol l) = size l.
-  by admit.
 rewrite reciprocate_size.
 rewrite (_ : _ * _ - _ = (x ^+ (size l - 1) - z ^+ (size l - 1)) *
                      eval_pol (reciprocate_pol l) x ^-1 +
@@ -324,33 +357,51 @@ set t3 := (eval_pol _ _ - _).
 set t2 := t3 * _.
 rewrite (_ : k' = k1 + k2); last by rewrite /k1 /k2 addrA addNr add0r.
 rewrite mulr_addl.
-apply lerT; last first.
+apply: lerT; last first.
   have maj' : t3 * b^-1 ^+ (size l - 1) <<= t3 * z^+ (size l - 1).
     have maj : leb (b^-1 ^+(size l - 1)) (z ^+ (size l - 1)).
       by admit.
     by admit.
   apply: ler_trans maj'; rewrite /t3.
-  have ler_compatl : forall u v w, u <<= v -> 0 <<= w -> u * w <<= v * w.
-    by admit.
   rewrite k2p mulrAC.
-  apply: ler_trans (_ : k * b ^+ 2 * (z - x) * b ^-1 ^+ (size l - 1) <<= _).
+  have cmpyb: k * y ^+ 2 * (z - x) * y^-1 ^+ (size l - 1) <<=
+              k * b ^+ 2 * (z - x) * b^-1 ^+ (size l - 1).
+    (* Not convinced here.  We need the assumption that size l > 2,
+       but this is not granted.  So for polynomials of degree 1 (size l = 2)
+       we may have to perform a different proof. *)
     by admit.
- apply ler_compatl; last by admit.
-  apply ler_trans with (k * (x^-1 - z^-1)).
+  apply: ler_trans cmpyb _.
+  apply: ler_rcompat; first by admit.
+  apply: ler_trans (_ : k * (x^-1 - z^-1) <<= _).
   rewrite ![k * _]mulrC mulrAC.
-    apply ler_compatl.
-      by admit.
-    by rewrite ltrW.
-  apply sl.
+    apply: ler_rcompat; first by rewrite ltrW.
+  by admit.
+  apply: sl.
     by admit.
   by admit.
 rewrite /t1 /k1 /k' {t2 t3}.
 case: (lerP 0 (eval_pol (reciprocate_pol l) x^-1)) => sign; last by admit.
-(* At this point, one should rework the use ofc onstructive_mvt,
-  making sure its epsilon argument is so connected to the slope upper bound
-  given by diff_xn_ub.  A case distinction on the degree, represented
-  by (size l - 1) may also be needed. *)
-Admitted.
+rewrite mulNr -ler_oppger opprK -mulNr oppr_sub.
+(* because the polynomial is increasing in that part of its domain. *)
+have rpxe : eval_pol (reciprocate_pol l) x^-1 <<= e by admit.
+apply: ler_trans (_ : (z^+ (size l - 1) - x ^+ (size l - 1)) * e <<= _).
+  apply: ler_2compat0l; last by [].
+      by admit.
+    by apply: ler_refl.
+  by apply: ltrW.
+rewrite [_ * e]mulrC.
+apply: ler_trans (_ : e * (u' * (z - x)) <<= _).
+  apply: ler_lcompat; first by apply: ltrW.
+  apply: ler_trans (_ : u * (z - x) <<= _).
+    apply: up => //.
+    apply: ltr_trans za1 _; rewrite -invr1_ltr0_1ltr; last by [].
+    by apply: ltr_ler_trans x1a.
+  apply: ler_rcompat; first by [].
+  exact u'u.
+rewrite mulrA; apply: ler_rcompat; first by [].
+(* divrK should be renamed mulVrK *)
+by rewrite pe divrK // ler_refl.
+Qed.
 
 Lemma Bernstein_isolate : forall a b l, a <<! b ->
    alternate (Bernstein_coeffs l a b) -> one_root1 l a b.
@@ -358,11 +409,11 @@ Proof.
 rewrite /Bernstein_coeffs => a b l altb alt.
 rewrite (_ : a = a + (a - a)); last by rewrite addrN addr0.
 rewrite (_ : b = a + (b - a)); last by rewrite (addrC b) addrA addrN add0r.
-apply one_root1_translate.
+apply: one_root1_translate.
 rewrite addrN (_ : (b-a) = (b-a) * 1); last by rewrite mulr1.
 rewrite (_ : 0 =  (b-a) * 0); last by rewrite mulr0.
-apply one_root1_expand; first by rewrite -(addrN a) ltrTlb.
-apply one_root_reciprocate.
-rewrite -[1]addr0; apply one_root2_translate.
+apply: one_root1_expand; first by rewrite -(addrN a) ltrTlb.
+apply: one_root_reciprocate.
+rewrite -[1]addr0; apply: one_root2_translate.
 by apply: alt_one_root2.
 Qed.
