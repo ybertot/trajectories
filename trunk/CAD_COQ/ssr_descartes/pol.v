@@ -10,18 +10,15 @@ Open Local Scope ring_scope .
 
 Set Printing Width 50.
 
-Fixpoint eval_pol (l : seq Qcb)(x : Qcb) {struct l} : Qcb :=
-  match l with 
-    nil => 0
-  | a::tl => a + x * (eval_pol tl x)
-  end.
+Fixpoint eval_pol l (x : Qcb) :=
+  if l is a :: tl then a + x * eval_pol tl x else 0.
 
 (* Polynomial are only represented by the list of their coefficients.
   To any polynomial, we associate the absolute polynomial, whose
   coefficients are the absolute values of the initial coefficients. *)
 
 Fixpoint abs_pol (l : seq Qcb) : seq Qcb :=
- match l with nil => nil | a :: tl => (absr a) :: (abs_pol tl) end.
+ if l is a::tl then absr a :: abs_pol tl else nil.
 
 (* The value of the absolute polynomial is always larger than the value
  of the initial polynomial. *)
@@ -115,6 +112,95 @@ move=> n; apply/eqP; apply: Qcanon.Qred_identity => /=.
 rewrite Znumtheory.Zgcd_1_rel_prime.
 apply Znumtheory.rel_prime_sym.
 apply Znumtheory.rel_prime_1.
+Qed.
+
+Lemma cm3 :
+  forall b, 0 <<! b -> forall l, 
+   {c | forall x y, 0 <<= x -> x <<= y -> y <<= b -> 
+    absr (eval_pol l y - eval_pol l x) <<= c * (y - x)}.
+Proof.
+move=>b pb; elim=> [|u l [c cp]] /=.
+  by exists 0 => x y; rewrite subrr absr0 mul0r ler_refl.
+exists ((eval_pol (abs_pol l) b) + c * b) => x y px hxy hyb. 
+rewrite addrAC oppr_add addrA subrr add0r addrC.
+set el := eval_pol l in cp *.
+rewrite (_ : y *_ - _ = y * el y - x * el y + x * el y - x * el x); last first.
+  by rewrite -[_ - _ + _]addrA addNr addr0.
+have py : 0 <<= y by rewrite (ler_trans px).
+have psyx : 0 <<= y - x by rewrite -(subrr x) lerTl.
+rewrite -addrA; apply: (ler_trans (absr_addr _ _)).
+rewrite -mulNr -mulr_addl -mulrN -mulr_addr !absr_mulr (absr_nneg px).
+rewrite absr_nneg // [_ * (y - x)]mulr_addl; apply: lerT.
+  rewrite mulrC ler_rcompat //; apply: (ler_trans (ler_absr_eval_pol l y)).
+  by rewrite eval_pol_abs_pol_increase // ?absrpos // absr_nneg.
+rewrite (mulrC c); apply ler_trans with (x * c * (y - x)).
+  by rewrite -mulrA ler_lcompat ?cp.
+rewrite -!mulrA ler_rcompat // ?(ler_trans hxy) //.
+by rewrite  (ler_trans (absrpos (el y - el x))) // cp.
+Qed.
+
+
+Lemma pol_cont : forall l (x:Qcb) eps, 0 <<! eps ->
+  exists delta, 0 <<! delta /\ forall y, absr (y - x) <<! delta ->
+    absr (eval_pol l y - eval_pol l x) <<! eps.
+Proof.
+have side :  forall l (x:Qcb) eps, 0 <<! eps ->
+  exists delta, 0 <<! delta /\ forall y, x <<= y -> absr (y - x) <<! delta ->
+    absr (eval_pol l y - eval_pol l x) <<! eps.
+  move => l x e ep; move: (translate_pol l (x-1)) => [l' pl'].
+  have zlt2 : (0:Qcb) <<! 1 + 1 by rewrite -[0]addr0 ltrT // ltr_0_1 //.
+  move: (cm3 _ zlt2  l') => [c pc].
+  have yxx1 : forall y, y - x = y - (x - 1) - (x - (x - 1)).
+    by move => y; rewrite !oppr_add !opprK !addrA addrNK addrK.
+  have leb0 : 0 <<= x - (x - 1).
+    by rewrite oppr_add opprK addrA addrN add0r ltrW // ltr_0_1.
+  case c0 : (c == 0).
+    exists 1; split; first by apply: ltr_0_1.
+    move => y xy1 ycx.
+    have cxy : (c * (y - x) <<! e) by rewrite (eqP c0) mul0r. 
+    rewrite !pl'; apply: ler_ltr_trans cxy. 
+    rewrite yxx1; apply: pc => //; rewrite ?oppr_add ?addrA ?lerTlb // ltrW //.
+    by apply: absr_lt.
+  have cp : (0 <<! c); move: (negbT c0) =>{c0} c0.
+    rewrite ltr_lerne; rewrite eq_sym c0 andbC /=.
+    have tmp : (1:Qcb) <<= 1 + 1 by [].
+    have := pc 0 1 (ler_refl _) (ltrW (ltr_0_1 _)) tmp; move {tmp}.
+    by rewrite oppr0 addr0 mulr1=>tmp; apply: ler_trans tmp; apply absrpos.
+  have ecp: (0 <<! e / c) by rewrite ltr_0_lcompat ?invr_ltr.
+  have ie1: exists e1, 0 <<! e1 /\ e1 <<= 1 /\ e1 <<= e/c.
+    case cmp : (e/c <<! 1).
+      exists (e/c).
+      by split; first done; split; last apply:ler_refl; apply ltrW.
+    exists 1; split; first done; split; first apply:ler_refl.
+    by move: (negbT cmp); rewrite lerNgtr.
+  move: ie1 => [e1 [e1p [e11 e1ec]]].
+  exists e1; split; first by [].
+  move => y xy xcy.
+  rewrite absr_nneg in xcy; last by rewrite -(lerTlb x) addrNK add0r.
+  have cp' : ltb 0 c^-1 by rewrite invr_ltr.  
+  have xcy' : ltb (c * (y - x)) e.
+    have e1ce : c*e1 <<= e by rewrite (ler_Ilcompat_l cp') // [c * _]mulrC mulrK.
+    by apply: ltr_ler_trans e1ce; apply: ltr_lcompat.
+  apply: ler_ltr_trans xcy'; rewrite (yxx1 y) !pl'.
+  apply: pc; rewrite // ?lerTl // oppr_add addrA opprK lerT // ltrW //.
+  by apply: ltr_ler_trans e11.
+move => l x e ep.
+move: (side l x e ep) => [delta1 [dp1 de1]].
+move: (mirror_pol l) => [l' pl'].
+move: (side l' (-x) e ep) => [delta2 [dp2 de2]].
+have : exists delta, 0 <<! delta /\ delta <<= delta1 /\ delta <<= delta2.
+  case cmp: (delta1 <<! delta2).
+    by exists delta1; split; last (split; first apply:ler_refl; apply: ltrW).
+  exists delta2; split; first done; last (split; last apply:ler_refl).
+  by move: (negbT cmp) => {cmp}; rewrite lerNgtr.
+move => [delta [dp [dd1 dd2]]].
+  exists delta; split; first by [].
+move => y ycx; case cmp: (y <<! x).
+  rewrite -(opprK x) -(opprK y) !pl'.
+  apply: de2; first by rewrite ler_oppger ltrW.
+  by rewrite addrC -absr_oppr oppr_add !opprK addrC; apply: ltr_ler_trans dd2.
+move/negbT: cmp; rewrite -lerNgtr => cmp; apply de1; first by [].
+by apply: ltr_ler_trans dd1.
 Qed.
 
 Canonical Structure Qcb_make (n : Z) := QcbMake (Qcb_Z n).
