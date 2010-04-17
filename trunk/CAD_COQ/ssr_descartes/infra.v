@@ -1,25 +1,28 @@
 Require Import ssreflect ssrbool eqtype ssrnat seq.
-Require Import choice fintype finfun ssrfun bigops xssralg.
+Require Import choice fintype finfun ssrfun bigops ssralg orderedalg.
 
-Require Import Zbool .
+Require Import Zbool.
 Require Import QArith.
 Require Import Qcanon.
 
-Close Scope Q_scope .
+Close Scope Q_scope.
 
 Set   Implicit Arguments.
 Unset Strict Implicit.
 
 Import Prenex Implicits.
 
-Import GRing.Theory .
+Import GRing.
 
-Open Local Scope ring_scope .
+Open Local Scope ring_scope.
 
 (* -------------------------------------------------------------------- *)
 (* Various eqtype, subtype, choice, count canonical structures          *)
 (*               from the standard library                              *)
 (* -------------------------------------------------------------------- *)
+
+(* Structures on positive *)
+
 Definition eqp (p q : positive) : bool :=
   match ((p ?= q) Eq)%positive with Eq => true | _ => false end.
 
@@ -30,7 +33,7 @@ Proof.
 Qed.
 
 Canonical Structure eqp_Mixin := EqMixin eqpP.
-Canonical Structure eqp_eqType := Eval hnf in EqType eqp_Mixin.
+Canonical Structure eqp_eqType := Eval hnf in EqType positive eqp_Mixin.
 
 Definition p_unpickle n := Some (Ppred (P_of_succ_nat n)).
 
@@ -40,19 +43,22 @@ Proof.
   by rewrite pred_o_P_of_succ_nat_o_nat_of_P_eq_id.
 Qed.
 
-Definition p_countMixin  := CountMixin p_pick_cancel .
-Definition p_choiceMixin := CountChoiceMixin p_countMixin .
+Definition p_countMixin  := CountMixin p_pick_cancel.
+Definition p_choiceMixin := CountChoiceMixin p_countMixin.
 
 Canonical Structure p_choiceType :=
-  Eval hnf in ChoiceType p_choiceMixin.
+  Eval hnf in ChoiceType positive p_choiceMixin.
 Canonical Structure p_countType :=
-  Eval hnf in CountType  p_countMixin.
+  Eval hnf in CountType positive p_countMixin.
+
+(* Structures on Z *)
 
 Lemma eqzP : Equality.axiom Zeq_bool.
 Proof. by move=> z1 z2;  apply: (iffP idP); move/Zeq_is_eq_bool. Qed.
 
 Canonical Structure Z_Mixin := EqMixin eqzP.
-Canonical Structure Z_eqType := Eval hnf in EqType Z_Mixin.
+Canonical Structure Z_eqType := Eval hnf in EqType Z Z_Mixin.
+
 
 Definition z_code (z : Z) :=
   match z with
@@ -91,122 +97,105 @@ Proof.
   by move=> x; rewrite /z_pickle /z_unpickle pickleK z_codeK.
 Qed.
 
-Definition z_countMixin  := CountMixin z_pick_cancel .
-Definition z_choiceMixin := CountChoiceMixin z_countMixin .
+Definition z_countMixin  := CountMixin z_pick_cancel.
+Definition z_choiceMixin := CountChoiceMixin z_countMixin.
 
 Canonical Structure z_choiceType :=
-  Eval hnf in ChoiceType z_choiceMixin.
+  Eval hnf in ChoiceType Z z_choiceMixin.
 Canonical Structure z_countType :=
-  Eval hnf in CountType  z_countMixin.
+  Eval hnf in CountType Z z_countMixin.
 
 
 Lemma ZplusA : associative Zplus.
-Proof. by exact Zplus_assoc . Qed .
+Proof. by exact Zplus_assoc. Qed.
 
-Lemma ZplusC : commutative Zplus .
-Proof . by exact Zplus_comm. Qed .
+Lemma ZplusC : commutative Zplus.
+Proof. by exact Zplus_comm. Qed.
 
-Lemma Zplus0 : left_id (0%Z) Zplus .
-Proof . by exact Zplus_0_l. Qed .
+Lemma Zplus0 : left_id (0%Z) Zplus.
+Proof. by exact Zplus_0_l. Qed.
 
-Lemma ZplusNr : left_inverse  0%Z Zopp Zplus .
-Proof . exact Zplus_opp_l. Qed. 
+Lemma ZplusNr : left_inverse  0%Z Zopp Zplus.
+Proof. exact Zplus_opp_l. Qed. 
 
-Lemma ZplusrN : right_inverse 0%Z Zopp Zplus .
-Proof . exact Zplus_opp_r. Qed.
+Lemma ZplusrN : right_inverse 0%Z Zopp Zplus.
+Proof. exact Zplus_opp_r. Qed.
 
 Definition Z_zmodMixin :=
-  ZmodMixin ZplusA ZplusC Zplus0 ZplusNr .
+  ZmodMixin ZplusA ZplusC Zplus0 ZplusNr.
 
 Canonical Structure Z_zmodType :=
-  Eval hnf in ZmodType Z_zmodMixin .
+  Eval hnf in ZmodType Z Z_zmodMixin.
 
 (* Z Ring *)
-Lemma ZmultA : associative Zmult .
-Proof . exact: Zmult_assoc . Qed .
+Lemma ZmultA : associative Zmult.
+Proof. exact: Zmult_assoc. Qed.
 
-Lemma Zmult1q : left_id 1%Z Zmult .
-Proof . exact: Zmult_1_l. Qed .
+Lemma Zmult1q : left_id 1%Z Zmult.
+Proof. exact: Zmult_1_l. Qed.
 
-Lemma Zmultq1 : right_id 1%Z Zmult .
-Proof . exact: Zmult_1_r . Qed .
+Lemma Zmultq1 : right_id 1%Z Zmult.
+Proof. exact: Zmult_1_r. Qed.
 
 Lemma Zmultq0 : forall (q : Z), Zmult q 0%Z = 0%Z.
-Proof . exact: Zmult_0_r . Qed .
+Proof. exact: Zmult_0_r. Qed.
 
-Lemma Zmult_addl : left_distributive Zmult Zplus .
-Proof . exact: Zmult_plus_distr_l . Qed .
+Lemma Zmult_addl : left_distributive Zmult Zplus.
+Proof. exact: Zmult_plus_distr_l. Qed.
 
-Lemma Zmult_addr : right_distributive Zmult Zplus .
-Proof . exact: Zmult_plus_distr_r . Qed .
+Lemma Zmult_addr : right_distributive Zmult Zplus.
+Proof. exact: Zmult_plus_distr_r. Qed.
 
-Lemma nonzeroZ1 : 1%Z != 0%Z .
-Proof . by []. Qed.
+Lemma nonzeroZ1 : 1%Z != 0%Z.
+Proof. by []. Qed.
 
 Definition Z_ringMixin :=
-  RingMixin ZmultA Zmult1q Zmultq1 Zmult_addl Zmult_addr nonzeroZ1 .
+  RingMixin ZmultA Zmult1q Zmultq1 Zmult_addl Zmult_addr nonzeroZ1.
 
 Canonical Structure Z_ringType :=
-  Eval hnf in RingType Z_ringMixin .
+  Eval hnf in RingType Z Z_ringMixin.
 
-(* Z commutative ring *)
-Lemma ZmultC : commutative Zmult .
-Proof . exact: Zmult_comm . Qed .
+Lemma ZmultC : commutative Zmult.
+Proof. exact: Zmult_comm. Qed.
 
-Canonical Structure Z_comRingType := ComRingType ZmultC .
+Canonical Structure Z_comRingType := ComRingType Z ZmultC.
 
-Lemma  Zlt_bool_sorderb  : sorderb Zlt_bool.
-Proof.
-constructor.
-  move=> x; apply/negP; move/Zlt_is_lt_bool; exact: Zlt_irrefl.
-move=> x y z; move/Zlt_is_lt_bool=> h1; move/Zlt_is_lt_bool=> h2.
-by apply/ Zlt_is_lt_bool; apply: Zlt_trans h2.
-Qed.
+(* Warning : an antisymmetric an a transitive predicates are
+present in loaded Relations.Relation_Definition *)
+Lemma Zle_bool_antisymb : ssrbool.antisymmetric  Zle_bool.
+Proof. by move=> x y; case/andP=> h1 h2; apply: Zle_bool_antisym. Qed.
 
-Lemma Zle_bool_Tr : forall x y : Z, (Zle_bool x y)%Z ->
-    forall z, (Zle_bool (x + z)%Z (y + z))%Z .
+Lemma Zle_bool_transb : ssrbool.transitive Zle_bool.
+Proof. move=> x y z; exact: Zle_bool_trans. Qed.
+
+Lemma Zle_bool_totalb : total Zle_bool.
+Proof. by move=> x y; case: (Zle_bool_total x y)=> -> //; rewrite orbT. Qed.
+
+Lemma Zle_bool_addr : forall z x y, Zle_bool x y -> Zle_bool (x + z) (y + z).
+Proof. by move=> x y z h; rewrite Zle_bool_plus_mono // Zle_bool_refl. Qed.
+
+Lemma Zle_bool_mulr : forall x y, 
+  Zle_bool 0 x -> Zle_bool 0 y -> Zle_bool 0 (x * y).
 Proof. 
-move=> x y; move/Zle_is_le_bool=> h z; apply/Zle_is_le_bool.
-exact: Zplus_le_compat_r. 
+move=> x y; move/Zle_is_le_bool=> px; move/Zle_is_le_bool=> py.
+by apply/Zle_is_le_bool; apply: Zmult_le_0_compat.
 Qed.
 
 
-Lemma Zle_bool_total : total Zle_bool.
-Proof. 
-move=> x y; case: (Z_lt_le_dec x y).
-  by move/Zlt_le_weak; move/Zle_is_le_bool->.
-by move/Zle_is_le_bool->; rewrite orbT.
-Qed.
+Definition Z_OrderedRingMixin := 
+  OrderedRing.Mixin 
+  Zle_bool_antisymb Zle_bool_transb Zle_bool_totalb Zle_bool_addr Zle_bool_mulr.
 
-Lemma Zle_Zlt_bool_eq : forall x y, Zle_bool x y = (Zlt_bool x y) || (x == y).
-Proof.
-move=> x y; apply/idP/orP.
-  move/Zle_is_le_bool; move/Zle_lt_or_eq; case.
-  - by move/Zlt_is_lt_bool; left.
-  - by move/eqP; right.
-case.
-   by move/Zlt_is_lt_bool; move/Zlt_le_weak; move/Zle_is_le_bool.
-by move/eqP->; apply/Zle_is_le_bool; exact: Zle_refl.
-Qed.
+Canonical Structure Z_oRingType := 
+  Eval hnf in ORingType Z Z_OrderedRingMixin.
 
-Lemma Zlt_bool_lcompatible : lcompatible Zlt_bool.
-Proof.
-move=> x y z; move/Zlt_is_lt_bool=> h1; move/Zlt_is_lt_bool=> h2.
-apply/Zlt_is_lt_bool; exact: Zmult_lt_compat_l.
-Qed.
+Canonical Structure Z_oComRingType := 
+  Eval hnf in OComRingType Z Z_OrderedRingMixin.
 
-Definition Z_OComRingMixin :=
-  GOrdered.OComRing.Mixin
-  Zlt_bool_sorderb Zle_bool_Tr Zle_Zlt_bool_eq Zle_bool_total Zlt_bool_lcompatible .
-
-Canonical Structure Z_OComRingType :=
-  Eval hnf in OcomringType Z_OComRingMixin .
-
-
+(* Basic tructures for rational numbers.*)
 
 Definition eqq (x y : Q) : bool :=
   match x, y with
-
     | (xn # xd)%Q, (yn # yd)%Q => (xn == yn) && (xd == yd)
   end.
 
@@ -220,7 +209,7 @@ Proof.
 Qed.
 
 Canonical Structure eqq_eqMixin := EqMixin eqqP.
-Canonical Structure eqq_eqType := Eval hnf in EqType eqq_eqMixin.
+Canonical Structure eqq_eqType := Eval hnf in EqType Q eqq_eqMixin.
 
 Definition q_code (q : Q) :=
   match q with
@@ -248,71 +237,73 @@ Proof.
 by move=> x; rewrite /q_pickle /q_unpickle pickleK q_codeK.
 Qed.
 
-Definition q_countMixin  := CountMixin q_pick_cancel .
-Definition q_choiceMixin := CountChoiceMixin q_countMixin .
+Definition q_countMixin  := CountMixin q_pick_cancel.
+Definition q_choiceMixin := CountChoiceMixin q_countMixin.
 
 Canonical Structure q_choiceType :=
-  Eval hnf in ChoiceType q_choiceMixin.
+  Eval hnf in ChoiceType  Q q_choiceMixin.
 Canonical Structure q_countType :=
-  Eval hnf in CountType q_countMixin.
+  Eval hnf in CountType Q q_countMixin.
 
+(*
 Definition nnegqb (q : Q) :=
   match q with
     (qd # qn)%Q => match qd with Zneg _ => false | _ => true end
   end.
+*)
 
-(* -------------------------------------------------------------------- *)
-(* Q/== as a field and ordered ring                                     *)
-(* -------------------------------------------------------------------- *)
-Record Qcb : Type := QcbMake { qcb_val :> Q; _ : Qred qcb_val == qcb_val } .
 
-Lemma qcb_val_E : forall x Hx, qcb_val (@QcbMake x Hx) = x .
-Proof . by [] . Qed .
+(* Basic and algebraic structures for normalized rational numbers,
+we do not intend to be specially clever wrt normalization at this point *)
 
-(* Q/== ==> eqTye/choiceType/countType *)
+Record Qcb : Type := QcbMake { qcb_val :> Q; _ : Qred qcb_val == qcb_val }.
+
 Canonical Structure qcb_subType :=
-  Eval hnf in [subType for qcb_val by Qcb_rect] .
+  Eval hnf in [subType for qcb_val by Qcb_rect].
 
 Definition qcb_eqMixin := Eval hnf in [eqMixin of qcb_subType by <:].
-Canonical Structure qcb_eqType  := Eval hnf in EqType qcb_eqMixin .
+Canonical Structure qcb_eqType  := Eval hnf in EqType Qcb qcb_eqMixin.
 
 Definition qcb_choiceMixin := [choiceMixin of Qcb by <:].
 Canonical Structure qcb_choiceType :=
-  Eval hnf in ChoiceType qcb_choiceMixin.
+  Eval hnf in ChoiceType Qcb  qcb_choiceMixin.
 
 Definition qcb_countMixin := [countMixin of Qcb by <:].
 Canonical Structure qcb_countType :=
-  Eval hnf in CountType qcb_countMixin.
+  Eval hnf in CountType Qcb qcb_countMixin.
 
 Canonical Structure qcb_subCountType :=
   Eval hnf in [subCountType of Qcb].
 
 (* Properties about Qred, Q and Qcb and equalities over all these types *)
-Lemma Qredb_involutive : forall q, Qred (Qred q) == (Qred q) .
-Proof .
-  move=> q; apply/eqP; apply Qred_involutive .
-Qed .
+Lemma Qredb_involutive : forall q, Qred (Qred q) == (Qred q).
+Proof. by move=> q; apply/eqP; apply Qred_involutive. Qed.
 
-Lemma Qredb_complete : forall q q', (q == q')%Q -> Qred q == Qred q' .
-Proof .
-  by move=> q q' H; apply/eqP; apply Qred_complete .
-Qed .
-
-Lemma Qcb_QeqP : forall (q q': Qcb), reflect (q == q')%Q (q == q') .
-Proof .
-  case=> q Hq; case=> q' Hq'; apply: (iffP idP); rewrite eqE /= .
-  + by move/eqP => -> .
-  + by move=> H; rewrite -(eqP Hq) -(eqP Hq'); apply Qredb_complete .
-Qed .
-
-Lemma Qcb_is_canon : forall (q q' : Qcb), (q == q')%Q -> q == q' .
+(*
+Lemma Qcb_is_canon : forall (q q' : Qcb), (q == q')%Q -> q = q'.
 Proof.
-  case=> q Hq; case=> q' Hq'; rewrite eqE /= => H .
-  by rewrite -(eqP Hq) -(eqP Hq'); apply Qredb_complete .
-Qed .
+move=> [x hx] [y hy]; move/Qred_complete=> /=; rewrite (eqP hx) (eqP hy)=> e.
+by apply:val_inj.
+Qed.
+*)
+
+Lemma Qredb_complete : forall q q', (q == q')%Q -> Qred q == Qred q'.
+Proof. by move=> q q' H; apply/eqP; apply Qred_complete. Qed.
+
+Lemma Qcb_QeqP : forall (q q': Qcb), reflect (q == q')%Q (q == q').
+Proof.
+move=> [q Hq] [q' Hq']; apply: (iffP eqP)=> [|]; first by move->.
+by move/Qred_complete=> H; apply: val_inj=> /=; rewrite -(eqP Hq) -(eqP Hq').
+Qed.
+
+Lemma Qcb_is_canon : forall (q q' : Qcb), (q == q')%Q -> q == q'.
+Proof.
+  case=> q Hq; case=> q' Hq'; rewrite eqE /= => H.
+  by rewrite -(eqP Hq) -(eqP Hq'); apply Qredb_complete.
+Qed.
 
 (* Arithmetic over Qcb from the one over Q *)
-Definition Q2Qcb (q:Q) : Qcb := QcbMake (Qredb_involutive q) .
+Definition Q2Qcb (q:Q) : Qcb := QcbMake (Qredb_involutive q).
 Arguments Scope Q2Qc [Q_scope].
 
 Definition Qcbplus  (x y : Qcb) := Q2Qcb (x + y).
@@ -322,316 +313,221 @@ Definition Qcbminus (x y : Qcb) := Q2Qcb (x - y).
 Definition Qcbinv   (x   : Qcb) := Q2Qcb (/x).
 Definition Qcbdiv   (x y : Qcb) := Q2Qcb (x */ y).
 
+(* just for the tactic *)
+Lemma qcb_valE : forall x Hx, qcb_val (@QcbMake x Hx) = x .
+Proof . by [] . Qed .
+
 Tactic Notation "qcb" tactic(T) :=
     repeat case=> ? ?;
       apply/eqP; apply Qcb_is_canon;
-      rewrite !qcb_val_E; repeat setoid_rewrite Qred_correct;
-      by T .
+      rewrite !qcb_valE; repeat setoid_rewrite Qred_correct;
+      by T.
 
-(* Q/== ==> Zmodule *)
+
 Lemma QcbplusA : associative Qcbplus.
-Proof. by qcb ring . Qed .
+Proof.
+case=> [x hx] [y hy] [z hz]; apply: val_inj; apply: Qred_complete.
+rewrite /= -/(Qred (Qplus y z)) -/(Qred (Qplus x y)).
+repeat setoid_rewrite Qred_correct; ring.
+Qed.
 
-Lemma QcbplusC : commutative Qcbplus .
-Proof . by qcb ring . Qed .
 
-Lemma Qcbplus0q : left_id (Q2Qcb 0) Qcbplus .
-Proof . by qcb ring . Qed .
+Lemma QcbplusC : commutative Qcbplus.
+Proof.
+case=> [x hx] [y hy]; apply: val_inj; apply: Qred_complete.
+by rewrite Qplus_comm.
+Qed.
 
-Lemma QcbplusNq : left_inverse (Q2Qcb 0) Qcbopp Qcbplus .
-Proof . by qcb ring . Qed .
+Lemma Qcbplus0q : left_id (Q2Qcb 0) Qcbplus.
+case=> [x hx];  apply: val_inj; rewrite /= -/(Qred (Qplus 0 x)).
+rewrite -{2}(eqP hx). apply: Qred_complete.
+by rewrite Qplus_0_l.
+Qed.
 
-Lemma QcbplusqN : right_inverse (Q2Qcb 0) Qcbopp Qcbplus .
-Proof . by qcb ring . Qed .
+Lemma QcbplusNq : left_inverse (Q2Qcb 0) Qcbopp Qcbplus.
+Proof. by qcb ring. Qed.
+
+Lemma QcbplusqN : right_inverse (Q2Qcb 0) Qcbopp Qcbplus.
+Proof. by qcb ring. Qed.
 
 Definition Qcb_zmodMixin :=
-  ZmodMixin QcbplusA QcbplusC Qcbplus0q QcbplusNq .
+  ZmodMixin QcbplusA QcbplusC Qcbplus0q QcbplusNq.
+
 
 Canonical Structure Qcb_zmodType :=
-  Eval hnf in ZmodType Qcb_zmodMixin .
+  Eval hnf in ZmodType Qcb Qcb_zmodMixin.
 
 (* Q/== ==> Ring *)
-Lemma QcbmultA : associative Qcbmult .
-Proof . by qcb ring . Qed .
+Lemma QcbmultA : associative Qcbmult.
+Proof. by qcb ring. Qed.
 
-Lemma Qcbmult1q : left_id (Q2Qcb 1) Qcbmult .
-Proof . by qcb ring . Qed .
+Lemma Qcbmult1q : left_id (Q2Qcb 1) Qcbmult.
+Proof. by qcb ring. Qed.
 
-Lemma Qcbmultq1 : right_id (Q2Qcb 1) Qcbmult .
-Proof . by qcb ring . Qed .
+Lemma Qcbmultq1 : right_id (Q2Qcb 1) Qcbmult.
+Proof. by qcb ring. Qed.
 
-Lemma Qcbmultq0 : forall (q : Qcb), Qcbmult q (Q2Qcb 0) = (Q2Qcb 0) .
-Proof . by qcb ring . Qed .
+Lemma Qcbmultq0 : forall (q : Qcb), Qcbmult q (Q2Qcb 0) = (Q2Qcb 0).
+Proof. by qcb ring. Qed.
 
-Lemma Qcbmult_addl : left_distributive Qcbmult Qcbplus .
-Proof . by qcb ring . Qed .
+Lemma Qcbmult_addl : left_distributive Qcbmult Qcbplus.
+Proof. by qcb ring. Qed.
 
-Lemma Qcbmult_addr : right_distributive Qcbmult Qcbplus .
-Proof . by qcb ring . Qed .
+Lemma Qcbmult_addr : right_distributive Qcbmult Qcbplus.
+Proof. by qcb ring. Qed.
 
-Lemma nonzeroq1 : Q2Qcb 1 != Q2Qcb 0 .
-Proof . by rewrite /Q2Qcb eqE /= . Qed .
+Lemma nonzeroq1 : Q2Qcb 1 != Q2Qcb 0.
+Proof. by rewrite /Q2Qcb eqE /=. Qed.
 
 Definition Qcb_ringMixin :=
-  RingMixin QcbmultA Qcbmult1q Qcbmultq1 Qcbmult_addl Qcbmult_addr nonzeroq1 .
+  RingMixin QcbmultA Qcbmult1q Qcbmultq1 Qcbmult_addl Qcbmult_addr nonzeroq1.
 Canonical Structure Qcb_ringType :=
-  Eval hnf in RingType Qcb_ringMixin .
+  Eval hnf in RingType Qcb Qcb_ringMixin.
 
 (* Q/== ==> commutative ring *)
-Lemma QcbmultC : commutative Qcbmult .
-Proof . by qcb ring . Qed .
+Lemma QcbmultC : commutative Qcbmult.
+Proof. by qcb ring. Qed.
 
-Canonical Structure Qcb_comRingType := ComRingType QcbmultC .
+Canonical Structure Qcb_comRingType := ComRingType Qcb QcbmultC.
 
 (* Q/== ==> ring with units *)
 Lemma Qcb_mulVx :
-    forall x:Qcb, x != (Q2Qcb 0) -> Qcbmult (Qcbinv x) x = (Q2Qcb 1) .
-Proof .
-  case=> x Hx; move=> H; apply/eqP; apply Qcb_is_canon .
-  rewrite QcbmultC !qcb_val_E; repeat setoid_rewrite Qred_correct .
-  by apply Qmult_inv_r => Hx0; case/Qcb_QeqP: H .
-Qed .
+    forall x:Qcb, x != (Q2Qcb 0) -> Qcbmult (Qcbinv x) x = (Q2Qcb 1).
+Proof.
+  case=> x Hx; move=> H; apply/eqP; apply Qcb_is_canon.
+  rewrite QcbmultC !qcb_valE; repeat setoid_rewrite Qred_correct.
+  by apply Qmult_inv_r => Hx0; case/Qcb_QeqP: H.
+Qed.
 
 Lemma Qcb_mulxV :
-    forall x:Qcb, x != (Q2Qcb 0) -> Qcbmult x (Qcbinv x) = (Q2Qcb 1) .
-Proof .
-  by move=> x Hx; rewrite QcbmultC; apply Qcb_mulVx .
-Qed .
+    forall x:Qcb, x != (Q2Qcb 0) -> Qcbmult x (Qcbinv x) = (Q2Qcb 1).
+Proof.
+  by move=> x Hx; rewrite QcbmultC; apply Qcb_mulVx.
+Qed.
 
-Definition Qcb_unit : pred Qcb := fun q:Qcb => q != (Q2Qcb 0) .
+Definition Qcb_unit : pred Qcb := fun q:Qcb => q != (Q2Qcb 0).
 
 Lemma Qcb_intro_unit :
-    forall (p q : Qcb), Qcbmult q p = (Q2Qcb 1) -> p != (Q2Qcb 0) .
-Proof .
-  move=> p q H; apply/negP; move/eqP => p0 .
-  by rewrite p0 Qcbmultq0 in H .
-Qed .
+    forall (p q : Qcb), Qcbmult q p = (Q2Qcb 1) -> p != (Q2Qcb 0).
+Proof.
+  move=> p q H; apply/negP; move/eqP => p0.
+  by rewrite p0 Qcbmultq0 in H.
+Qed.
 
 Lemma Qcb_intro_unit_nC :
     forall (p q : Qcb),
       Qcbmult q p = (Q2Qcb 1) /\ Qcbmult p q = (Q2Qcb 1)
-      -> p != (Q2Qcb 0) .
-Proof .
-  by move=> p q *; apply (@Qcb_intro_unit p q); tauto .
-Qed .
+      -> p != (Q2Qcb 0).
+Proof.
+  by move=> p q *; apply (@Qcb_intro_unit p q); tauto.
+Qed.
 
-Lemma Qcb_inv_out : forall (p : Qcb), negb (p != (Q2Qcb 0)) -> Qcbinv p = p .
-Proof .
-  by move=> p H; rewrite negbK in H; rewrite (eqP H) /Qcbinv /= /Qinv .
-Qed .
+Lemma Qcb_inv_out : forall (p : Qcb), negb (p != (Q2Qcb 0)) -> Qcbinv p = p.
+Proof.
+  by move=> p H; rewrite negbK in H; rewrite (eqP H) /Qcbinv /= /Qinv.
+Qed.
 
 (* FIXME strub: cannot do 1/x when defining Qcb_unitRingType as:
 
    Canonical Structure Qcb_unitRingType :=
-      Eval hnf in UnitRingType Qcb_comUitRingMixin . *)
+      Eval hnf in UnitRingType Qcb_comUitRingMixin. *)
 
 Definition Qcb_unitRingMixin :=
-  UnitRingMixin Qcb_mulVx Qcb_mulxV Qcb_intro_unit_nC Qcb_inv_out .
+  UnitRingMixin Qcb_mulVx Qcb_mulxV Qcb_intro_unit_nC Qcb_inv_out.
 
 Definition Qcb_comUnitRingMixin :=
-  ComUnitRingMixin Qcb_mulVx Qcb_intro_unit Qcb_inv_out .
+  ComUnitRingMixin Qcb_mulVx Qcb_intro_unit Qcb_inv_out.
 
 Canonical Structure Qcb_unitRingType :=
-   Eval hnf in UnitRingType Qcb_unitRingMixin .
+   Eval hnf in UnitRingType Qcb Qcb_unitRingMixin.
 
-Canonical Structure Qcb_comUnitRingType :=
-   Eval hnf in ComUnitRingType Qcb_comUnitRingMixin.
+Canonical Structure Qcb_comUnitRingType := [comUnitRingType of Qcb].
 
 (* Q/== ==> field *)
-Definition Qcb_fieldMixin : GRing.Field.mixin_of Qcb_comUnitRingType .
-Proof . by [] . Qed .
+Definition Qcb_fieldMixin : GRing.Field.mixin_of Qcb_comUnitRingType.
+Proof. by []. Qed.
 
-Definition Qcb_idomainMixin := FieldIdomainMixin Qcb_fieldMixin .
+Definition Qcb_idomainMixin := FieldIdomainMixin Qcb_fieldMixin.
 
 Canonical Structure Qcb_iddomainType :=
-  Eval hnf in IdomainType Qcb_idomainMixin .
+  Eval hnf in IdomainType Qcb Qcb_idomainMixin.
 
 Canonical Structure Qcb_fieldType :=
-  Eval hnf in @FieldType (IdomainType Qcb_idomainMixin) Qcb_fieldMixin .
+  Eval hnf in FieldType Qcb Qcb_fieldMixin.
 
-(* Q/== ==> non-discrete ordered field *)
-Definition Qcb_leb  (x y : Q) := (Zle_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z .
-Definition Qcb_ltb  (x y : Q) := (Zlt_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z .
+(*
+Definition Qcb_leb  (x y : Q) := 
+  (Zle_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z.
+Definition Qcb_ltb  (x y : Q) := 
+  (Zlt_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z.
+*)
+(*
+Local Notation "x <<= y" := (Qcb_leb x y).
+Local Notation "x <<! y" := (Qcb_ltb x y).
+*)
 
-Local Notation "x <<= y" := (Qcb_leb x y) .
-Local Notation "x <<! y" := (Qcb_ltb x y) .
+Definition Qcbleb (x y : Qcb) := (Qle_bool x y).
 
-Lemma Qcb_leb_iff : forall (x y : Q), (x <<= y) <-> (x <= y)%Q .
-Proof . by move=> x y; apply: Qle_bool_iff . Qed .
+Lemma QcblebP : forall (x y : Qcb), reflect (x <= y)%Q (Qcbleb x y).
+Proof. by move=> x y; apply: (iffP idP); move/Qle_bool_iff. Qed.
 
-Lemma Qcb_lebP : forall x y : Q, reflect  (x <= y)%Q (x <<= y).
-Proof . by move=> x y; apply: (iffP idP); move/Qcb_leb_iff. Qed.
-
-Lemma Qcb_ltbP : forall x y : Q, reflect  (x < y)%Q (x <<! y).
-Proof . 
-by move=> x y; rewrite /Qcb_ltb; apply: (iffP idP); move/Zlt_is_lt_bool.
+Lemma Qcbleb_antisymb : @ssrbool.antisymmetric Qcb Qcbleb.
+Proof. 
+move=> x y; case/andP; move/QcblebP=> h1; move/QcblebP=> h2.
+by apply/eqP; apply/Qcb_QeqP; apply: Qle_antisym.
 Qed.
 
-Lemma qleb_orderb : @orderb Qcb Qcb_leb .
-Proof .
-  split => [x|x y|x y z Hxy Hyz] .
-  + apply/Qcb_leb_iff; apply Qle_refl .
-  + case/andP => [Hxy Hyx]; apply/eqP; apply/Qcb_QeqP .
-    by apply Qle_antisym; apply/Qcb_leb_iff .
-  + by apply/Qcb_leb_iff; apply Qle_trans with x; apply/Qcb_leb_iff .
-Qed .
+Lemma Qcbleb_transb : @ssrbool.transitive Qcb Qcbleb.
+Proof. 
+move=> x y z; move/QcblebP=> h1; move/QcblebP=> h2; apply/QcblebP. 
+exact: Qle_trans h2.
+Qed.
 
-
-Lemma qltb_sorderb : @sorderb Qcb Qcb_ltb.
+Lemma Qcbleb_totalb : @ssrbool.total Qcb Qcbleb.
 Proof.
-constructor=> [x | x y].
-- rewrite /Qcb_ltb; apply: negbTE; apply/negP; move/Zlt_is_lt_bool.
-  exact: Zlt_irrefl.
-- move=> z; move/Qcb_ltbP=> h1; move/Qcb_ltbP=> h2; apply/Qcb_ltbP.
-  by apply: Qlt_trans h2.
+move=> x y; case e: (Qcbleb x y)=> //=.
+by move/QcblebP: e; move/Qnot_le_lt; move/Qlt_le_weak; move/QcblebP->.
 Qed.
 
-Lemma qleb_Tr :
-  forall (x y : Qcb), (x <<= y) ->
-    forall z:Qcb, (Qcbplus x z) <<= (Qcbplus y z) .
-Proof .
-  move=> [x Hx] [y Hy] Hxy [z Hz] .
-  move/Qcb_leb_iff: Hxy => Hxy; apply/Qcb_leb_iff .
-  rewrite !qcb_val_E in Hxy |- *; repeat setoid_rewrite Qred_correct .
-  by apply Qplus_le_compat; last apply Qle_refl .
-Qed .
+Lemma Qcbleb_addr : forall z x y : Qcb, 
+  Qcbleb x y -> Qcbleb (x + z) (y + z).
+Proof. 
+move=> [x Hx] [y Hy] [z Hz]; move/QcblebP => Hxy; apply/QcblebP.
+rewrite !qcb_valE in Hxy *.
+setoid_rewrite Qred_correct.
+by apply Qplus_le_compat; last apply Qle_refl .
+Qed.
 
-Lemma qleb_qltne :
-  forall (x y : Qcb), (x <<! y) = (x <<= y) && (x != y) .
-Proof .
-  move=> x y; rewrite /Qcb_leb /Qcb_ltb .
-  rewrite /Zlt_bool /Zle_bool .
-  case D: (Qnum x * ' Qden y ?= Qnum y * ' Qden x)%Z => //= .
-  + symmetry; apply negbTE; rewrite negbK; apply/Qcb_QeqP .
-    by rewrite /Qeq; apply Zcompare_Eq_eq .
-  + symmetry; apply/Qcb_QeqP; rewrite /Qeq .
-    move/Zcompare_Eq_iff_eq=> Hdiscr; congruence .
-Qed .
+Lemma Qle_bool_mulr : forall x y, 
+  Qle_bool 0 x -> Qle_bool 0 y -> Qle_bool 0 (x * y).
+Proof. 
+move=> x y; move/Zle_is_le_bool; rewrite Zmult_1_r=> px.
+move/Zle_is_le_bool; rewrite Zmult_1_r => py.
+by apply/Zle_is_le_bool; rewrite Zmult_1_r; apply: Zmult_le_0_compat.
+Qed.
 
-Lemma qleb_qltb_eq : forall x y : Qcb,
-  (x <<= y) = (x <<! y) || (x == y).
+Lemma Qcbleb_mulr : forall x y, Qcbleb 0 x -> Qcbleb 0 y -> Qcbleb 0 (x * y).
 Proof.
-move=> x y; rewrite qleb_qltne; case e: (x == y) => /=.
-  by rewrite andbF /= (eqP e); apply/Qcb_leb_iff; apply Qle_refl .
-by rewrite andbT orbF.
+  move=> x y; move/QcblebP; rewrite qcb_valE; setoid_rewrite Qred_correct=> hx.
+  move/QcblebP; rewrite qcb_valE; setoid_rewrite Qred_correct=> hy.
+  apply/QcblebP; rewrite !qcb_valE; setoid_rewrite Qred_correct.
+  exact: Qmult_le_0_compat.
 Qed.
 
+Definition Q_OrderedRingMixin := 
+  OrderedRing.Mixin 
+  Qcbleb_antisymb Qcbleb_transb Qcbleb_totalb Qcbleb_addr Qcbleb_mulr.
 
 
-Lemma qleb_total : forall (x y : Qcb), (x <<= y) || (y <<= x) .
-Proof .
-  move=> x y; rewrite /Qcb_leb .
-  generalize (Qnum x * ' Qden y)%Z => z1 .
-  generalize (Qnum y * ' Qden x)%Z => z2 .
-  by case: (Zle_bool_total z1 z2).
-Qed .
 
-Lemma qltb_lcompatible : @lcompatible Qcb_ringType Qcb_ltb .
-Proof .
-  move=> [x Hx] [y Hy] [z Hz] .
-  move/Qcb_ltbP=> H0x; move/Qcb_ltbP => Hyz .
-  apply/Qcb_ltbP; rewrite !qcb_val_E /= in H0x Hyz .
-  rewrite ![QcbMake Hx * _]mulrC !qcb_val_E; setoid_rewrite Qred_correct .
-  exact: Qmult_lt_compat_r .
-Qed .
+Canonical Structure Q_oRingType := 
+  Eval hnf in ORingType Qcb Q_OrderedRingMixin.
 
-Lemma qleb_lcompatible : @lcompatible Qcb_ringType Qcb_leb .
-Proof .
-  move=> [x Hx] [y Hy] [z Hz] .
-  move/Qcb_leb_iff=> H0x; move/Qcb_leb_iff => Hyz .
-  apply/Qcb_leb_iff; rewrite !qcb_val_E /= in H0x Hyz .
-  rewrite ![QcbMake Hx * _]mulrC !qcb_val_E; setoid_rewrite Qred_correct .
-  exact: Qmult_le_compat_r .
-Qed .
+Canonical Structure Q_oComRingType := 
+  Eval hnf in OComRingType Qcb Q_OrderedRingMixin.
 
-Definition Qcb_OComRingMixin :=
-  GOrdered.OComRing.Mixin
-  qltb_sorderb qleb_Tr qleb_qltb_eq qleb_total qltb_lcompatible .
+Canonical Structure Qcb_oIddomainType :=
+  Eval hnf in OIdomainType Qcb Q_OrderedRingMixin.
 
-Canonical Structure Qcb_OComRingType :=
-  Eval hnf in OcomringType Qcb_OComRingMixin .
-
-Canonical Structure Qcb_OFieldType :=
-  GOrdered.OField.pack  Qcb_OComRingMixin.
-
-
-(* -------------------------------------------------------------------- *)
-Reserved Notation "'δ_ ( i , j )"
-  (at level 8, format "''δ_' ( i ,  j )") .
-
-Import Monoid.
-
-Section Kronecker .
-
-Variable T : eqType .
-Variable R : Type .
-
-Variables zero one : R .
-
-Notation Local "0" := zero .
-Notation Local "1" := one .
-
-Variable times : mul_law 0 .
-Variable plus  : add_law 0 times .
-
-Notation Local "'*%M'" := (mul_operator times) (at level 0).
-Notation Local "x * y" := ( *%M x y).
-
-Definition kronecker (x y : T) : R := (if x == y then 1 else 0) .
-
-Definition δfun := nosimpl kronecker .
-
-Notation "'δ_ ( i , j )" := (δfun i j) .
-
-Lemma δE : forall i j, 'δ_(i, j) = if (i == j) then 1 else 0.
-Proof. by move=> i j; rewrite /δfun /kronecker. Qed.
-
-Lemma δeq : forall x, 'δ_(x, x) = 1 .
-Proof . by move=> x; rewrite δE eqxx . Qed .
-
-Lemma δne : forall x y, x != y -> 'δ_(x, y) = 0 .
-Proof . by move=> x y H; rewrite δE (negbTE H) . Qed .
-
-Lemma δsym : forall x y, 'δ_(x, y) = 'δ_(y, x) .
-Proof . by move=> x y; rewrite δE eq_sym . Qed .
-
-Lemma δprod_ne :
-    forall i j₁ j₂, j₁ != j₂ -> 'δ_(i, j₁) * 'δ_(i, j₂) = 0 .
-Proof .
-move=> i j₁ j₂ ne_j₁_j₂; rewrite !δE.
-case H1 : (i == j₁); rewrite ?mul0m //; case H2 : (i == j₂); rewrite ?mulm0 //.
-by move/eqP:ne_j₁_j₂; rewrite -(eqP H1) -(eqP H2).
-Qed.
-
-End Kronecker .
-
-Notation "'δ'" := (@δfun _ )(at level 8, no associativity).
-
-(* -------------------------------------------------------------------- *)
-Section VSwap .
-  Variable T : eqType .
-
-  Definition vswap (i j n : T) :=
-    if n == i then j else (if n == j then i else n) .
-
-  Notation "i ← n → j" := (vswap i j n) (at level 5, no associativity) .
-
-Lemma vswap_left : forall i j, i ← i → j = j .
-Proof . by move=> *; rewrite /vswap eqxx . Qed .
-
-Lemma vswap_right : forall i j, i ← j → j = i .
-Proof .
-    move=> i j; rewrite /vswap eqxx .
-    by case D: (j == i); first rewrite (eqP D) .
-  Qed .
-
-Lemma vswap_neq : forall i j n, n != i -> n != j -> i ← n → j = n .
-Proof .
-    by move=> i j n Hi Hj; rewrite /vswap (negbTE Hi) (negbTE Hj) .
-  Qed .
-
-End VSwap .
-
-Notation "i ← n → j" := (vswap i j n) (at level 5, no associativity) .
-
-
+Canonical Structure Qcb_oFieldType :=
+  Eval hnf in OFieldType Qcb Q_OrderedRingMixin.
