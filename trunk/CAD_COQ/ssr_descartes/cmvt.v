@@ -287,7 +287,7 @@ move: (pdiv); move/ltrW; move/QcblebP; case/QZ_bound => n qn.
 (* assia : canonical structures are missing here for Z -> Qcb *)
 have qn' : (((b - a) * c / eps) <= (Qcb_make n)).
     by apply/QcblebP; rewrite /Qcb_make qcb_valE.
-have admit1 : 0 < n.
+have fact1 : 0 < n.
   have tmp : 0 < Qcb_make n.
     by apply: ltr_le_trans pdiv qn'.
   move: tmp; move/QcblebP. rewrite /Qcb_make /=.
@@ -305,15 +305,15 @@ have mkl:
       by exists 0; rewrite addrN lerr Qcb_make0 mulr0 mul0r addr0; split.
     by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
 - exists (map  (fun x => a + (b-a)*((Qcb_make x)/(Qcb_make n))) (ns (n-1) (n-2))).
-  have admit8 : 0 <= n - 2%Z.
-    move/eqP: en; move: admit1; rewrite -[1]/1%Z -[0]/0%Z.
+  have fact8 : 0 <= n - 2%Z.
+    move/eqP: en; move: fact1; rewrite -[1]/1%Z -[0]/0%Z.
     clear. rewrite /is_true. rewrite -Zle_is_le_bool-[(n-2%Z)%R]/(n - 2)%Z.
     rewrite -[0%Z < n]/(~~(Zle_bool n 0)); move/negP.
     rewrite /is_true -Zle_is_le_bool; omega.
-  have admit2 : 0 <= n - 1.
-    by rewrite  ler_eqVlt (ler_lt_trans admit8) ?orbT // ler_add2r.
+  have fact2 : 0 <= n - 1.
+    by rewrite  ler_eqVlt (ler_lt_trans fact8) ?orbT // ler_add2r.
   move=> l1 l2 x y; case: l1 => [|t1 ql1] /=.
-    case: (ns_head (n - 1) (n - 2) admit8) => a1 qa1.
+    case: (ns_head (n - 1) (n - 2) fact8) => a1 qa1.
     rewrite qa1 /= (_ : (n - 1) - (n - 2)%Z = 1) ?Qcb_make1; last first.
       by rewrite addrAC [-(n - 2%Z)]oppr_add addrA opprK addrN add0r. 
     case => -> <- /=; split.
@@ -324,16 +324,16 @@ have mkl:
     rewrite !cats1 -!rot1_cons; move/rot_inj; case=> <-.
     case: (ns_tail (n - 1) (n - 2))=> l3 ->; rewrite map_cat /=.
     rewrite cats1 -rot1_cons; move/rot_inj; case=> <- h2.
-    have admit3 : (Qcb_make (n - 1) / Qcb_make n) = 1 - (Qcb_make n)^-1.
+    have fact3 : (Qcb_make (n - 1) / Qcb_make n) = 1 - (Qcb_make n)^-1.
       have nn0 : ~~ (Qcb_make n == 0).
         by apply/negP => nis0; move/Qcb_QeqP: nis0; 
-         rewrite /Qeq /= Zmult_1_r => nis0; move: admit1;
+         rewrite /Qeq /= Zmult_1_r => nis0; move: fact1;
          rewrite nis0 lerr.
       by apply/eqP; rewrite /= (eqP (Qcb_make_add _ _)) mulr_addl mulrV /= //.
-    rewrite admit3 mulr_addr mulr1 oppr_add !addrA oppr_add addrA addrN add0r.
+    rewrite fact3 mulr_addr mulr1 oppr_add !addrA oppr_add addrA addrN add0r.
     rewrite -mulrN opprK; split=> //.
     exists (n - 1); split; last by rewrite lerr.
-    by rewrite  -mulrA admit3 mulr_addr mulr1 !addrA.
+    by rewrite  -mulrA fact3 mulr_addr mulr1 !addrA.
   case: (non_empty_tail  _ d l2) => l3 [e qe]; rewrite qe.
   rewrite -[ql1 ++ [:: x, y & l3 ++ [:: e]]]/(ql1 ++ [:: x, y & l3] ++ [:: e]).
   rewrite [_ ++ _ ++ [:: e]]catA !cats1 -!rot1_cons; move/rot_inj; case=> -> q''.
@@ -344,27 +344,27 @@ have mkl:
   split.
     rewrite n21 [t1 + _]addrC -addrA oppr_add [t1 + _]addrA addrN add0r -mulrN
        -mulr_addr -mulNr -[_ * _^-1 + _]mulr_addl.
-    have admit5: Qcb_make (n1 + 1) - Qcb_make n1 = 1.
+    have fact5: Qcb_make (n1 + 1) - Qcb_make n1 = 1.
       by rewrite -[_ - _]/(Q2Qcb (Qcb_make _ + Qcbopp(Qcb_make _)))
           /Qcbopp /Qcb_make ?qcb_valE /Qopp /Qden /Qnum /Q2Qcb ?qcb_valE
           (eqP (Qcb_Z _)) /Qplus /Qden /Qnum /Pmult 2!Zmult_1_r -Zplus_assoc
           [Zplus _ (Zopp _)]Zplus_comm Zplus_assoc Zplus_opp_r Zplus_0_l.
-    by rewrite admit5 mul1r.
+    by rewrite fact5 mul1r.
   exists n1; split; first by rewrite mulrA.
   have bds : (1 <= n1) && (n1 <= (n-1)).
-    have admit9 : (n - 1) - (n - 2%Z) = 1
+    have fact9 : (n - 1) - (n - 2%Z) = 1
         by rewrite oppr_add opprK addrA [ _ - n]addrC addKr.
-    by rewrite -{1}admit9; apply: ns_bounds _ _ _ _ _ admit8 st.
+    by rewrite -{1}fact9; apply: ns_bounds _ _ _ _ _ fact8 st.
   move/andP: bds => [bds1 bds2];split; last by [].
-  have admit6: 0 <= n1 by apply: ler_trans bds1; apply: ltrW; apply ltr01.
+  have fact6: 0 <= n1 by apply: ler_trans bds1; apply: ltrW; apply ltr01.
   by [].
 case: mkl => [sl qsl].
-have admit7 : ~ eval_pol l b < 0.
+have fact7 : ~ eval_pol l b < 0.
   by apply/negP; rewrite ltrNge.
 case: (find_pair _ (fun x => (eval_pol l x) < 0)
              (fun x y => y - x = (b-a)/Qcb_make n /\
                 (exists k, x = a + (b-a)*Qcb_make k / Qcb_make n /\
-                        0 <= k /\ k <= (n-1))) sl a b nla admit7 qsl) =>
+                        0 <= k /\ k <= (n-1))) sl a b nla fact7 qsl) =>
              [a' [b' [[A1 [k [A4 A5]]] [A2 A3]]]] {qsl sl}.
 exists a'; exists b'.
 have aa' : a <= a'.
@@ -377,7 +377,7 @@ have bb' :  b' <= b.
     have nn0 : Qcb_unit (Qcb_make n).
       apply/negP => nq0; move/Qcb_QeqP: nq0.
       rewrite /Qeq Zmult_1_r /Qcb_make qcb_valE /Qnum Zmult_0_l => nq0.
-      by move: admit1; rewrite nq0 lerr.
+      by move: fact1; rewrite nq0 lerr.
     by rewrite mulrK // addrA [a + _]addrC addrK.
   have b'a: b' = a' + (b' - a') by rewrite addrA [ a' + _]addrC addrK.
   rewrite b'a A1 A4 -addrA {3}bdec -mulr_addl; apply: ler_add; rewrite ?lerr //.

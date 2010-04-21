@@ -362,7 +362,6 @@ case: (lerP 0 (eval_pol (reciprocate_pol l) x^-1)) => sign; last first.
     by rewrite subr_le0.
   by apply: ltrW.
 rewrite mulNr ler_oppl -mulNr oppr_sub.
-(* because the polynomial is increasing in that part of its domain. *)
 have rpxe : eval_pol (reciprocate_pol l) x^-1 <= e.
   apply:ler_trans (_ : eval_pol (reciprocate_pol l) b <= _).
     rewrite -subr_ge0; apply: ler_trans (_ : k * (b - x^-1) <= _).
