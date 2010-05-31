@@ -32,7 +32,7 @@ rewrite pascal_step1.
 NReplace (n - 0)%nat n; auto.
 omega.
 Qed.
- 
+
 Lemma util_C:
  forall (n i j : nat),
  (i <= j)%nat -> (j <= n)%nat ->  C n i * C (n - i) (j - i) = C j i * C n j.
@@ -40,10 +40,9 @@ intros.
 assert (i <= n)%nat.
 omega.
 unfold C.
+replace  ((n - i) - (j - i))%nat with (n - j)%nat;[ | omega].
 field.
-NReplace ((n - i) - (j - i))%nat (n - j)%nat.
-ring.
-apply prod_neq_R0; auto with real.
+repeat split; auto with real.
 Qed.
  
 Lemma pow_Rmult: forall (x y : R) (n : nat),  (x * y) ^ n = x ^ n * y ^ n.
@@ -390,16 +389,19 @@ rewrite algo_reverse; (try omega).
 NReplace (p - ((p - i) + 0))%nat i; auto.
 Qed.
 (*Polynomes de Bernstein (l,r)*)
-Parameter RBern : nat -> nat -> R -> R -> R ->  R.
+Definition RBern p i l r X :=
+  C p i *  (Rdiv (X - l) (r - l) ^ i * Rdiv (r - X) (r - l) ^ (p - i)).
  
-Axiom
+Lemma
    RBern_def :
    forall p i l r X,
    (i <= p)%nat ->
    r - l <> 0 ->
     RBern p i l r X =
     C p i * (Rdiv (X - l) (r - l) ^ i * Rdiv (r - X) (r - l) ^ (p - i)).
- 
+intros; reflexivity.
+Qed.
+
 Lemma RBern_rl:
  forall p i l r X,
  (i <= p)%nat -> r - l <> 0 ->  RBern p i r l X = RBern p (p - i) l r X.
@@ -448,14 +450,14 @@ rewrite <- pow_Rmult.
 replace ((X - l) / (r - l)) with (((m - l) / (r - l)) * ((X - l) / (m - l)));
  auto.
 field.
-apply prod_neq_R0; auto.
+auto.
 Qed.
  
 Lemma dev_rX:
  Rdiv (r - X) (r - l) = A * Rdiv (X - l) (m - l) + Rdiv (m - X) (m - l).
 unfold A.
 field.
-apply prod_neq_R0; auto.
+auto.
 Qed.
  
 Lemma pow_rX_n:
@@ -564,10 +566,11 @@ assert
 apply sum_eq_R0; intros.
 rewrite output_delta_infi; (try omega).
 ring.
-rewrite H0; ring.
-NReplace (p - S (k - 1))%nat (p - k)%nat.
+rewrite H0.
+NReplace (S (k - 1))%nat k.
+ring_simplify.
 apply sum_eq; intros.
-NReplace (S (k - 1) + i)%nat (i + k)%nat; auto.
+NReplace (k + i)%nat (i + k)%nat; auto.
 omega.
 Qed.
 (*input : b0,....,bp : calul explicite de l'output*)
@@ -591,7 +594,8 @@ assert
 apply sum_eq_R0; intros.
 rewrite output_delta_infi; (try omega).
 ring.
-rewrite H0; ring.
+rewrite H0.
+ring_simplify.
 apply sum_eq; intros.
 rewrite output_delta_supi; auto.
 omega.
@@ -619,7 +623,7 @@ unfold f; ring.
 rewrite H; rewrite H0.
 apply sum_eq; intros i; intros.
 rewrite (sum_output_delta b A B p i); auto.
-ring.
+rewrite Rmult_comm.
 rewrite scal_sum.
 apply sum_eq; intros j; intros.
 unfold f; ring.
