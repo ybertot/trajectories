@@ -115,41 +115,45 @@ Let's first describe a simple graphical argument based on curves for polynomial 
 (d) one sign change, first coefficient zero,\\
 (e) one sign change, first coefficient negative}
 
-\caption{Figure~\ref{graph-desc}.  Classes of polynomials with or without
+\caption{Classes of polynomials with or without
 sign change}
 \end{figure}
 To describe our proof, we assume that new polynomials are built from
 existing ones by multiplying them by the polynomial \(X\) and adding a
-constant; an operation that we will name ``Horner's scheme''.
+constant; an operation that is known as ``Horner's scheme''.
 Polynomials with one sign change and a positive principal coefficient
 are obtained by starting with a positive constant, applying Horner's
 scheme a certain number of times with non-negative constants, then
 applying it a negative constant, and then applying it again a certain
 number of times with non-positive constants.
 
-Polynomials with only positive or 0 coefficients have curves which
-look like the curves (3.1-a) or (3.1-b) depending on whether the first
+Polynomials with only non-negative coefficients have curves which look
+like the curves (3.1-a) or (3.1-b) depending on whether the first
 coefficient is 0, adding a positive coefficient to a polynomial of the
 form (a) or (b) yields a polynomial of the form (a), multiplying a
 polynomial of the form (a) or (b) by the polynomial \(X\) yields a new
 polynomial of the form (b).  Thus, Horner's scheme with non-negative
 constants keeps polynomials in the (a-b) form.  Then, when applying
 Horner's scheme with a negative coefficient (thus introducing a sign
-change), one obtains a curve whose shape is given by (c).  From then
-one, multiplying a polynomial of the form (c), (d), or (e) yields a a
-polynomial of the (d) form; adding a negative constant to a polynomial
-of the form (d) or (e) yields a polynomial of the form (e).
-Polynomials of of the form (d) or (e) share the following
-characteristic: there exists a positive value \(x\), so that the
-polynomial has a negative value between 0 and \(x\), and the slope of
-the of the curve is strictly positive above \(x\).  Because of the slope
-condition, we can also find a point where the polynomial is positive.
+change), the multiplication by \(X\) first builds a polynomial of the
+(b) form, and adding a negative constant, one obtains a curve whose
+shape is given by (c).  From then one, multiplying a polynomial of the
+form (c), (d), or (e) by \(X\) yields a a polynomial of the (d) form; adding a
+negative constant to a polynomial of the form (d) or (e) yields a
+polynomial of the (e) form.  Polynomials of the form (d) or (e)
+share the following characteristic: there exists a positive value
+\(x\), so that the polynomial has a negative value between 0 and
+\(x\), and the slope of the curve is strictly positive above
+\(x\).  Because of the slope condition, we can also find a point where
+the polynomial is positive.
 
+Let us now give a more precise proof, outlining the concepts that are
+used in the formal proof.
 
-A lemma on slopes of products of functions: If two positive functions \(f\)
+{\sf A lemma on slopes of products of functions: If two positive functions \(f\)
 and \(g\) have slopes larger than \(k_f > 0\) and \(k_g > 0\) on the interval
 \([a,b]\), then the slope
-of the product \(fg\) is larger than \(k_fg(a) + f(a)k_g\).
+of the product \(fg\) is larger than \(k_fg(a) + f(a)k_g\).  \}
 
 We first define an invariant that is used for polynomials with only
 positive coefficients.  The important characteristics are the
