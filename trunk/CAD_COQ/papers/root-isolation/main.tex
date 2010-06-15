@@ -28,7 +28,7 @@ coefficients give a discrete approximation of the behavior of a
 polynomial in a given closed interval.  We rely on a sufficient
 condition concerning these coefficients (let's call this condition
 C1): if the Bernstein coefficients, taken in order, have only one
-alternation, then the polynomial is guaranteed to have exactly one
+sign change, then the polynomial is guaranteed to have exactly one
 root in the corresponding interval.
 
 A first part of our work is to provide a mechanical proof of condition C1.
@@ -78,7 +78,7 @@ sub-interval inside which the absolute value of the slope is bounded
 below, and such that the values of the polynomial at the sub-interval
 bounds have opposite signs.  In a similar vein, the intermediate value
 theorem does not hold with rational numbers, but a corresponding
-statement, expressed as an epsilon-delta property, does.  Our proof
+statement, expressed as a bounded-value property, does.  Our proof
 development relies on this approach.
 
 This result can then be used for several purposes.  First it opens the
@@ -93,7 +93,7 @@ are comparisons between polynomial formulas.
 Berstein polynomials and de Casteljau's algorithm are intensively used
 in computer aided design.
 
-\section{Describing simple roots in the rational setting}
+\section{Describing roots of a polynomial in the rational setting}
 Plan pour cette section
 \begin{enumerate}
 \item Roots of rational polynomials not necessarily polynomial
@@ -101,7 +101,107 @@ Plan pour cette section
 \item In case of Descartes law, impose the slope to be bounded below for all intervals but the first one
 \item Using a new form of middle-value theorem: expressed only with rational numbers, applicable only for polynomials
 \end{enumerate}
-\section{A simple of form of Descartes' law of sign}
+
+\subsection{Criteria for the existence of a unique root}
+When describing the roots of polynomials in a rational setting, we are
+faced with the problem that roots I'm not necessarily rational. The
+existence of roots is only guaranteed when working with algebraic
+numbers or real numbers. To circumvent this difficulty, we only
+guarantee a criterion that is strong enough to build a Cauchy sequence
+whose limit in the real numbers would be the root. Our criterion is
+based on slopes. Indeed, we need to work with cases where the root is
+unique. Ensuring that the slope is positive and bounded below or
+negative and bounded above helps making sure that there are no two
+roots in the area being considered. In the case of positive slopes, we
+write the slope requirement for a polynomial \(p\) inside a given interval
+\(I\) as follows:
+\[exists k, 0 < k \wedge \forall x y, x \in I \wedge y \in I 
+\wedge x < y \Rightarrow k(y - x) < p(y) - p (x) \]
+
+Depending on the kind of interval that we will consider, we will have
+two different ways to express the existence of a single root in the
+interval.
+
+\begin{enumerate}
+\item If the interval is bounded, we express that the interval can be
+  decomposed into three parts, the first part where the polynomial's
+  value is always negative (\(I_1\) in Figure~\ref{bounded_decompose}, the second part where the polynomial's
+  value goes from negative to positive with a requirement on the
+  slope (\(I_2\) in Figure~\ref{bounded_decompose}, and the third part where the polynomial's value is always
+  positive (\(I_3\) in Figure \ref{bounded_decompose}).
+\begin{figure}\label{bounded_decompose}
+\begin{center}
+\includegraphics[clip=true,trim= 2cm 7cm 0cm 9cm,scale=0.3]{bounded_decompose.pdf}
+\end{center}
+\caption{A sufficient criterion for the existence of a single root in a bounded interval}
+\end{figure}
+\item If the interval is unbounded, we express that the interval can
+  be decomposed into two parts, the first part where the polynomials
+  value is always negative (\(I_1\) in
+  Figure~\ref{unbounded_decompose}, and the second part where there is
+  a requirement on the slope with a positive slope (\(I_2\) in
+  Figure~\ref{unbounded_decompose}).
+\begin{figure}\label{unbounded_decompose}
+\begin{center}
+\includegraphics[clip=true,trim=2cm 3cm 2cm 9cm, scale=0.3]{unbounded_decompose.pdf}
+\end{center}
+\caption{A sufficient criterion for the existence of a single root in an unbounded interval}
+\end{figure}
+\end{enumerate}
+\subsection{Bounding the polynomial's value}
+While we can't be sure to produce a rational value on which the
+polynomial of interest returns the zero value, we at least need to be
+able to produce an input for which the polynomial's value is
+arbitrarily small. In classical mathematics once we know that the
+polynomial takes values of opposite sign at the bounds of an interval,
+we know that there is a root for this polynomial in this interval,
+thanks to the intermediate value theorem. For this work, we establish
+a simplified constructive replacement of the intermediate value
+theorem especially for polynomials.
+
+We don't formalize the notion of continuity, but we again rely on
+reasoning about slopes. First, we establish that the slope of any
+polynomial is bounded in absolute value on any bounded interval. This
+gives us a way to establish a property that is stronger than uniform
+continuity for polynomials. Starting from an interval and a polynomial
+we can produce a coefficient \(k\) so that the variation of the
+polynomial between two points \(x\) and \(y\) is smaller than
+\(|k\times(y-x)|\) the difference.
+
+Given an arbitrary small and positive \(\varepsilon\), a polynomial
+\(p\), and a bounded interval \((l,b)\) so that \(p(l) < 0 < p(r)\),
+we want to produce an input \(x_0\) so that \(0 < p(x_0) <
+\varepsilon\).  We proceed by taking an upper bound \(k\) of the slope for
+this interval and this polynomial and choosing a large number \(n\) so
+that \(\frac{r-l}{n} < \frac{\varepsilon}{k}\).  We then consider the
+\(n+1\) values \(a_i =l + \frac{i\times (r-l)}{n}\). We then solve a
+discrete problem over the values \(a_i\). We simply need to find the
+smallest \(a_j\) of these inputs for which the polynomial's value is
+positive. The preceding value \(a_{j-1}\) necessarily is a value where
+the polynomial is nonpositive. Thanks to the bound on the slope and
+because the distance between consecutive \(a_i\)'s is smaller than
+\(\frac{\varepsilon}{k}\), we are guaranteed that the value in \(a_i\)
+is positive and smaller than \(\varepsilon\).  Note that this approach
+makes it possible to bound the polynomial's value in the interval
+\((a_{j-1},a_j)\) and to guarantee the existence of a root inside this
+interval, however it does not provide for the uniqueness of the root.
+
+Our algorithm is illustrated in figure~\ref{ivt}, where the distance
+between the \(a_i\)'s is chosen according to the maximal slope
+occurring between \(l=a_0\) and \(r=a_{12}\). The point selected by
+our algorithm is \(a_6\), even though there are more roots in the
+vicinity of \(a_1\) and \(a_2\) but neither \(a_1\) nor \(a_2\) is a
+point where the polynomial takes a positive value.  The point \(a_{11}\) could
+also be eligible, but it is not the smallest one.
+\begin{figure}
+\label{ivt}
+\begin{center}
+\includegraphics[clip=true,trim=0cm 9cm 2cm 9cm,scale=0.5]{ivt.pdf}
+\end{center}
+\caption{Bounding a polynomials value}
+\end{figure}
+
+\section{A simple form of Descartes' law of sign}
 \subsection{Mathematical proof}
 Let's first describe a simple graphical argument based on curves for polynomial functions between 0 and \(+\infty\), as shown in figure~\ref{graph-desc}.
 \begin{figure}
@@ -153,7 +253,7 @@ used in the formal proof.
 {\sf A lemma on slopes of products of functions: If two positive functions \(f\)
 and \(g\) have slopes larger than \(k_f > 0\) and \(k_g > 0\) on the interval
 \([a,b]\), then the slope
-of the product \(fg\) is larger than \(k_fg(a) + f(a)k_g\).  \}
+of the product \(fg\) is larger than \(k_fg(a) + f(a)k_g\).  }
 
 We first define an invariant that is used for polynomials with only
 positive coefficients.  The important characteristics are the
@@ -168,7 +268,7 @@ number, then the polynomial \(a + X * P\) also satisfies them.
 This is the step case in a proof by induction concerning polynomials
 with all non-negative coefficients and at least one positive coefficient.
 
-We can then address polynomials with exactly one alternation.  We want to
+We can then address polynomials with exactly one sign change.  We want to
 show that these polynomials have exactly one root.  We exhibit the three
 intervals described in the previous section by giving two values \(x_1\) and \(x_2\) and \(k\) such that the polynomial is negative for every positive \(y\) smaller than \(x_1\), the polynomial is positive in \(x_2\), and the slope between
 any two values above \(x_1\) is positive.
@@ -220,6 +320,7 @@ the slope of \(P\) above \(x\) is larger than
 \begin{enumerate}
 \item The functions that describe
 \end{enumerate}
+\section{Relating Bernstein coefficients and Descartes' law of sign}
 \end{document}
 %%% Local Variables: 
 %%% mode: latex
