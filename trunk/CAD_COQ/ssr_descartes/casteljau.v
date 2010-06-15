@@ -1,9 +1,10 @@
 Require Import ssreflect eqtype ssrbool ssrfun ssrnat binomial.
 Require Import ssralg orderedalg.
 Require Import infra.
+
 Import GRing.
 
-Lemma util_C : forall n i j, i <= j -> j <= n -> 
+Lemma util_C : forall n i j : nat, i <= j -> j <= n -> 
     'C(n, i) * 'C(n-i, j-i) = 'C(j, i) * 'C(n, j).
 move => n i j ij jn.
 apply/eqP; rewrite -(@eqn_pmul2r ( i`! * (n - i) `!));
@@ -17,12 +18,15 @@ rewrite bin_fact // subn_sub subnKC // mulnAC (mulnC j`!) -(mulnA _ j`!).
 rewrite bin_fact //.
 Qed.
 
-Fixpoint de_casteljau (b : nat -> Q_oRingType) (l r : Q_oRingType) n :=
+
+Fixpoint de_casteljau (b : nat -> Qcb) (l r : Qcb) n :=
   match n with
     0 => b
   | S i => fun j => 
-    (l * de_casteljau b l r i j + r * de_casteljau b l r i (j + 1)%nat)%R
+    (l * de_casteljau b l r i j + r * de_casteljau b l r i j.+1)%R
   end.
+
+
 
 Definition dicho' b l r i := de_casteljau b l r i 0.
 
@@ -33,7 +37,9 @@ Lemma ext_dc :
   de_casteljau b l r k n = de_casteljau b' l r k n.
 move => k b b' l r; elim: k => [ n q | k IHk n q] /=.
   by apply: q; rewrite ?addn0 leqnn.
-rewrite !IHk; first done; move => i ni nik; apply: q.
+rewrite !IHk //; move => i ni nik; apply: q => //; first exact: ltnW.
+  by move: nik; rewrite addnS addSn.
+by apply: leq_trans nik _; rewrite addnS leqnSn.
 Qed.
 
 Lemma lin_dc :
@@ -58,8 +64,9 @@ Lemma scal_dc :
   forall k a b l r n, de_casteljau (fun j => a * b j)%R l r k n =
       (a * de_casteljau b l r k n)%R.
 move => k a b l r n; have := lin_dc k a 0 b (fun i => 0)%R l r n.
+
 rewrite (ext_dc _ (fun j => a * b j + 0 * 0)%R (fun j => a * b j)%R).
-  by rewrite mul0r addr0.
+by rewrite mul0r addr0.
 by move => x; rewrite /= mul0r addr0.
 Qed.
 

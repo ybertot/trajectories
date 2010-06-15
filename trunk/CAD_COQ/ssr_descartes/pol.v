@@ -20,27 +20,24 @@ Fixpoint eval_pol l (x : Qcb) :=
   coefficients are the absolute values of the initial coefficients. *)
 
 Fixpoint abs_pol (l : seq Qcb) : seq Qcb :=
- if l is a::tl then absr a :: abs_pol tl else nil.
+ if l is a :: tl then `|a| :: abs_pol tl else nil.
 
-(* The value of the absolute polynomial is always larger than the value
- of the initial polynomial. *)
 
-(* The absolute value notation does not work well. Notation should change. *)
 Lemma ler_absr_eval_pol :
   forall (l : seq Qcb)(x : Qcb), 
-  |eval_pol l x| <= eval_pol (abs_pol l) (|x|).
+  `|eval_pol l x| <= eval_pol (abs_pol l) `|x|.
 Proof.
 elim => [|y s IHs] x /=; first by rewrite absr0.
-apply: (ler_trans (absr_add_le _ _)); rewrite ler_add2r.
+apply: (ler_trans (absr_add_le _ _)); rewrite lter_add2r /=.
 rewrite absf_mul; move: (absr_ge0 x); rewrite ler_eqVlt.
-by case/orP; [move/eqP<-; rewrite !mul0r lerr | move/ltf_mulpl->].
+by case/orP; [move/eqP<-; rewrite !mul0r lerr | move/ltef_mulpl=> -> /=].
 Qed.
 
 Lemma ler0_eval_pol_abs_pol :
   forall l x, 0 <= x -> 0 <= eval_pol (abs_pol l) x.
 Proof.
-elim => [| y s Ihs] x hx /=; rewrite ?lerr ?ler_addpl ?absr_ge0 // mulr_cp0p //.
-exact: Ihs.
+elim => [| y s Ihs] x hx /=; first by rewrite lerr.
+by rewrite lter_addpl //= ?absr_ge0 // mulr_cp0p //= Ihs.
 Qed.
 
 
@@ -48,9 +45,9 @@ Lemma eval_pol_abs_pol_increase :
   forall l x y, 0 <= x -> x <= y ->
     eval_pol (abs_pol l) x <= eval_pol (abs_pol l) y.
 elim=> [|u s Ihs] x y hx hy /=; first by rewrite lerr.
-rewrite ler_add2r; apply: (@ler_trans _ (y * eval_pol (abs_pol s) x)).
-  by rewrite ler_mulpr ?ler0_eval_pol_abs_pol.
-by rewrite ler_mulpl ?Ihs // (ler_trans hx).
+rewrite lter_add2r /=; apply: (@ler_trans _ (y * eval_pol (abs_pol s) x)).
+  by rewrite lter_mulpr /= ?ler0_eval_pol_abs_pol.
+by rewrite lter_mulpl /= ?Ihs // (ler_trans hx).
 Qed.
 
 (* To describe polynomial addition, multiplication by a scalar, and
@@ -127,7 +124,7 @@ Definition Qcb_make (n : Z) := QcbMake (Qcb_Z n).
 Lemma cm3 :
   forall b, 0 < b -> forall l, 
    {c | forall x y, 0 <= x -> x <= y -> y <= b -> 
-    |(eval_pol l y - eval_pol l x)| <= c * (y - x)}.
+    `|(eval_pol l y - eval_pol l x)| <= c * (y - x)}.
 move=> b pb; elim=> [|u l [c cp]] /=.
   by exists 0 => x y; rewrite subrr absr0 mul0r lerr.
 exists ((eval_pol (abs_pol l) b) + c * b) => x y px hxy hyb. 
@@ -136,25 +133,25 @@ set el := eval_pol l in cp *.
 rewrite (_ : y *_ - _ = y * el y - x * el y + x * el y - x * el x); last first.
   by rewrite -[_ - _ + _]addrA addNr addr0.
 have py : 0 <= y by rewrite (ler_trans px).
-have psyx : 0 <= y - x by rewrite ler_subrA add0r.
+have psyx : 0 <= y - x by rewrite lter_subrA /= add0r.
 rewrite -addrA; apply: (ler_trans (absr_add_le _ _)).
 rewrite -mulNr -mulr_addl -mulrN -mulr_addr !absf_mul (ger0_abs px).
-rewrite (ger0_abs psyx) [_ * (y - x)]mulr_addl; apply: ler_add.
+rewrite (ger0_abs psyx) [_ * (y - x)]mulr_addl; apply: lter_add=> /=.
 (*rewrite absr_nneg // [_ * (y - x)]mulr_addl; apply: lerT.*)
-  rewrite mulrC ler_mulpr //; apply: (ler_trans (ler_absr_eval_pol l y)).
+  rewrite mulrC lter_mulpr //=; apply: (ler_trans (ler_absr_eval_pol l y)).
   by rewrite eval_pol_abs_pol_increase // ?absrpos // ger0_abs.
 rewrite (mulrC c); apply ler_trans with (x * c * (y - x)).
-  by rewrite -mulrA ler_mulpl // cp.
-rewrite -!mulrA ler_mulpr // ?(ler_trans hxy) //.
+  by rewrite -mulrA lter_mulpl //= cp.
+rewrite -!mulrA lter_mulpr //= ?(ler_trans hxy) //.
 by apply: ler_trans (cp _ _ px hxy hyb); apply: absr_ge0.
 Qed.
 
-Lemma pol_cont : forall l (x:Qcb) eps, 0 < eps ->
-  exists delta, 0 < delta /\ forall y,  |(y - x)| < delta ->
-    |(eval_pol l y - eval_pol l x)| < eps.
+Lemma pol_cont : forall l (x eps :Qcb), 0 < eps ->
+  exists delta, 0 < delta /\ forall y,  `|(y - x)| < delta ->
+    `|(eval_pol l y - eval_pol l x)| < eps.
 have side :  forall l (x:Qcb) eps, 0 < eps ->
-  exists delta, 0 < delta /\ forall y, x <= y -> |(y - x)| < delta ->
-    |(eval_pol l y - eval_pol l x)| < eps.
+  exists delta, 0 < delta /\ forall y, x <= y -> `|(y - x)| < delta ->
+    `|(eval_pol l y - eval_pol l x)| < eps.
   move => l x e ep; move: (translate_pol l (x-1)) => [l' pl'].
   have zlt2 : (0:Qcb) < 1 + 1 by [].
   move: (cm3 _ zlt2  l') => [c pc].
@@ -166,17 +163,16 @@ have side :  forall l (x:Qcb) eps, 0 < eps ->
     exists 1; split=> //.
     move => y xy1 ycx.
     have cxy : (c * (y - x) < e) by rewrite (eqP c0) mul0r. 
-    rewrite !pl'; apply: ler_lt_trans cxy. 
-    rewrite yxx1; apply: pc=> //; first by rewrite ler_add //= lerr.
-    rewrite oppr_add addrA ler_add // ltrW //; move: ycx; rewrite absr_lt //.
-    by case/andP.
+    rewrite !pl'; apply: ler_lte_trans cxy => /=.
+    rewrite yxx1; apply: pc=> //; first by rewrite lter_add //= lerr.
+    rewrite oppr_add addrA lter_add //= ltrW //; move: ycx; exact: lter_abs.
   have cp : (0 < c). 
     move: (negbT c0) =>{c0} c0.
     rewrite ltr_neqAle eq_sym c0 /=.
     have tmp : (1:Qcb) <= 1 + 1 by [].
     have := pc 0 1 (lerr _) (ltrW (ltr01 _)) tmp; move {tmp}.
     rewrite oppr0 addr0 mulr1=>tmp; apply: ler_trans tmp; exact: absr_ge0.
-  have ecp: (0 < e / c) by rewrite mulf_gt0 ep -invf_le0 cp.
+  have ecp: (0 < e / c) by rewrite mulr_gte0pp //= invf_gte0.
   have ie1: exists e1, 0 < e1 /\ e1 <= 1 /\ e1 <= e/c.
     case cmp : (e/c < 1).
       exists (e/c).
@@ -187,14 +183,14 @@ have side :  forall l (x:Qcb) eps, 0 < eps ->
   exists e1; split; first by [].
   move => y xy xcy.
 (*  rewrite absr_ge0 in xcy; last by rewrite -(lerTlb x) addrNK add0r.*)
-  have cp' : 0 < c^-1 by rewrite -invf_le0.  
+  have cp' : 0 < c^-1 by rewrite invf_gte0.  
   have xcy' : (c * (y - x)) < e.
-    rewrite mulrC -lef_divpl //; apply: ltr_le_trans e1ec; move: xcy.
-    by rewrite absr_lt ?(ltrW e1p) //; case/andP.
-  apply: ler_lt_trans xcy'; rewrite (yxx1 y) !pl'.
-  apply: pc => //; first by rewrite ler_add //= lerr.
-    rewrite oppr_add addrA ler_add // ltrW //; apply: ltr_le_trans e11.
-  by move: xcy; rewrite absr_lt // ?(ltrW e1p) //; case/andP=> _.
+    rewrite mulrC -ltef_divpr //=; apply: lter_le_trans e1ec=> /=; move: xcy.
+    exact: lter_abs.
+  apply: ler_lte_trans xcy'; rewrite (yxx1 y) !pl'.
+  apply: pc => //; first by rewrite lter_add //= lerr.
+    rewrite oppr_add addrA lter_add //= ltrW //; apply: lter_le_trans e11=> /=.
+  by move: xcy; exact: lter_abs.
 move => l x e ep.
 move: (side l x e ep) => [delta1 [dp1 de1]].
 move: (mirror_pol l) => [l' pl'].
@@ -208,14 +204,15 @@ move => [delta [dp [dd1 dd2]]].
   exists delta; split; first by [].
 move => y ycx; case cmp: (y < x).
   rewrite -(opprK x) -(opprK y) !pl'.
-  apply: de2; first by rewrite -ler_opp2 ltrW.
-  by rewrite -oppr_add absr_opp; apply: ltr_le_trans dd2.
+  apply: de2; first by rewrite -lter_opp2 /= ltrW.
+  by rewrite -oppr_add absr_opp; apply: lter_le_trans dd2.
 apply: de1; first by move/negbFE: cmp.
-by apply: ltr_le_trans dd1.
+by apply: lter_le_trans dd1.
 Qed.
 
 Lemma Qcb_make0 : Qcb_make 0 = 0.
 Proof. exact: val_inj. Qed.
+
 
 Lemma Qcb_make1 : Qcb_make 1 = 1.
 Proof. exact: val_inj. Qed.

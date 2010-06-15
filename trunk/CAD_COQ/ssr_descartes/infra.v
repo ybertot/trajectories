@@ -181,16 +181,47 @@ move=> x y; move/Zle_is_le_bool=> px; move/Zle_is_le_bool=> py.
 by apply/Zle_is_le_bool; apply: Zmult_le_0_compat.
 Qed.
 
+Definition Zunit := pred2 1%Z (-1)%Z.
 
-Definition Z_OrderedRingMixin := 
+Definition Zinv (z : Z) := z.
+
+
+Lemma ZmulV : {in Zunit, left_inverse 1%R Zinv *%R}.
+Proof. by move=> x; rewrite inE; case/pred2P => ->. Qed.
+
+(* Zmult_1_inversion_r does not exist *)
+Lemma unitZPl : forall x y, y * x = 1 -> Zunit x.
+Proof.
+move=> x y; rewrite mulrC -[y * x]/(Zmult y x); move/Zmult_1_inversion_l.
+by case=> ->.
+Qed.
+
+Lemma  Zinv_out : {in predC Zunit, Zinv =1 id}.
+Proof. exact. Qed.
+
+Definition Z_comUnitRingMixin :=  ComUnitRingMixin ZmulV unitZPl Zinv_out.
+
+Canonical Structure Z_unitRingType :=
+  Eval hnf in UnitRingType Z Z_comUnitRingMixin.
+
+Canonical Structure Z_comUnitRing := Eval hnf in [comUnitRingType of Z].
+
+Lemma Z_idomain_axiom : forall x y : Z,
+  x * y = 0 -> (x == 0) || (y == 0).
+Proof.
+move=> x y; rewrite -[x * y]/(Zmult x y); move/Zmult_integral; case=> -> //=.
+by rewrite eqxx orbT.
+Qed.
+
+Canonical Structure Z_iDomain := Eval hnf in IdomainType Z Z_idomain_axiom.
+
+Definition Z_OrderedRingMixin :=
   OrderedRing.Mixin 
   Zle_bool_antisymb Zle_bool_transb Zle_bool_totalb Zle_bool_addr Zle_bool_mulr.
 
-Canonical Structure Z_oRingType := 
-  Eval hnf in ORingType Z Z_OrderedRingMixin.
 
-Canonical Structure Z_oComRingType := 
-  Eval hnf in OComRingType Z Z_OrderedRingMixin.
+Canonical Structure Z_oIdomainType := 
+  Eval hnf in OIdomainType Z Z_OrderedRingMixin.
 
 (* Basic tructures for rational numbers.*)
 
@@ -517,14 +548,6 @@ Qed.
 Definition Q_OrderedRingMixin := 
   OrderedRing.Mixin 
   Qcbleb_antisymb Qcbleb_transb Qcbleb_totalb Qcbleb_addr Qcbleb_mulr.
-
-
-
-Canonical Structure Q_oRingType := 
-  Eval hnf in ORingType Qcb Q_OrderedRingMixin.
-
-Canonical Structure Q_oComRingType := 
-  Eval hnf in OComRingType Qcb Q_OrderedRingMixin.
 
 Canonical Structure Qcb_oIddomainType :=
   Eval hnf in OIdomainType Qcb Q_OrderedRingMixin.

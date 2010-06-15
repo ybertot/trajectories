@@ -24,12 +24,12 @@ Set Printing Width 50.
 Lemma cm2 :
   forall l b, { c |
   forall x, 0 <= x -> x <= b -> 
-    |(eval_pol l x - eval_pol l 0)| <= c * x}.
+    `|(eval_pol l x - eval_pol l 0)| <= c * x}.
 Proof.
 move=> l b; case: l =>[| a l].
 - by exists 0; move=> /= x; rewrite mul0r oppr0 addr0 absr0 lerr.
 - exists (eval_pol (abs_pol l) b) => x px xb /=; rewrite mul0r addr0.
-  rewrite addrC addKr absf_mul ger0_abs // mulrC ler_mulp //.
+  rewrite addrC addKr absf_mul ger0_abs // mulrC lter_mulp //=.
   rewrite (ler_trans (ler_absr_eval_pol _ _)) //.
   by rewrite eval_pol_abs_pol_increase // ger0_abs.
 Qed.
@@ -149,10 +149,10 @@ move=> p; elim=> [|n Ihn] x l1 l2 /= h.
   by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP;
       rewrite eqSS.
 - case: l1 h => [| u l1] /=.
-  + by set sn := (' _)%Z; case=> h _; rewrite -h lerr ler_addlr /= oppr_le0.
+  + by set sn := (' _)%Z; case=> h _; rewrite -h lerr lter_addlr /= oppr_lte0.
   + case=> _; move/Ihn; case/andP=> h1 h2; rewrite h2 andbT; apply: ler_trans h1.
-    rewrite ler_add2r -ler_opp2 Zpos_P_of_succ_nat /Zsucc.
-    by rewrite -[Zplus _ _]/(Z_of_nat n + 1) ler_addrr ler01.
+    rewrite lter_add2r /= -lter_opp2 /= Zpos_P_of_succ_nat /Zsucc.
+    by rewrite -[Zplus _ _]/(Z_of_nat n + 1) lter_addrr /= ler01.
 Qed.
 
 Lemma ns_bounds : forall p n x l1 l2, 0 <= n -> ns p n = l1 ++ x::l2 -> 
@@ -242,54 +242,55 @@ Qed.
 
 Lemma half_lt : forall a b :Qcb, 0 < a -> 0 <  b ->
    a / ((Qcb_make 2) * b) < a / b.
-move => a b Ha Hb; rewrite ltf_mulpl // invr_mul //=.
-  by rewrite lef_divpr // -{2}[_^-1]mulr1 ltf_mulpl //= invf_le0 invrK.
-by rewrite unitfE eq_sym ltrWN.
+move => a b Ha Hb; rewrite ltef_mulpl // invr_mul //=; last first.
+  by rewrite unitfE eq_sym ltrWN.
+by rewrite ltef_divp //= -{1}[_^-1]mulr1 ltef_mulp //= invf_cp0.
 Qed.
 
 Lemma cut_epsilon : forall eps:Qcb, 0 < eps ->
   exists eps1, exists eps2, 0 < eps1 /\ 0 < eps2 /\ eps1 + eps2 <= eps /\
       eps1 < eps /\ eps2 < eps.
 move => eps p; exists (eps/Qcb_make 2); exists (eps/Qcb_make 2).
-have p1 : 0 < eps/Qcb_make 2 by rewrite lef_divpl.
+have p1 : 0 < eps/Qcb_make 2 by rewrite ltef_divp.
 split; first done; split; first done; split.
   rewrite -mulr_addr.
   have q2 : (Qcb_make 2)^-1 + (Qcb_make 2)^-1 == 1 by [].
   by rewrite (eqP q2) mulr1 lerr.
 suff cmp : eps/Qcb_make 2 < eps by [].
-by rewrite lef_divpr //= -{2}[eps]mulr1 ltf_mulpl.
+by rewrite ltef_divp //= -{1}[eps]mulr1 ltef_mulp.
 Qed.
 
 
 Lemma constructive_mvt :
   forall l x y, x < y -> eval_pol l x < 0%R -> 0%R <= eval_pol l y  ->
        forall epsilon, 0 < epsilon ->
+
        exists x', exists y',  - epsilon <= eval_pol l x' /\
          eval_pol l x' < 0 /\ 0 <= eval_pol l y' /\
          eval_pol l y' <= epsilon /\ x <= x' /\ x' < y' /\ y' <= y.
 Proof.
 move=> l a b ab nla plb.
-have ba' : 0 < b - a by rewrite -(addrN a) ler_add2l.
+have ba' : 0 < b - a by rewrite -(addrN a) lter_add2l.
 (*have mpolapos : 0 < - eval_pol l a by rewrite gtr0_ltNr0 opprK.*)
 have evalba : 0 < eval_pol l b - eval_pol l a. 
-  rewrite -(ler_add2l (eval_pol l a)) add0r -addrA addNr addr0. 
-  exact: ltr_le_trans plb.
+  rewrite -(lter_add2l (eval_pol l a)) add0r -addrA addNr addr0. 
+  exact: lter_le_trans plb.
 case: (translate_pol l a) => l' q.
 case: (@cm3 (b - a) ba' l') => /= c pc.
 have cpos : 0 < c.
-  rewrite -(ltf_mulpr _ _ ba');rewrite mul0r -[b -a]addr0.
-  apply: ltr_le_trans (pc 0 (b - a) _ _ _); rewrite ?lerr // ?(ltrW ba') //.
-  by rewrite -{1}(addrN a) -!q ger0_abs // ltrW. 
+  rewrite -(ltef_mulp _ _ _ ba') /= mul0r -[b -a]addr0.
+  apply: lter_le_trans (pc 0 (b - a) _ _ _); rewrite ?lerr // ?(ltrW ba') //.
+  by rewrite -{2}(addrN a) -!q ger0_abs // ltrW. 
 move=> eps pe.
 have pdiv : (0 < (b - a) * c / eps).
-  by rewrite lef_divpl // mul0r mulf_gt0 ba' cpos.
+  by rewrite ltef_divp // mul0r mulf_gte0 /= ba' cpos.
 move: (pdiv); move/ltrW; move/QcblebP; case/QZ_bound => n qn.
 (* assia : canonical structures are missing here for Z -> Qcb *)
 have qn' : (((b - a) * c / eps) <= (Qcb_make n)).
     by apply/QcblebP; rewrite /Qcb_make qcb_valE.
 have fact1 : 0 < n.
   have tmp : 0 < Qcb_make n.
-    by apply: ltr_le_trans pdiv qn'.
+    by apply: lter_le_trans pdiv qn'.
   move: tmp; move/QcblebP. rewrite /Qcb_make /=.
   by move/Qle_bool_iff; rewrite /Qle_bool /= Zmult_1_r; move/negP.
 have mkl: 
@@ -311,7 +312,7 @@ have mkl:
     rewrite -[0%Z < n]/(~~(Zle_bool n 0)); move/negP.
     rewrite /is_true -Zle_is_le_bool; omega.
   have fact2 : 0 <= n - 1.
-    by rewrite  ler_eqVlt (ler_lt_trans fact8) ?orbT // ler_add2r.
+    by rewrite  ler_eqVlt (ler_lte_trans fact8) ?orbT // lter_add2r.
   move=> l1 l2 x y; case: l1 => [|t1 ql1] /=.
     case: (ns_head (n - 1) (n - 2) fact8) => a1 qa1.
     rewrite qa1 /= (_ : (n - 1) - (n - 2)%Z = 1) ?Qcb_make1; last first.
@@ -326,9 +327,9 @@ have mkl:
     rewrite cats1 -rot1_cons; move/rot_inj; case=> <- h2.
     have fact3 : (Qcb_make (n - 1) / Qcb_make n) = 1 - (Qcb_make n)^-1.
       have nn0 : ~~ (Qcb_make n == 0).
-        by apply/negP => nis0; move/Qcb_QeqP: nis0; 
+         by apply/negP => nis0; move/Qcb_QeqP: nis0; 
          rewrite /Qeq /= Zmult_1_r => nis0; move: fact1;
-         rewrite nis0 lerr.
+         rewrite nis0 ltrr.
       by apply/eqP; rewrite /= (eqP (Qcb_make_add _ _)) mulr_addl mulrV /= //.
     rewrite fact3 mulr_addr mulr1 oppr_add !addrA oppr_add addrA addrN add0r.
     rewrite -mulrN opprK; split=> //.
@@ -368,43 +369,43 @@ case: (find_pair _ (fun x => (eval_pol l x) < 0)
              [a' [b' [[A1 [k [A4 A5]]] [A2 A3]]]] {qsl sl}.
 exists a'; exists b'.
 have aa' : a <= a'.
-  rewrite -(addr0 a) A4; apply: ler_add; first by apply lerr.
+  rewrite -(addr0 a) A4; apply: lter_add=> /=; first by apply lerr.
   rewrite mulr_ge0pp //; first apply: mulr_ge0pp; rewrite ?(ltrW ba') //.
     by apply: leb_0_Z; case: A5.
-  by rewrite -invf_ge0; apply: leb_0_Z; apply: ltrW.
+  by rewrite invf_gte0 /=; apply: leb_0_Z; apply: ltrW.
 have bb' :  b' <= b.
   have bdec : b = a + (b - a) * (Qcb_make n) / (Qcb_make n).
     have nn0 : Qcb_unit (Qcb_make n).
       apply/negP => nq0; move/Qcb_QeqP: nq0.
       rewrite /Qeq Zmult_1_r /Qcb_make qcb_valE /Qnum Zmult_0_l => nq0.
-      by move: fact1; rewrite nq0 lerr.
+      by move: fact1; rewrite nq0 ltrr.
     by rewrite mulrK // addrA [a + _]addrC addrK.
-  have b'a: b' = a' + (b' - a') by rewrite addrA [ a' + _]addrC addrK.
-  rewrite b'a A1 A4 -addrA {3}bdec -mulr_addl; apply: ler_add; rewrite ?lerr //.
-  rewrite ler_mulpr //; first by rewrite -invf_ge0; apply: leb_0_Z; apply: ltrW.
-  rewrite -{2}[b - a]mulr1 -mulr_addr ler_mulpl ?(ltrW ba') //.
+  have b'a: b' = a' + (b' - a') by rewrite addrA [ a' + _]addrC addrK /=.
+  rewrite b'a A1 A4 -addrA {3}bdec -mulr_addl; apply: lter_add; rewrite /= ?lerr //=.
+  rewrite lter_mulpr //=; first by rewrite invf_gte0; apply: leb_0_Z; apply: ltrW.
+  rewrite -{2}[b - a]mulr1 -mulr_addr lter_mulpl //= ?(ltrW ba') //.
   rewrite -Qcb_make1  -(eqP (Qcb_make_add _ _)) /=; apply: leb_Z.
-  by case: A5=> _; rewrite -(ler_add2l 1) addrNK.
+  by case: A5=> _; rewrite -(lter_add2l 1) addrNK.
 have ab' :  a' < b'.
-  by rewrite -(ler_add2l (- a')) addrN A1  mulf_gt0pp // -invf_cp0 ltb_0_Z.
+  by rewrite -(lter_add2l (- a')) addrN A1 /=  mulf_gte0 /= invf_cp0 /= ltb_0_Z // ba'.
 have epsban: (b-a)*c/Qcb_make n <= eps.
-  by rewrite lef_divpl ?ltb_0_Z // [eps * _]mulrC -lef_divpl.
+  by rewrite ltef_divpl ?ltb_0_Z // [eps * _]mulrC -ltef_divpl.
 have main: eval_pol l b' - eval_pol l a' <= eps.
   rewrite !q -(@ger0_abs _ (_ - _)).
     have b'a': c * (b' - a') <= eps by rewrite A1 mulrA (mulrC c).
     apply: ler_trans b'a'; rewrite -{2}(addr0 b') -(addNr a) addrA
         -(addrA (b' - a)) -(opprK (a - a')) oppr_add opprK (addrC (-a)).
     apply: pc.
-    - by rewrite subr_ge0.
-    - by rewrite ler_add2l (ltrW ab').
-    - by rewrite ler_add2l.
-  rewrite -!q ler_addpl //; first by rewrite -ltrNge; apply/negP.
-  by rewrite oppr_ge0 ltrW.
+    - by rewrite subr_gte0.
+    - by rewrite lter_add2l /= ltrW.
+    - by rewrite lter_add2l.
+  rewrite -!q lter_addpl //=; first by rewrite oppr_gte0 /= ltrW.
+  by rewrite -ltrNge; apply/negP.
 split; last (split; first exact A2).
-  rewrite ler_oppl; apply: ler_trans main.
-  by rewrite ler_addpl ?lerr // -ltrNge; apply/negP.
+  rewrite lter_oppl /=; apply: ler_trans main.
+  by rewrite lter_addrl /= -ltrNge; apply/negP.
 split; first by rewrite -ltrNge; move/negP: A3.
 split; last by auto.
-apply: ler_trans main; rewrite -{1}(addr0 (eval_pol l b')); apply: ler_add; rewrite ?lerr //.
-by rewrite oppr_ge0 ltrW.
+apply: ler_trans main; rewrite -{1}(addr0 (eval_pol l b')); apply: lter_add; rewrite /= ?lerr //.
+by rewrite /= oppr_gte0 /= ltrW.
 Qed.
