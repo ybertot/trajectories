@@ -43,7 +43,7 @@ unique root between 0 and \(+\infty\) yields a sufficient criterion for
 the existence of a unique root in a bounded interval \((l,r)\).
 This is the essence of a the proof of condition C1.
 
-Descartes' law of sign provides a sufficient criterion for the existence
+Descartes' law of signs provides a sufficient criterion for the existence
 of a root between 0 and \(+\infty\).  This law expresses a relation between
 the number of roots of a polynomial between 0 and \(+\infty\) and the number
 of sign changes in the coefficients of this polynomial.  The number of sign
@@ -51,7 +51,7 @@ changes is larger than the number of roots, moreover, the difference between
 the two numbers is a multiple of 2.
 
 For our development, we only use a simple special case of Descartes' law
-of sign for the case where the coefficients of a polynomial
+of signs for the case where the coefficients of a polynomial
 have only one sign change and express that there is a single simple root
 between 0 (excluded) and positive infinity.  Expressing Descartes' law on
 the coefficients of polynomial \(P_2\) yields directly a law expressed in terms
@@ -201,7 +201,7 @@ also be eligible, but it is not the smallest one.
 \caption{Bounding a polynomials value}
 \end{figure}
 
-\section{A simple form of Descartes' law of sign}
+\section{A simple form of Descartes' law of signs}
 \subsection{Mathematical proof}
 Let's first describe a simple graphical argument based on curves for polynomial functions between 0 and \(+\infty\), as shown in figure~\ref{graph-desc}.
 \begin{figure}
@@ -320,7 +320,38 @@ the slope of \(P\) above \(x\) is larger than
 \begin{enumerate}
 \item The functions that describe
 \end{enumerate}
-\section{Relating Bernstein coefficients and Descartes' law of sign}
+\section{Relating Bernstein coefficients and Descartes' law of signs}
+The law of signs gives us a sufficient condition to determine when the
+unbounded interval \((0,+\infty)\) contains exactly one root for a
+polynomial. Through a change of variable, we obtain a similar
+criterion for the interval \((1, +\infty)\).  The polynomial \(P(x)\)
+has exactly one root in the interval \((1,+\infty)\) if and only if
+\(P(x+1)\) has exactly one root in the interval \((0,+\infty)\).
+Expressed in termes of the coefficients \(a_i\) of the polynomial
+\(P\), we have 
+\[P(x+1)= \sum_{i=0}^{n} a_i (x+1)^i = \sum_{k=0}^{n} \sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right) x^k\]
+Thus, if we apply Descartes's law of sign on the coefficients \(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right)\), we can obtain a sufficient criterion for the existence of exactly one root of polynomial 
+\(P=\sum_{i=0}^{n}a_ix^i\) in the interval \((1,+\infty)\).
+
+Then, there is a trick to transfer the criterion's explicit power on a
+bounded interval, the interval between zero and one. This trick relies
+on reversing the polynomial's list of coefficients.  Obviously, the
+number of sign changes in a list of coefficients is the same as the
+number of sign changes in the reversed list.
+
+However, the roots of a polynomial on the interval \((1,+\infty)\)
+infinity are in one-to-one correspondence with the roots of the
+reversed polynomial between zero and one. This is due to the following
+equation:
+\[\sum_{i=0}^{n}a_i x^i = x^n\times\sum_{i=0}^{n}x^{i-n}\]
+We can now perform another change of variable, here \(y=1/x\) and a
+change of index \(j=n-i\) in the sum.
+\[\sum_{i=0}^{n}a_i x^l = (\frac{1}{y})^n \sum_{j=0}^{n}a_{n-j} y^j\]
+The polynomial \(\sum_{j=0}^{n} a_{n-j}y^j\) is exactly the reversed
+polynomial, and the expression \((\frac{1}{y})^n\) never becomes 0 for
+\(y\in (0,1)\).  Thus, \(x\) is a root of the polynomial between \(1\)
+and \(+\infty\) if and only if \(y=x^-1\) is a root of the reversed
+polynomial between \(0\) and \(1\).
 \end{document}
 %%% Local Variables: 
 %%% mode: latex
