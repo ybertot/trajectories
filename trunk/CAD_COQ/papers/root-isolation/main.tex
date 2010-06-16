@@ -33,30 +33,34 @@ root in the corresponding interval.
 
 A first part of our work is to provide a mechanical proof of condition C1.
 
-There are a collection of known transformation of polynomials, so that
-a given polynomial \(P\) has a root inside an interval \((l,r)\) if and
-only a transformed polynomial \(P_1\) has a root inside the interval \((0,1)\).
-Moreover,  there is a transformation so that \(P_1\) has a root inside
-\((0,1)\) if and only if a transformed polynomial \(P_2\) has a root inside
-\((0,+\infty)\).  Thus, a sufficient criterion for the existence of a
-unique root between 0 and \(+\infty\) yields a sufficient criterion for
-the existence of a unique root in a bounded interval \((l,r)\).
-This is the essence of a the proof of condition C1.
+There is a known transformation of polynomials, so that the roots of a
+given polynomial \(P\) inside an interval \((l,r)\) are in one-to-one
+correspondance with the roots of a transformed polynomial \(P_1\)
+inside the interval \((0,1)\).  Moreover, there is a transformation so
+that the roots of \(P_1\) inside \((0,1)\) are in direct
+correspondance with the roots of \(P_2\) inside \((0,+\infty)\).
+Thus, a sufficient criterion for the existence of exactly one root
+between 0 and \(+\infty\) yields a sufficient criterion for the
+existence of exactly one root in a bounded interval \((l,r)\).  This is
+the essence of a proof of condition C1.  The Bernstein coefficients of
+the polynomial \(P\) for the interval \((l,r)\) are the coefficients
+of the polynomial \(P_2\).
 
-Descartes' law of signs provides a sufficient criterion for the existence
-of a root between 0 and \(+\infty\).  This law expresses a relation between
-the number of roots of a polynomial between 0 and \(+\infty\) and the number
-of sign changes in the coefficients of this polynomial.  The number of sign
-changes is larger than the number of roots, moreover, the difference between
-the two numbers is a multiple of 2.
+Descartes' law of signs provides a sufficient criterion for the
+existence of exactly one root between 0 and \(+\infty\).  This law
+expresses a relation between the number of roots of a polynomial
+between 0 and \(+\infty\) and the number of sign changes in the
+coefficients of this polynomial.  The number of sign changes is larger
+than the number of roots and the difference between the two numbers is
+a multiple of 2.  Thus, if the number of sign changes is 1, there is
+exactly one root between 0 and \(+\infty\).
 
-For our development, we only use a simple special case of Descartes' law
-of signs for the case where the coefficients of a polynomial
-have only one sign change and express that there is a single simple root
-between 0 (excluded) and positive infinity.  Expressing Descartes' law on
-the coefficients of polynomial \(P_2\) yields directly a law expressed in terms
-of sign changes for Bernstein's coefficients of \(P\) with respect to the
-interval \((l,r)\).
+For our development, we only prove the simple special case of
+Descartes' law of signs for the case where there is only one sign
+change.  Expressing Descartes' law on the coefficients of polynomial
+\(P_2\) yields directly a law expressed in terms of sign changes for
+Bernstein's coefficients of \(P\) with respect to the interval
+\((l,r)\).
 
 Another part of our work is to describe dichotomy.  Knowing Bernstein
 coefficients for a polynomial and a given interval, it is easy to
@@ -321,17 +325,40 @@ the slope of \(P\) above \(x\) is larger than
 \item The functions that describe
 \end{enumerate}
 \section{From Bernstein to Descartes}
+
+In this section, we clarify the polynomial transformations that link
+the problem of finding the roots of a polynomial inside an arbitrary
+bounded interval \((l,r)\) successively with the problem of finding
+the roots of an other polynomial inside the interval \((0,1)\) and
+with the problem of finding the roots of yet another polynomial inside
+the interval \((0,+\infty)\).
+
+\subsection{A criterion for the interval \((1,+\infty)\)}
 The law of signs gives us a sufficient condition to determine when the
 unbounded interval \((0,+\infty)\) contains exactly one root for a
 polynomial. Through a change of variable, we obtain a similar
-criterion for the interval \((1, +\infty)\).  The polynomial \(P(x)\)
+criterion for the interval \((1, +\infty)\).
+
+ The polynomial \(P(x)\)
 has exactly one root in the interval \((1,+\infty)\) if and only if
-\(P(x+1)\) has exactly one root in the interval \((0,+\infty)\).
-Expressed in termes of the coefficients \(a_i\) of the polynomial
-\(P\), we have
-\[P(x+1)= \sum_{i=0}^{n} a_i (x+1)^i = \sum_{k=0}^{n} \sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right) x^k\]
-Thus, if we apply Descartes's law of sign on the coefficients \(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right)\), we can obtain a sufficient criterion for the existence of exactly one root of polynomial
-\(P=\sum_{i=0}^{n}a_ix^i\) in the interval \((1,+\infty)\).
+the polynomial function \(y \mapsto P(y+1)\) has exactly one root in
+the interval \((0,+\infty)\). Expressed in termes of the
+coefficients \(a_i\) of the polynomial
+\(P\), we have \[P(y+1)= \sum_{i=0}^{n} a_i (y+1)^i = \sum_{k=0}^{n}
+\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right) y^k\]
+
+Thus, if we apply Descartes's law of sign on the coefficients
+\(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right)\), we
+can obtain a sufficient criterion for the existence of exactly one
+root of polynomial \(P=\sum_{i=0}^{n}a_ix^i\) in the interval
+\((1,+\infty)\).
+
+With our approach to describe unique roots of polynomials inside
+unbounded intervals, we can easily establish a correspondence between
+the way we express existence for the two intervals.
+\subsection{A criterion for the interval \((0,1)\)}
+Descartes' law of signs works for unbounded intervals.  In this
+section, we see how to cover also bounded intervals.
 
 Then, there is a trick to transfer the criterion's explicit power on a
 bounded interval, the interval between zero and one. This trick relies
@@ -353,23 +380,74 @@ polynomial, and the expression \((\frac{1}{y})^n\) never becomes 0 for
 and \(+\infty\) if and only if \(y=x^-1\) is a root of the reversed
 polynomial between \(0\) and \(1\).
 
-For instance, we can consider the polynomial \(x^3 - 5/2 x^2 - 2 x + 3/2\),
-the reversed theorem is \(3/2 x^3 - 2 x^2 - 5/2 x + 1\) and after
+For instance, we can consider the polynomial \(P(x) = x^3 - 5/2 x^2 - 2 x + 3/2\),
+the reversed polynomial is \(Q(x) = 3/2 x^3 - 2 x^2 - 5/2 x + 1\) and after 
 the variable change we obtain the polynomial \(3/2 x^3 + 5/2 x^2 - 2 x - 2\)
 which exhibits only one sign change.  This predicts that the polynomial has
 exactly one root between 0 and 1, and indeed the three roots of the initial
-polynomial are -1, 1/2, and 3.
+polynomial are -1, 1/2, and 3.  This is illustrated in
+figure~\ref{invert} where the curve with a solid line is the curve for the
+polynomial \(P\), while the curve with a dashed line is the curve for
+the polynomial \(Q\), which has a single root between 1 and \(+\infty\).
+\begin{figure}\label{invert}
+\begin{center}
+\includegraphics[clip=true,trim=3cm 5cm 3cm 14cm, width=0.5\textwidth]{invert.pdf}
+\end{center}
+\caption{Curves of \(x^3 -\frac{5}{2} x^2 - 2 x +
+  \frac{3}{2}\)
+and its reverse \(\frac{3}{2}x^3 -2 x^2 - \frac{5}{2} x + 1\)}
+\end{figure}
+
+With our approach to describe unique roots of polynomials, we need to
+establish a correspondence between the current time for unbounded
+intervals and the criterion for bounded intervals. As this proof also
+involves composition with the inverse function, this is one of the
+trickiest proofs in our developments, in particular when we need to
+find the sub-interval and the slope that is guaranteed on this
+interval.  This is a place where our constructive intermediate value
+theorem plays a role.
+
+\subsection{handling arbitrary bounded intervals}
 
 The next step is to relate the roots of any polynomial inside an
-arbitrary interval\footnote{the names for the bounds of the interval
-  are chosen as \(l\) for left-hand side and \(r\) for right-hand
-  side.} \((l,r)\) with the roots of another polynomial inside the
-interval \((0,1)\).  This is done with another change of variable,
-this time \(x= (r-l) y + l\); in other words, the polynomial function
-which maps any \(x\) to \(p(x)\) has a root between \(l\) and \(r\) if
-and only if the polynomial function which maps any \(y\) to \(p((r -
-l) y + l)\) has a root between 0 and 1.
+arbitrary interval\footnote{We name the bound \(l\) for {\em left} and
+  \(r\) for {\em right}.} \((l,r)\) with the roots of another
+polynomial inside the interval \((0,1)\).  This is done with another
+change of variable, this time \(x= (r-l) y + l\); in other words, the
+polynomial function which maps any \(x\) to \(p(x)\) has a root
+between \(l\) and \(r\) if and only if the polynomial function which
+maps any \(y\) to \(p((r - l) y + l)\) has a root between 0 and 1.
 
+This is illustrated in figure~\ref{expand-translate}, where the shape
+of the curve for the polynomial \(\frac{x^3}{8} - \frac{x^2}{8} + 3
+x\) inside the interval \((2,4)\) is reproduced by the shape of the
+curve for the polynomial \(x^3 -\frac{5}{2}x^2-2x+\frac{3}{2}\) inside
+the theorem \((0,1)\).
+\begin{figure}
+\begin{center}\label{expand-translate}
+\includegraphics[clip=true,trim=4.5cm 18cm 2cm 3cm, width=0.5\textwidth]{expand-translate.pdf}
+\end{center}
+\caption{Curves of a polynomial inside \((2,4)\) and the
+  corresponding transformed polynomial between \((0,1)\)}
+\end{figure}
+\subsection{Recapitulating operations}
+In our formal development, we defined three operations for
+translating, expanding, and reversing the list of coefficients and we
+simply defined the list of Bernstein coefficients as the result of
+performing these operations.  We then showed how these operations
+behave with respect to the criteria concerning our sufficient criteria
+for the existence of exactly one root in intervals.  In particular:
+
+\begin{itemize}
+\item translating a polynomial preserves the criterion for existence
+of exactly one root in bounded intervals and in unbounded intervals,
+\item expanding a polynomial preserves the criterion for existence of
+  exactly one root in bounded intervals,
+\item reversing the list of coefficients maps a polynomial satisfying
+  the criterion for the existence of exactly one root in the unbounded
+  interval \((1,+\infty)\) into a polynomial satisfying the criterion
+  for the existence of exactly one root in the bounded interval \((0,1)\).
+\end{itemize}
 \end{document}
 %%% Local Variables:
 %%% mode: latex
