@@ -33,7 +33,7 @@ root in the corresponding interval.
 
 A first part of our work is to provide a mechanical proof of condition C1.
 
-There are a collection of known transformation of polynomials, so that 
+There are a collection of known transformation of polynomials, so that
 a given polynomial \(P\) has a root inside an interval \((l,r)\) if and
 only a transformed polynomial \(P_1\) has a root inside the interval \((0,1)\).
 Moreover,  there is a transformation so that \(P_1\) has a root inside
@@ -115,7 +115,7 @@ negative and bounded above helps making sure that there are no two
 roots in the area being considered. In the case of positive slopes, we
 write the slope requirement for a polynomial \(p\) inside a given interval
 \(I\) as follows:
-\[exists k, 0 < k \wedge \forall x y, x \in I \wedge y \in I 
+\[exists k, 0 < k \wedge \forall x y, x \in I \wedge y \in I
 \wedge x < y \Rightarrow k(y - x) < p(y) - p (x) \]
 
 Depending on the kind of interval that we will consider, we will have
@@ -207,7 +207,7 @@ Let's first describe a simple graphical argument based on curves for polynomial 
 \begin{figure}
 \label{graph-desc}
 \begin{center}
-\includegraphics[width=0.5\textwidth]{alternated2.png}
+\includegraphics[width=0.5\textwidth]{alternated2.pdf}
 \end{center}
 {(a) non-negative coefficients, first one non-zero,\\
 (b) non-negative coefficients, first one zero,\\
@@ -294,7 +294,7 @@ and there are two cases:
 is satified for \(a_1 x + a_n x ^ n\) , this makes it possible to find
 an \(x_1\) such that \(x_1 \times P(x_1) < - a_0\).  Thanks to the lemma
 on slopes, the slope of the polynomial \(X \times P\) above \(x_1\) is larger
-than \(P_t (x)\), this is enough to find a value \(x_2\) such that 
+than \(P_t (x)\), this is enough to find a value \(x_2\) such that
 \(P(x_2)\) is positive.
 \item If \(P_t\) has one alternance, then the induction hypothesis provides
 a relevant \(x_{1t}\) and \(k_t\) for this polynomial.  We can consider the
@@ -304,7 +304,7 @@ that\(y * P_t(y) > k_t (y - x_{1t}) > - a0\) and thus, \(P(y) > 0\)
 \item Using the middle-value theorem, we exhibit two new values \(z\) and \(x\),
  such that \(x_{1t} < z < x < y\), \(- k_t x_{1t} < P_t(z) < 0 < P_t(x) < a_0/y\)
 \item Obviously, \(P\) is negative below \(x_{1t}\),
-\item Thanks to the lemma at the beginning of this section, 
+\item Thanks to the lemma at the beginning of this section,
 \(X * P_t\) has a slope larger than \(k * x_{1t} + P_t(z) > 0\) between
 \(z\) and \(x\), so that \(P\) is negative in this interval,
 \item Because \(P_t\) is increasing between \(x_{1t}\) and \(z\), \(P_t\) is
@@ -328,9 +328,9 @@ criterion for the interval \((1, +\infty)\).  The polynomial \(P(x)\)
 has exactly one root in the interval \((1,+\infty)\) if and only if
 \(P(x+1)\) has exactly one root in the interval \((0,+\infty)\).
 Expressed in termes of the coefficients \(a_i\) of the polynomial
-\(P\), we have 
+\(P\), we have
 \[P(x+1)= \sum_{i=0}^{n} a_i (x+1)^i = \sum_{k=0}^{n} \sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right) x^k\]
-Thus, if we apply Descartes's law of sign on the coefficients \(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right)\), we can obtain a sufficient criterion for the existence of exactly one root of polynomial 
+Thus, if we apply Descartes's law of sign on the coefficients \(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right)\), we can obtain a sufficient criterion for the existence of exactly one root of polynomial
 \(P=\sum_{i=0}^{n}a_ix^i\) in the interval \((1,+\infty)\).
 
 Then, there is a trick to transfer the criterion's explicit power on a
@@ -354,7 +354,7 @@ and \(+\infty\) if and only if \(y=x^-1\) is a root of the reversed
 polynomial between \(0\) and \(1\).
 
 For instance, we can consider the polynomial \(x^3 - 5/2 x^2 - 2 x + 3/2\),
-the reversed theorem is \(3/2 x^3 - 2 x^2 - 5/2 x + 1\) and after 
+the reversed theorem is \(3/2 x^3 - 2 x^2 - 5/2 x + 1\) and after
 the variable change we obtain the polynomial \(3/2 x^3 + 5/2 x^2 - 2 x - 2\)
 which exhibits only one sign change.  This predicts that the polynomial has
 exactly one root between 0 and 1, and indeed the three roots of the initial
@@ -371,7 +371,7 @@ and only if the polynomial function which maps any \(y\) to \(p((r -
 l) y + l)\) has a root between 0 and 1.
 
 \end{document}
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
-%%% End: 
+%%% End:
