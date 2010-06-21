@@ -93,23 +93,13 @@ by rewrite mul0r addr0.
 by move => x; rewrite /= mul0r addr0.
 Qed.
 
-(* these properties are transmitted to dicho and dicho', is it useful? *)
-Lemma add_dicho' :
-  forall k b c,
-  dicho' (fun j => b j + c j)%R k = (dicho' b k + dicho' c k)%R.
-move => k b c; apply: add_dc.
-Qed.
-
-Lemma scal_dicho' :
-  forall k a b, dicho' (fun j => a * b j)%R k =
-    (a * dicho' b k)%R.
-move => k a b; apply: scal_dc.
-Qed.
 
 End DeCasteljauAlgo.
-Open Scope ring_scope.
+
+Section DeltaSeqs.
 
 Definition delta (i j : nat) : Qcb := if (i == j) then 1 else 0.
+
 
 Lemma dc_delta_head : forall j k l r, 
   (j < k)%nat -> dicho' l r (delta k) j = 0.
@@ -163,22 +153,6 @@ rewrite !ihj // ?mulr0 ?addr0 //; first by rewrite ltn_subS.
 by apply: ltn_trans hltkd _; rewrite [(i - j)%nat]ltn_subS.
 Qed.
 
-(* algorithme applique a delta_i (colonne 0, ligne j avec j < i)
- 
-Lemma coef_algo_delta_ligne_infi:
- forall j i A B, (j < i)%nat ->  coef_algo (delta i) A B j 0%nat = 0.
-induction j; intros; simpl.
-rewrite delta_ij; intuition.
-rewrite IHj; intuition.
-rewrite coef_algo_delta_ligne_infi_k; intuition.
-ring.
-
-Qed.
-*)
-
-(* algorithme applique a delta_i (colonne 0, ligne i + k )*) 
-(*Lemma coef_algo_delta_ligne_sup_i:*)
-
 (* pourquoi on a un add_rec qui nous saute à la figure??? *)
 
 
@@ -197,6 +171,21 @@ rewrite [_ * B^+ i]mulrC mulrA -exprS [B^+_ * _]mulrC -mulrn_addr.
 by congr (_ *+ _).
 Qed.
  
+(* Lemma algo_reverse:*)
+Lemma dc_reverse :
+ forall b A B p i k,
+ (i <= p)%N ->
+ (k <= p - i)%N ->
+  de_casteljau B A (fun t => b (p - t)%N) i k = de_casteljau A B b i (p - (i + k)).
+Proof.
+move=> b A B p; elim=> [| i ihi] k hip hk /=; first by rewrite add0n.
+rewrite addrC; congr (_  + _).
+  by rewrite ihi ?(ltnW hip) ?addnS ?addSn // ltn_subS //; apply: leq_ltn_trans hk _.
+rewrite ihi ?(leq_trans hk) // ?leq_sub2l // ?(ltnW hip) //=.
+by rewrite addSn -ltn_subS // ltn_add_sub; move: hk; rewrite -ltnS -ltn_subS.
+Qed.
+
+End DeltaSeqs.
 
 Definition bernp (a b : Qcb) p i : {poly Qcb} := 
   ((b - a)^-p)%:P * ('X - a%:P)^+i * (b%:P - 'X)^+(p - i) *+ 'C(p, i).
@@ -328,22 +317,38 @@ congr (_ * _); rewrite !mulrA [(b%:P - _)^+_ * _]mulrC -!mulrA.
 by congr (_ * _); rewrite mulrC.
 Qed.
 
-
-
-Lemma dicho_delta_bern : forall a b m k p (alpha := (b - m) * (b - a)^-1)(beta := ((m - a) * (b - a)^-1)),
-  m != a ->
-  (k <= p)%nat -> 
-  bernp a b p k = 
-  \sum_(j < p.+1)((dicho alpha beta p (delta k) j)%:P * bernp m b p j).
+Lemma bern_swap :
+ forall p i l r,
+ (i <= p)%N -> r != l ->  bernp r l p i = bernp l r p (p - i).
 Proof.
-move=> a b m k p alpha beta neqma leqkp.
-rewrite bern_rev_coef /dicho.
-rewrite (dicho'_delta_bern _ b _ _ _ neqma leqkp).
-apply: congr_big; [by [] | by [] |].
-case=> i ltiSp _ /=; rewrite /dicho' subKn; last by [].
-rewrite /alpha.
-Admitted.
-
-
-
-
+move=> p i l r leip neqrl; rewrite /bernp subKn // bin_sub //; congr (_ *+ _).
+rewrite -[l - r]oppr_sub -[l%:P - 'X]oppr_sub -['X - r%:P]oppr_sub.
+rewrite -mulN1r -[-(r%:P - 'X)]mulN1r  -[- ('X - l%:P)]mulN1r.
+rewrite !exprn_mull invf_mul polyC_mul [_ * ((r - l)^-p)%:P]mulrC.
+rewrite -!mulrA; congr (_ * _).
+rewrite  -expr_inv polyC_exp [(- 1)^-1]invrN invr1 polyC_opp.
+rewrite [(r%:P - 'X)^+i * _]mulrC !mulrA polyC1 -!exprn_addr.
+by rewrite -addnA subnKC // -signr_odd odd_add addbb /= expr0 mul1r.
+Qed.
+ 
+Lemma dicho_correct : forall (a b m : Qcb)(alpha := (b - m) * (b - a)^-1)
+  (beta := ((m - a) * (b - a)^-1))(p : nat)(q : {poly Qcb})(c : nat -> Qcb),
+  m != b ->
+  q = \sum_(i < p.+1)(c i)%:P * bernp a b p i ->
+  q = \sum_(j < p.+1)(dicho alpha beta p c j)%:P * bernp m b p j.
+Proof.
+move=> a b m alpha beta p q c neqmb qdef.
+rewrite bern_rev_coef in qdef.
+rewrite (dicho'_correct b a m p q (fun i => c (p - i)%N) neqmb qdef).
+rewrite -(big_mkord  
+(fun _ => true) (fun j => (dicho' ((a - m) / (a - b)) ((m - b) / (a - b))
+         (fun i : nat => c (p - i)%N) j)%:P * bernp b m p j)).
+rewrite big_nat_rev /= big_mkord; apply: congr_big; [by [] | by [] |].
+move=> [i hi] _ {qdef}; rewrite add0n subSS.
+rewrite -bern_swap //; congr (_%:P * _); rewrite /dicho' /dicho.
+rewrite dc_reverse //= ?leq_subr // addn0 subKn //.
+rewrite -oppr_sub -[a - b]oppr_sub -[a - m]oppr_sub -mulN1r -[-(b - a)]mulN1r.
+rewrite -[-(m - a)]mulN1r invf_mul [(- 1)^-1]invrN invr1 -mulrA.
+rewrite [(b - m) * _]mulrC !mulrA mulNr mul1r opprK [-1 * _ ]mulrC 2!mulrN1.
+by rewrite opprK -/beta mulrC mul1r.
+Qed.
