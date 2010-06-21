@@ -299,8 +299,9 @@ elim: p i {hi} c alpha beta=> [| p ihp] i c alpha beta /=; set f := dicho' alpha
   (fun k : nat => 
     (\sum_(j < p.+1) c j * delta j k) + (c p.+1 * delta p.+1 k)) i); last first.
     by apply: ext_dc=> k _; rewrite add0n=> hki; rewrite big_ord_recr.
-  rewrite /f /dicho' add_dc polyC_add -ihp // big_ord_recr /=; congr (_ + _).
-  by rewrite scal_dc polyC_mul.
+rewrite /f /dicho' add_dc polyC_add -ihp // big_ord_recr /=; congr (_ + _).
+by rewrite scal_dc polyC_mul.
+Qed.
 
 Lemma bern_rev_coef : forall (p : nat)(a b : Qcb)(c : nat -> Qcb),
   \sum_(i < p.+1)(c i)%:P * (bernp a b p i) = 
@@ -346,16 +347,3 @@ Admitted.
 
 
 
-
-
-
-
-
-Lemma reduced_de_casteljau_correct : forall n k (p : {poly Qcb})(a b m : Qcb), 
-  (k < n)%nat ->
-  p = \sum_(i < n) ((delta k) i)%:P * (bernp a b n i) ->
-  p = 
-  \sum_(i < n) 
-  (dicho' (m - a) (b - m) (delta k) i)%:P * (bernp a b n i).
-Proof.
-Admitted.
