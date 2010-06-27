@@ -381,7 +381,7 @@ and \(+\infty\) if and only if \(y=x^-1\) is a root of the reversed
 polynomial between \(0\) and \(1\).
 
 For instance, we can consider the polynomial \(P(x) = x^3 - 5/2 x^2 - 2 x + 3/2\),
-the reversed polynomial is \(Q(x) = 3/2 x^3 - 2 x^2 - 5/2 x + 1\) and after 
+the reversed polynomial is \(Q(x) = 3/2 x^3 - 2 x^2 - 5/2 x + 1\) and after
 the variable change we obtain the polynomial \(3/2 x^3 + 5/2 x^2 - 2 x - 2\)
 which exhibits only one sign change.  This predicts that the polynomial has
 exactly one root between 0 and 1, and indeed the three roots of the initial
@@ -448,6 +448,48 @@ of exactly one root in bounded intervals and in unbounded intervals,
   interval \((1,+\infty)\) into a polynomial satisfying the criterion
   for the existence of exactly one root in the bounded interval \((0,1)\).
 \end{itemize}
+
+\section{Dichotomy and de Casteljau algorithm}
+
+When an interval is a too coarse approximation of a polynomial's
+roots, it should be halved. By too coarse, we mean that the sequence
+of Bernstein coefficients has more that one sign change. The
+computational interest of this dichotomy process lies in the fact that
+given three pairwise distinct rational numbers $a, b, m$, there exists an
+efficient algorithm to deduce the two repsective lists of Bernstein
+coefficients of a polynomial $P$ on intervals $(a, m)$ and $(m, b)$
+from the list of Bernstein coefficients of $P$ on interval $(a,
+b)$. Note that we do not make any assumption on the respective
+positions of $a, b$ and $m$. This algorithm is due to ????.
+
+The de Casteljau algorithm is the following.
+
+It relies on a ``Pascal triangle like'' identity.
+
+
+The following figure summerizes the main recursive properties of
+Bernstein coefficients that are used by de Casteljau algorithm.
+\begin{figure}\label{bern}
+\begin{center}
+\includegraphics[width=0.5\textwidth]{bern1.pdf}
+\end{center}
+\caption{Bernstein polynomial properties}
+\end{figure}
+
+
+
+\section{Formalization issues}
+
+(assia : should this material be colllected in a final section or
+should it be disseminated throughout the paper?)
+
+\begin{itemize}
+\item Polynomials (stratified rings)
+\item Ordered rings
+\item Big operations
+\item Lack of automation: ring to be ported, what about ordered rings?
+\end{itemize}
+
 \end{document}
 %%% Local Variables:
 %%% mode: latex
