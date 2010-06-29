@@ -1,6 +1,10 @@
 \documentclass{mscs}
 \usepackage[pdftex]{graphicx}
-\usepackage{amsfonts}
+\usepackage{amsmath, amsfonts}
+\usepackage{listings}
+\usepackage{xcolor}
+\input{macro}
+
 \begin{document}
 \title{Root isolation for one-variable polynomials}
 \author{Yves Bertot, Assia Mahboubi, Fr\'ed\'erique Guilhot}
@@ -640,29 +644,149 @@ there exists an efficient algorithm to deduce the two repsective lists
 of Bernstein coefficients of a polynomial $P$ on intervals $(a, m)$
 and $(m, b)$ from the list of Bernstein coefficients of $P$ on
 interval $(a, b)$. Hence the new Bernstein coefficients needed at the
-recursive call of step {\bf (3)} are easy to obtain.
+recursive call of step {\bf (3)} are easy to obtain, thanks to the
+so-called de Casteljau algorithm, named after its inventor, an
+ingeneer in French car industry.
 
+Let \C{c} be the sequence of coefficients of a polynomial $q$
+in the Bernstein basis of degree $p$ with parmeters $a\in \mathbb{Q}$
+and $b\in \mathbb{Q}$. Let $m\in \mathbb{Q}$ be a rational number
+distinct from $a$ and $b$. We pose
+$\alpha := \frac{m - a}{b - a}$ and $\beta := \frac{b - m}{b -a}$. The
+\C{|*de_casteljau*|} algorithm is defined recursively by:
+\begin{lstlisting}
+  Fixpoint |*de_casteljau*| (alpha beta : Qcb) (c : nat -> Qcb) (n : nat) :=
+    match n with
+    | O => b
+    | i.+1 => fun j =>
+      (alpha * de_casteljau c i j + beta * de_casteljau c i j.+1)
+  end.
+\end{lstlisting}
+where the initial sequence of coefficients \C{c} is represented by an
+infinite sequence of rational numbers, for which only the $p$ first
+elements are relevant.
+It computes the two expected new Bernstein coefficients lists:
+\begin{lstlisting}
+  Definition |*dicho'*| alpha beta c i :=
+    de_casteljau alpha beta c i 0.
+\end{lstlisting}
+give the Berstein coefficients of $P$ on the finite interval with
+bounds $a$ and $m$, and:
+\begin{lstlisting}
+  Definition |*dicho*| alpha beta p c i :=
+     de_casteljau alpha beta c (p - i) i.
+\end{lstlisting}
+gives the Bernstein coefficients of $P$ on the finite interval with
+bounds $m$ and $b$. Note that if in our case, we will only use the de
+Casteljau algorithm with $m$ the midpoint of the initial interval, we
+do not make here any assumption on the respective positions of $a, b$
+and $m$. The aim of this section is to prove that this algorithms is
+correct, i.e. that the \C{|*dicho*|} and \C{|*dicho'*|} function
+indeed computes the expected Bernstein coefficients. The correctness
+theorems as stated in \Coq{} are:
+\begin{lstlisting}
+Lemma |*dicho'_correct*| : forall (a b m : Qcb)(q : {poly Qcb})(p : nat)
+(c : nat -> Qcb)
+(alpha := (b - m) * (b - a)^-1) (beta := (m - a) * (b - a)^-1),
+  m != a ->
+  q = \sum_(i < p.+1)(c i) * bernp a b p i ->
+  q = \sum_(j < p.+1)(dicho' alpha beta c j) * bernp a m p j.
 
-
- Note that we do not make any assumption on the respective
-positions of $a, b$ and $m$. This algorithm is due to ????.
-
-The de Casteljau algorithm is the following.
-
-It relies on a ``Pascal triangle like'' identity.
-
-
-The following figure summerizes the main recursive properties of
-Bernstein coefficients that are used by de Casteljau algorithm.
-\begin{figure}\label{bern}
+Lemma |*dicho_correct*| : forall (a b m : Qcb)(q : {poly Qcb})(p : nat)
+(c : nat -> Qcb)
+(alpha := (b - m) * (b - a)^-1) (beta := ((m - a) * (b - a)^-1)),
+  m != b ->
+  q = \sum_(i < p.+1)(c i) * bernp a b p i ->
+  q = \sum_(j < p.+1)(dicho alpha beta p c j) * bernp m b p j.
+\end{lstlisting}
+where \C{(bernp a b p i)} is the $i$-th polynomial in the Bernstein
+basis of degree $p$ with paramters $a$ and $b$.
+\begin{figure}[ht]\label{bern}
 \begin{center}
 \includegraphics[width=0.5\textwidth]{bern1.pdf}
 \end{center}
-\caption{Bernstein polynomial properties}
+\caption{Properties of de Casteljau computations}
 \end{figure}
 
 
+The properties of computations performed by the de Casteljau algorithm
+are summarized on Figure \ref{bern}. Starting from the input list
+$c := (b_0^(0)\dots b_p^{(0)})$ of coefficients in the basis with
+parameters $a$ and $b$, on the upper side of the triangle, it
+computes the full triangle, so that in the end the two expected output
+lists can be read on the two  other sides of the triangle. The list
+$c' := b_0^{(0)} \dots b_0^{(j)} \dots b_0^{(p)}$ is the list of
+coefficients in the basis with parameters $a$ and $m$ output by
+\C{dicho'}. The list
+$c'' := b_0^{(p)} \dots b_j^{(p - j)} \dots b_p^{0}$
+ is the list of coefficients in the basis with parameters $m$ and $b$
+ output by \C{dicho}.  The green area on Figure \ref{bern} show which values
+a the computation of an arbitrary given point in the triangle relies on.
+This structure is imposed by the fixpoint
+ equation of the recursive definition of the de Casteljau algorithm:
+\begin{lstlisting}
+  de_casteljau alpha beta c n.+1 i =
+  (de_casteljau alpha beta c n i) + (de_casteljau alpha beta c n i.+1)
+\end{lstlisting}
+which looks very similar to the recursive relation governing the
+Pascal triangle.
 
+Let us first notice that the shape of Bernstein polynomials implies
+that:
+\begin{lstlisting}
+Lemma |*bern_swap*| :
+ forall p i l r,
+ (i <= p) -> r != l ->  bernp r l p i = bernp l r p (p - i).
+\end{lstlisting}
+This remark implies that if $c$ is the list of coefficients of the
+polynomial $q$ in the Bernstein basis of degree $p$ with parameters
+$a$ and $b$, then the reverse of $c$ is the list of coefficients of
+the same polynomial $q$ in the Bernstein basis of degree $p$ with
+parameters $b$ and $a$: reversing the list swaps the parameters:
+
+\begin{lstlisting}
+Lemma |*bern_rev_coef*| : forall (p : nat)(a b : Qcb)(c : nat -> Qcb),
+  \sum_(i < p.+1)(c i) * (bernp a b p i) =
+  \sum_(i < p.+1)(c (p - i)) * (bernp b a p i).
+\end{lstlisting}
+This remark shows that the correctness of the \C{dicho'} function is
+enough to get a certified computation of both Bernstein coefficient
+lists: if $c$ is the
+initial list of Bernstein coefficients with parameters $a$ and $b$, then
+reversing $c$ gives the  coefficients with parameters $b$ and $a$,
+applying \C{dicho'} on the reverse of $c$ using $b$, $a$ amd $m$
+computes the coefficients with parameter $b$ and $m$, hence reversing
+this output gives the result expected for \C{dicho} on $c$ using $a$,
+$b$ and $m$. Using a similar symmetry reasoning on the
+\C{de_casteljau} algorithm, we in fact reduce the proof of the
+\C{dicho_correct} specification to the proof of \C{dicho'_correct}.
+
+By linearity, we can also reduce the proof of the \C{dicho'_correct}
+specification to the case where the input polynomial $q$ is in fact
+itself a Bernstein polynomial. This means that the input coefficient
+list $c$ only contains zeros except at one position where the
+coefficient is one.
+
+Let us first compute the expected output of the \C{dicho'} function on
+a such a list. In other words, for any distinct rational numbers $a,
+b, m$ and any $p\in \mathbb{N}$, given $i \leq p$, we want to compute
+the coefficients of:
+$$Bern_{p, i}(a, b) := \binom{p}{i} \frac{(X - a)^i(X - b)^{p -i}}
+{(b  - a)^p}$$ in the basis $(Bern_{p, i}(a, m))_{i = 0, \dots, p}$.
+We pose
+$\alpha := \frac{b -  m}{b - a}$ and $\beta := \frac{m - a}{b - a}$.
+In the polynomials of the new basis, formal denominators are of the
+form $(m - a)$. By noticing that:
+$$\frac{X - a}{b - a} = \beta \frac{X - a}{m - a} \quad \textrm{and} \quad
+\frac{b - X}{b - a} = \alpha\frac{X - a}{m - a} +\frac{m - X}{m - a}$$
+and by using the binomial identity:
+$$\binom{p}{i}\binom{p - i}{j - i}  = \binom{j}{i}\binom{p}{j}$$
+we obtain that:
+$$Bern_{p, i}(a, b) =
+\sum_{j = i}^p\binom{j}{i}\alpha^{j-i}\beta^i Bern_{p, j}(a, m) \quad (*)$$
+Now to achieve the proof of the \C{dicho'_correct} lemma, it is
+sufficient to prove that the values output by the \C{dicho'} function
+coincide with the ones of $(*)$, which boils down to an induction on $i$.
 \section{Formalization issues}
 
 (assia : should this material be colllected in a final section or
