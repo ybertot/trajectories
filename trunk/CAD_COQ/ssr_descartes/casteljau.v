@@ -35,7 +35,7 @@ Variables l r : Qcb.
 Fixpoint de_casteljau (b : nat -> Qcb) (n : nat) :=
   match n with
     O => b
-  | S i => fun j => 
+  | i.+1 => fun j => 
     (l * de_casteljau b i j + r * de_casteljau b i j.+1)%R
   end.
 
@@ -292,36 +292,10 @@ rewrite /f /dicho' add_dc polyC_add -ihp // big_ord_recr /=; congr (_ + _).
 by rewrite scal_dc polyC_mul.
 Qed.
 
-Lemma bern_rev_coef : forall (p : nat)(a b : Qcb)(c : nat -> Qcb),
-  \sum_(i < p.+1)(c i)%:P * (bernp a b p i) = 
-  \sum_(i < p.+1)(c (p - i)%N)%:P * (bernp b a p i).
-Proof.
-move=> p a b c.
-rewrite -(big_mkord  
-(fun _ => true)
-(fun i => (c i)%:P * (bernp a b p i))).
-rewrite big_nat_rev /=.
-rewrite -(big_mkord  
-(fun _ => true)
-(fun i => (c (p - i)%N)%:P * (bernp b a p i))).
-apply: congr_big_nat; [by [] | by [] | by [] |].
-move=> i; case=> ltip; rewrite add0n subSS; congr (_ * _).
-rewrite /bernp subKn // bin_sub //; congr (_ *+ _).
-rewrite -!mulrA -[b - a]oppr_sub -[a%:P - 'X]oppr_sub -['X - b%:P]oppr_sub.
-rewrite -mulN1r -[-(b%:P - 'X)]mulN1r  -[- ('X - a%:P)]mulN1r.
-rewrite !exprn_mull invf_mul polyC_mul [_ * ((a - b)^-p)%:P]mulrC.
-rewrite -mulrA; congr (_ * _).
-rewrite  -expr_inv polyC_exp [(- 1)^-1]invrN invr1 polyC_opp.
-rewrite polyC1 -{1}(@subnK i p) // addnC exprn_addr -!mulrA.
-congr (_ * _); rewrite !mulrA [(b%:P - _)^+_ * _]mulrC -!mulrA.
-by congr (_ * _); rewrite mulrC.
-Qed.
-
 Lemma bern_swap :
- forall p i l r,
- (i <= p)%N -> r != l ->  bernp r l p i = bernp l r p (p - i).
+ forall p i l r, (i <= p)%N -> bernp r l p i = bernp l r p (p - i).
 Proof.
-move=> p i l r leip neqrl; rewrite /bernp subKn // bin_sub //; congr (_ *+ _).
+move=> p i l r lip; rewrite /bernp subKn // bin_sub //; congr (_ *+ _).
 rewrite -[l - r]oppr_sub -[l%:P - 'X]oppr_sub -['X - r%:P]oppr_sub.
 rewrite -mulN1r -[-(r%:P - 'X)]mulN1r  -[- ('X - l%:P)]mulN1r.
 rewrite !exprn_mull invf_mul polyC_mul [_ * ((r - l)^-p)%:P]mulrC.
@@ -330,6 +304,21 @@ rewrite  -expr_inv polyC_exp [(- 1)^-1]invrN invr1 polyC_opp.
 rewrite [(r%:P - 'X)^+i * _]mulrC !mulrA polyC1 -!exprn_addr.
 by rewrite -addnA subnKC // -signr_odd odd_add addbb /= expr0 mul1r.
 Qed.
+
+(* This should come after bern_swap ! *)
+Lemma bern_rev_coef : forall (p : nat)(a b : Qcb)(c : nat -> Qcb),
+  \sum_(i < p.+1)(c i)%:P * (bernp a b p i) = 
+  \sum_(i < p.+1)(c (p - i)%N)%:P * (bernp b a p i).
+Proof.
+move=> p a b c.
+pose t := \sum_(i < p.+1) (c (p - i)%N)%:P * bernp a b p (p - i)%N.
+transitivity t.
+  rewrite (reindex_inj rev_ord_inj) /=; apply/eqP; rewrite -subr_eq0 -sumr_sub.
+  by apply/eqP; apply: big1=> [[i hi]] _ /=; rewrite subSS subrr.
+apply/eqP; rewrite -subr_eq0 -sumr_sub; apply/eqP; apply: big1=> [[i hi]] _ /=.
+by rewrite bern_swap ?subKn ?subrr // leq_subr.
+Qed.
+
  
 Lemma dicho_correct : forall (a b m : Qcb)(alpha := (b - m) * (b - a)^-1)
   (beta := ((m - a) * (b - a)^-1))(p : nat)(q : {poly Qcb})(c : nat -> Qcb),
