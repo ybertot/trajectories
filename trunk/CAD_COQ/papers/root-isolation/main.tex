@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass{mscs}
 \usepackage[pdftex]{graphicx}
 \begin{document}
 \title{Root isolation for one-variable polynomials}
@@ -7,6 +7,7 @@
 \maketitle
 
 \section{introduction}
+This is a formalization in the Coq system\cite{coqart}.
 We want to describe an algorithm that isolates the roots of any
 one-variable polynomial with rational coefficients.  This algorithms
 constructs a finite list of intervals \(I_k\) such that each interval
@@ -591,6 +592,10 @@ should it be disseminated throughout the paper?)
 \item Big operations
 \item Lack of automation: ring to be ported, what about ordered rings?
 \end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{biblio}
+
 
 \end{document}
 %%% Local Variables:
