@@ -371,7 +371,7 @@ the point \(c_i\).  This is illustrated in the Figure~\ref{control}.
 {control2.pdf}&
 \includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
 {control3.pdf}\\
-(a) 1,3,-10,1,4,1 & (b) 1,3,-1,4,1 & (c) 3,0, 1, 10, -2, -1\
+(a) 1, 3, -10, 1, 4, 1 & (b) 1, 3, -1, 1, 4, 1 & (c) 3, 0, 1, 10, -2, -1\
 \end{tabular}
 \end{center}
 \caption{\label{control} Bernstein Control points and corresponding polynomial curves}
@@ -527,7 +527,35 @@ of exactly one root in bounded intervals and in unbounded intervals,
 
 When an interval is a too coarse approximation of a polynomial's
 roots, it should be halved. By too coarse, we mean that the sequence
-of Bernstein coefficients has more that one sign change. The
+of Bernstein coefficients has more that one sign change.
+\subsection{On the geometrical motivation for dichotomy}
+When cutting an interval in two halfs, the number of control points is 
+approximately doubled, because each of the new half-intervals receives a
+new sequence of \(n\) bernstein coefficients.  As a result, the control points
+are closer to each other and to the polynomial's curve and they give a more
+accurate account of the curve's position with respect to the x-axis.  This is
+illustrated in Figure~\ref{dichotomy-curve}, where the initial Bernstein
+coefficients exhibit a sign change, which is needed to account for the bend
+in the first half of the interval (a positive local minimal, but expressed
+by a negative Bernstein coefficient).  In the half interval two more points
+are added in the vicinity of the bend, and none of the control points needs
+to be negative anymore.
+\begin{figure}
+\includegraphics[clip=true,trim=2cm 12cm 1cm 11cm,width=0.9\textwidth]{control4.pdf}
+\caption{\label{dichotomy-curve}Bernstein control points for halved intervals}
+\end{figure}
+
+In Figure~\ref{dichotomy-curve}, the dotted line represents
+the polynomial's curve, the solid line links the control points for
+the largest interval, marked by round bullets (the Bernstein coefficients are
+1, 3, -1, 1, 4 1 for this interval).  The dashed line links the control points
+for the two half intervals, marked by square boxes
+(the Bernstein coefficients are 1, 2, 1.5, 1,
+0.9375, 1.15625 for the first interval, and 1.15625, 1.375, 1.875, 2.5, 2.5,
+1 for the second interval).  This figure illustrates that the control line
+really gets closer to the polynomial's curve.
+
+ The
 computational interest of this dichotomy process lies in the fact that
 given three pairwise distinct rational numbers $a, b, m$, there exists an
 efficient algorithm to deduce the two repsective lists of Bernstein
