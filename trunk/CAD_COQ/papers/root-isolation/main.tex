@@ -1,5 +1,6 @@
 \documentclass{mscs}
 \usepackage[pdftex]{graphicx}
+\usepackage{amsfonts}
 \begin{document}
 \title{Root isolation for one-variable polynomials}
 \author{Yves Bertot, Assia Mahboubi, Fr\'ed\'erique Guilhot}
@@ -44,12 +45,12 @@ in the interval \(I_{i+1}\).  The first interval and the first polynomial
 are simply \(I\) and \(P\).  The last interval is \((0, +\infty)\) and
 the last polynomial is \(b_0 + b_1 X + \cdots + b_n X^n\), where
 the coefficients \(b_i\) are the Bernstein coefficients.  Going from
-\(P_i\) to \(P_{i+1}\) we apply a given transformation.  The first 
+\(P_i\) to \(P_{i+1}\) we apply a given transformation.  The first
 transformation is a change of variable so that \(I_1\) is \((0,1)\) and
 \(P_1(x) = P_0(x \times r + (1 - x) l)\).  The second transformation is so
 that \(I_2\) is \((1,+\infty)\) and \(P_2(x) = 0\) exactly when
 \(P_1(1/x) = 0\), as long as \(x\neq 0\).  The third transformation is a
-translation so that \(I_3 = (0,+\infty)\) and \(P_3(x) = P_2(1+x)\).  
+translation so that \(I_3 = (0,+\infty)\) and \(P_3(x) = P_2(1+x)\).
 We will characterize conditions for \(P_3\) to have exactly one root in
 \(I_3\) using Descartes' law of signs.
 
@@ -336,7 +337,7 @@ the slope of \(P\) above \(x\) is larger than
 
 In this section, we first give an intuitive understanding of the Bernstein
 coefficients, especially to show why they are so useful at deciding whether
-a polynomial has a root in a given interval.  Then, 
+a polynomial has a root in a given interval.  Then,
 we clarify the polynomial transformations that link
 the problem of finding the roots of a polynomial inside an arbitrary
 bounded interval \((l,r)\) successively with the problem of finding
@@ -353,13 +354,13 @@ the bernstein coefficients \((b_0,\ldots, b_n)\) define a collection of points
 with coordinates \(c_i = (l + i \frac{r-l}{n}, b_i)\) each of these points describes
 the behavior of the polynomial when the input \(x\) is close to
 \(l+i\frac{r-l}{n}\).  In a sense, Bernstein coefficients can be said to
-{\em control} the behavior of the polynomial in some part of the interval. 
+{\em control} the behavior of the polynomial in some part of the interval.
 This why the points \(c_i\) are often called control points.  These points can
 be move about the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
 close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
-\(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the 
+\(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the
 behavior of the polynomial in this area is quite eventless.  But when \(c_i\)
-is significantly removed from this segment, \(c_i\) appears to be pulling the 
+is significantly removed from this segment, \(c_i\) appears to be pulling the
 polynomial's curve in its direction, with the curve of the polynomial usually
 crossing the vertical line \(x=l+i\frac{r-l}{n}\) between the segment and
 the point \(c_i\).  This is illustrated in the Figure~\ref{control}.
@@ -504,7 +505,7 @@ the theorem \((0,1)\).
 \caption{Curves of a polynomial inside \((2,4)\) and the
   corresponding transformed polynomial between \((0,1)\)}
 \end{figure}
-\subsection{Recapitulating operations}
+\subsection{Recapitulating operations}\label{ssec:ops}
 In our formal development, we defined three operations for
 translating, expanding, and reversing the list of coefficients and we
 simply defined the list of Bernstein coefficients as the result of
@@ -525,12 +526,84 @@ of exactly one root in bounded intervals and in unbounded intervals,
 
 \section{Dichotomy and de Casteljau algorithm}
 \label{dichotomy}
+Using the Bernstein coefficient criteria in combination with a
+dichotomy process result in a complete isolation process for the real
+roots of an arbitrary polynomial.
 
-When an interval is a too coarse approximation of a polynomial's
-roots, it should be halved. By too coarse, we mean that the sequence
-of Bernstein coefficients has more that one sign change.
-\subsection{On the geometrical motivation for dichotomy}
-When cutting an interval in two halfs, the number of control points is 
+\subsection{Dichotomy process}\label{ssec:dicho}
+Let $P \in \mathbb{Q}[X]$ be an arbitrary polynomial. To isolate its
+roots, we need three building blocks:
+
+{\bf (1) Bound the real roots of a non-zero polynomial}
+
+
+\noindent Let $P = \sum_{i = 0}^dp_iX^i$ with $p_d \neq 0$. Let:
+$$C(P) := \sum_{i = 0}^d\left|\displaystyle{\frac{p_i}{p_d}}\right|$$
+The constant $C(P)$ is called the Cauchy bound of $P$ and has the
+following property:
+$$\forall x \in \mathbb{R}, P(x) = 0 \Rightarrow |x|\leq C(P)$$
+\begin{proof}
+Let $x\in \mathbb{R}$ a root of $P$. Since $C(P) \geq 1$, if $|x|\leq
+1$, the property is  trivial. Else if $|x| < 1$, then:
+$$p_d x = - \sum_{i = 0}^{d - 1} p_i x^{i - p + 1}$$
+Hence:
+$$|p_d| |x| = \sum_{i = 0}^{d - 1} |p_i| |x|^{i - p + 1} \leq
+\sum_{i = 0}^{d - 1} |p_i|$$
+And finally $|x| \leq C(P)$.
+\end{proof}
+
+{\bf (2) Isolate the roots of a polynomial $P$ on a closed interval of
+  finite length $[A, B]$}
+\begin{itemize}
+\item Compute $l$, an isolation list for  the roots of $P$ on the open
+  interval of finite length $]A, B[$ (see {\bf(3)}).
+\item If $A$ (resp. $B$) is a root of $P$ then add the singleton
+  $\{A\}$ (resp. the singleton $\{B\}$) to $l$ to get the final
+  result.
+\end{itemize}
+
+{\bf (3) Isolate the roots of a polynomial $P$ on an open interval of
+  finite length $]A, B[$}
+
+\noindent Let $d$ be the degree of $P$. Compute the list of
+coefficients of $P$ is the Bernstein basis of degree $d$ with
+parameters $A$ and $B$.
+
+\begin{itemize}
+\item If the list has no sign change, then there is no root of $P$
+  in $]A, B[$: the result is the empty list.
+\item If the list has a single sign change, then there is a single
+  root of $P$ in $]A, B[$ : $\{]A, B[\}$ is a correct isolation
+  list for $P$ on $]A, B[$.
+\item If the list has at least two sign changes, we still cannot
+  conclude: $]A, B[$  is a too coarse approximation of the roots of
+  $P$ and it should be halved. Let $M := \frac{A +
+    B}{2}$. Recursively isolate the roots of $P$ on the open interval
+  $]A, M[$ (resp. on the interval $]M, B[$), to get the list $l_l$
+  (resp. $l_r$):
+  \begin{itemize}
+  \item If $M$ is a root of $P$ then
+    $\{l_l \cup \{M\} \cup l_r\}$ is a correct isolation list for $P$
+    on $]A, B[$;
+  \item Else  $\{l_l \cup l_r\}$ is a correct isolation list for $P$
+    on $]A, B[$.
+  \end{itemize}
+\end{itemize}
+
+The algorithm to isolated the real roots of a non zero $P$ on $]-\infty,
++\infty[$ is then the following:
+
+\begin{itemize}
+\item Bound the absolute value of the real roots of $P$ by its Cauchy
+  bound $C$ (step {\bf (1)});
+\item Isolate the roots of $P$ on $[-C, C]$ (step {\bf (2)}).
+\end{itemize}
+
+This process terminates because the two first cases of step {\bf (3)}
+are in fact equivalences.
+
+\subsection{On the geometrical motivation for dichotomy}\label{ssec:dichogeom}
+When cutting an interval in two halfs, the number of control points is
 approximately doubled, because each of the new half-intervals receives a
 new sequence of \(n\) bernstein coefficients.  As a result, the control points
 are closer to each other and to the polynomial's curve and they give a more
@@ -556,13 +629,22 @@ for the two half intervals, marked by square boxes
 1 for the second interval).  This figure illustrates that the control line
 really gets closer to the polynomial's curve.
 
- The
-computational interest of this dichotomy process lies in the fact that
-given three pairwise distinct rational numbers $a, b, m$, there exists an
-efficient algorithm to deduce the two repsective lists of Bernstein
-coefficients of a polynomial $P$ on intervals $(a, m)$ and $(m, b)$
-from the list of Bernstein coefficients of $P$ on interval $(a,
-b)$. Note that we do not make any assumption on the respective
+\subsection{On the algorithmic motivation for dichotomy}
+
+In the initialization of the algorithm described in section
+\ref{ssec:dicho}, the Bersnstein coeffcients of the polynomial are
+computed using the transformations studied in section \ref{ssec:ops}.
+Yet the computational interest of this dichotomy process lies in the
+fact that given three pairwise distinct rational numbers $a, b, m$,
+there exists an efficient algorithm to deduce the two repsective lists
+of Bernstein coefficients of a polynomial $P$ on intervals $(a, m)$
+and $(m, b)$ from the list of Bernstein coefficients of $P$ on
+interval $(a, b)$. Hence the new Bernstein coefficients needed at the
+recursive call of step {\bf (3)} are easy to obtain.
+
+
+
+ Note that we do not make any assumption on the respective
 positions of $a, b$ and $m$. This algorithm is due to ????.
 
 The de Casteljau algorithm is the following.
