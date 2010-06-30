@@ -43,10 +43,10 @@ Definition one_root2 (l : seq Qcb) (a : Qcb) :=
          k * (y - x) <= eval_pol l y - eval_pol l x).
 
 Lemma alt_one_root2 : forall l, alternate l -> one_root2 l 0.
-move => l a;
-  move: (desc l a) => [x1 [x2 [k [x1p [x1x2 [kp [neg [sl pos]]]]]]]].
-exists x1; exists k.
-by split; first done; split; first done; split; done.
+move => l a.
+move: (desc l a) => [x1 [k [x1p [kp [neg sl]]]]].
+move: (above_slope _ _ 0 _ kp sl) => [x2 [pos x1x2]].
+by exists x1; exists k; split; first done; split; first done; split; done.
 Qed.
 
 Lemma one_root2_translate :
@@ -214,7 +214,7 @@ have k'p : 0 < k'.
 pose e := k'/u'.
 have ep: 0 < e by rewrite /e; apply: mulr_gte0pp => //; rewrite invf_gte0.
 move: (cut_epsilon _ ep) => [e1 [e2 [e1p [e2p [e1e2 [e1e e2e]]]]]].
-move: (constructive_mvt (reciprocate_pol l) _ _ y'1 nx1 y'pos _ e1p) =>
+move: (constructive_ivt (reciprocate_pol l) _ _ y'1 nx1 y'pos _ e1p) =>
   [a [b' [cla [nega [posb' [clb' [x1a [ab b'y']]]]]]]].
 move: (cm3 y y0 (reciprocate_pol l)) => [c cp].
 have a0 : 0 < a by apply: lter_le_trans x1a.
