@@ -337,8 +337,8 @@ Lemma desc : forall l, alternate l = true ->
        k * (y - x) <= eval_pol l y - eval_pol l x ).
 Proof.
 move => l; elim: l => /= [ | a l IHl]; first by move => *; discriminate.
-move: IHl; case: ltrP=> [aneg IHl alt1 |aneg IHl].
-  have aneg': (0 < -a) by rewrite -oppr0 -lter_opp2.
+case: ltrP=> [aneg alt1 |apos].
+  have aneg': (0 < -a) by rewrite oppr_gte0.
   move: (l4 _ alt1 _ aneg') => [x1 [H1 [H2 [H3 [H4 H5]]]]].
   have uv: GRing.unit (eval_pol l x1)
     by apply/negP; move/eqP=> q; rewrite q lterr in H4.
@@ -351,7 +351,7 @@ move: IHl; case: ltrP=> [aneg IHl alt1 |aneg IHl].
     apply: lter_le_trans vx2; rewrite /=. 
     apply: lter_trans (_ : - a / eval_pol l x1 < _);
       first by rewrite ltef_divpr //=.
-    rewrite lter_addrr //.
+    by rewrite lter_addrr.
   exists (eval_pol l x1).
   split; first done; split; first done; split.
     move => x posx xx1; rewrite -(addrN a) lter_add2r; apply: ler_lte_trans H5.
@@ -372,35 +372,32 @@ set k':=k * v1 / Qcb_make 2.
 have posk' : 0 < k' by repeat apply: mulr_gte0pp => //.
 have [v2 [pos v1v2]] := above_slope v1 k 0 (eval_pol l) kpos incr.
 move: (constructive_ivt l v1 v2 v1v2 negval (ltrW pos) _ posk') =>
-  [x1 [x2 [x1close [px1neg [px2pos [px2close [v1x1 [x1x2 x2v2]]]]]]]].
+  [x1 [x2 [x1close [px1neg [_ [_ [v1x1 _]]]]]]].
 have x1pos : 0 < x1 by apply: lter_le_trans v1x1. 
 have Plow : forall x, 0 < x -> x <= x1 -> a + x * eval_pol l x < 0.
   move=> x xpos xx1; rewrite (eqP a0) add0r; apply: mulr_lte0pn=> //.
   case: (ltrP x v1)=> xv1; first by apply: low=> //; apply: ltrW.
   apply: ler_lte_trans px1neg.
-  rewrite ler_eqVlt in xx1; move/orP: xx1 => [xx1 | xlx1];
+  move: xx1; rewrite ler_eqVlt; move/orP => [xx1 | xlx1];
     first by rewrite (eqP xx1) lterr.
-  have t:= incr _ _ xv1 xlx1.
-  rewrite -(@ler_add2l _ (-eval_pol l x)) addrN; apply: ler_trans t.
-  apply: mulr_ge0pp; first by apply: ltrW.
-  by rewrite subr_gte0; apply: ltrW.
+  rewrite -subr_gte0; move: (incr _ _ xv1 xlx1); apply: ler_trans.
+  by apply: mulr_ge0pp; last rewrite subr_gte0; apply: ltrW.
 exists x1; exists k'; split; first done; split; first done; split; first done.
 move => x y x1x xy.
 rewrite [a + _]addrC oppr_add addrA addrK.
-have :
-   (v1 * k + eval_pol l x) * (y - x) <= y * eval_pol l y - x * eval_pol l x.
+have: (v1 * k + eval_pol l x) * (y - x) <= y * eval_pol l y - x * eval_pol l x.
   by apply: slope_product_x => //; last apply: ler_trans v1x1 x1x; apply: ltrW.
-apply:  ler_trans.
+apply: ler_trans.
 have Hv1k2: v1*k == k*v1/Qcb_make 2 + k*v1/Qcb_make 2.
   have: Qcb_make 2 = 1 + 1 by apply/eqP.
-    move=> ->; rewrite -mulr_addl [k * _]mulrC -{2 3}[v1 * _]mulr1.
-    by rewrite -mulr_addr mulrK //.
+  move=> ->; rewrite -mulr_addl [k * _]mulrC -{2 3}[v1 * _]mulr1.
+  by rewrite -mulr_addr mulrK.
 apply: lter_mulpr => /=; first by rewrite subr_gte0 /= ltrW.
-  rewrite (eqP Hv1k2) -addrA lter_addrr /= -[_ / _]opprK addrC subr_gte0 /=.
+rewrite (eqP Hv1k2) -addrA lter_addrr /= -[_ / _]opprK addrC subr_gte0 /=.
 apply: ler_trans x1close _.
 move: x1x; rewrite ler_eqVlt; case/orP; first by move/eqP => ->; rewrite lerr.
 move => x1x; rewrite -subr_gte0 /=.
-have : k * (x - x1) <= eval_pol l x - eval_pol l x1 by apply: incr.
+have: k * (x - x1) <= eval_pol l x - eval_pol l x1 by apply: incr.
 apply : ler_trans; apply: mulr_gte0pp; first by apply: ltrW.
 by rewrite subr_gte0 /= ltrW.
 Qed.
