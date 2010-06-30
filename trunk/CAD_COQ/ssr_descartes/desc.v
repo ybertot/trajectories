@@ -358,44 +358,26 @@ apply: lter_le_trans t2 _; apply: sl; last by [].
 by apply: ltrW.
 Qed.
 
-Lemma slope_product :
-  forall (f g : Qcb -> Qcb) x kf kg, 0 <= kf -> 0 <= kg ->
-    (forall y, x <= y -> 0 <= f y) ->
-    (forall y, x <= y -> 0 <= g y) ->
+Lemma slope_product_x :
+  forall (f : Qcb -> Qcb) x kf, 0 <= x -> 0 <= kf ->
     (forall y z, x <= y -> y < z -> kf * (z - y) <= f z - f y) ->
-    (forall y z, x <= y -> y < z -> kg * (z - y) <= g z - g y) ->
     forall y z, x <= y -> y < z ->
-     (f x * kg + g x * kf) * (z - y) <= f z * g z - f y * g y.
-move => f g x kf kg kf0 kg0 f0 g0 incf incg y z xy yz.
-rewrite -[f z * _](addrNK (f z * g y)) -mulr_subr -addrA -mulr_subl mulr_addl.
-set u:= f z - _.
-set v:= g z - _.
+     (x * kf + f y) * (z - y) <= z * f z - y * f y.
+move => f x kf x0 kf0 incf y z xy yz.
+rewrite -[z * _] (addrNK (z * f y)) -mulr_subr -addrA -mulr_subl mulr_addl.
+set v:= f _ - _.
 have xz : x < z by apply: ler_lte_trans yz.
-have f1: 0 <= u.
+have f1: 0 <= v.
   apply: ler_trans (incf _ _ xy yz).
-  by apply mulr_ge0pp; last rewrite subr_gte0 /= ltrW. 
-have g1: 0 <= v.
-  apply: ler_trans (incg _ _ xy yz).
-  by apply mulr_ge0pp; last rewrite subr_gte0 /= ltrW.
+  by repeat apply: mulr_ge0pp; last rewrite subr_gte0 /= ltrW.
 apply: lter_add => /=.
-  apply: ler_trans (_ : f z * (kg * (z - y)) <= _).
+  apply: ler_trans (_ : z * (kf * (z - y)) <= _).
     rewrite -mulrA; apply: lter_mulpr => /=.
       by apply mulr_ge0pp; last rewrite subr_gte0 /= ltrW.
-    rewrite -subr_gte0.
-    apply: ler_trans (incf _ _ (lerr x) xz).
-    by apply mulr_ge0pp; last rewrite subr_gte0 /= ltrW.
-  apply: lter_mulpl; first by apply: f0; apply: ltrW.
-  by apply: incg.
-rewrite -mulrA (mulrC (g x)).
-  apply: ler_trans (_ : u * g x <= _).
-  apply: lter_mulpr; first by apply: g0; apply: lerr.
-  by apply incf.
-apply: lter_mulpl; first by [].
-case xy' : (x == y).
-  by rewrite (eqP xy'); apply: lerr.
-rewrite -subr_gte0; apply: ler_trans (incg _ _ (lerr x) _).
-  by apply: mulr_ge0pp; last rewrite subr_gte0.
-by rewrite -ler_lt // xy'.
+    by apply: ltrW.
+  apply: lter_mulpl; first by apply:ler_trans (ltrW xz). 
+  by apply: incf.
+by rewrite (mulrC (f y)) lerr.
 Qed.
 
 Lemma desc : forall l, alternate l = true ->
@@ -464,34 +446,21 @@ have Plow : forall x, 0 < x -> x <= x1 -> a + x * eval_pol l x < 0.
   by rewrite subr_gte0; apply: ltrW.
 exists x1; exists k'; split; first done; split; first done; split; first done.
 move => x y x1x xy.
-rewrite [a + _]addrC oppr_add addrA addrK -mulrN -[-eval_pol l x]add0r
-    -(addNr (eval_pol l y)) -addrA [x * _]mulr_addr mulrN -mulNr addrA 
-    -mulr_addl (mulrC k').
-apply: ler_trans(_:(y - x) * eval_pol l y + x * k * (y - x) <= _);
-    last first.
-  rewrite lter_add2r; rewrite -mulrA; rewrite lter_mulpl //;
-      first by apply: ler_trans x1x; apply: ltrW.
-  by apply: incr; first apply: ler_trans x1x.
-apply : ler_trans (_ : eval_pol l x1 * (y - x) + x * k * (y - x) <= _).
-  apply: ler_trans (_ : eval_pol l x1 * (y - x) + v1 * k * (y - x) <= _).
-    rewrite /k' -mulr_addl [(y - x) * _]mulrC.
-    rewrite lter_mulpr //; first by rewrite -(addrN x) lter_add2l; apply:ltrW.
-    have t: - (k * v1 / Qcb_make 2) + v1 * k <= eval_pol l x1 + v1 * k.
-      by rewrite ler_add2l.
-    apply: ler_trans t.
-    have Hv1k2: v1*k == k*v1/Qcb_make 2 + k*v1/Qcb_make 2.
-      have: Qcb_make 2 = 1 + 1 by apply/eqP.
-      move=> ->; rewrite -mulr_addl [k * _]mulrC -{2 3}[v1 * _]mulr1.
-      by rewrite -mulr_addr mulrK //.
-    by rewrite (eqP Hv1k2) addrA addNr add0r lterr.
-  rewrite lter_add2r; rewrite -!mulrA ltef_mulpr; last first.
-    by rewrite mulr_gte0pp //= subr_gte0.
-  by apply: ler_trans x1x.
-rewrite ler_add2l; rewrite [_ * (y - x)]mulrC.
-rewrite lter_mulpl // ?subr_gte0; first by apply: ltrW.
-rewrite -[eval_pol l x1]add0r -[eval_pol l y]addr0 -{2}(addNr(eval_pol l x1))
-    addrA lter_add2l; apply: ler_trans (_ : (k * (y - x1)) <= _).
-  rewrite  mulr_ge0pp // ?subr_gte0 //; first by apply: ltrW.
-  by apply: lter_trans x1x _; apply: ltrW.
-by apply: (incr x1 y) => //; apply: ler_lte_trans xy.
+rewrite [a + _]addrC oppr_add addrA addrK.
+have :
+   (v1 * k + eval_pol l x) * (y - x) <= y * eval_pol l y - x * eval_pol l x.
+  by apply: slope_product_x => //; last apply: ler_trans v1x1 x1x; apply: ltrW.
+apply:  ler_trans.
+have Hv1k2: v1*k == k*v1/Qcb_make 2 + k*v1/Qcb_make 2.
+  have: Qcb_make 2 = 1 + 1 by apply/eqP.
+    move=> ->; rewrite -mulr_addl [k * _]mulrC -{2 3}[v1 * _]mulr1.
+    by rewrite -mulr_addr mulrK //.
+apply: lter_mulpr => /=; first by rewrite subr_gte0 /= ltrW.
+  rewrite (eqP Hv1k2) -addrA lter_addrr /= -[_ / _]opprK addrC subr_gte0 /=.
+apply: ler_trans x1close _.
+move: x1x; rewrite ler_eqVlt; case/orP; first by move/eqP => ->; rewrite lerr.
+move => x1x; rewrite -subr_gte0 /=.
+have : k * (x - x1) <= eval_pol l x - eval_pol l x1 by apply: incr.
+apply : ler_trans; apply: mulr_gte0pp; first by apply: ltrW.
+by rewrite subr_gte0 /= ltrW.
 Qed.
