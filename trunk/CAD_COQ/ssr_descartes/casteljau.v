@@ -5,7 +5,7 @@ Require Import infra pol.
 
 
 Import GRing.
-
+Import OrderedRing.Theory.
 Open Scope ring_scope.
 
 Lemma util_C : forall n i j : nat, (i <= j)%nat -> (j <= n)%nat -> 
@@ -22,15 +22,131 @@ rewrite bin_fact // subn_sub subnKC // mulnAC (mulnC j`!) -(mulnA _ j`!).
 rewrite bin_fact //.
 Qed.
 
+Section CauchyBound.
+
+Variable F : oFieldType.
+
+Variables (n : nat)(E : nat -> F).
+
+Hypothesis pnz : E n != 0.
+
+Lemma gt1expn : forall n (x : F), 1 <= x -> 1 <= x^+n.
+Proof.
+elim=> [| m ihm] x hx; first by rewrite expr0 lerr.
+rewrite exprS; apply: ler_trans (hx) _; rewrite -{1}(mulr1 x).
+rewrite ltef_mulpl //=; first by exact: ihm.
+by apply: lter_le_trans hx; rewrite /= ltr01.
+Qed.
+
+Lemma ge0_sum : forall m (G : nat -> F), 
+  (forall i, ((i < m)%N ->  0 <= G i)) -> 0 <= \sum_(i < m) G i.
+Proof.
+elim=> [|m ihm] G hp; first by rewrite big_ord0 lerr.
+rewrite big_ord_recr /=; apply: lter_le_addpl=> //=; last by apply: hp; exact: ltnSn.
+apply: ihm=> i ltim; apply: hp; apply: ltn_trans ltim _; exact: ltnSn.
+Qed.
+
+Lemma ge_sum :  forall m (G1 G2 : nat -> F), 
+  (forall i, ((i < m)%N ->  G1 i <= G2 i)) -> \sum_(i < m) G1 i <= \sum_(i < m) G2 i.
+Proof.
+elim=> [|m ihm] G1 G2 hp; first by rewrite !big_ord0 lerr.
+rewrite ! big_ord_recr /=; apply: lter_add=> /=; last by apply: hp; exact: ltnSn.
+apply: ihm=> i ltim; apply: hp; apply: ltn_trans ltim _; exact: ltnSn.
+Qed.
+
+Lemma absr_sum : forall m  (G : nat -> F),
+  `|\sum_(i < m) G i| <= \sum_(i < m) `|G i|.
+Proof.
+elim=> [|m ihm] G; first by rewrite !big_ord0 absr0 lerr.
+rewrite !big_ord_recr /=; apply: lter_trans (absr_add_le _ _) _=> /=.
+by rewrite ler_add2l; apply: ihm.
+Qed.
+
+Lemma absrge1 : forall x : F, 1 < x -> x^-1 < 1.
+Proof.
+move=> x lt1x; rewrite -(mul1r (x^-1)) ltef_divpl /= ?mul1r //. 
+apply: lter_trans lt1x; exact: ltr01.
+Qed.
+
+Lemma absf_inv : forall x : F, `|x ^-1| = `|x|^-1.
+Proof.
+move=> x; case e: (x == 0); first by rewrite (eqP e) absr0 invr0 absr0.
+have axn0 : ~~ (`|x| == 0) by rewrite absr_eq0 e.
+by apply: (mulfI axn0); rewrite mulfV // -absf_mul mulfV ?e // absr1.
+Qed.
+
+Lemma expf_gt1 : forall m (x : F), x > 1 -> x^+m.+1 > 1.
+Proof.
+elim => [|m ihm] x hx; first by rewrite expr1.
+apply: lter_trans (hx) _ => /=; rewrite exprS -{1}(mulr1 x).
+apply: lter_mulpl=> /=; last exact: ihm.
+apply: lter_trans hx; exact: ltr01.
+Qed.
+
+Lemma expf_ge1 : forall m (x : F), x >= 1 -> x^+m >= 1.
+Proof.
+elim => [|m ihm] x hx; first by rewrite expr0 lerr.
+apply: lter_trans (hx) _ => /=; rewrite exprS -{1}(mulr1 x).
+apply: lter_mulpl=> /=; last exact: ihm.
+apply: lter_trans hx; apply: ltrW; exact: ltr01.
+Qed.
+
+
+Lemma CauchyBound : forall x, (\poly_(i < n.+1) E i).[x] = 0 -> 
+  `| x | <= `|E n|^-1 * \sum_(i < n.+1) `|E i|.
+Proof.
+move=> x px0; case: (lerP `|x| 1)=> cx1.
+  set C := _ * _; suff leC1 : 1 <= C by apply: ler_trans leC1.
+  have h1 : `|E n| > 0 by rewrite  absr_gt0.
+  rewrite -(ltef_mulpl _ _ _ h1) /= mulr1 /C mulrA mulfV ?absr_eq0 // mul1r.
+  rewrite big_ord_recr /= -{1}(add0r `|E n|) ler_add2l.
+  (* here should be a lemme in orderedalg *)
+  elim: n=> [|m ihm]; first by rewrite big_ord0 lerr.
+  rewrite big_ord_recr /=; apply: lter_le_addpl=> //; exact: absr_ge0.
+case e: n=> [| m].
+  move: px0 pnz; rewrite e /= horner_cons horner0 mul0r add0r; move->.
+  by rewrite eqxx.
+have h1 : E  m.+1 * x^+m.+1 = - \sum_(i < m.+1) E i * x^+ i.
+  apply/eqP; rewrite -subr_eq0 opprK -{2}px0 horner_poly (big_ord_recr n).
+  by rewrite e //= addrC.
+case x0 : (x == 0).
+  rewrite (eqP x0) absr0; apply:  mulr_ge0pp; first by rewrite invf_gte0 /= absr_ge0.
+  suff h2: forall i, (i < m.+2)%N -> 0 <= `|E i| by apply: (ge0_sum _ _ h2).
+  move=> i _; exact: absr_ge0.
+have {h1} h2 : E m.+1 * x =  - \sum_(i < m.+1) E i * x^-(m - i).
+have xmn0 : ~~(x^+m == 0) by rewrite expf_eq0 x0 andbF.
+  apply: (mulIf xmn0); rewrite mulNr big_distrl /= -mulrA -exprS h1; congr (- _).
+  apply: congr_big; [by [] | by [] |] => [[i hi]] _ /=.
+  have mi : m = (m - i + i)%N by rewrite subnK.
+  rewrite {2}mi exprn_addr -!mulrA; congr (_ * _); rewrite mulrA mulVf ?mul1r //.
+  by rewrite expf_eq0 x0 andbF.
+have h3 : `|\sum_(i < m.+1) E i / x ^+ (m - i) | <= \sum_(i < m.+2) `|E i|.
+  apply: ler_trans (absr_sum m.+1 (fun i =>  E i / x ^+ (m - i))) _.
+  apply: (@ler_trans _ (\sum_(i < m.+1) `|E i|)); last first.
+    by rewrite (big_ord_recr m.+1) /= lter_addrr /= absr_ge0.
+  apply: (ge_sum m.+1 (fun i => `|E i / x ^+ (m - i)|) (fun i => `|E i|))=> i lti.
+  rewrite absf_mul -{2}(mulr1 (`|E i|)); apply: lter_mulpl; rewrite /= ?absr_ge0 //.
+  rewrite absf_inv -invr1; apply: ltef_invpp=> /=; first exact: ltr01.
+    by rewrite absr_gt0 expf_eq0 x0 andbF.
+  by rewrite absf_exp; apply: expf_ge1; apply: ltrW.
+rewrite mulrC ltef_divpr /=; last by rewrite absr_gt0 -e.
+by apply: lter_trans h3=> /=; rewrite -absf_mul mulrC h2 absr_opp lerr.
+Qed.
+ 
+End CauchyBound.
+  
+
 (* b gives the coefficients of a polynomial on some bounded interval [a, b].
 de_casteljau computest all the coefficients in the triangle for a, m, n, with
 l := m - a and r := b - m.
 
 invariant : l + r = b - a *)
 
+
 Section DeCasteljauAlgo.
 
 Variables l r : Qcb.
+
 
 Fixpoint de_casteljau (b : nat -> Qcb) (n : nat) :=
   match n with
@@ -47,8 +163,10 @@ Definition dicho' b i := de_casteljau b i 0.
 computes the B. coefficients on [b-r, b] si b - a = l + r , as soon as p = deg P *)
 Definition dicho p b i := de_casteljau b (p - i) i.
 
+
 (* the computation of the value at index (k, n) only uses values (i, j) 
    for n <=  i <= n + k (a triangle, up and right *)
+
 
 
 Lemma ext_dc :
