@@ -17,9 +17,8 @@ Fixpoint all_zero (l:seq Qcb) : bool :=
  end.
 
 Fixpoint all_pos_or_zero (l:seq Qcb) : bool :=
-  match l with nil => true
-  | a::tl => if a < 0 then false else all_pos_or_zero tl
-  end.
+  if l is a::tl then (0 <= a) && all_pos_or_zero tl else true.
+
 
 Fixpoint all_neg_or_zero (l:seq Qcb) : bool :=
   match l with nil => true
@@ -30,9 +29,9 @@ Fixpoint all_neg_or_zero (l:seq Qcb) : bool :=
   value followed by only positive values, and preceeded by only negative
   or zero values. but negative values are not guaranteed. *)
 Fixpoint alternate_1 (l:seq Qcb) : bool :=
-  match l with nil => false
-  | a::tl => if 0 < a then all_pos_or_zero tl else alternate_1 tl
-  end.
+  if l is a::tl then
+     if 0 < a then all_pos_or_zero tl else alternate_1 tl
+  else false.
 
 (* alternate is true for lists that contain one negative value, followed
  by an arbitrary number of non-positive values, followed
@@ -67,15 +66,15 @@ Lemma all_pos_positive : forall l, all_pos_or_zero l = true ->
   forall x, 0 <= x -> 0 <= eval_pol l x.
 Proof.
 move => l; elim: l; first by []. 
-move => a l IHl /=; case Ha: (a < 0) => Hl x Hx; first discriminate.
-apply: lter_addpr; first by rewrite -ltrNge Ha.
+move => a l IHl /=; case Ha: (0 <= a) => Hl x Hx; last discriminate.
+apply: lter_addpr; first by rewrite Ha.
 apply: mulr_ge0pp=> //; exact: IHl.
 Qed.
 
 Lemma all_pos_increasing : forall l, all_pos_or_zero l = true ->
   forall x y, 0 <= x -> x <= y -> eval_pol l x <= eval_pol l y.
 move => l; elim: l => [ | a l IHl] //=. 
-case Ha : (a < 0) => Hl x y Hx Hy; first discriminate.
+case Ha : (0 <= a) => Hl x y Hx Hy; last discriminate.
 have y0 : 0 <= y by apply: ler_trans Hy.
 apply: lter_add; rewrite /= ?lerr //; apply: (@ler_trans _ (x * eval_pol l y)).
   by apply: lter_mulpl=> //; apply: IHl.
@@ -252,7 +251,7 @@ Proof.
 move => l; elim: l => /= [  | a l IHl]; first by move => *; discriminate.
 case a0: (0 < a).
   move => alp.
-  have alp':  all_pos_or_zero (a::l) by rewrite /= -lerNgt (ltrW a0).
+  have alp':  all_pos_or_zero (a::l) by rewrite /= ltrW.
   move => e ep; move: (all_pos_inv _ alp' _ ep) => [x [H1 [H2 [H3 H4]]]].
   exists x; split => //; split => //; split => //; split => //.
   rewrite /= lter_le_addpl // mulr_ge0pp // ?(ltrW H3) // all_pos_positive //.
