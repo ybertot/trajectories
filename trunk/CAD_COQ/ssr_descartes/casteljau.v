@@ -305,9 +305,45 @@ Qed.
 
 End DeltaSeqs.
 
-Definition bernp (a b : Qcb) p i : {poly Qcb} := 
+Section BernsteinPols.
+
+Variables (a b : Qcb).
+Variable p : nat.
+
+(* elements of the Bernstein basis of degree p *)
+Definition bernp i : {poly Qcb} := 
   ((b - a)^-p)%:P * ('X - a%:P)^+i * (b%:P - 'X)^+(p - i) *+ 'C(p, i).
 
+Definition relocate (q : {poly Qcb}) :=
+  let s := size q in
+    (* 1st case : degree of q is to large for the current basis choice *)
+  if (p.+1 < s)%N then [::]
+    (* 2nd case : we complete the list coefficients of q with tail zeroes *)
+    else
+      translate_pol' 
+      (reciprocate_pol 
+        (expand 
+          (translate_pol' (q ++ (nseq (p.+1 - s) 0)) 1) (b - a))) a.
+(* should be abstracted and put  inpoly *)
+Lemma size_factor_expr : forall (a : Qcb)(n : nat), 
+  size (('X - a%:P)^+n) = n.+1.
+Proof.
+Admitted.
+
+Lemma bern_coeffs_mon : forall i, 
+  (i <= p)%N -> Poly (relocate 'X^i) = ('X - a%:P)^+i * (b%:P - 'X)^+(p - i).
+Proof.
+move=> i hi; rewrite -(polyseqK (_ * _)); congr Poly; rewrite /relocate size_polyXn.
+rewrite ltnNge ltnS hi /= subSS.
+have -> : translate_pol' ('X^i ++ nseq (p - i) 0) 1 = ('X - 1%:P)^+i ++ nseq (p - i) 0.
+  rewrite /translate_pol' size_cat size_nseq size_polyXn addSn subnKC //.
+  apply: (@eq_from_nth _ 0); rewrite size_mkseq.
+    rewrite  size_cat size_nseq size_factor_expr addSn subnKC //.
+  move=> j hj; rewrite nth_mkseq // exprn_subl.
+  have hip : (i.+1 <= p.+2)%N by apply: leq_ltn_trans hi _=> //.
+  rewrite (@big_ord_widen _ _ _ _ _  (fun i0 =>(-1) ^+ i0 * 'X^(i - i0) * 1%:P ^+ i0 *+ 'C(i, i0)) hip).
+  apply: sym_eq. rewrite big_mkcond /=.
+Admitted.
 
 Lemma dicho'_delta_bern : forall a b m k p (alpha := (b - m) * (b - a)^-1)(beta := ((m - a) * (b - a)^-1)),
   m != a ->

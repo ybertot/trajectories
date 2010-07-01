@@ -262,7 +262,7 @@ rewrite big_distrr; apply:eq_bigr => i _.
 by rewrite /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
 Qed.
 
-Lemma pascal : forall a b n,
+Lemma pascalQ : forall a b n,
   (a + b) ^+ n = \sum_(i < n.+1) (Qbin n i * (a ^+ (n - i) * b ^+ i)).
 Proof.
 move=> a b; elim=> [|n IHn]; first by rewrite big_ord_recl big_ord0.
@@ -285,7 +285,7 @@ apply: trans_equal (_ : \sum_(k < (size l).+1)
 apply sym_equal.
 apply: trans_equal (_ : \sum_(i < size l)
                 \sum_(0 <= j < i.+1) l`_i * Qbin i j * (x^+(i-j) * a ^+j) = _).
-  apply: eq_bigr => i _; rewrite big_mkord pascal big_distrr /=.
+  apply: eq_bigr => i _; rewrite big_mkord pascalQ big_distrr /=.
   by apply: eq_bigr => j _; rewrite /= !mulrA.
 have jgti : forall i : 'I_(size l),
       \sum_(i.+1 <= j < size l) l`_i * Qbin i j * (x ^+ (i - j) * a ^+ j) = 0.
