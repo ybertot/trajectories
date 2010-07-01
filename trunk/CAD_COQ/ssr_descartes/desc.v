@@ -338,32 +338,21 @@ Proof.
 move => l; elim: l => /= [ | a l IHl]; first by move => *; discriminate.
 case: ltrP=> [aneg alt1 |apos].
   have aneg': (0 < -a) by rewrite oppr_gte0.
-  move: (l4 _ alt1 _ aneg') => [x1 [H1 [H2 [H3 [H4 H5]]]]].
-  have uv: GRing.unit (eval_pol l x1)
+  move: (l4 _ alt1 _ aneg') => [x [H1 [H2 [H3 [H4 H5]]]]].
+  have uv: GRing.unit (eval_pol l x)
     by apply/negP; move/eqP=> q; rewrite q lterr in H4.
-  exists x1.
-  have [x2 [x1x2 vx2]]: exists x2, x1 <= x2 /\ -a/eval_pol l x1 + 1 <= x2.
-    case vx1: (-a/eval_pol l x1 + 1 < x1); last  move/negbFE: vx1 => vx1.
-      by exists x1; rewrite lterr ltrW.
-     by exists (-a/eval_pol l x1 + 1); rewrite lterr; split.
-  have x1x2': x1 < x2.
-    apply: lter_le_trans vx2; rewrite /=. 
-    apply: lter_trans (_ : - a / eval_pol l x1 < _);
-      first by rewrite ltef_divpr //=.
-    by rewrite lter_addrr.
-  exists (eval_pol l x1).
+  exists x; exists (eval_pol l x).
   split; first done; split; first done; split.
-    move => x posx xx1; rewrite -(addrN a) lter_add2r; apply: ler_lte_trans H5.
-    apply ler_2compat0l => // ; first apply:ltrW => //; first apply:ltrW => //.
+    move => y posy yx; rewrite -(addrN a) lter_add2r; apply: ler_lte_trans H5.
+    apply ler_2compat0l => // ; first by [apply:ltrW]; first by [apply:ltrW].
     by apply H1; first apply: ltrW.
-  move => x y x1x xy; rewrite [a + _]addrC oppr_add addrA addrK.
-  have y0: 0 <= y
-    by apply: ler_trans (ltrW xy); apply: ler_trans (ltrW H3) x1x.
-  apply: (@ler_trans _ (y * eval_pol l x - x * eval_pol l x)); last first.
-    by rewrite ler_add2l lter_mulpl //; apply: H2=> //; apply: ltrW.
-  rewrite -(mulNr x) -mulr_addl [(y - x) * _]mulrC.
-  rewrite lter_mulpr //=; first by rewrite subr_gte0 /= ltrW.
-  by apply: H2=> //; rewrite lterr.
+  move => y z xy yz; rewrite [a + _]addrC oppr_add addrA addrK.
+  have: (x * 0 + eval_pol l y) * (z - y) <= z * eval_pol l z - y * eval_pol l y.
+    apply: (slope_product_x _ x 0 (ltrW _)) => //.
+    by move => t u xt tu; rewrite mul0r subr_gte0; apply: H2; last apply:ltrW.
+    rewrite mulr0 add0r; apply: ler_trans; apply: lter_mulpr => /=.
+       by rewrite subr_gte0 /= ltrW.
+    by apply: H2 => //; first apply: lerr.
 case a0 : (a == 0)=> // alt1.
 move: (IHl alt1) => [v1 [k [v1pos [kpos [low incr]]]]] {IHl}.
 have negval : (eval_pol l v1 < 0) by apply low; rewrite ?lterr.
@@ -400,5 +389,3 @@ have: k * (x - x1) <= eval_pol l x - eval_pol l x1 by apply: incr.
 apply : ler_trans; apply: mulr_gte0pp; first by apply: ltrW.
 by rewrite subr_gte0 /= ltrW.
 Qed.
-
-
