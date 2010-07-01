@@ -261,7 +261,7 @@ by rewrite ltef_divp //= -{1}[eps]mulr1 ltef_mulp.
 Qed.
 
 
-Lemma constructive_mvt :
+Lemma constructive_ivt :
   forall l x y, x < y -> eval_pol l x < 0%R -> 0%R <= eval_pol l y  ->
        forall epsilon, 0 < epsilon ->
 
