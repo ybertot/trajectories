@@ -310,6 +310,8 @@ Section BernsteinPols.
 Variables (a b : Qcb).
 Variable p : nat.
 
+Hypothesis neqab : a != b.
+
 (* elements of the Bernstein basis of degree p *)
 Definition bernp i : {poly Qcb} := 
   ((b - a)^-p)%:P * ('X - a%:P)^+i * (b%:P - 'X)^+(p - i) *+ 'C(p, i).
@@ -325,8 +327,6 @@ Definition relocate (q : {poly Qcb}) :=
         (expand 
           (translate_pol' (q ++ (nseq (p.+1 - s) 0)) (- 1)) (b - a))) (- a).
 Print Bernstein_coeffs.
-
-
 (* should be abstracted and put  inpoly *)
 
 (* size_Xma should be with addition *)
@@ -340,6 +340,14 @@ rewrite exprS size_monic_mul; last first.
   - by rewrite ihn -(opprK t%:P) -polyC_opp size_XMa.
 Qed.
 
+Lemma size_amul_expr : forall (t c : Qcb)(i : nat), 
+  c != 0 -> size (('X * c%:P + t%:P) ^+ i) = i.+1.
+Proof.
+move=> t c; elim=> [| i ih] cn0; first by rewrite expr0 size_poly1.
+have hn0 : size ('X * c%:P + t%:P) = 2.
+  by rewrite mulrC size_amulX size_polyC cn0.
+by rewrite exprS size_mul_id // ?expf_eq0 -?size_poly_eq0 hn0 ?andbF // ih.
+Qed.
 
 Lemma translate_pol'P : forall (c : Qcb) i, (translate_pol' 'X^i c) = ('X + c%:P)^+i.
 Proof.
@@ -362,7 +370,10 @@ suff h: Ordinal hj = Ordinal hki by rewrite h eqxx in nhj.
 by apply: val_inj; apply/eqP=> /=; rewrite eq_sym.
 Qed.
 
-Lemma translate_padded : forall (i : nat) (q : seq Qcb)(c : Qcb) , 
+
+
+(* to clean: a simple induction is probably enough *)
+Lemma translate_padded_l : forall (i : nat) (q : seq Qcb)(c : Qcb) , 
   translate_pol' (q ++ (nseq i 0)) c = (translate_pol' q c) ++ (nseq i 0).
 Proof.
 move=> n; elim: n {-2}n (leqnn n) => [| i hi] n hn q c.
@@ -383,11 +394,89 @@ rewrite big_ord_recr /= nth_cat ltnn subnn mul0r mul0rn addr0.
 by apply: congr_big; [by [] | by [] |] => [[k hk]] _ /=; rewrite nth_cat hk.
 Qed.
 
-Lemma bern_coeffs_mon : forall i, 
-  (i <= p)%N -> Poly (relocate 'X^i) = ('X - a%:P)^+i * (b%:P - 'X)^+(p - i).
+Lemma expand_padded :  forall (i : nat) (q : seq Qcb)(c : Qcb) , 
+  expand (q ++ (nseq i 0)) c = (expand q c) ++ (nseq i 0).
 Proof.
-move=> i leqip; rewrite -(polyseqK (_ * _)); congr Poly; rewrite /relocate size_polyXn.
-rewrite ltnNge ltnS leqip /= subSS translate_padded.
+elim=> [| i ih] q c; first  by rewrite !cats0.
+rewrite -[q ++ _]/(q ++ [:: 0] ++ nseq i 0) catA ih.
+suff {ih} -> :  expand (q ++ cons 0 [::]) c = expand q c ++ [:: 0] by rewrite -catA.
+apply: (@eq_from_nth _ 0); first by rewrite size_cat /expand !size_mkseq  !size_cat.
+rewrite /expand size_mkseq size_cat addnS addn0=> {i} i.
+rewrite ltnS leq_eqVlt; case/orP.
+  move/eqP->; rewrite nth_cat nth_mkseq // size_mkseq ltnn subnn nth_cat ltnn.
+  by rewrite subnn /= mul0r.
+move=> ltis; rewrite nth_mkseq; last by apply: ltn_trans ltis _.
+by rewrite !nth_cat size_mkseq ltis nth_mkseq.
+Qed.
+
+Lemma reciprocate_pol_padded :  forall (i : nat) (q : seq Qcb),
+  reciprocate_pol (q ++ (nseq i 0)) = (nseq i 0) ++ (reciprocate_pol q).
+Proof.
+move=> i q; rewrite /reciprocate_pol rev_cat; congr (_ ++_).
+apply: (@eq_from_nth _ 0); rewrite size_rev size_nseq // => j hij.
+rewrite nth_rev ?size_nseq // !nth_ncons.
+by case: i hij=> // i hij; rewrite ltnS subSS leq_subr hij.
+Qed.
+
+Lemma bern_coeffs_mon : forall i, 
+  (i <= p)%N -> Poly (relocate 'X^i) =
+  (- 1)^+p * ('X - b%:P)^+i * (a%:P - 'X)^+(p - i).
+Proof.
+have nsba0 : ~~ (b - a == 0) by rewrite subr_eq0 eq_sym.
+move=> i leqip; rewrite /relocate size_polyXn.
+rewrite ltnNge ltnS leqip /= subSS translate_padded_l expand_padded.
+rewrite reciprocate_pol_padded  translate_pol'P.
+have h : forall c, c != 0 -> 
+  expand (('X + (-1)%:P)^+ i) c = ('X * c%:P + (-1)%:P)^+ i.
+  move=> c hc; apply: (@eq_from_nth _ 0).
+    by rewrite size_expand size_factor_expr size_amul_expr.
+  rewrite size_expand size_factor_expr => j hj.
+  rewrite /expand size_factor_expr nth_mkseq // !exprn_addl !coef_sum big_distrl /=; apply: congr_big=> // [k hk].
+  rewrite !coef_natmul mulrnAl; congr (_ *+ _).
+  rewrite -polyC_exp !coef_mulC -mulrA [_ * _^+j]mulrC mulrA; congr (_ * _).
+  rewrite exprn_mull -polyC_exp coef_mulC coef_Xn. 
+  by case ej : (j == i - k)%N;  rewrite -?(eqP ej) // !mul0r.
+rewrite h // {h}.
+have h : forall c, c != 0 -> 
+  reciprocate_pol (('X * c%:P + (-1)%:P) ^+ i) = (c%:P - 'X)^+i.
+  move=> c hc; apply: (@eq_from_nth _ 0).
+    rewrite size_reciprocate size_amul_expr // addrC -mulN1r mulrC.
+    by rewrite -polyC1 -polyC_opp size_amul_expr.
+  rewrite size_reciprocate size_amul_expr // => j hj.
+  rewrite nth_rev ?size_amul_expr // subSS !exprn_addl !coef_sum.
+  apply: congr_big => // [[k hk]] _ /=; rewrite !coef_natmul; congr (_ *+ _).
+  rewrite -polyC_exp coef_mulC -[- 'X]mulN1r !exprn_mull -polyC_exp.
+  rewrite mulrA coef_mulC -polyC1 -polyC_opp -polyC_exp -polyC_mul.
+  rewrite [_ * 'X^k]mulrC coef_mulC -mulrA; congr (_ * _).
+  rewrite !coef_Xn /=; do 2 (apply: f_equal); apply/eqP/eqP; last by move->.
+  have {hk} hk : (k <= i)%N by [].
+  have {hj} hj : (j <= i)%N by [].
+  by rewrite -{2}(subKn hk) -{2}(subKn hj); move->.
+rewrite h // {h}.
+have h : forall k  c (p: {poly Qcb}), p != 0 ->
+  translate_pol' (nseq k 0 ++ p) c = translate_pol' ('X^k * p) c.
+  move=> k c q {leqip} nq0; case: k => [|k]; first by rewrite /= expr0 mul1r.
+  have sp : size ('X^k.+1 * q) = (k.+1 + size q)%N.
+    by rewrite size_mul_id // -?size_poly_eq0 ?size_polyXn.
+  apply:  (@eq_from_nth _ 0).
+    by rewrite !size_translate_pol' size_cat size_nseq sp.
+  rewrite size_translate_pol' size_cat size_nseq => j hj.
+  rewrite /translate_pol' !nth_mkseq ?size_cat ?size_nseq ?sp //.
+  apply: congr_big => // [[m hm]] _ /=; congr (_ *+ _); congr (_ * _).
+  rewrite mulrC coef_mulXn -cat_cons -[0:: nseq k 0]/(nseq k.+1 0) nth_cat.
+  by rewrite size_nseq nth_nseq; case: (m < k.+1)%N.
+rewrite h {h}; last first. 
+  rewrite expf_eq0 -size_poly_eq0 addrC size_addl size_opp size_polyX ?andbF //.
+  by rewrite size_polyC nsba0.
+(* It seems necessary to prove at least a weak form of 
+trans u * v = (trans u) * (trans v), which interfers badly with Poly.
+may be only with u = X^k *)
+
+(* note for the article : at first sight lib pol.v might seem uneeded *)
+(*provided the ssreflect poly library but:
+- it computes
+- it is necessary to work on wider sequences because of 0 padding
+*)
 Admitted.
 
 
