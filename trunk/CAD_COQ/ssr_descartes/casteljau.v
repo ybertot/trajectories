@@ -1,10 +1,10 @@
 Require Import ssreflect eqtype ssrbool ssrfun ssrnat binomial seq fintype bigops.
-Require Import ssralg poly orderedalg.
+Require Import ssralg poly polydiv orderedalg.
 Require Import  Qcanon.
 Require Import infra pol.
 
 
-Import GRing.
+Import GRing.Theory.
 Import OrderedRing.Theory.
 Open Scope ring_scope.
 
@@ -323,27 +323,73 @@ Definition relocate (q : {poly Qcb}) :=
       translate_pol' 
       (reciprocate_pol 
         (expand 
-          (translate_pol' (q ++ (nseq (p.+1 - s) 0)) 1) (b - a))) a.
+          (translate_pol' (q ++ (nseq (p.+1 - s) 0)) (- 1)) (b - a))) (- a).
+Print Bernstein_coeffs.
+
+
 (* should be abstracted and put  inpoly *)
-Lemma size_factor_expr : forall (a : Qcb)(n : nat), 
-  size (('X - a%:P)^+n) = n.+1.
+
+(* size_Xma should be with addition *)
+Lemma size_factor_expr : forall (t : Qcb)(n : nat), 
+  size (('X + t%:P)^+n) = n.+1.
 Proof.
-Admitted.
+move=> t; elim=> [|n ihn]; first by rewrite expr0 size_polyC oner_eq0.
+rewrite exprS size_monic_mul; last first.
+  - by rewrite -size_poly_eq0 ihn; apply/negP; move/eqP.
+  - by rewrite  -(opprK t%:P) -polyC_opp monic_factor.
+  - by rewrite ihn -(opprK t%:P) -polyC_opp size_XMa.
+Qed.
+
+
+Lemma translate_pol'P : forall (c : Qcb) i, (translate_pol' 'X^i c) = ('X + c%:P)^+i.
+Proof.
+move=> c i.
+have lhs_size : size (translate_pol' 'X^i c) = i.+1.
+   by rewrite size_translate_pol' size_polyXn.
+apply: (@eq_from_nth _ 0); first by rewrite lhs_size  size_factor_expr.
+move=> k; rewrite lhs_size => hki.
+rewrite /translate_pol' nth_mkseq size_polyXn // addrC exprn_addl coef_sum.
+rewrite (bigD1 (Ordinal (ltnSn _))) //= big1; last first.
+  case=> j hj nhj /=; rewrite coef_Xn (_ : (j == i) = false) /= ?mul0r ?mul0rn //.
+  case abs : (j == i) => //.
+  suff h: Ordinal hj = Ordinal (ltnSn _) by rewrite h eqxx in nhj.
+  by apply: val_inj; apply/eqP.
+rewrite addr0 coef_Xn eqxx mul1r (bigD1 (Ordinal hki)) //=.
+rewrite big1 => [| [j hj nhj]] /=; rewrite coef_natmul -polyC_exp mulrC coef_mulC.
+  by rewrite coef_Xn eqxx mul1r addr0.
+rewrite coef_Xn (_ : (k == j) = false) ?mul0r ?mul0rn //; case abs : (k == j) => //.
+suff h: Ordinal hj = Ordinal hki by rewrite h eqxx in nhj.
+by apply: val_inj; apply/eqP=> /=; rewrite eq_sym.
+Qed.
+
+Lemma translate_padded : forall (i : nat) (q : seq Qcb)(c : Qcb) , 
+  translate_pol' (q ++ (nseq i 0)) c = (translate_pol' q c) ++ (nseq i 0).
+Proof.
+move=> n; elim: n {-2}n (leqnn n) => [| i hi] n hn q c.
+ by move: hn; rewrite leqn0; move/eqP->; rewrite !cats0.
+move: hn; rewrite leq_eqVlt; case/orP; last by move=> hn; rewrite hi //.
+move/eqP->; rewrite -[q ++ _]/(q ++ nseq 1 0 ++ nseq i 0) catA hi //.
+rewrite /translate_pol' size_cat size_nseq addnS addn0.
+rewrite -[nseq i.+1 0]/([:: 0] ++ nseq i 0) catA; congr (_ ++ _).
+apply: (@eq_from_nth _ 0).
+  by rewrite size_cat /= !size_mkseq size_map size_iota addn1.
+rewrite size_mkseq => j; rewrite ltnS leq_eqVlt; case/orP=> hj.
+  rewrite (eqP hj) nth_mkseq // nth_cat size_mkseq ltnn subnn /= big1 //.
+  case=> k /=; rewrite ltnS leq_eqVlt; case/orP=> hk _.
+    rewrite (eqP hk) nth_cat ltnn subnn /= mul0r mul0rn //.
+  by rewrite nth_cat hk bin_small // mulrn0.
+rewrite nth_cat size_mkseq hj !nth_mkseq //; last by apply: ltn_trans hj _.
+rewrite big_ord_recr /= nth_cat ltnn subnn mul0r mul0rn addr0.
+by apply: congr_big; [by [] | by [] |] => [[k hk]] _ /=; rewrite nth_cat hk.
+Qed.
 
 Lemma bern_coeffs_mon : forall i, 
   (i <= p)%N -> Poly (relocate 'X^i) = ('X - a%:P)^+i * (b%:P - 'X)^+(p - i).
 Proof.
-move=> i hi; rewrite -(polyseqK (_ * _)); congr Poly; rewrite /relocate size_polyXn.
-rewrite ltnNge ltnS hi /= subSS.
-have -> : translate_pol' ('X^i ++ nseq (p - i) 0) 1 = ('X - 1%:P)^+i ++ nseq (p - i) 0.
-  rewrite /translate_pol' size_cat size_nseq size_polyXn addSn subnKC //.
-  apply: (@eq_from_nth _ 0); rewrite size_mkseq.
-    rewrite  size_cat size_nseq size_factor_expr addSn subnKC //.
-  move=> j hj; rewrite nth_mkseq // exprn_subl.
-  have hip : (i.+1 <= p.+2)%N by apply: leq_ltn_trans hi _=> //.
-  rewrite (@big_ord_widen _ _ _ _ _  (fun i0 =>(-1) ^+ i0 * 'X^(i - i0) * 1%:P ^+ i0 *+ 'C(i, i0)) hip).
-  apply: sym_eq. rewrite big_mkcond /=.
+move=> i leqip; rewrite -(polyseqK (_ * _)); congr Poly; rewrite /relocate size_polyXn.
+rewrite ltnNge ltnS leqip /= subSS translate_padded.
 Admitted.
+
 
 Lemma dicho'_delta_bern : forall a b m k p (alpha := (b - m) * (b - a)^-1)(beta := ((m - a) * (b - a)^-1)),
   m != a ->

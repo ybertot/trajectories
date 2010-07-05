@@ -217,13 +217,16 @@ Proof. exact: val_inj. Qed.
 Lemma Qcb_make1 : Qcb_make 1 = 1.
 Proof. exact: val_inj. Qed.
 
+(*
 Definition Qbin m n := Qcb_make (Z_of_nat (binomial m n)).
+*)
 
 Lemma Qcb_makeadd: forall n m:Z, Qcb_make (n + m) = Qcb_make n + Qcb_make m.
 Proof. 
 by move=> n m; apply : val_inj; rewrite /=  -(eqP (Qcb_Z _)) /= !Zmult_1_r.
 Qed.
 
+(*
 Lemma QbinS : forall m n, Qbin m.+1 n.+1 = Qbin m n.+1 + Qbin m n.
 Proof. move=> m n; by rewrite  /Qbin binS inj_plus Qcb_makeadd. Qed.
 
@@ -238,10 +241,11 @@ Proof. by move=> n m nlm; rewrite /Qbin bin_sub. Qed.
    
 Lemma Qbin_small : forall m n, (m < n)%N -> Qbin m n = 0.
 Proof. by move=> m n mln; rewrite /Qbin bin_small // Qcb_make0. Qed.
+*)
 
 Definition translate_pol' (l :seq Qcb) (a:Qcb) :=
   mkseq (fun i:nat =>
-     \sum_(k < size l) Qbin k i * nth 0 l k * a ^+ (k - i)) (size l).
+     \sum_(k < size l) nth 0 l k * a ^+ (k - i) *+ 'C(k, i)) (size l).
 
 
 Lemma size_translate_pol' : forall l a, size (translate_pol' l a)  = size l.
@@ -263,51 +267,54 @@ rewrite big_distrr; apply:eq_bigr => i _.
 by rewrite /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
 Qed.
 
-Lemma pascalQ : forall a b n,
-  (a + b) ^+ n = \sum_(i < n.+1) (Qbin n i * (a ^+ (n - i) * b ^+ i)).
+Lemma pascalQ : forall (a b : Qcb) n,
+  (a + b) ^+ n = \sum_(i < n.+1) ((a ^+ (n - i) * b ^+ i) *+ 'C(n, i)).
 Proof.
 move=> a b; elim=> [|n IHn]; first by rewrite big_ord_recl big_ord0.
 rewrite big_ord_recr big_ord_recl /= exprS {}IHn mulr_addl !big_distrr.
-rewrite big_ord_recl big_ord_recr /= !Qbin0 !Qbinn !subn0 !subnn !mul1r !mulr1.
-rewrite -!exprS addrA; congr (_ + _); rewrite -addrA -big_split; congr (_ + _).
-apply: eq_bigr => i _ /=; rewrite 2!(mulrCA b) (mulrCA a) (mulrA a) -!exprS.
-by rewrite -leq_subS ?ltn_ord // -mulr_addl -QbinS.
+rewrite big_ord_recl big_ord_recr /= !bin0 !binn !subn0 !subnn !mul1r !mulr1.
+rewrite !mulr1n -!exprS addrA; congr (_ + _); rewrite -addrA -big_split. 
+congr (_ + _); apply: eq_bigr => i _ /=; rewrite /bump leq0n /=.
+rewrite  ![(1 + _)%N]addnC /= addn1 subSS !mulrnAr !mulrA -exprS -ltn_subS; last by case: i.
+by rewrite [b * _]mulrC -mulrA -exprS -mulrn_addr -binS.
 Qed.
+
 
 Lemma translate_pol'q :
   forall l a x, eval_pol (translate_pol' l a) x = eval_pol l (x + a).
 Proof.
 move => l a x; rewrite !eval_pol_big size_translate_pol' /translate_pol'.
 apply: trans_equal (_ : \sum_(k < size l)
-                      (\sum_(i < size l) Qbin k i* l`_k * a^+ (k - i) * x^+ i)
+                      (\sum_(i < size l) l`_k * a^+ (k - i) * x^+ i *+ 'C(k, i))
                        = _).
   rewrite exchange_big /=.
-  by apply: eq_bigr => i _; rewrite nth_mkseq //= big_distrl.
+   apply: eq_bigr => i _; rewrite nth_mkseq //= big_distrl /=.
+   by apply: congr_big; [by [] | by []|] => j _; rewrite mulrnAl.
 apply sym_equal.
 apply: trans_equal (_ : \sum_(i < size l)
-                \sum_(0 <= j < i.+1) l`_i * Qbin i j * (x^+(i-j) * a ^+j) = _).
-  apply: eq_bigr => i _; rewrite big_mkord pascalQ big_distrr /=.
-  by apply: eq_bigr => j _; rewrite /= !mulrA.
+                \sum_(0 <= j < i.+1) l`_i * (x^+(i-j) * a ^+j *+ 'C(i, j)) = _).
+  apply: eq_bigr => i _; rewrite big_mkord pascalQ big_distrr //=.
 have jgti : forall i : 'I_(size l),
-      \sum_(i.+1 <= j < size l) l`_i * Qbin i j * (x ^+ (i - j) * a ^+ j) = 0.
+      \sum_(i.+1 <= j < size l) l`_i *+ 'C(i, j) * (x ^+ (i - j) * a ^+ j) = 0.
   move => i; apply: big1_seq => j /=; rewrite mem_index_iota.
-  by move/andP => [ilj _]; rewrite Qbin_small // mulr0 mul0r.
+  by move/andP => [ilj _]; rewrite bin_small // mulr0n mul0r.
 apply: trans_equal (_ : \sum_(i < size l)
-        \sum_(j < size l) l`_i * Qbin i j * (x ^+ (i - j) * a ^+ j) = _).
+        \sum_(j < size l) l`_i *+ 'C(i, j) * (x ^+ (i - j) * a ^+ j) = _).
   apply: eq_bigr => i _.
   rewrite -(@big_mkord Qcb 0 +%R (size l) (fun i => true)
-   (fun j => l`_i * Qbin i j *(x ^+ (i - j) * a ^+ j))).
-  by rewrite  (@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0.
+   (fun j => l`_i *+ 'C(i,  j) *(x ^+ (i - j) * a ^+ j))).
+  rewrite  (@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0.
+  by apply: congr_big; [by [] | by []|] => j _;rewrite mulrnAl -!mulrnAr.
 apply: eq_bigr => i _.
 rewrite -(@big_mkord Qcb 0 +%R (size l) (fun i => true)
-   (fun j => l`_i * Qbin i j *(x ^+ (i - j) * a ^+ j))).
+   (fun j => l`_i *+ 'C(i, j) *(x ^+ (i - j) * a ^+ j))).
 rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0 big_mkord.
 rewrite -(@big_mkord Qcb 0 +%R (size l) (fun i => true)
-   (fun j => Qbin i j * l`_i * a ^+ (i - j) * x ^+ j)).
+   (fun j => l`_i * a ^+ (i - j) * x ^+ j *+ 'C(i,  j))).
 have jgti' :
-   \sum_(i.+1 <= j < size l) Qbin i j * l`_i * a ^+ (i - j) * x ^+ j = 0.
+   \sum_(i.+1 <= j < size l)  l`_i * a ^+ (i - j) * x ^+ j *+ 'C(i, j) = 0.
   apply: big1_seq => j /=; rewrite mem_index_iota.
-  by move/andP => [ilj _]; rewrite Qbin_small // !mul0r.
+  by move/andP => [ilj _]; rewrite bin_small // !mul0r.
 rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti' addr0 big_mkord.
 set f := fun j:'I_i.+1 => (Ordinal ((leq_subr j i): ((i - j) < i.+1))%N).
 have finv: forall j:'I_i.+1, xpredT j -> f (f j) = j.
@@ -317,7 +324,7 @@ have tmp :(fun j => f (f j) == j) =1 xpredT.
   by move=> j /=; apply/eqP; apply finv.
 rewrite (eq_bigl _ _ tmp); apply: eq_bigr => j _.
 have jli : (j <= i)%N by have : (j < i.+1)%N. 
-by rewrite subKn // [x ^+ _ * _]mulrC [Qbin i j * _]mulrC !mulrA -Qbin_sub.
+by rewrite subKn // mulrnAl [x ^+ _ * _]mulrC mulrA bin_sub.
 Qed.
 
 
