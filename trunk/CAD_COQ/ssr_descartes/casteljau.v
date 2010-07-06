@@ -1,4 +1,4 @@
-Require Import ssreflect eqtype ssrbool ssrfun ssrnat binomial seq fintype bigops.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat binomial seq fintype bigops.
 Require Import ssralg poly polydiv orderedalg.
 Require Import  Qcanon.
 Require Import infra pol.
@@ -510,9 +510,22 @@ rewrite -mulrnAr; congr (_ * _).
 rewrite -(subnKC hk) big_split_ord /= addrC big1; last first.
   case=> j hj _ /=; rewrite bin_small; last by apply: ltn_addr.
   by rewrite mulr0n mul0r mul0rn.
-rewrite add0r.
-(* par cas si i > k *)
-Admitted.
+rewrite add0r; case: (ltngtP k.+1 i) => hki.
+  -rewrite bin_small //; last by apply: ltn_trans hki.
+  rewrite mulr0n big1 // => [[j hj]] _ /=; rewrite (@bin_small j); last first.
+    by apply: ltn_trans hj _.
+  by rewrite mulr0n.
+  - rewrite ltnS in hki. rewrite -{-  7 11 12}(subnKC hki) -addnS big_split_ord /= big1; last first.
+      by case=> j hj _ /=; rewrite (@bin_small j).
+    rewrite add0r exprn_addl -sumr_muln; apply: congr_big => // [[j hj]] _ /=.
+  rewrite subnKC // -subn_sub [(i + _)%N]addnC -addn_subA // subnn addn0.
+  rewrite mulrnAl -!mulrnA;  congr (_ *+ _).
+  rewrite [(_ * 'C(k, i))%N]mulnC {3}(_ : j = j + i - i)%N; last first.
+    by rewrite -addn_subA // subnn addn0.
+  by rewrite util_C 1?mulnC // ?leq_addl // -(subnK hki) leq_add2r.
+  - rewrite -hki bin_small // mulr0n big1 // => [[j hj]] /= _.
+    by rewrite (@bin_small j).
+Qed.
 
 
 Lemma bern_coeffs_mon : forall i, 
@@ -570,12 +583,22 @@ rewrite h {h}; last first.
 rewrite (_ : _ * _ =(-1) ^+i * 'X^(p - i) * ('X - (b - a)%:P)^+i); last first. 
   rewrite -mulrA [(-1)^+_ * _]mulrC -mulrA -exprn_mull [_ * - 1]mulrC.
   by rewrite mulN1r oppr_sub.
-have trans_mulC : forall (p : {poly Qcb}) c d,
+have trans_mulC : forall (p : {poly Qcb}) c d, c != 0 ->
   translate_pol' (c%:P * p) d = map (fun i => c * i) (translate_pol' p d).
- admit.
-rewrite -{1}polyC1 -[-1%:P]polyC_opp -polyC_exp -mulrA trans_mulC.
+  move=> q c d neq0; apply: (@eq_from_nth _ 0).
+    rewrite size_translate_pol' size_map size_translate_pol'.
+    by rewrite size_polyC_mul.
+  rewrite size_translate_pol' size_polyC_mul // => j hj.
+  rewrite /translate_pol' nth_mkseq ?size_polyC_mul //.
+  rewrite (nth_map 0) ?size_mkseq // nth_mkseq //.
+  rewrite big_distrr /=; apply: congr_big=> // [[k hk]] /= _.
+  by rewrite coef_Cmul mulrnAr mulrA.
+rewrite -{1}polyC1 -[-1%:P]polyC_opp -polyC_exp -mulrA.
+rewrite trans_mulC ?expf_eq0 ?oppr_eq0 ?oner_eq0 ?andbF //.
 have -> : forall (l : seq Qcb) c, Poly (map [eta *%R c] l) = c%:P * Poly l.
-  admit.
+  move=> l c; apply/polyP=> k; rewrite coef_Cmul !coef_Poly.
+  case: (ltnP k (size l))=> hkl; first by rewrite (nth_map 0) //.
+  by rewrite !nth_default ?size_map // mulr0.
 rewrite polyC_exp -{2}(subnKC leqip) exprn_addr -!mulrA; congr (_ * _).
 suff -> : (translate_pol' ('X^(p - i) * ('X - (b - a)%:P) ^+ i) (- a))
   = (-1)%:P ^+ (p - i) * (('X - b%:P) ^+ i * (a%:P - 'X) ^+ (p - i)).
@@ -586,8 +609,9 @@ suff h : translate_pol' (('X - (b - a)%:P) ^+ i) (- a) = ('X - b%:P)^+ i.
     by rewrite mulrN1 oppr_sub polyC_opp mulrC.
   - by rewrite -size_poly_eq0 -polyC_opp size_factor_expr.
   - by rewrite -size_poly_eq0 -polyC_opp size_factor_expr.
-Admitted.
-
+rewrite -polyC_opp -translate_pol'P translateAlXn oppr_sub addrC addrA addNr.
+by rewrite add0r translate_pol'P polyC_opp.
+Qed.
 
 Lemma dicho'_delta_bern : forall a b m k p (alpha := (b - m) * (b - a)^-1)(beta := ((m - a) * (b - a)^-1)),
   m != a ->
