@@ -14,7 +14,7 @@
 \item Solving systems of inequations and geometrical problems
 \item Does there exist \((x,y)\) so that the following comparisons hold?
 \begin{eqnarray*}x^2 &\leq& y\\
-y &\geq& 18 - 3 x + 9 x^2\\x &<& 1
+y &\leq& 18 - 3 x + 9 x^2\\x &<& 1
 \end{eqnarray*}
 \item Here find whether the roots of \(18 -3 x + 10 x^2\) are in some interval.
 \item More general applications in quantifier elimination and
@@ -31,6 +31,7 @@ cylindrical decomposition
 \item Associated to bounded intervals
 \end{itemize}
 \item Exactly one sign change implies exactly one root in the interval
+\item No sign change implies no root in the interval
 \begin{itemize}
 \item More than one sign change: no conclusion
 \end{itemize}
@@ -41,13 +42,13 @@ cylindrical decomposition
 \end{itemize}
 \end{frame}
 \begin{frame}
-\frametitle{Geometric intution: Bernstein}
+\frametitle{Geometric intuition: Bernstein}
 \begin{center}
 \includegraphics[clip=true,scale=0.4,trim=2cm 4cm 1cm 6.3cm]{control.pdf}
 \end{center}
 \end{frame}
 \begin{frame}
-\frametitle{Geometric intution: False positive}
+\frametitle{Geometric intution: False alert}
 \begin{center}
 \includegraphics[clip=true,scale=0.4,trim=2cm 4cm 1cm 6.3cm]{control2.pdf}
 \end{center}
@@ -72,6 +73,9 @@ cylindrical decomposition
 \[b_i =\sum_{j=0}^n \left(\begin{array}{c}j\\n\end{array}\right)
 a_i\frac{r^j l^(n-j)}{r-l}\]
 \item Easy computation of Bernstein coefficients for the half intervals
+\begin{itemize}
+\item de Casteljau's algorithm
+\end{itemize}
 \end{itemize}
 \end{frame}
 \begin{frame}
@@ -120,6 +124,18 @@ polynomial
 \end{frame}
 \begin{frame}
 \frametitle{Intermediate value theorem replacement}
+\begin{itemize}
+\item The intermediate value theorem is used to produce a root
+\item Here, we only want to use to produce a two values \(x'\) and \(y'\)
+\begin{itemize}
+\item The polynomial in these two values is close enough to 0
+\item The polynomial is negative in \(x'\) and positive in \(y'\)
+\end{itemize}
+\item Proof using an upper bound on slopes
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Intermediate value theorem replacement}
 \begin{center}
 \includegraphics[clip=true,trim=0cm 9cm 2cm 9cm,scale=0.5]{ivt.pdf}
 \end{center}
@@ -128,7 +144,7 @@ polynomial
 \frametitle{Descartes' law of signs}
 \begin{itemize}
 \item A relation between sign changes and the number of positive roots
-\item The number of changes is larger than the number of roots
+\item \textcolor{blue}{The number of changes is larger than the number of roots}
 \begin{itemize}
 \item More precisely, the difference is a multiple of 2
 \item Counting multiplicity of roots
@@ -136,7 +152,7 @@ polynomial
 \item \((x - 1) * (x ^ 2 + 2) = x^3 + x^2 -2\) : 1 sign change
 \item \((x - 1)^2 = x ^2 -2 x + 1\) : 2 sign changes
 \item \((x - 1) (x - 2) = x ^2 -3 x + 2\) : 2 sign changes
-\item If there is only one sign change, there exist exactly one root
+\item If there is exactly one sign change, there is exactly one root
 \begin{itemize}
 \item A specific proof for this corollary
 \end{itemize}
@@ -173,7 +189,7 @@ polynomial
 \frametitle{From Bernstein to Descartes}
 \begin{itemize}
 \item Reversing the list of coefficients: nice trick!
-\item \(P = rev R \Leftrightarrow P(x) = 1/x^n R(1/x)\)
+\item \(P = rev(R) \Leftrightarrow P(x) = 1/x^n R(1/x)\)
 \item Root of \(P\) in \((0,1)\) correspond to roots of \(R\) in
 \((1,+\infty)\)
 \item \(R'(x) = R(1 + x)\) and use Descartes' corollary for \(R'\)
@@ -194,10 +210,15 @@ polynomial
 \item Remember Bernstein coefficients are obtained after translating,
 flipping, and affine variable change
 \item All linear invertible operations
+\item Call \(v\) the vector of Bernstein coefficients
+\item Call \(\phi\) the function so that \(\phi(p) = v\)
+\item \(\phi\) can also be seen as function mapping polynomials to polynomials
+\item consider \(P'_b(n, l, r, k)\) the inverse image of \(X^k\)
+\item \(phi(p)= \sum_{k=0}^{n} v_i X^k \Leftrightarrow 
+p = \sum_i v_i (P'_b(n,l,r,k))\)
 \item Bernstein coefficients are coefficients in a precise basis
-\item elements of this basis are proportional to inverse images of \(X^k\)
 \item \(P_b(n, l, r, k) = \left(\begin{array}{c}k\\n\end{array}\right)
-        x^(n-k)(1-x)^k\)
+        x^{n-k}(1-x)^k\)
 \end{itemize}
 \end{frame}
 \begin{frame}[fragile]
