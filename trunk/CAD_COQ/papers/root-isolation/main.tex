@@ -12,7 +12,6 @@
 \maketitle
 
 \section{introduction}
-This is a formalization in the Coq system\cite{coqart}.
 We want to describe an algorithm that isolates the roots of any
 one-variable polynomial with rational coefficients.  This algorithms
 constructs a finite list of intervals \(I_k\) such that each interval
@@ -106,37 +105,91 @@ as a basic bloc for a decision procedure deciding logical formulas
 with universal and existential quantification where atomic formulas
 are comparisons between polynomial formulas.
 
+This is a formalization in the Coq system\cite{coqart}.
 Berstein polynomials and de Casteljau's algorithm are intensively used
 in computer aided design.
 
-\section{Describing roots of a polynomial in the rational setting}
-Plan pour cette section
+\section{The dichotomy process}\label{ssec:dicho}
+Let $P \in \mathbb{Q}[X]$ be an arbitrary polynomial. To isolate its
+roots, we start by producing an interval that is large enough to have
+all the real roots of the polynomial inside.  We place
+this large interval as the only element in a working list.  Then we
+process the working list using a criterion for each interval that can
+give three kinds of answers.
 \begin{enumerate}
-\item Roots of rational polynomials not necessarily polynomial
-\item replace root as a number by a condition on evolution: decompose interval into three part: first part where the polynomial is proved to be strictly negative, second part where the polynomial goes from negative to positive with a slope that is strictly positive, third part where the polynomial is stricly positive
-\item In case of Descartes law, impose the slope to be bounded below for all intervals but the first one
-\item Using a new form of middle-value theorem: expressed only with rational numbers, applicable only for polynomials
+\item The first possible answer is that we know a sufficient condition
+for a given interval to contain no root of the polynomial.  This interval
+can be removed from the working list.
+\item The second possible answer is that we know a sufficient condition
+for a given interval to contain exactly one root of the polynomial. This
+interval can be removed from the working list and added to the result.
+\item the third possible answer is that we cannot know whether the interval
+contains zero, one, or several roots.  In this case, the interval is removed
+from the working list, split in two, and the two sub-intervals are added
+to the working list.
 \end{enumerate}
 
+To start the dichotomy process, we need to produce a first interval
+that is guaranteed to contain all the roots of a polynomial.  Here is
+a solution.  Let $P = \sum_{i = 0}^dp_iX^i$ with $p_d \neq 0$. Let:
+$$C(P) := \sum_{i = 0}^d\left|\displaystyle{\frac{p_i}{p_d}}\right|$$
+The constant $C(P)$ is called the Cauchy bound of $P$ and has the
+following property:
+$$\forall x \in \mathbb{R}, P(x) = 0 \Rightarrow |x|\leq C(P)$$
+\begin{proof}
+Let $x\in \mathbb{R}$ a root of $P$. Since $C(P) \geq 1$, if $|x|\leq
+1$, the property is  trivial. Otherwise if $|x| < 1$, then:
+$$p_d x = - \sum_{i = 0}^{d - 1} p_i x^{i - p + 1}$$
+Hence:
+$$|p_d| |x| = \sum_{i = 0}^{d - 1} |p_i| |x|^{i - p + 1} \leq
+\sum_{i = 0}^{d - 1} |p_i|$$
+And finally $|x| \leq C(P)$.
+\end{proof}
+
+In section~\ref{sec:Bernstein} we show how to compute the three-way
+criterion for an arbitrary interval.  It is based on a list of coefficients
+known as Bernstein coefficients, which need to be computed for each
+interval, and then observed using a simple rule.  In
+section~\ref{ssec:split}, we show that the list of Bernstein coefficients
+for sub-intervals is easy to derive from the list of Bernstein coefficients
+for the previous interval.
+
+\section{Describing roots of a polynomial in the rational setting}
+In mathematics, we are accustomed to use several fields that have different
+properties regarding the existence of roots of polynomials.  The most general
+case is the the case of algebraically closed fields, like the fields of complex
+numbers.  In these fields, any polynomial of degree larger than 1 and
+with the coefficients in the field is guaranteed to have a root in the field.
+For instance, any polynomial with complex coefficients is guaranteed to have
+a root that is a complex number.
+
+Then, we can consider an itermediary kind of fields, known as real closed
+fields, like the field of real numbers.  These fields are
+ordered and contain enough elements
+so that they enjoy the existence of the {\em intermediate value theorem}:
+any polynomial that has a negative value in one point \(a\) and a positive value
+in another point \(b\) is guaranteed to have a root at some point between
+\(a\) and \(b\).  The field of real numbers satisfies this property.
+
+Then, we can consider smaller fields, like the field of rational numbers.
+Here we don't have the {\em intermediate value theorem} anymore.  Still, it
+makes sense to say that a bounded interval in the field of rational number
+may contain exactly one root because the polynomial's curve crosses the
+x-axis in exactly one point, which can be approximated arbitrarily close,
+even if it does not really exist in the field of rational numbers.  This
+what we want to make precise in the next two sections.
+
+
 \subsection{Criteria for the existence of a unique root}
-{\sf Faire un truc progressif: corps algébriquement clos, puis corps réel
-clos: dispose du théorème des valeurs intermédaires, la question a décrire
-c'est si les racines existent dans le corps qui fournit les coefficients.}
+We concentrate on a sufficient criterion for the existence of a root inside
+an interval.  This criterion is strong enough to build a Cauchy sequence
+whose limit in the real numbers would be the root.  Our criterion is
+based on slopes.
 
-
-
-When describing the roots of polynomials in a rational setting, we are
-faced with the problem that roots are not necessarily rational. The
-existence of roots is only guaranteed when working with algebraic
-numbers or real numbers. To circumvent this difficulty, we only
-guarantee a criterion that is strong enough to build a Cauchy sequence
-whose limit in the real numbers would be the root. Our criterion is
-based on slopes. Indeed, we need to work with cases where the root is
-unique.
 Ensuring that the slope is positive or
-negative above helps making sure that there are no two
-roots in the area being considered.  In our constructive setting, we
-have a strong property that the slope is separated from 0 by a given ratio.
+negative is some interval helps making sure that there are not two
+roots.  In our constructive setting, we
+have a stronger property that the slope is separated from 0 by a given ratio.
 In the case of positive slopes, we
 write the slope requirement for a polynomial \(p\) inside a given interval
 \(I\) as follows:
@@ -173,7 +226,7 @@ interval.
 \caption{A sufficient criterion for the existence of a single root in an unbounded interval}
 \end{figure}
 \end{enumerate}
-\subsection{Bounding the polynomial's value}
+\subsection{Finding locations where a polynomial's value is arbitrarily small}
 While we can't be sure to produce a rational value on which the
 polynomial of interest returns the zero value, we at least need to be
 able to produce an input for which the polynomial's value is
@@ -182,13 +235,18 @@ polynomial takes values of opposite sign at the bounds of an interval,
 we know that there is a root for this polynomial in this interval,
 thanks to the intermediate value theorem. For this work, we establish
 a simplified constructive replacement of the intermediate value
-theorem especially for polynomials.
+theorem especially for polynomials.  The statement we prove has the following
+form:
+\[\forall p~x~y~\varepsilon, 0 < \varepsilon \rightarrow
+p(x) < 0 \leq p(y) \rightarrow\\
+\exists x'~ y', -\varepsilon \leq p(x') < 0 \leq p(y') \leq \varepsilon \wedge
+x \leq x' < y' \leq y\]
 
 We again rely on reasoning about slopes. First, we establish that the
 slope of any polynomial is bounded in absolute value on any bounded
-interval. This gives us a way to establish a property that is akin to
-but stronger
-than uniform continuity for polynomials. Starting from an interval and
+interval. This gives us a way to establish that polynomials
+enjoy a property that is akin to but stronger
+than uniform continuity. Starting from an interval and
 a polynomial we can produce a coefficient \(k\) so that the variation
 of the polynomial between two points \(x\) and \(y\) is smaller than
 \(|k\times(y-x)|\).
@@ -416,7 +474,7 @@ because of the slope condition and now the slope on the right of \(x_1\) is
 guaranteed to be larger than \(\frac{v1 k}{2}\), which is positive.
 
 \section{From Bernstein to Descartes}
-
+\label{sec:Bernstein}
 In this section, we first give an intuitive understanding of the Bernstein
 coefficients, especially to show why they are so useful at deciding whether
 a polynomial has a root in a given interval.  Then,
@@ -437,7 +495,8 @@ with coordinates \(c_i = (l + i \frac{r-l}{n}, b_i)\) each of these points descr
 the behavior of the polynomial when the input \(x\) is close to
 \(l+i\frac{r-l}{n}\).  In a sense, Bernstein coefficients can be said to
 {\em control} the behavior of the polynomial in some part of the interval.
-This why the points \(c_i\) are often called control points.  These points can
+This is why the points \(c_i\) are often called {\em control points}.
+These points can
 be move about the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
 close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
 \(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the
@@ -471,7 +530,7 @@ interval.  In Figure~(\ref{control}-b), the coefficients still exhibit
 a downward peak with a negative coefficient, but the polynomial's
 curve stays away from the x-axis and the two sign changes in the
 Bernstein coefficients do not correspond to any real root for the
-polynomial (this is a false positive).  In Figure~(\ref{control}-c),
+polynomial (this is a false alert).  In Figure~(\ref{control}-c),
 there is on sign change, so that the first and last coefficients have
 opposite signs.  In fact, the first and the last Bernstein
 coefficients are equal to the values of the polynomial at the bounds
@@ -479,17 +538,14 @@ of the interval, so this imposes the existence of at least one root.
 But because there is exactly one sign change in the coefficients, we
 can be sure that any other bend in the curve stays away of the x-axis.
 
-When Bernstein coefficients lead to a false positive, as in
-Figure~{\ref{control}.b}, cutting the interval in two and computing
-new sequences of Bernstein coefficients for the two intervals is the
-solution.  Because control points are regularly spaced between the
-interval bounds, the distance between control points is also cut in
-two, and as a result, the control points actual come closer to the polynomial's
-curve: this process refines the approximation of the curve given by the
-control points.  There is a simple algorithm to derive Bernstein coefficients
-for sub-intervals from the initial interval.  This algorithm is described in
-section~\ref{dichotomy}.
-
+Proving the properties of Bernstein coefficients works by establishing
+a route from Descartes' law of signs to Bernstein coefficients.  Descartes'
+law of sign works for the interval \(0,+\infty\).  This criterion
+can easily be adapted to any half-line interval \((a,+\infty)\) and
+more precisely to \((1,+\infty)\).  Then a criterion on \((1,+\infty)\)
+can be transformed into a criterion on \((0,1)\). This can, in turn,
+be transposed to any interval.  It happens that this path gives a way to
+reason on Bernstein coefficients.
 \subsection{A criterion for the interval \((1,+\infty)\)}
 The law of signs gives us a sufficient condition to determine when the
 unbounded interval \((0,+\infty)\) contains exactly one root for a
@@ -512,13 +568,10 @@ root of polynomial \(P=\sum_{i=0}^{n}a_ix^i\) in the interval
 
 With our approach to describe unique roots of polynomials inside
 unbounded intervals, we can easily establish a correspondence between
-the way we express existence for the two intervals.
+the way we express existence of a unique root for the two intervals.
 \subsection{A criterion for the interval \((0,1)\)}
 Descartes' law of signs works for unbounded intervals.  In this
-section, we see how to cover also bounded intervals.
-
-Then, there is a trick to transfer the criterion's explicit power on a
-bounded interval, the interval between zero and one. This trick relies
+section, we see how to cover also bounded intervals. The trick now relies
 on reversing the polynomial's list of coefficients.  Obviously, the
 number of sign changes in a list of coefficients is the same as the
 number of sign changes in the reversed list.
@@ -527,7 +580,7 @@ However, the roots of a polynomial on the interval \((1,+\infty)\)
 infinity are in one-to-one correspondence with the roots of the
 reversed polynomial between zero and one. This is due to the following
 equation:
-\[\sum_{i=0}^{n}a_i x^i = x^n\times\sum_{i=0}^{n}x^{i-n}\]
+\[\sum_{i=0}^{n}a_i x^i = x^n\times\sum_{i=0}^{n}a_i x^{i-n}\]
 We can now perform another change of variable, here \(y=1/x\) and a
 change of index \(j=n-i\) in the sum.
 \[\sum_{i=0}^{n}a_i x^l = (\frac{1}{y})^n \sum_{j=0}^{n}a_{n-j} y^j\]
@@ -556,7 +609,7 @@ and its reverse \(\frac{3}{2}x^3 -2 x^2 - \frac{5}{2} x + 1\)}
 \end{figure}
 
 With our approach to describe unique roots of polynomials, we need to
-establish a correspondence between the current time for unbounded
+establish a correspondence between the criterion for unbounded
 intervals and the criterion for bounded intervals. As this proof also
 involves composition with the inverse function, this is one of the
 trickiest proofs in our developments, in particular when we need to
@@ -589,11 +642,19 @@ the theorem \((0,1)\).
 \end{figure}
 \subsection{Recapitulating operations}\label{ssec:ops}
 In our formal development, we defined three operations for
-translating, expanding, and reversing the list of coefficients and we
-simply defined the list of Bernstein coefficients as the result of
-performing these operations.  We then showed how these operations
-behave with respect to the criteria concerning our sufficient criteria
-for the existence of exactly one root in intervals.  In particular:
+translating, expanding, and reversing the list of coefficients.  The
+Bernstein coefficients for a polynomial \(p\) and an interval \((l,r)\)
+are then obtained by, first expanding (composing \(p\) with 
+\(x\mapsto (r-l) x + l\), then reversing the list of coefficients, and
+then translating, i.e. composing with \(x \rightarrow x - 1\).  The
+coefficients we obtain through this process, \(c_i\) are related to the
+Bernstein coefficients \(b_i\)
+in the sense that \(c_i = \left(\begin{array}{c}i\\n
+\end{array}\right)b_i\), thus their sign is exactly the sign of the
+Bernstein coefficients.  It is thus enough to reason on the signs of
+the coefficients \(c_i\).  We show that one sign changes in these coefficients
+is sufficient to ensure the existence of exactly one root in the interval
+\((l,r)\).  In particular:
 
 \begin{itemize}
 \item translating a polynomial preserves the criterion for existence
@@ -606,86 +667,24 @@ of exactly one root in bounded intervals and in unbounded intervals,
   for the existence of exactly one root in the bounded interval \((0,1)\).
 \end{itemize}
 
-\section{Dichotomy and de Casteljau algorithm}
+\section{Dichotomy}
 \label{dichotomy}
-Using the Bernstein coefficient criteria in combination with a
-dichotomy process result in a complete isolation process for the real
-roots of an arbitrary polynomial.
+Bernstein coefficients give precise information when they exhibit
+either zero or one sign change. in the first case, we have the
+guarantee that there are no roots of the considered polynomial in the
+considered interval. In the second case, we have the guarantee that
+there is exactly one root.
 
-\subsection{Dichotomy process}\label{ssec:dicho}
-Let $P \in \mathbb{Q}[X]$ be an arbitrary polynomial. To isolate its
-roots, we need three building blocks:
+When Bernstein coefficients exhibit more than one sign change, no
+conclusion can be drawn about the existence and unicity of roots in the
+interval.  For instance, in Figure~(\ref{control}.b), the Bernstein
+coefficients exhibit two sign changes, but there is no root inside the
+interval.  When facing this kind of unconclusive information, the solution
+is to refine the approximation given by the control line.
 
-{\bf (1) Bound the real roots of a non-zero polynomial}
-
-
-\noindent Let $P = \sum_{i = 0}^dp_iX^i$ with $p_d \neq 0$. Let:
-$$C(P) := \sum_{i = 0}^d\left|\displaystyle{\frac{p_i}{p_d}}\right|$$
-The constant $C(P)$ is called the Cauchy bound of $P$ and has the
-following property:
-$$\forall x \in \mathbb{R}, P(x) = 0 \Rightarrow |x|\leq C(P)$$
-\begin{proof}
-Let $x\in \mathbb{R}$ a root of $P$. Since $C(P) \geq 1$, if $|x|\leq
-1$, the property is  trivial. Else if $|x| < 1$, then:
-$$p_d x = - \sum_{i = 0}^{d - 1} p_i x^{i - p + 1}$$
-Hence:
-$$|p_d| |x| = \sum_{i = 0}^{d - 1} |p_i| |x|^{i - p + 1} \leq
-\sum_{i = 0}^{d - 1} |p_i|$$
-And finally $|x| \leq C(P)$.
-\end{proof}
-
-{\bf (2) Isolate the roots of a polynomial $P$ on a closed interval of
-  finite length $[A, B]$}
-\begin{itemize}
-\item Compute $l$, an isolation list for  the roots of $P$ on the open
-  interval of finite length $]A, B[$ (see {\bf(3)}).
-\item If $A$ (resp. $B$) is a root of $P$ then add the singleton
-  $\{A\}$ (resp. the singleton $\{B\}$) to $l$ to get the final
-  result.
-\end{itemize}
-
-{\bf (3) Isolate the roots of a polynomial $P$ on an open interval of
-  finite length $]A, B[$}
-
-\noindent Let $d$ be the degree of $P$. Compute the list of
-coefficients of $P$ is the Bernstein basis of degree $d$ with
-parameters $A$ and $B$.
-
-\begin{itemize}
-\item If the list has no sign change, then there is no root of $P$
-  in $]A, B[$: the result is the empty list.
-\item If the list has a single sign change, then there is a single
-  root of $P$ in $]A, B[$ : $\{]A, B[\}$ is a correct isolation
-  list for $P$ on $]A, B[$.
-\item If the list has at least two sign changes, we still cannot
-  conclude: $]A, B[$  is a too coarse approximation of the roots of
-  $P$ and it should be halved. Let $M := \frac{A +
-    B}{2}$. Recursively isolate the roots of $P$ on the open interval
-  $]A, M[$ (resp. on the interval $]M, B[$), to get the list $l_l$
-  (resp. $l_r$):
-  \begin{itemize}
-  \item If $M$ is a root of $P$ then
-    $\{l_l \cup \{M\} \cup l_r\}$ is a correct isolation list for $P$
-    on $]A, B[$;
-  \item Else  $\{l_l \cup l_r\}$ is a correct isolation list for $P$
-    on $]A, B[$.
-  \end{itemize}
-\end{itemize}
-
-The algorithm to isolated the real roots of a non zero $P$ on $]-\infty,
-+\infty[$ is then the following:
-
-\begin{itemize}
-\item Bound the absolute value of the real roots of $P$ by its Cauchy
-  bound $C$ (step {\bf (1)});
-\item Isolate the roots of $P$ on $[-C, C]$ (step {\bf (2)}).
-\end{itemize}
-
-This process terminates because the two first cases of step {\bf (3)}
-are in fact equivalences.
-
-\subsection{On the geometrical motivation for dichotomy}\label{ssec:dichogeom}
-When cutting an interval in two halfs, the number of control points is
+\subsection{Geometric intuition for dichotomy}
+\label{ssec:dichogeom}
+When cutting an interval in two halves, the number of control points is
 approximately doubled, because each of the new half-intervals receives a
 new sequence of \(n\) bernstein coefficients.  As a result, the control points
 are closer to each other and to the polynomial's curve and they give a more
@@ -693,7 +692,7 @@ accurate account of the curve's position with respect to the x-axis.  This is
 illustrated in Figure~\ref{dichotomy-curve}, where the initial Bernstein
 coefficients exhibit a sign change, which is needed to account for the bend
 in the first half of the interval (a positive local minimal, but expressed
-by a negative Bernstein coefficient).  In the half interval two more points
+by a negative Bernstein coefficient).  In the halved interval two more points
 are added in the vicinity of the bend, and none of the control points needs
 to be negative anymore.
 \begin{figure}
@@ -711,9 +710,19 @@ for the two half intervals, marked by square boxes
 (the Bernstein coefficients are 1, 2, 1.5, 1,
 0.9375, 1.15625 for the first interval, and 1.15625, 1.375, 1.875, 2.5, 2.5,
 1 for the second interval).  This figure illustrates that the control line
-really gets closer to the polynomial's curve.
+really gets closer to the polynomial's curve, and provides a much better
+approximation of the polynomial.
 
-\subsection{On the algorithmic motivation for dichotomy}
+It may seem that computing Bernstein polynomials is a costly process, however
+it happens that there is a very simple method to deduce Bernstein coefficients
+for one interval from coefficients for another interval.
+
+\subsection{splitting algorithm}\label{ssec:split}
+Around 1950, De Casteljau noticed that the coefficients for the sub intervals
+were easy to compute from the coefficients for the big interval
+through a simple recursive process. We have also proved the
+correctness of this algorithm. This proof is the topic of the next
+section.
 
 In the initialization of the algorithm described in section
 \ref{ssec:dicho}, the Bersnstein coeffcients of the polynomial are
@@ -867,6 +876,8 @@ $$Bern_{p, i}(a, b) =
 Now to achieve the proof of the \C{dicho'_correct} lemma, it is
 sufficient to prove that the values output by the \C{dicho'} function
 coincide with the ones of $(*)$, which boils down to an induction on $i$.
+
+
 \section{Formalization issues}
 
 (assia : should this material be colllected in a final section or
