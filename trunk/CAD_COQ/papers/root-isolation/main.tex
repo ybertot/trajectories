@@ -6,55 +6,70 @@
 \input{macro}
 
 \begin{document}
-\title{Root isolation for one-variable polynomials}
+\title{A formal study of Bernstein coefficients and polynomials}
 \author{Yves Bertot, Assia Mahboubi, Fr\'ed\'erique Guilhot}
 
 \maketitle
 
 \section{introduction}
-We want to describe an algorithm that isolates the roots of any
-one-variable polynomial with rational coefficients.  This algorithms
-constructs a finite list of intervals \(I_k\) such that each interval
-contains exactly one root of the polynomial and each root is in one of
-the intervals.  Such an algorithm can be used as a basic bloc for
-other algorithms, for instance to define algebraic numbers or as a
-component of cylindrical algebraic decomposition, an algorithm known
-to decide systems of inequations between polynomial formulas.
+Bernstein coefficients provide a discrete approximation of polynomials
+inside a bounded interval. As such they are useful tools to solve
+problems like locating the roots of polynomials, isolating these roots
+or solving systems of inequations with polynomial members.  In
+computer aided design, they are also used intensively as they give an
+efficient tool to draw curves that are controlled by points that users
+can grab and drag, with instantaneous and intuitive feedback on the
+shape the curve will take as the control points move around.
+Bernstein coefficients are closely related to splines and Bezier curves.
 
-An operation that we will not cover in this paper is an operation
- to reduce the multiplicity of roots: this operation finds a new
-polynomial that has the same roots, but where each root is simple.
-This can easily be done by computing the greatest
-common divisor between the polynomial and its derivative.  In the
-following, we thus assume that our polynomial only has simple roots.
+Bernstein coefficient are defined for a given polynomial, a given
+degree, and a given interval. if the degree is \(n\), then
+the coefficients form a sequence of size \(n+1\). In
+this paper, we are interested in three important properties of these
+coefficients:
 
-The approach we study is based on Bernstein coefficients.  These
-coefficients are defined for a given polynomial \(P\) and a given
-interval \(I=(l,r)\).  They give a discrete approximation of the behavior of
-the polynomial in the closed interval.  We rely on a sufficient
-condition concerning these coefficients (let's call this condition
-C1): if the Bernstein coefficients, taken in order, have only one
-sign change, then the polynomial is guaranteed to have exactly one
-root in the corresponding interval.
+\begin{enumerate}
+\item if the coefficients taken in order exhibit exactly one sign change,
+  then the polynomial is guaranteed to have exactly one root inside
+  the interval.
+\item  if all coefficients have the same sign, then the
+  polynomial is guaranteed to have no root inside the interval
+  for which they have been computed.
+\item there is an easy method to compute Bernstein coefficients for
+  the two intervals obtained when splitting a larger interval from the
+  Bernstein coefficients for this larger interval.
+\end{enumerate}
 
-A first part of our work is to provide a mechanical proof of condition C1.
+In this paper, we describe a formal proof of these three properties,
+concentrating on the second and third properties. These proofs will be
+done in the setting of polynomials with the rational coefficients and
+rational values.
 
-The main plan of this proof is to describe a sequence of pairs
-\((I_0, P_0)\) to \((I_3, P_3)\), each pair containing an interval
-and a polynomial, so that every root of polynomial \(P_i\) inside
-\(I_i\) is in bijective correspondance with a root of polynomial \(P_{i+1}\)
-in the interval \(I_{i+1}\).  The first interval and the first polynomial
-are simply \(I\) and \(P\).  The last interval is \((0, +\infty)\) and
-the last polynomial is \(b_0 + b_1 X + \cdots + b_n X^n\), where
-the coefficients \(b_i\) are the Bernstein coefficients.  Going from
-\(P_i\) to \(P_{i+1}\) we apply a given transformation.  The first
-transformation is a change of variable so that \(I_1\) is \((0,1)\) and
-\(P_1(x) = P_0(x \times r + (1 - x) l)\).  The second transformation is so
-that \(I_2\) is \((1,+\infty)\) and \(P_2(x) = 0\) exactly when
-\(P_1(1/x) = 0\), as long as \(x\neq 0\).  The third transformation is a
+in the following, we will assume that we are working with polynomials
+whose roots are all simple. Starting from an arbitrary polynomial it
+is easy to produce another polynomial with the same roots but all of
+them simple, simply by dividing it by the greatest common divisor of
+this polynomial and its derivative.
+
+The main plan of the proof of the first property is to describe a
+sequence of pairs \((I_0, P_0)\) to \((I_3, P_3)\), each pair
+containing an interval and a polynomial, so that every root of
+polynomial \(P_i\) inside \(I_i\) is in bijective correspondance with
+a root of polynomial \(P_{i+1}\) in the interval \(I_{i+1}\).  The
+first interval and the first polynomial are simply \(I\) and \(P\).
+The last interval is \((0, +\infty)\) and the last polynomial is \(b_0
++ b_1 X + \cdots + b_n X^n\), where the coefficients \(b_i\) have the
+same sign as the Bernstein coefficients.  Going from \(P_i\) to
+\(P_{i+1}\) we apply a given transformation.  The first transformation
+is a change of variable so that \(I_1\) is \((0,1)\) and \(P_1(x) =
+P_0(x \times r + (1 - x) l)\).  The second transformation is so that
+\(I_2\) is \((1,+\infty)\) and \(P_2(x) = 0\) exactly when \(P_1(1/x)
+= 0\), as long as \(x\neq 0\).  The third transformation is a
 translation so that \(I_3 = (0,+\infty)\) and \(P_3(x) = P_2(1+x)\).
-We will characterize conditions for \(P_3\) to have exactly one root in
-\(I_3\) using Descartes' law of signs.
+We will show that the condition on Bernstein coefficients simply
+boils down to Descartes' law of sign for polynomial \(P_3\) in the
+case where there exactly one sign change this polynomial's coefficients.
+This path from one polynomial to another is described in section~\ref{sec:Bernstein}
 
 Descartes' law of signs provides a sufficient criterion for the
 existence of exactly one root between 0 and \(+\infty\).  In its
@@ -66,19 +81,23 @@ than the number of roots and the difference between the two numbers is
 a multiple of 2.  Thus, if the number of sign changes is 1, there is
 exactly one root between 0 and \(+\infty\).
 
-For our development, we only prove the simple special case of
+For our development, we only prove the corollary  of
 Descartes' law of signs for the case where there is only one sign
 change.  Expressing Descartes' law on the coefficients of polynomial
-\(P_2\) yields directly a law expressed in terms of sign changes for
+\(P_3\) yields directly a law expressed in terms of sign changes for
 Bernstein's coefficients of \(P\) with respect to the interval
-\((l,r)\).
+\((l,r)\).   This proof is done in section~\ref{sec:descartes}.
 
 Another part of our work is to describe dichotomy.  Knowing Bernstein
 coefficients for a polynomial and a given interval, it is easy to
 compute the Bernstein coefficients for the two half intervals, using
-the algorithm known as "de Casteljau".  This increases the precision
-at which the polynomials behavior is described, so that condition C1
-is guaranteed to eventually hold in the dichotomy process.
+the algorithm known as "de Casteljau".  In the process, we increase
+the precision of the approximation given by the Bernstein
+coefficients.  De Casteljau's algorithm is a simple combinatorial
+algorithm based on taking arithmetic means of successive coefficients.
+To justify this combinatorial process we need to show that Bernstein
+coefficients actually are the coefficients of the polynomial in a
+different basis from the usual monomials.  This is done in section~\ref{sec:dicho}.
 
 Most of our proofs were made using only rational numbers as numeric
 values.  Thus, we work with type of numbers where equality and
@@ -94,20 +113,19 @@ below, and such that the values of the polynomial at the sub-interval
 bounds have opposite signs.  In a similar vein, the intermediate value
 theorem does not hold with rational numbers, but a corresponding
 statement, expressed as a bounded-value property, does.  Our proof
-development relies on this approach.
+development relies on this approach.  We describe the formal aspects
+of this approach to describing roots in section~\ref{sec:rational}.
 
-This result can then be used for several purposes.  First it opens the
-door for a representation of algebraic numbers as equivalence classes
-between pairs consisting of a polynomial with rational coefficients
-and an interval.  Root isolation makes it possible to decide when two
-such pairs describe the same algebraic number.  Second, it can be used
-as a basic bloc for a decision procedure deciding logical formulas
-with universal and existential quantification where atomic formulas
-are comparisons between polynomial formulas.
+Our work on Bernstein coefficients is an important stepping stone
+to address various aspects of real algebraic numbers, decision
+procedures for real arithmetic, and more ambitious algorithms like
+cylindrical decomposition.
 
-This is a formalization in the Coq system\cite{coqart}.
-Berstein polynomials and de Casteljau's algorithm are intensively used
-in computer aided design.
+The formal work described in this paper has been performed using 
+the Coq system\cite{coqart}, with ssreflect extension
+\cite{GONTHIER:2008:INRIA-00258384:4}.  We think some characteristics
+of the proof system played a key role in making this development
+possible.  We describe these key aspects in section~\ref{sec:formal}.
 
 \section{The dichotomy process}\label{ssec:dicho}
 Let $P \in \mathbb{Q}[X]$ be an arbitrary polynomial. To isolate its
@@ -155,6 +173,7 @@ for sub-intervals is easy to derive from the list of Bernstein coefficients
 for the previous interval.
 
 \section{Describing roots of a polynomial in the rational setting}
+\label{sec:rational}
 In mathematics, we are accustomed to use several fields that have different
 properties regarding the existence of roots of polynomials.  The most general
 case is the the case of algebraically closed fields, like the fields of complex
@@ -285,6 +304,7 @@ also be eligible, but it is not the smallest one.
 \end{figure}
 
 \section{A simple form of Descartes' law of signs}
+\label{sec:descartes}
 \subsection{A Geometrical explanation of the proof}
 Let's first describe a simple graphical argument based on curves for polynomial functions between 0 and \(+\infty\), as shown in figure~\ref{graph-desc}.
 \begin{figure}
@@ -879,7 +899,7 @@ coincide with the ones of $(*)$, which boils down to an induction on $i$.
 
 
 \section{Formalization issues}
-
+\label{sec:formal}
 (assia : should this material be colllected in a final section or
 should it be disseminated throughout the paper?)
 
