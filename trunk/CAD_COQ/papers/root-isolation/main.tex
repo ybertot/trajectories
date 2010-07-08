@@ -127,51 +127,6 @@ the Coq system\cite{coqart}, with ssreflect extension
 of the proof system played a key role in making this development
 possible.  We describe these key aspects in section~\ref{sec:formal}.
 
-\section{The dichotomy process}\label{ssec:dicho}
-Let $P \in \mathbb{Q}[X]$ be an arbitrary polynomial. To isolate its
-roots, we start by producing an interval that is large enough to have
-all the real roots of the polynomial inside.  We place
-this large interval as the only element in a working list.  Then we
-process the working list using a criterion for each interval that can
-give three kinds of answers.
-\begin{enumerate}
-\item The first possible answer is that we know a sufficient condition
-for a given interval to contain no root of the polynomial.  This interval
-can be removed from the working list.
-\item The second possible answer is that we know a sufficient condition
-for a given interval to contain exactly one root of the polynomial. This
-interval can be removed from the working list and added to the result.
-\item the third possible answer is that we cannot know whether the interval
-contains zero, one, or several roots.  In this case, the interval is removed
-from the working list, split in two, and the two sub-intervals are added
-to the working list.
-\end{enumerate}
-
-To start the dichotomy process, we need to produce a first interval
-that is guaranteed to contain all the roots of a polynomial.  Here is
-a solution.  Let $P = \sum_{i = 0}^dp_iX^i$ with $p_d \neq 0$. Let:
-$$C(P) := \sum_{i = 0}^d\left|\displaystyle{\frac{p_i}{p_d}}\right|$$
-The constant $C(P)$ is called the Cauchy bound of $P$ and has the
-following property:
-$$\forall x \in \mathbb{R}, P(x) = 0 \Rightarrow |x|\leq C(P)$$
-\begin{proof}
-Let $x\in \mathbb{R}$ a root of $P$. Since $C(P) \geq 1$, if $|x|\leq
-1$, the property is  trivial. Otherwise if $|x| < 1$, then:
-$$p_d x = - \sum_{i = 0}^{d - 1} p_i x^{i - p + 1}$$
-Hence:
-$$|p_d| |x| = \sum_{i = 0}^{d - 1} |p_i| |x|^{i - p + 1} \leq
-\sum_{i = 0}^{d - 1} |p_i|$$
-And finally $|x| \leq C(P)$.
-\end{proof}
-
-In section~\ref{sec:Bernstein} we show how to compute the three-way
-criterion for an arbitrary interval.  It is based on a list of coefficients
-known as Bernstein coefficients, which need to be computed for each
-interval, and then observed using a simple rule.  In
-section~\ref{ssec:split}, we show that the list of Bernstein coefficients
-for sub-intervals is easy to derive from the list of Bernstein coefficients
-for the previous interval.
-
 \section{Describing roots of a polynomial in the rational setting}
 \label{sec:rational}
 In mathematics, we are accustomed to use several fields that have different
@@ -182,7 +137,7 @@ with the coefficients in the field is guaranteed to have a root in the field.
 For instance, any polynomial with complex coefficients is guaranteed to have
 a root that is a complex number.
 
-Then, we can consider an itermediary kind of fields, known as real closed
+Then, we can consider an intermediary kind of fields, known as real closed
 fields, like the field of real numbers.  These fields are
 ordered and contain enough elements
 so that they enjoy the existence of the {\em intermediate value theorem}:
@@ -200,18 +155,17 @@ what we want to make precise in the next two sections.
 
 
 \subsection{Criteria for the existence of a unique root}
-We concentrate on a sufficient criterion for the existence of a root inside
-an interval.  This criterion is strong enough to build a Cauchy sequence
-whose limit in the real numbers would be the root.  Our criterion is
-based on slopes.
+We concentrate on a sufficient criterion for the existence of a root
+inside an interval.  This criterion is strong enough to build a Cauchy
+sequence whose limit in the real numbers would be the root.  Our
+criterion is based on slopes.
 
-Ensuring that the slope is positive or
-negative is some interval helps making sure that there are not two
-roots.  In our constructive setting, we
-have a stronger property that the slope is separated from 0 by a given ratio.
-In the case of positive slopes, we
-write the slope requirement for a polynomial \(p\) inside a given interval
-\(I\) as follows:
+Ensuring that the slope is positive or negative is some interval helps
+making sure that there are not two roots.  In our setting, where the
+polynomials we consider have only simple roots, we have a stronger
+property that the slope is separated from 0 by a given ratio.  In the
+case of positive slopes, we write the slope requirement for a
+polynomial \(p\) inside a given interval \(I\) as follows:
 \[\exists k, 0 < k \wedge \forall x y, x \in I \wedge y \in I
 \wedge x < y \Rightarrow k(y - x) < p(y) - p (x) \]
 
@@ -245,14 +199,16 @@ interval.
 \caption{A sufficient criterion for the existence of a single root in an unbounded interval}
 \end{figure}
 \end{enumerate}
-\subsection{Finding locations where a polynomial's value is arbitrarily small}
+\subsection{Finding locations where a polynomial's value is
+  arbitrarily small}
+\label{ssec:civt}
 While we can't be sure to produce a rational value on which the
 polynomial of interest returns the zero value, we at least need to be
 able to produce an input for which the polynomial's value is
 arbitrarily small. In classical mathematics once we know that the
 polynomial takes values of opposite sign at the bounds of an interval,
 we know that there is a root for this polynomial in this interval,
-thanks to the intermediate value theorem. For this work, we establish
+thanks to the {\em intermediate value theorem}. For this work, we establish
 a simplified constructive replacement of the intermediate value
 theorem especially for polynomials.  The statement we prove has the following
 form:
@@ -260,33 +216,27 @@ form:
 p(x) < 0 \leq p(y) \rightarrow\\
 \exists x'~ y', -\varepsilon \leq p(x') < 0 \leq p(y') \leq \varepsilon \wedge
 x \leq x' < y' \leq y\]
+We call this theorem the {\em constructive intermediate value theorem}.
 
 We again rely on reasoning about slopes. First, we establish that the
 slope of any polynomial is bounded in absolute value on any bounded
 interval. This gives us a way to establish that polynomials
 enjoy a property that is akin to but stronger
-than uniform continuity. Starting from an interval and
+than uniform continuity. Starting from an interval \((l,r)\) and
 a polynomial we can produce a coefficient \(k\) so that the variation
 of the polynomial between two points \(x\) and \(y\) is smaller than
 \(|k\times(y-x)|\).
 
-Given an arbitrary small and positive \(\varepsilon\), a polynomial
-\(p\), and a bounded interval \((l,b)\) so that \(p(l) < 0 < p(r)\),
-we want to produce an input \(x_0\) so that \(0 < p(x_0) <
-\varepsilon\).  We proceed by taking an upper bound \(k\) of the slope for
-this interval and this polynomial and choosing a large number \(n\) so
-that \(\frac{r-l}{n} < \frac{\varepsilon}{k}\).  We then consider the
-\(n+1\) values \(a_i =l + \frac{i\times (r-l)}{n}\). We then solve a
-discrete problem over the values \(a_i\). We simply need to find the
-smallest \(a_j\) of these inputs for which the polynomial's value is
-positive. The preceding value \(a_{j-1}\) necessarily is a value where
-the polynomial is nonpositive. Thanks to the bound on the slope and
-because the distance between consecutive \(a_i\)'s is smaller than
-\(\frac{\varepsilon}{k}\), we are guaranteed that the value in \(a_i\)
-is positive and smaller than \(\varepsilon\).  Note that this approach
-makes it possible to bound the polynomial's value in the interval
-\((a_{j-1},a_j)\) and to guarantee the existence of a root inside this
-interval, however it does not provide for the uniqueness of the root.
+For a given \(\varepsilon\), and assuming \(p(x) < 0 < p(y)\) we can
+choose an \(n\) so that \(\frac{k(y-x)}{n} < \varepsilon\)
+ We then consider the
+\(n+1\) values \(a_i = x + \frac{i\times (y-x)}{n}\) and we solve a
+discrete problem over the values \(a_i\).  We simply need to find the
+largest prefix \(a_0, \ldots, a_{j-1}\) so that all values \(p(a_k\) in this
+prefix are negative.  We can set \(x' =a_{j-1}\), because the next
+value \(a_j\) is necessarily non-negative and
+\(p(a_j) - p(x') < \varepsilon\), thus \(-\varepsilon < p(x') < 0\).
+In a similar way, we can set \(y'= a_j\) because \(0 \leq p(y') < \varepsilon\).
 
 Our algorithm is illustrated in figure~\ref{ivt}, where the distance
 between the \(a_i\)'s is chosen according to the maximal slope
@@ -304,6 +254,15 @@ also be eligible, but it is not the smallest one.
 \end{figure}
 
 \section{A simple form of Descartes' law of signs}
+One of the main results studied in this paper
+is that having only one sign changes in the
+sequence of Bernstein coefficients for the polynomial \(p\) and the
+interval \((l,r)\) ensures that there is only one root \(p\) inside
+\((l,r)\).  The proof of this results relies on a similar property for
+the standard coefficients of another polynomial \(p'\): if there is
+only one sign change in the coefficients of \(p'\) then \(p'\) has
+only one root inside the interval \((l,r)\).  In this section, we
+discuss how this property is proved formally.
 \label{sec:descartes}
 \subsection{A Geometrical explanation of the proof}
 Let's first describe a simple graphical argument based on curves for polynomial functions between 0 and \(+\infty\), as shown in figure~\ref{graph-desc}.
@@ -365,13 +324,15 @@ done using a simple recursive function, written in the following form:
 As a reminder, the Coq syntax variant that we use, {\tt ssreflect},
 privilegies boolean predicates, so that {\tt (0 <= a)} stands for a boolean
 value computed by a recursive function instead of a proposition as in
-standard Coq litterature.  Also, the type {\tt Qcb} stands for a representation
+standard Coq litterature.  Also, the type {\tt Qcb} stands for a
+representation of 
 rational number as fractions in canonical form (hence the letter {\tt c}), where
 the verification that the fraction is in canonical form is also expressed
 using a boolean function (hence the letter {\tt c}).  Since these numbers
 are in canonical form, the equality test between two fractions is simply based
 on syntactic equality, in other words Leibnitz equality.  The type constructor
-{\tt seq } is a type for lists, with extra constraints on the types can be
+{\tt seq } is a type for lists, with extra constraints on the types
+that can be
 stored in such lists: equality must be decidable, a feature that can then be
 exploited intensively by the {\tt ssreflect} package
 \cite{GONTHIER:2008:INRIA-00258384:4}.
@@ -487,7 +448,8 @@ the right witness for \(P\) because the slope of \(x\times P_l(x)\) is only
 larger than \(P_l(x) + x \times k\), and \(P_l(x)\) is negative.  The solution
 is to note that \(P_l\) necessary takes a positive value in some point \(v1\)
 on the right of \(x\) and to use our
-{\em constructive intermediate value theorem} to
+{\em constructive intermediate value theorem} from
+section~\ref{ssec:civt} to
 build a new value \(x_1\) so that \(-\frac{k v_1}{2} \leq P_l(x_1) \leq 0\).
 Now \(P_l\) is still guaranteed to be negative between \(x\) and \(x_1\),
 because of the slope condition and now the slope on the right of \(x_1\) is
@@ -496,7 +458,7 @@ guaranteed to be larger than \(\frac{v1 k}{2}\), which is positive.
 \section{From Bernstein to Descartes}
 \label{sec:Bernstein}
 In this section, we first give an intuitive understanding of the Bernstein
-coefficients, especially to show why they are so useful at deciding whether
+coefficients, especially to show why they can help deciding whether
 a polynomial has a root in a given interval.  Then,
 we clarify the polynomial transformations that link
 the problem of finding the roots of a polynomial inside an arbitrary
@@ -560,7 +522,7 @@ can be sure that any other bend in the curve stays away of the x-axis.
 
 Proving the properties of Bernstein coefficients works by establishing
 a route from Descartes' law of signs to Bernstein coefficients.  Descartes'
-law of sign works for the interval \(0,+\infty\).  This criterion
+law of signs works for the interval \(0,+\infty\).  This criterion
 can easily be adapted to any half-line interval \((a,+\infty)\) and
 more precisely to \((1,+\infty)\).  Then a criterion on \((1,+\infty)\)
 can be transformed into a criterion on \((0,1)\). This can, in turn,
@@ -580,7 +542,7 @@ coefficients \(a_i\) of the polynomial
 \(P\), we have \[P(y+1)= \sum_{i=0}^{n} a_i (y+1)^i = \sum_{k=0}^{n}
 \sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right) y^k\]
 
-Thus, if we apply Descartes's law of sign on the coefficients
+Thus, if we apply Descartes's law of signs on the coefficients
 \(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right)\), we
 can obtain a sufficient criterion for the existence of exactly one
 root of polynomial \(P=\sum_{i=0}^{n}a_ix^i\) in the interval
@@ -591,7 +553,7 @@ unbounded intervals, we can easily establish a correspondence between
 the way we express existence of a unique root for the two intervals.
 \subsection{A criterion for the interval \((0,1)\)}
 Descartes' law of signs works for unbounded intervals.  In this
-section, we see how to cover also bounded intervals. The trick now relies
+section, we see how to cover also bounded intervals. The trick here relies
 on reversing the polynomial's list of coefficients.  Obviously, the
 number of sign changes in a list of coefficients is the same as the
 number of sign changes in the reversed list.
@@ -624,8 +586,8 @@ the polynomial \(Q\), which has a single root between 1 and \(+\infty\).
 \includegraphics[clip=true,trim=3cm 5cm 3cm 14cm, width=0.5\textwidth]{invert.pdf}
 \end{center}
 \caption{Curves of \(x^3 -\frac{5}{2} x^2 - 2 x +
-  \frac{3}{2}\)
-and its reverse \(\frac{3}{2}x^3 -2 x^2 - \frac{5}{2} x + 1\)}
+  \frac{3}{2}\) (solid line)
+and its reverse \(\frac{3}{2}x^3 -2 x^2 - \frac{5}{2} x + 1\) (dashed)}
 \end{figure}
 
 With our approach to describe unique roots of polynomials, we need to
