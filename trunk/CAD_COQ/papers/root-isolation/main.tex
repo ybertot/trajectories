@@ -20,14 +20,15 @@ computer aided design, they are also used intensively as they give an
 efficient tool to draw curves that are controlled by points that users
 can grab and drag, with instantaneous and intuitive feedback on the
 shape the curve will take as the control points move around.
-Bernstein coefficients are closely related to splines and Bezier curves.
+Bernstein coefficients are closely related to splines and Bezier curves
+and they have a very simple geometrical interpretation, which we illustrate
+in section \ref{sec:geometrybernstein}.
 
 Bernstein coefficient are defined for a given polynomial, a given
 degree, and a given interval. if the degree is \(n\), then
 the coefficients form a sequence of size \(n+1\). In
 this paper, we are interested in three important properties of these
 coefficients:
-
 \begin{enumerate}
 \item if the coefficients taken in order exhibit exactly one sign change,
   then the polynomial is guaranteed to have exactly one root inside
@@ -40,7 +41,7 @@ coefficients:
   Bernstein coefficients for this larger interval.
 \end{enumerate}
 
-In this paper, we describe a formal proof of these three properties,
+We describe a formal proof of these three properties,
 concentrating on the second and third properties. These proofs will be
 done in the setting of polynomials with the rational coefficients and
 rational values.
@@ -50,6 +51,7 @@ whose roots are all simple. Starting from an arbitrary polynomial it
 is easy to produce another polynomial with the same roots but all of
 them simple, simply by dividing it by the greatest common divisor of
 this polynomial and its derivative.
+
 
 The main plan of the proof of the first property is to describe a
 sequence of pairs \((I_0, P_0)\) to \((I_3, P_3)\), each pair
@@ -72,7 +74,8 @@ case where there exactly one sign change this polynomial's coefficients.
 This path from one polynomial to another is described in section~\ref{sec:Bernstein}
 
 Descartes' law of signs provides a sufficient criterion for the
-existence of exactly one root between 0 and \(+\infty\).  In its
+existence of exactly one root for a polynomial
+between 0 and \(+\infty\).  In its
 most general form, this law
 expresses a relation between the number of roots of a polynomial
 between 0 and \(+\infty\) and the number of sign changes in the
@@ -90,18 +93,19 @@ Bernstein's coefficients of \(P\) with respect to the interval
 
 Another part of our work is to describe dichotomy.  Knowing Bernstein
 coefficients for a polynomial and a given interval, it is easy to
-compute the Bernstein coefficients for the two half intervals, using
-the algorithm known as "de Casteljau".  In the process, we increase
+obtain the Bernstein coefficients for the two half intervals, using
+an algorithm due to de Casteljau.  In the process, we increase
 the precision of the approximation given by the Bernstein
 coefficients.  De Casteljau's algorithm is a simple combinatorial
 algorithm based on taking arithmetic means of successive coefficients.
-To justify this combinatorial process we need to show that Bernstein
+To justify this combinatorial process we show in
+section~\ref{sec:dicho} that Bernstein
 coefficients actually are the coefficients of the polynomial in a
-different basis from the usual monomials.  This is done in section~\ref{sec:dicho}.
+different basis from the usual monomials, called the {\em Bernstein basis}.
 
 Most of our proofs were made using only rational numbers as numeric
-values.  Thus, we work with type of numbers where equality and
-comparison are decidable and the process we described can effectively
+values.  Thus, we work with a type of numbers where equality and
+comparison are decidable and the process we describe can effectively
 be used in a decision procedure.
 
 When considering only rational numbers, the existence of roots takes a
@@ -126,6 +130,70 @@ the Coq system\cite{coqart}, with ssreflect extension
 \cite{GONTHIER:2008:INRIA-00258384:4}.  We think some characteristics
 of the proof system played a key role in making this development
 possible.  We describe these key aspects in section~\ref{sec:formal}.
+
+\section{The definition of Bernstein coefficients}
+\label{sec:bernsteindef}
+Given a pair of numbers \(l\) and \(r\), a natural number \(n\), and
+a polynomial of degree smaller than or equal to \(n\),
+\(p = \sum_{i=0}^n a_i X^i\), the Bernstein
+coefficients are the numbers \(b_i\), for \(i\in \{0, \ldots, n\}\) defined
+by the following equality{\sf WARNING: ATTENTION: VORSICHT: Assia, sais-tu
+si cette formule est correcte?}
+\[b_i =\sum_{j=0}^n \left(\begin{array}{c}j\\n\end{array}\right)
+a_i\frac{r^j l^{n-j}}{r-l}\]
+
+\label{sec:geometrybernstein}
+The Bernstein coefficients are related to a broken line (made of
+contiguous straightline segments) which gives a rough approximation of the
+polynomial's function graph.  More precisely, given the bounds \((l,r)\)
+of the interval,
+the bernstein coefficients \((b_0,\ldots, b_n)\) define a collection of points
+with coordinates \(c_i = (l + i \frac{r-l}{n}, b_i)\) each of these points describes
+the behavior of the polynomial when the input \(x\) is close to
+\(l+i\frac{r-l}{n}\).  In a sense, Bernstein coefficients can be said to
+{\em control} the behavior of the polynomial in some part of the interval.
+This is why the points \(c_i\) are often called {\em control points}.
+These points can
+be move about the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
+close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
+\(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the
+behavior of the polynomial in this area is quite eventless.  But when \(c_i\)
+is significantly removed from this segment, \(c_i\) appears to be pulling the
+polynomial's curve in its direction, with the curve of the polynomial usually
+crossing the vertical line \(x=l+i\frac{r-l}{n}\) between the segment and
+the point \(c_i\).  This is illustrated in the Figure~\ref{control}.
+\begin{figure}
+\begin{center}
+\begin{tabular}{ccc}
+\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
+{control.pdf}&
+\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
+{control2.pdf}&
+\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
+{control3.pdf}\\
+(a) 1, 3, -10, 1, 4, 1 & (b) 1, 3, -1, 1, 4, 1 & (c) 3, 0, 1, 10, -2, -1\
+\end{tabular}
+\end{center}
+\caption{\label{control} Bernstein Control points and corresponding polynomial curves}
+\end{figure}
+
+In Figure~{(\ref{control}-a)} the illustration shows that a peak in
+the disposition of the control points corresponds to a bend in the
+polynomial's curve (the Bernstein coefficients are 1, 3, -10, 1, 4, 1
+and -10 corresponds to a downward peak).  In this case, the peak
+provokes two sign changes, which are reproduced in the shape of the
+curve and correspond to the existence of two roots inside the
+interval.  In Figure~(\ref{control}-b), the coefficients still exhibit
+a downward peak with a negative coefficient, but the polynomial's
+curve stays away from the x-axis and the two sign changes in the
+Bernstein coefficients do not correspond to any real root for the
+polynomial (this is a false alert).  In Figure~(\ref{control}-c),
+there is on sign change, so that the first and last coefficients have
+opposite signs.  In fact, the first and the last Bernstein
+coefficients are equal to the values of the polynomial at the bounds
+of the interval, so this imposes the existence of at least one root.
+But because there is exactly one sign change in the coefficients, we
+can be sure that any other bend in the curve stays away of the x-axis.
 
 \section{Describing roots of a polynomial in the rational setting}
 \label{sec:rational}
@@ -253,7 +321,7 @@ also be eligible, but it is not the smallest one.
 \caption{Bounding a polynomials value}
 \end{figure}
 
-\section{A simple form of Descartes' law of signs}
+\section{A simple form of Descartes' law of signs}\label{sec:descartes}
 One of the main results studied in this paper
 is that having only one sign changes in the
 sequence of Bernstein coefficients for the polynomial \(p\) and the
@@ -263,7 +331,7 @@ the standard coefficients of another polynomial \(p'\): if there is
 only one sign change in the coefficients of \(p'\) then \(p'\) has
 only one root inside the interval \((l,r)\).  In this section, we
 discuss how this property is proved formally.
-\label{sec:descartes}
+
 \subsection{A Geometrical explanation of the proof}
 Let's first describe a simple graphical argument based on curves for polynomial functions between 0 and \(+\infty\), as shown in figure~\ref{graph-desc}.
 \begin{figure}
@@ -455,70 +523,15 @@ Now \(P_l\) is still guaranteed to be negative between \(x\) and \(x_1\),
 because of the slope condition and now the slope on the right of \(x_1\) is
 guaranteed to be larger than \(\frac{v1 k}{2}\), which is positive.
 
-\section{From Bernstein to Descartes}
-\label{sec:Bernstein}
-In this section, we first give an intuitive understanding of the Bernstein
-coefficients, especially to show why they can help deciding whether
-a polynomial has a root in a given interval.  Then,
-we clarify the polynomial transformations that link
+\section{From Bernstein to Descartes}\label{sec:Bernstein}
+In this section, we clarify the polynomial transformations that link
 the problem of finding the roots of a polynomial inside an arbitrary
 bounded interval \((l,r)\) successively with the problem of finding
 the roots of an other polynomial inside the interval \((0,1)\) and
 with the problem of finding the roots of yet another polynomial inside
-the interval \((0,+\infty)\).
-
-\subsection{A geometric understanding of Bernstein coefficients}
-The Bernstein coefficients are related to a broken line (made of
-contiguous straightline segments) which gives a rough approximation of the
-polynomial's function graph.  More precisely, given the bounds \((l,r)\)
-of the interval,
-the bernstein coefficients \((b_0,\ldots, b_n)\) define a collection of points
-with coordinates \(c_i = (l + i \frac{r-l}{n}, b_i)\) each of these points describes
-the behavior of the polynomial when the input \(x\) is close to
-\(l+i\frac{r-l}{n}\).  In a sense, Bernstein coefficients can be said to
-{\em control} the behavior of the polynomial in some part of the interval.
-This is why the points \(c_i\) are often called {\em control points}.
-These points can
-be move about the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
-close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
-\(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the
-behavior of the polynomial in this area is quite eventless.  But when \(c_i\)
-is significantly removed from this segment, \(c_i\) appears to be pulling the
-polynomial's curve in its direction, with the curve of the polynomial usually
-crossing the vertical line \(x=l+i\frac{r-l}{n}\) between the segment and
-the point \(c_i\).  This is illustrated in the Figure~\ref{control}.
-\begin{figure}
-\begin{center}
-\begin{tabular}{ccc}
-\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
-{control.pdf}&
-\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
-{control2.pdf}&
-\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
-{control3.pdf}\\
-(a) 1, 3, -10, 1, 4, 1 & (b) 1, 3, -1, 1, 4, 1 & (c) 3, 0, 1, 10, -2, -1\
-\end{tabular}
-\end{center}
-\caption{\label{control} Bernstein Control points and corresponding polynomial curves}
-\end{figure}
-
-In Figure~{(\ref{control}-a)} the illustration shows that a peak in
-the disposition of the control points corresponds to a bend in the
-polynomial's curve (the Bernstein coefficients are 1, 3, -10, 1, 4, 1
-and -10 corresponds to a downward peak).  In this case, the peak
-provokes two sign changes, which are reproduced in the shape of the
-curve and correspond to the existence of two roots inside the
-interval.  In Figure~(\ref{control}-b), the coefficients still exhibit
-a downward peak with a negative coefficient, but the polynomial's
-curve stays away from the x-axis and the two sign changes in the
-Bernstein coefficients do not correspond to any real root for the
-polynomial (this is a false alert).  In Figure~(\ref{control}-c),
-there is on sign change, so that the first and last coefficients have
-opposite signs.  In fact, the first and the last Bernstein
-coefficients are equal to the values of the polynomial at the bounds
-of the interval, so this imposes the existence of at least one root.
-But because there is exactly one sign change in the coefficients, we
-can be sure that any other bend in the curve stays away of the x-axis.
+the interval \((0,+\infty)\).  These transformation make it possible to
+compute another collection of coefficients, which happen to be very simply
+related to Bernstein coefficients.
 
 Proving the properties of Bernstein coefficients works by establishing
 a route from Descartes' law of signs to Bernstein coefficients.  Descartes'
@@ -534,23 +547,24 @@ unbounded interval \((0,+\infty)\) contains exactly one root for a
 polynomial. Through a change of variable, we obtain a similar
 criterion for the interval \((1, +\infty)\).
 
- The polynomial \(P(x)\)
-has exactly one root in the interval \((1,+\infty)\) if and only if
-the polynomial function \(y \mapsto P(y+1)\) has exactly one root in
-the interval \((0,+\infty)\). Expressed in termes of the
-coefficients \(a_i\) of the polynomial
-\(P\), we have \[P(y+1)= \sum_{i=0}^{n} a_i (y+1)^i = \sum_{k=0}^{n}
-\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right) y^k\]
+In the following, we will call \(\theta_v\) the transformation that
+maps any polynomial \(P\) to the polynomial \(y \mapsto P(y+v)\).  If
+\(P=\sum_{i=0}^n a_i x^i\), We have the following formula:
+\[P(y+a)= \sum_{i=0}^{n} a_i (y+v)^i = \sum_{k=0}^{n}
+(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right) v^{i-k}) y^k\]
+
+The polynomial \(P\) has exactly one root in the interval \((v,+\infty)\)
+if  and only if
+the polynomial \(\theta_v(P)\) has exactly one root in the interval
+\((0,+\infty)\).  This is particularly interesting for the case where
+\(v=1\).  We proved this lemma, using our criterion for a unique root
+in an unbounded interval to express the existence of root.
 
 Thus, if we apply Descartes's law of signs on the coefficients
 \(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right)\), we
 can obtain a sufficient criterion for the existence of exactly one
 root of polynomial \(P=\sum_{i=0}^{n}a_ix^i\) in the interval
 \((1,+\infty)\).
-
-With our approach to describe unique roots of polynomials inside
-unbounded intervals, we can easily establish a correspondence between
-the way we express existence of a unique root for the two intervals.
 \subsection{A criterion for the interval \((0,1)\)}
 Descartes' law of signs works for unbounded intervals.  In this
 section, we see how to cover also bounded intervals. The trick here relies
@@ -559,7 +573,7 @@ number of sign changes in a list of coefficients is the same as the
 number of sign changes in the reversed list.
 
 However, the roots of a polynomial on the interval \((1,+\infty)\)
-infinity are in one-to-one correspondence with the roots of the
+are in one-to-one correspondence with the roots of the
 reversed polynomial between zero and one. This is due to the following
 equation:
 \[\sum_{i=0}^{n}a_i x^i = x^n\times\sum_{i=0}^{n}a_i x^{i-n}\]
@@ -572,7 +586,20 @@ polynomial, and the expression \((\frac{1}{y})^n\) never becomes 0 for
 and \(+\infty\) if and only if \(y=x^-1\) is a root of the reversed
 polynomial between \(0\) and \(1\).
 
-For instance, we can consider the polynomial \(P(x) = x^3 - 5/2 x^2 - 2 x + 3/2\),
+Let us note \(\rho\) the function that computes the reverse of a
+polynomial.  Here we need to be precise: the coefficients of a
+polynomial of degree \(n\) actually are the coefficients of a vector
+in an \(n+1\) dimensional space, whose basis is made of the monomials
+\(X^i\) where \(i\in\{0,n\}\).  Seen as an operation on this vector
+space, \(\rho\) is an automorphism and is its own inverse.  But
+polynomials of degree less than \(n\) are also elements of this vector
+space and the reverse operation must be understood as reversing the
+list of coefficients of length \(n+1\) obtained by completing the
+polynomials description with enough 0 coefficients.
+
+
+To illustrate the correspondance between a polynomial and its reverse,
+we can consider the polynomial \(P(x) = x^3 - 5/2 x^2 - 2 x + 3/2\),
 the reversed polynomial is \(Q(x) = 3/2 x^3 - 2 x^2 - 5/2 x + 1\) and after
 the variable change we obtain the polynomial \(3/2 x^3 + 5/2 x^2 - 2 x - 2\)
 which exhibits only one sign change.  This predicts that the polynomial has
@@ -590,14 +617,14 @@ the polynomial \(Q\), which has a single root between 1 and \(+\infty\).
 and its reverse \(\frac{3}{2}x^3 -2 x^2 - \frac{5}{2} x + 1\) (dashed)}
 \end{figure}
 
-With our approach to describe unique roots of polynomials, we need to
-establish a correspondence between the criterion for unbounded
-intervals and the criterion for bounded intervals. As this proof also
-involves composition with the inverse function, this is one of the
-trickiest proofs in our developments, in particular when we need to
-find the sub-interval and the slope that is guaranteed on this
-interval.  This is a place where our constructive intermediate value
-theorem plays a role.
+As a conclusion, we cal also establish a correspondance between unique
+roots in \((1,+\infty)\) unique roots in \((0,1)\), but not for the
+same polynomials.  When working on rational numbers, this
+correspondance works by linking the criterion for unbounded intervals
+with criterion for bounded interval.  This proof involves the 
+computation of slope for a \(x^np(1/x)\) from the slope of \(p\),
+which makes it trickier than the rest.  This is a place where
+our constructive intermediate value theorem plays a role.
 
 \subsection{handling arbitrary bounded intervals}
 
@@ -610,7 +637,17 @@ polynomial function which maps any \(x\) to \(p(x)\) has a root
 between \(l\) and \(r\) if and only if the polynomial function which
 maps any \(y\) to \(p((r - l) y + l)\) has a root between 0 and 1.
 
-This is illustrated in figure~\ref{expand-translate}, where the shape
+Here again, we can define a generic transformation on polynomials,
+named \(\chi_k\) that corresponds to expanding with a given ratio.
+For an arbitrary polynomial \(P=\sum_{i=0}^n a_i X^i\), the polynomial
+\(chi_k(p)\) is defined as follows:
+\[chi_k(p) = \sum_{i=0}^n a_i(kX^i) = \sum_i{i=0}^n a_ik^i x^i\]
+
+Thus, the change of variable to study the roots of polynomial \(p\)
+is actually represented by \(\chi_{r-l}\circ \theta_l\).
+
+The geometric effect of the polynomial transformation
+is illustrated in figure~\ref{expand-translate}, where the shape
 of the curve for the polynomial \(\frac{x^3}{8} - \frac{x^2}{8} + 3
 x\) inside the interval \((2,4)\) is reproduced by the shape of the
 curve for the polynomial \(x^3 -\frac{5}{2}x^2-2x+\frac{3}{2}\) inside
@@ -623,9 +660,18 @@ the theorem \((0,1)\).
   corresponding transformed polynomial between \((0,1)\)}
 \end{figure}
 \subsection{Recapitulating operations}\label{ssec:ops}
-In our formal development, we defined three operations for
-translating, expanding, and reversing the list of coefficients.  The
-Bernstein coefficients for a polynomial \(p\) and an interval \((l,r)\)
+In our formal development, we defined the three operations for
+translating (\(\theta\)), expanding (\(\chi\)),
+ and reversing the list of coefficients (\(\rho\)).  We can then
+compute a sequence of coefficients by applying the transformation
+\[\theta_1\circ\rho\circ \chi_{r-l}\circ_{l}\]
+The coefficients we obtain satisfy this equality, which can be compared
+with the definition of Bernstein coefficients from 
+section~\ref{sec:bernsteindef}.
+It appears that the coefficients \(c_i\) that one obtains through this
+process are 
+The
+Bernstein coefficients for a polynomial \(p\)  an interval \((l,r)\)
 are then obtained by, first expanding (composing \(p\) with 
 \(x\mapsto (r-l) x + l\), then reversing the list of coefficients, and
 then translating, i.e. composing with \(x \rightarrow x - 1\).  The
@@ -650,7 +696,7 @@ of exactly one root in bounded intervals and in unbounded intervals,
 \end{itemize}
 
 \section{Dichotomy}
-\label{dichotomy}
+\label{sec:dicho}
 Bernstein coefficients give precise information when they exhibit
 either zero or one sign change. in the first case, we have the
 guarantee that there are no roots of the considered polynomial in the
@@ -695,33 +741,39 @@ for the two half intervals, marked by square boxes
 really gets closer to the polynomial's curve, and provides a much better
 approximation of the polynomial.
 
-It may seem that computing Bernstein polynomials is a costly process, however
-it happens that there is a very simple method to deduce Bernstein coefficients
-for one interval from coefficients for another interval.
+The formula given in section~\ref{sec:bernsteindef} is useful to compute an
+initial series of Bernstein coefficients, and the correctness of the
+conditions for existence of roots based on these coefficients can be
+justified using the transformation described in
+section~\ref{ssec:ops}.
 
-\subsection{splitting algorithm}\label{ssec:split}
+It appears that computing Bernstein polynomials is a costly process.
 Around 1950, De Casteljau noticed that the coefficients for the sub intervals
 were easy to compute from the coefficients for the big interval
 through a simple recursive process. We have also proved the
 correctness of this algorithm. This proof is the topic of the next
 section.
 
-In the initialization of the algorithm described in section
-\ref{ssec:dicho}, the Bersnstein coeffcients of the polynomial are
-computed using the transformations studied in section \ref{ssec:ops}.
-Yet the computational interest of this dichotomy process lies in the
-fact that given three pairwise distinct rational numbers $a, b, m$,
-there exists an efficient algorithm to deduce the two repsective lists
+\subsection{Bernstein Bases}
+\label{ssec:basis}
+As soon as \(r\) and \(l\) are different, The transformations used in
+section \ref{ssec:ops} are all inversible.  
+The inverse of translating by a constant \(a\) is translating by
+the constant \(a\), the inverse of reversing a list of coefficients
+is reversing again, and the inverse of expanding by a ratio \(k\) is
+expanding by the ratio \(k^{-1}\).
+
+\subsection{splitting algorithm}\label{ssec:split}
+
+Given three pairwise distinct rational numbers $a, b, m$,
+there exists an efficient algorithm to deduce the two respective lists
 of Bernstein coefficients of a polynomial $P$ on intervals $(a, m)$
 and $(m, b)$ from the list of Bernstein coefficients of $P$ on
-interval $(a, b)$. Hence the new Bernstein coefficients needed at the
-recursive call of step {\bf (3)} are easy to obtain, thanks to the
-so-called de Casteljau algorithm, named after its inventor, an
-ingeneer in French car industry.
+interval $(a, b)$.
 
-Let \C{c} be the sequence of coefficients of a polynomial $q$
-in the Bernstein basis of degree $p$ with parmeters $a\in \mathbb{Q}$
-and $b\in \mathbb{Q}$. Let $m\in \mathbb{Q}$ be a rational number
+Let \C{c} be the sequence of Bernstein coefficients of a polynomial $q$
+for an interval \((a,b)\) with \(a, b\in \mathbb{Q}\) and degree \(n\).
+Let $m\in \mathbb{Q}$ be a rational number
 distinct from $a$ and $b$. We pose
 $\alpha := \frac{m - a}{b - a}$ and $\beta := \frac{b - m}{b -a}$. The
 \C{|*de_casteljau*|} algorithm is defined recursively by:
