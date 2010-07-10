@@ -295,30 +295,27 @@ can be sure that any other bend in the curve stays away of the x-axis.
 
 \section{Describing roots of a polynomial in the rational setting}
 \label{sec:rational}
-In mathematics, we are accustomed to use several fields that have different
-properties regarding the existence of roots of polynomials.  The most general
-case is the the case of algebraically closed fields, like the fields of complex
-numbers.  In these fields, any polynomial of degree larger than 1 and
-with the coefficients in the field is guaranteed to have a root in the field.
-For instance, any polynomial with complex coefficients is guaranteed to have
-a root that is a complex number.
 
-Then, we can consider an intermediary kind of fields, known as real closed
-fields, like the field of real numbers.  These fields are
-ordered and contain enough elements
+Roots of a polynomial with coefficient in a given field are not
+necessary in this field. This is only  the case with algebraically
+closed fields like the field of complex numbers.
+Real closed fields, like the field of real numbers, give weaker
+properties on the existence of roots: only polynomials with odd degree
+have at least one root in the real closed field of their coefficients.
+These fields are ordered and contain enough elements
 so that they enjoy the existence of the {\em intermediate value theorem}:
 any polynomial that has a negative value in one point \(a\) and a positive value
 in another point \(b\) is guaranteed to have a root at some point between
-\(a\) and \(b\).  The field of real numbers satisfies this property.
+\(a\) and \(b\).
 
-Then, we can consider smaller fields, like the field of rational numbers.
-Here we don't have the {\em intermediate value theorem} anymore.  Still, it
-makes sense to say that a bounded interval in the field of rational number
-may contain exactly one root because the polynomial's curve crosses the
-x-axis in exactly one point, which can be approximated arbitrarily close,
-even if it does not really exist in the field of rational numbers.  This
-what we want to make precise in the next two sections.
-
+Then, we can consider even smaller fields, like the field of rational numbers.
+Here we don't have the {\em intermediate value theorem}
+anymore. Still, it makes sense to say that a polynomial with rational
+coefficients has a single \emph{real} root in a given interval with rational
+endpoints, even without defining real points. In that case indeed the
+polynomial crosses the real x-axis in exactly one point, which
+can be approximated arbitrarily precisely by rational numbers.
+This what we want to make precise in the next two sections.
 
 \subsection{Criteria for the existence of a unique root}
 We concentrate on a sufficient criterion for the existence of a root
@@ -328,12 +325,12 @@ criterion is based on slopes.
 
 Ensuring that the slope is positive or negative is some interval helps
 making sure that there are not two roots.  In our setting, where the
-polynomials we consider have only simple roots, we have a stronger
+polynomials we consider have only simple roots, we have the stronger
 property that the slope is separated from 0 by a given ratio.  In the
 case of positive slopes, we write the slope requirement for a
 polynomial \(p\) inside a given interval \(I\) as follows:
-\[\exists k, 0 < k \wedge \forall x y, x \in I \wedge y \in I
-\wedge x < y \Rightarrow k(y - x) < p(y) - p (x) \]
+\[\exists k, 0 < k \quad \wedge \quad \forall x\ y, [x \in I \wedge y \in I
+\wedge x < y \Rightarrow k(y - x) < p(y) - p (x)] \]
 
 Depending on the kind of interval that we will consider, we will have
 two different ways to express the existence of a single root in the
@@ -344,9 +341,9 @@ interval.
   decomposed into three parts, the first part where the polynomial's
   value is always negative (\(I_1\) in Figure~\ref{bounded_decompose}, the second part where the polynomial's
   value goes from negative to positive with a requirement on the
-  slope (\(I_2\) in Figure~\ref{bounded_decompose}, and the third part where the polynomial's value is always
+  slope (\(I_2\) in Figure~\ref{bounded_decompose}), and the third part where the polynomial's value is always
   positive (\(I_3\) in Figure \ref{bounded_decompose}).
-\begin{figure}\label{bounded_decompose}
+\begin{figure}[h]\label{bounded_decompose}
 \begin{center}
 \includegraphics[clip=true,trim= 2cm 7cm 0cm 9cm,scale=0.3]{bounded_decompose.pdf}
 \end{center}
@@ -355,10 +352,10 @@ interval.
 \item If the interval is unbounded, we express that the interval can
   be decomposed into two parts, the first part where the polynomials
   value is always negative (\(I_1\) in
-  Figure~\ref{unbounded_decompose}, and the second part where there is
+  Figure~\ref{unbounded_decompose}), and the second part where there is
   a requirement on the slope with a positive slope (\(I_2\) in
   Figure~\ref{unbounded_decompose}).
-\begin{figure}\label{unbounded_decompose}
+\begin{figure}[h]\label{unbounded_decompose}
 \begin{center}
 \includegraphics[clip=true,trim=2cm 3cm 2cm 9cm, scale=0.3]{unbounded_decompose.pdf}
 \end{center}
@@ -370,23 +367,27 @@ interval.
 \label{ssec:civt}
 While we can't be sure to produce a rational value on which the
 polynomial of interest returns the zero value, we at least need to be
-able to produce an input for which the polynomial's value is
+able to produce an input for which the polynomial's absolute value is
 arbitrarily small. In classical mathematics once we know that the
 polynomial takes values of opposite sign at the bounds of an interval,
 we know that there is a root for this polynomial in this interval,
 thanks to the {\em intermediate value theorem}. For this work, we establish
-a simplified constructive replacement of the intermediate value
-theorem especially for polynomials.  The statement we prove has the following
+a simplified constructive, real point free, replacement of the intermediate value
+theorem specialized for polynomials.  The statement we prove has the following
 form:
-\[\forall p~x~y~\varepsilon, 0 < \varepsilon \rightarrow
-p(x) < 0 \leq p(y) \rightarrow\\
-\exists x'~ y', -\varepsilon \leq p(x') < 0 \leq p(y') \leq \varepsilon \wedge
-x \leq x' < y' \leq y\]
+
+\[\forall p~x~y~\varepsilon,\]
+\[0 < \varepsilon \ \ \wedge \ \
+p(x) < 0 \leq p(y)\quad \Rightarrow \quad
+[\exists x'~ y',\ -\varepsilon \leq p(x') < 0 \leq p(y') \leq
+\varepsilon\ \  \wedge \ \
+x \leq x' < y' \leq y]\]
 We call this theorem the {\em constructive intermediate value theorem}.
 
 We again rely on reasoning about slopes. Without loss of generality,
-we can assume that the two values \(x\) and \(y\) are positive.  assuming
-the polynomial has the shape \(a + X \times p'\), we construct another
+we can assume that the two values \(x\) and \(y\) are positive. Assuming
+that the polynomial has the shape \(a + X \times p'\), we construct
+another
 polynomial \(P''\) whose coefficients are the absolute values of the
 coefficients of \(P''\).  This polynomial is increasing and its maximum
 value in \([x,y]\) is reached in \(y\).   We prove that the slope
@@ -401,7 +402,7 @@ choose an \(n\) so that \(\frac{k(y-x)}{n} < \varepsilon\)
  We then consider the
 \(n+1\) values \(a_i = x + \frac{i\times (y-x)}{n}\) and we solve a
 discrete problem over the values \(a_i\).  We simply need to find the
-largest prefix \(a_0, \ldots, a_{j-1}\) so that all values \(p(a_k\) in this
+largest prefix \(a_0, \ldots, a_{j-1}\) so that all values \(p(a_k)\) in this
 prefix are negative.  We can set \(x' =a_{j-1}\), because the next
 value \(a_j\) is necessarily non-negative and
 \(p(a_j) - p(x') < \varepsilon\), thus \(-\varepsilon < p(x') < 0\).
@@ -424,15 +425,17 @@ also be eligible, but it is not the smallest one.
 One of the main results studied in this paper
 is that having only one sign changes in the
 sequence of Bernstein coefficients for the polynomial \(p\) and the
-interval \((l,r)\) ensures that there is only one root \(p\) inside
-\((l,r)\).  The proof of this results relies on a similar property for
-the standard coefficients of another polynomial \(p'\): if there is
-only one sign change in the coefficients of \(p'\) then \(p'\) has
+interval \((l,r)\) ensures that there is only one root of \(p\) inside
+\((l,r)\).  The proof of this result relies on a similar property for
+the standard coefficients of another polynomial \(q\): if there is
+only one sign change in the coefficients of \(q\) then \(q\) has
 only one root inside the interval \((l,r)\).  In this section, we
 discuss how this property is proved formally.
 
 \subsection{A Geometrical explanation of the proof}
-Let's first describe a simple graphical argument based on curves for polynomial functions between 0 and \(+\infty\), as shown in figure~\ref{graph-desc}.
+Let's first describe a simple graphical argument based on curves for
+polynomial functions between 0 and \(+\infty\), as shown in
+figure~\ref{graph-desc}.
 \begin{figure}
 \begin{center}
 \includegraphics[width=0.5\textwidth]{alternated2.png}
@@ -450,7 +453,7 @@ sign change}
 To describe our proof, we assume that new polynomials are built from
 existing ones by multiplying them by the polynomial \(X\) and adding a
 constant; an operation that is known as ``Horner's scheme''.
-Polynomials with one sign change and a positive principal coefficient
+Polynomials with one sign change and a positive leading coefficient
 are obtained by starting with a positive constant, applying Horner's
 scheme a certain number of times with non-negative constants, then
 applying it a negative constant, and then applying it again a certain
@@ -488,7 +491,7 @@ done using a simple recursive function, written in the following form:
   Fixpoint |*all_pos_or_zero*| (l:seq Qcb) : bool :=
   if l is a::tl then (0 <= a) && all_pos_or_zero tl else true.
 \end{lstlisting}
-As a reminder, the Coq syntax variant that we use, {\tt ssreflect},
+As a reminder, the Coq syntax variant that we use, \ssr{},
 privilegies boolean predicates, so that {\tt (0 <= a)} stands for a boolean
 value computed by a recursive function instead of a proposition as in
 standard Coq litterature.  Also, the type {\tt Qcb} stands for a
@@ -501,7 +504,7 @@ on syntactic equality, in other words Leibnitz equality.  The type constructor
 {\tt seq } is a type for lists, with extra constraints on the types
 that can be
 stored in such lists: equality must be decidable, a feature that can then be
-exploited intensively by the {\tt ssreflect} package
+exploited intensively by the \ssr{} package
 \cite{GONTHIER:2008:INRIA-00258384:4}.
 
 We should remark that polynomials satisfying the boolean predicate
@@ -515,7 +518,8 @@ in \((0,+\infty)\) and from then, we also prove by induction that
 any polynomial with only non-negative coefficients is increasing.
 
 We then prove that for every polynomial \(P\)  with non-negative coefficients,
-the product \(x \times P(x)\) can be made arbitrarily close to 0.
+the product \(x \times P(x)\) can be made arbitrarily close to 0 while
+$x$ stays in \((0,+\infty)\).
 
 \subsection{Two lemmas on slopes}
 A first lemma on slopes concerns the existence of points where a
@@ -525,16 +529,16 @@ suffices to take a value that is large enough.  As the proof is
 constructive, we need to be more precise: assuming the slope is larger
 than \(k\) for any \(y\) larger than \(x_1\), it suffices to take any
 value larger than \(x_1 + \frac{a - P(x_1)}{k}\).  This result is
-remembered in our development under the name {\tt above\_slope}.
+remembered in our development under the name \C{|*above\_slope*|}.
 
 A second lemma on slopes concerns the slope of a product of the form
 \(x \times P(x)\).  This
 lemma reproduces the known formulas for the derivative of products of derivable
-functions, but is expressed solely in terms of lower bounds of slopes.
-{\sl if  a function \(f\) has a slope larger than or equal to a non-negative
+functions, but is expressed solely in terms of lower bounds of slopes:
+ If  a function \(f\) has a slope larger than or equal to a non-negative
 ratio \(k_f\) when \(x\) is larger than a certain bound \(a\), then
 then the slope of the product \(x \times f(x)\) is larger than
-\(a k_f + f(x)\)}.
+\(a k_f + f(x)\).
 
 This statement requires \(f\) to have a positive slope, but it leaves open
 whether \(f(x)\) is positive or not.  In particular, the values \(a\) and
@@ -543,7 +547,8 @@ bound of interval \(I_2\) as used in the criterion for existence of a unique
 root in an unbounded interval (see Figure~\ref{unbounded_decompose}).
 
 \subsection{Polynomials with exactly one sign change}
-We can then address polynomials with exactly one sign change.  We want
+We can then address the case of polynomials with exactly one sign
+change.  We want
 to show that these polynomials have exactly one root.  We exhibit the
 two intervals described in the criterion for unbounded intervals (see
 Figure~\ref{unbounded_decompose}) the positive value \(x_1\) and the
@@ -551,14 +556,14 @@ positive ratio \(k\) such that the polynomial is negative in the
 interval \((0, x_1)\) and the slope between any two values above
 \(x_1\) is larger than \(k\).
 
-To detect polynomial with exactly one sign changes, we use two recursive
+To detect polynomials with exactly one sign changes, we use two recursive
 functions.  The first one, which we call {\tt alternate\_1}, recognizes
 polynomials with at least one positive coefficient, preceded by any number
-of non-positive coefficients (possibly 0) and followed by only non-negative
+of non-positive coefficients (possibly 0), and followed by only non-negative
 coefficients, as checked by {\tt all\_pos\_or\_zero}.  This function is
 defined as follows:
 \begin{lstlisting}
-Fixpoint alternate_1 (l:seq Qcb) : bool :=
+Fixpoint |*alternate_1*| (l:seq Qcb) : bool :=
   if l is a::tl then
      if 0 < a then all_pos_or_zero tl else alternate_1 tl
   else false.
@@ -628,13 +633,13 @@ the problem of finding the roots of a polynomial inside an arbitrary
 bounded interval \((l,r)\) successively with the problem of finding
 the roots of an other polynomial inside the interval \((0,1)\) and
 with the problem of finding the roots of yet another polynomial inside
-the interval \((0,+\infty)\).  These transformation make it possible to
+the interval \((0,+\infty)\).  These transformations make it possible to
 compute another collection of coefficients, which happen to be very simply
 related to Bernstein coefficients.
 
 Proving the properties of Bernstein coefficients works by establishing
 a route from Descartes' law of signs to Bernstein coefficients.  Descartes'
-law of signs works for the interval \(0,+\infty\).  This criterion
+law of signs works for the interval \((0,+\infty)\).  This criterion
 can easily be adapted to any half-line interval \((a,+\infty)\) and
 more precisely to \((1,+\infty)\).  Then a criterion on \((1,+\infty)\)
 can be transformed into a criterion on \((0,1)\). This can, in turn,
@@ -649,18 +654,20 @@ criterion for the interval \((1, +\infty)\).
 In the following, we will call \(\theta_v\) the transformation that
 maps any polynomial \(P\) to the polynomial \(y \mapsto P(y+v)\).  If
 \(P=\sum_{i=0}^n a_i x^i\), We have the following formula:
-\[P(y+a)= \sum_{i=0}^{n} a_i (y+v)^i = \sum_{k=0}^{n}
-(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right) v^{i-k}) y^k\]
+\[P(y+v)= \sum_{i=0}^{n} a_i (y+v)^i = \sum_{k=0}^{n}
+(\sum_{i=k}^{n}a_i\binom{i}{k}v^{i-k}) y^k\]
 
 The polynomial \(P\) has exactly one root in the interval \((v,+\infty)\)
 if  and only if
 the polynomial \(\theta_v(P)\) has exactly one root in the interval
-\((0,+\infty)\).  This is particularly interesting for the case where
-\(v=1\).  We proved this lemma, using our criterion for a unique root
+\((0,+\infty)\).  % This is particularly interesting for the case where
+% \(v=1\).
+We proved this lemma, using our criterion for a unique root
 in an unbounded interval to express the existence of root.
 
 Thus, if we apply Descartes's law of signs on the coefficients
-\(\sum_{i=k}^{n}a_i\left(\begin{array}{c}i\\k\end{array}\right)\), we
+\(\sum_{i=k}^{n}a_i\binom{i}{k}\)
+ we
 can obtain a sufficient criterion for the existence of exactly one
 root of polynomial \(P=\sum_{i=0}^{n}a_ix^i\) in the interval
 \((1,+\infty)\).
@@ -682,15 +689,15 @@ change of index \(j=n-i\) in the sum.
 The polynomial \(\sum_{j=0}^{n} a_{n-j}y^j\) is exactly the reversed
 polynomial, and the expression \((\frac{1}{y})^n\) never becomes 0 for
 \(y\in (0,1)\).  Thus, \(x\) is a root of the polynomial between \(1\)
-and \(+\infty\) if and only if \(y=x^-1\) is a root of the reversed
+and \(+\infty\) if and only if \(y=x^{-1}\) is a root of the reversed
 polynomial between \(0\) and \(1\).
 
 Let us note \(\rho\) the function that computes the reverse of a
 polynomial.  Here we need to be precise: the coefficients of a
 polynomial of degree \(n\) actually are the coefficients of a vector
 in an \(n+1\) dimensional space, whose basis is made of the monomials
-\(X^i\) where \(i\in\{0,n\}\).  Seen as an operation on this vector
-space, \(\rho\) is an automorphism and is its own inverse.  But
+\(X^i\) where \(i\in\{0,\dots, n\}\).  Seen as an operation on this vector
+space, \(\rho\) is an involutive automorphism.  But
 polynomials of degree less than \(n\) are also elements of this vector
 space and the reverse operation must be understood as reversing the
 list of coefficients of length \(n+1\) obtained by completing the
@@ -716,21 +723,21 @@ the polynomial \(Q\), which has a single root between 1 and \(+\infty\).
 and its reverse \(\frac{3}{2}x^3 -2 x^2 - \frac{5}{2} x + 1\) (dashed)}
 \end{figure}
 
-As a conclusion, we cal also establish a correspondance between unique
+As a conclusion, we can also establish a correspondance between unique
 roots in \((1,+\infty)\) unique roots in \((0,1)\), but not for the
 same polynomials.  When working on rational numbers, this
 correspondance works by linking the criterion for unbounded intervals
-with criterion for bounded interval.  This proof involves the
+with the criterion for bounded intervals.  This proof involves the
 computation of slope for a \(x^np(1/x)\) from the slope of \(p\),
-which makes it trickier than the rest.  This is a place where
+which makes it trickier than the rest.  This is again a place where
 our constructive intermediate value theorem plays a role.
 
-\subsection{handling arbitrary bounded intervals}
+\subsection{Handling arbitrary bounded intervals}
 
 The next step is to relate the roots of any polynomial inside an
 arbitrary interval \((l,r)\) with the roots of another
 polynomial inside the interval \((0,1)\).  This is done with another
-change of variable, this time \(x= (r-l) y + l\); in other words, the
+change of variable, this time \(x= (r-l) y + l\). In other words, the
 polynomial function which maps any \(x\) to \(p(x)\) has a root
 between \(l\) and \(r\) if and only if the polynomial function which
 maps any \(y\) to \(p((r - l) y + l)\) has a root between 0 and 1.
@@ -738,8 +745,8 @@ maps any \(y\) to \(p((r - l) y + l)\) has a root between 0 and 1.
 Here again, we can define a generic transformation on polynomials,
 named \(\chi_k\) that corresponds to expanding with a given ratio.
 For an arbitrary polynomial \(P=\sum_{i=0}^n a_i X^i\), the polynomial
-\(chi_k(p)\) is defined as follows:
-\[chi_k(p) = \sum_{i=0}^n a_i(kX^i) = \sum_i{i=0}^n a_ik^i x^i\]
+\(\chi_k(p)\) is defined as follows:
+\[\chi_k(p) = \sum_{i=0}^n a_i(kX^i) = \sum_i{i=0}^n a_ik^i x^i\]
 
 Thus, the change of variable to study the roots of polynomial \(p\)
 is actually represented by \(\chi_{r-l}\circ \theta_l\).
@@ -767,7 +774,7 @@ When the coefficients we obtain have exactly one sign change, we
 know that the polynomial has exactly one root inside the interval
 \((l,r)\).
 
-By construction, each of the operation \(\theta\), \(\rho\), \(chi\)
+By construction, each of the operation \(\theta\), \(\rho\), \(\chi\)
 actually is a linear application
 of the vector space of polynomials of degree less than \(n\) into itself.
 The inverse of \(\theta_a\) is \(\theta_{-a}\), and this is easily proved,
@@ -799,9 +806,9 @@ Then let's observe the effect of \(\theta_{-l}\circ\chi_{\frac{1}{r-l}}\).
 &=&\frac{1}{\binom{n}{i}}(P_b(n,l,r,n-i))
 \end{eqnarray*}
 If the transformation \(\tau(p)\) leads to a sequence
-of coefficients \(c_i\), this means \(tau(p)=\sum_{i=0}^{n} c_i x^i\).  Now,
-using the fact that both \(\tau\) and \(tau^{-1}\) are linear, we can see
-that the polynomial \(p\) sa
+of coefficients \(c_i\), this means \(\tau(p)=\sum_{i=0}^{n} c_i x^i\).  Now,
+using the fact that both \(\tau\) and \(\tau^{-1}\) are linear, we can see
+that the polynomial \(p\) as
 \begin{eqnarray*}
 p&=&\tau^{-1}\left(\sum_{i=0}^{n} c_i X^i\right)\\
 &=&\sum_{i=0}^{n}c_i\tau^{-1}(x^i)\\
@@ -818,7 +825,7 @@ of a root in the interval \((l,r)\).
 
 \label{sec:dicho}
 Bernstein coefficients give precise information when they exhibit
-either zero or one sign change. in the first case, we have the
+either zero or one sign change. In the first case, we have the
 guarantee that there are no roots of the considered polynomial in the
 considered interval. In the second case, we have the guarantee that
 there is exactly one root.
@@ -834,7 +841,7 @@ is to refine the approximation given by the control line.
 \label{ssec:dichogeom}
 When cutting an interval in two halves, the number of control points is
 approximately doubled, because each of the new half-intervals receives a
-new sequence of \(n\) bernstein coefficients.  As a result, the control points
+new sequence of \(n\) Bernstein coefficients.  As a result, the control points
 are closer to each other and to the polynomial's curve and they give a more
 accurate account of the curve's position with respect to the x-axis.  This is
 illustrated in Figure~\ref{dichotomy-curve}, where the initial Bernstein
@@ -868,7 +875,8 @@ justified using the transformation described in
 section~\ref{ssec:ops}.
 
 It may seem that computing Bernstein coefficients is a costly process.
-Around 1950, De Casteljau noticed that the coefficients for the sub intervals
+Around 1950, while studying B\'ezier curves, De Casteljau noticed that
+the coefficients for the sub intervals
 were easy to compute from the coefficients for the big interval
 through a simple recursive process, exploiting the recurrence relation
 already given in section \ref{sec:bernsteindef}. We have also proved the
@@ -928,7 +936,7 @@ thus had \(n\) segments, we now have \(n\) new points, defining \(n-1\)
 new segments.  We repeat this process with the new segments, until we reach
 a situation where there is only one segment and we again split this
 segment into two parts in proportion of \((l,m)\) and \((m,r)\).  The
-last point is guaranteed to lie non the polynomial's curve.
+last point is guaranteed to lie on the polynomial's curve.
 
 Although we actually only use de Casteljau's algorithm when \(m\) is
 the midpoint of the initial interval, it works for any relative
@@ -1025,8 +1033,8 @@ Let us first compute the expected output of the \C{dicho'} function on
 a such a list. In other words, for any distinct rational numbers $l,
 r, m$ and any $n\in \mathbb{N}$, given $i \leq n$, we want to compute
 the coefficients of:
-$$Bern_{n, i}(l, r) := \binom{n}{i} \frac{(X - l)^i(X - r)^{n -i}}
-{(r - l)^n}$$ in the basis $(Bern_{n, i}(l, m))_{i = 0, \dots, n}$.
+$$P_b(n, l, r, i) := \binom{n}{i} \frac{(X - l)^i(X - r)^{n -i}}
+{(r - l)^n}$$ in the basis $(P_b(n, l, m, i))_{i = 0, \dots, n}$.
 We pose
 $\alpha := \frac{r -  m}{r - l}$ and $\beta := \frac{m - l}{r - l}$.
 In the polynomials of the new basis, formal denominators are of the
@@ -1036,8 +1044,8 @@ $$\frac{X - l}{r-l} = \beta \frac{X - l}{m - l} \quad \textrm{and} \quad
 and by using the binomial identity:
 $$\binom{n}{i}\binom{n - i}{j - i}  = \binom{j}{i}\binom{n}{j}$$
 we obtain that:
-$$Bern_{n, i}(l, r) =
-\sum_{j = i}^n\binom{j}{i}\alpha^{j-i}\beta^i Bern_{n, j}(l, m) \quad (*)$$
+$$P_b(n, l, r, i) =
+\sum_{j = i}^n\binom{j}{i}\alpha^{j-i}\beta^i P_b(n, l, m, j)  \quad (*)$$
 Now to achieve the proof of the \C{dicho'_correct} lemma, it is
 sufficient to prove that the values output by the \C{dicho'} function
 coincide with the ones of $(*)$, which boils down to an induction on $i$.
@@ -1079,7 +1087,7 @@ The criteria we have chosen to describe the existence of roots are
 not faithful to the usual notion of having a root.  For instance, they
 are not satisfied for the polynomials \(x^4- x^2 + \frac{1}{4}\) and
 \(x^3-\frac{3}{2} x^2 +\frac{3}{4} x -\frac{1}{8}\), which both would
-be thought of having roots inside \((0,1)\) in the usual sense, this
+be thought of having roots inside \((0,1)\) in the usual sense, these
 root being respectively \(\frac{1}{\sqrt{2}}\) and \(\frac{1}{2}\).
 The curve of the first polynomial only touches the x-axis in a place that is
 not a rational number, but stays on the positive side.  The curve of
