@@ -1146,6 +1146,72 @@ when possible.
 \section{Conclusion}
 {\sf travaux reliés: Bridges et Bishop sur la continuité uniforme, qui est
 également utilisée dans nos travaux.}
+
+This work on Bernstein polynomials combines techniques coming from
+analysis, algebra, and geometry. For instance, the properties of
+reversing the list of coefficients of a polynomial are studied by
+looking at the polynomial as a function from rational numbers to
+rational numbers. Similarly, the proof of Descartes' law of signs
+works by looking at functions and bounds on their values in various
+intervals. On the other hand, the definition of Bernstein coefficients
+relies on concepts that come from linear algebra: vector spaces,
+bases, or morphisms. Last, de Casteljau's algorithm relies on geometry
+with midpoints, or segments. It is particularly exciting that we can
+now study formally mathematical algorithms that use all these aspects
+of mathematics.
+
+This development is not made just for the beauty of it. The initial
+goal is to provide one of the basic blocks required for algebraic
+decomposition. In the short term, we want to complete this in two a
+full algorithm to isolate the roots of an arbitrary polynomial. This
+involves proving the technique to reduce the multiplicity of roots
+that we already described in the introduction, initializing the search
+for roots with an interval large enough to contain all the roots,
+programming the recursive dichotomy process, and proving that this
+process always terminates.
+
+For the proof of termination, we already know a mathematical argument,
+described in (book reference here) under the name "theorem of three
+circles". However, this theorem uses arguments based on complex
+numbers and we wish to find a more elementary proof, as we still want
+to express our result using mainly rational numbers.  Our proof of the
+law of signs already is a more elementary one than the ones found in
+the literature. This point is debatable. The concept that we use to
+describe the existence of roots are contrived, because we restrict
+ourselves to manipulating rational numbers. This is reasonable if we
+consider that our development is a stepping stone in the path towards
+defining algebraic numbers.
+
+Having Bernstein polynomials also makes it possible to consider adding
+plotting facilities to the theorem proving tool. Thus we could develop
+a tool to study mathematics where users could easily visualize the
+curves or surfaces associated to the objects they define, define new
+objects by direct graphical manipulation, and prove properties in the
+same environment. the idea is tempting, but it is not obvious that the
+high quality brought by formal verification is needed for such an
+application.
+
+In the long run, a good knowledge of Bernstein polynomials and
+coefficients opens the door to a wide variety of tools that are
+commonplace in computer aided design and possibly robotics. Splines
+and Bezier curves which are often used in drawing tools share a lot of
+properties with Bernstein control points. Thus, we can envision that
+theorem provers equipped with a library on Bernstein coefficients
+could be useful to reason on designs, for instance to check that
+several parts do not collide or that some surface has the right
+topological properties. Concerning robotics, splines and Bezier curves
+can also be used to describe the trajectory of moving vehicles. Here,
+we can dream of a time where theorem proving may play a role in
+verifying that robots will not run into trouble or endanger people. Of
+course, not all geometrical objects are described using polynomials
+and many objects are often described in the computer as a collections
+of flat objects grouped together, like broken lines, triangulations,
+or more generally simplicial complexes. However, curvy objects are
+needed if we want to represent faithfully natural objects. It is
+exciting that we are getting closer to using formal methods on models
+of the real world, but we have two remember with caution that nature
+usually is more complex than our models.
+
 \bibliographystyle{alpha}
 \bibliography{biblio}
 
