@@ -1081,7 +1081,7 @@ canonical boolean equality test.
 At many places however, we need to consider polynomials as lists of
 coefficients in a basis for the vector space of polynomials of degree
 less than a fixed value. In the case of a monomial basis, we need to
-consider lists of coefficients with a meaningfull number of tail
+consider lists of coefficients with a meaningful number of tail
 zeros. This is for instance the case in the proof that the images of
 the monomials \(X^i\) by a certain transformation are positive
 multiples of the Bernstein polynomials (see section \ref{ssec:ops}).
@@ -1090,7 +1090,7 @@ polynomial \(X^i\) should be padded with $(p - i)$ tail zeroes to
 obtain the coefficient list of \(X^i\) in the monomial basis of
 polynomials of degree less than $p$. This
 amounts to formalizing the fact that polynomials of degree less than a
-fixed value form a finite dimentional vector space and to specify the
+fixed value form a finite dimensional vector space and to specify the
 changes in the basis. Unfortunately, the linear algebra part of the
 \ssr{} archive is not yet sufficiently well integrated to get this
 easily from an existing infrastructure. We hence only define these
@@ -1099,7 +1099,7 @@ prove them correct, which certainly leaves room for improvement.
 
 Correctness proofs  of the transformations involve exact identities
 between
-polynomials and not extentional identities between polynomial
+polynomials and not extensional identities between polynomial
 functions. For this purpose we need to use normalizing constructors to
 interpret an arbitrary list into a polynomial. The constructor:
 
@@ -1179,27 +1179,33 @@ consequences of the transitivity of order.
 This \ssr{} library on idexed iterations has been of crucial
 importance in a large part of the proofs.
 
-On the other hand, the \ssr{} libraries still lack of the automated
-proof producing decision procedures available in the standard \Coq{}
+On the other hand, the \ssr{} libraries still lack of the standard
+automated proof producing decision procedures available in the \Coq{}
 system, like ring normalization or linear arithmetic decision. The
-\ssr{} structures are indeed still not connected.
+\ssr{} structures are indeed still not connected to these
+mechanism. The \Coq{} tactics on linear arithmetic are hardcoding the
+representation of integers and coefficients and should rely on a more
+abstract structure like the one of ordered field. Moreover an \ssr{}
+ring structure instance is not automatically registered as a
+legal ring structure for the \C{ring} tactic. This issue should be
+solved by bridging the gap between structured infered by type inference
+(which is the cas of our ring structures) and the OCaml database used
+by \Coq{} tactics.
 
+In the case of the automation of ring identites, it would significantly
+help the user if normalization could handle simultaneously the various
+ring and semi-ring structures that can occur in an expression, like
+the rings of polynomial coefficients, polynomials themselves and
+possibly the semi-ring of integers.
 
-%  This tactic might furthermore be enhanced to be able to deal
-% simultaneously with the various ring structures that can be mixed in a
-% goal, like the ring of polynomials and the one of its coefficients.
-
-% (example comes here)
-
-% The issue on order statements shall be partially adressed by also
-% adapting \Coq{} automated tactics to \ssr{} structures. But in this
-% case, order is often combined with non linear expressions, for which
-% it is quite difficult to get a truely efficient proof producing decision
-% procedure. This is in fact the ultimate goal of the work. So may be
-% incomplete but lightweight tools should be crafted to relieve the user
-% when possible.
-
-(cite the rational tactic?)
+In the case of the automation of ordered arithmetic, proof steps
+often involve non linear expressions, for which it is quite difficult
+to get a truely efficient proof producing decision procedure. This is
+in fact part of the long term objective of this work, namely to
+certify a complete decision procedure for the full first order theory
+of real closed fields. Yet incomplete but lightweight tools could
+probably crafted to relieve the user from pedestrian steps when
+possible.
 
 \subsection{Current state of the formalization}
 
