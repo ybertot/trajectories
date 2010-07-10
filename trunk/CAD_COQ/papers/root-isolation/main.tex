@@ -11,7 +11,8 @@
   Fr\'ed\'erique Guilhot and Assia
   Mahboubi\thanks{This work has been partially funded by the FORMATH
     project, nr. 243847, of the FET program within the 7th Framework
-    program of the European Commission.
+    program of the European Commission and by the Galapagos project, of the
+    French ANR.
 }}
 
 \maketitle
@@ -340,14 +341,17 @@ p(x) < 0 \leq p(y) \rightarrow\\
 x \leq x' < y' \leq y\]
 We call this theorem the {\em constructive intermediate value theorem}.
 
-We again rely on reasoning about slopes. First, we establish that the
+We again rely on reasoning about slopes. Without loss of generality,
+we can assume that the two values \(x\) and \(y\) are positive.  assuming
+the polynomial has the shape \(a + X \times p'\), we construct another
+polynomial \(P''\) whose coefficients are the absolute values of the
+coefficients of \(P''\).  This polynomial is increasing and its maximum
+value in \([x,y]\) is reached in \(y\).   We prove that the slope
+of the polynomial between any two points inside \([x,y]\) is smaller than
+\(k  = P''(y)\).  Thus, we establish that the
 slope of any polynomial is bounded in absolute value on any bounded
-interval. This gives us a way to establish that polynomials
-enjoy a property that is akin to but stronger
-than uniform continuity. Starting from an interval \((l,r)\) and
-a polynomial we can produce a coefficient \(k\) so that the variation
-of the polynomial between two points \(x\) and \(y\) is smaller than
-\(|k\times(y-x)|\).
+interval.  In particular, for any \(z, t\in [x,y]\), we have
+\[|p(z)-p(t)| \leq |k \times (z - t)|.\]
 
 For a given \(\varepsilon\), and assuming \(p(x) < 0 < p(y)\) we can
 choose an \(n\) so that \(\frac{k(y-x)}{n} < \varepsilon\)
@@ -372,7 +376,7 @@ also be eligible, but it is not the smallest one.
 \begin{center}
 \includegraphics[clip=true,trim=0cm 9cm 2cm 9cm,scale=0.5]{ivt.pdf}
 \end{center}
-\caption{Bounding a polynomials value}
+\caption{Finding points where a polynomial's value is very small}
 \end{figure}
 
 \section{A simple form of Descartes' law of signs}\label{sec:descartes}
@@ -998,8 +1002,59 @@ coincide with the ones of $(*)$, which boils down to an induction on $i$.
 
 \section{Formalization issues}
 \label{sec:formal}
+\subsection{Numbers}
+The work we describe in this article was intentionally not based on any
+implementation of real numbers, but expressed solely in terms natural
+numbers and rational numbers.  Our intention is to provide a description
+of Bernstein polynomials and their characteristics that will be usable in any
+real closed field, but without assuming the intermediate value theorem.
 
+We proved a minimal set of properties of polynomial functions by expressing
+these properties in the first-order theory of rational numbers.  Thus, we
+do not treat a general notion of Cauchy sequences, continuous functions, or
+derivability.  As a result, we do not need to rely on ``book equality'' or
+setoids and express all equalities using ``Leibniz equality''.
 
+As a result, our work is versatile and can be embedded in any choice of
+formalization: it is compatible with constructive mathematics as it 
+relies solely on intuitionistic mathematics and it is also readily usable
+with the ``classical real numbers'' of the standard Coq library since
+it relies on plain equality.
+
+It was instrumental in our work that we could reason on rational numbers by
+assuming that they are in a field with decidable Leibniz equality.
+In our first experiments, started around 2005, we used a model of rational
+numbers that only provided a setoid structure.  This approach turned out to be
+too limiting and the development pace has improved drastically once we came
+back to decidable equality on rational numbers.  The current formalization
+{\tt Qcb} relies on reduced fractions, composed of a numerator, a denominator,
+and a proof that they are relatively prime, expressed using a boolean
+predicate to benefit from the unicity of equality proofs in the boolean type.
+Alternative representation of rational numbers with
+Leibniz equality can also be found in \cite{canonicalrationals03}.
+
+The criteria we have chosen to describe the existence of roots are
+not faithful to the usual notion of having a root.  For instance, they
+are not satisfied for the polynomials \(x^4- x^2 + \frac{1}{4}\) and
+\(x^3-\frac{3}{2} x^2 +\frac{3}{4} x -\frac{1}{8}\), which both would
+be thought of having roots inside \((0,1)\) in the usual sense, this
+root being respectively \(\frac{1}{\sqrt{2}}\) and \(\frac{1}{2}\).
+The curve of the first polynomial only touches the x-axis in a place that is
+not a rational number, but stays on the positive side.  The curve of
+the second one really crosses the x-axis, moreover it does so in a
+rational number.  The problem is that in both case the root is multiple
+and the slope does not satisfy the property of staying away from 0.
+This shows that the criteria we used to express to represent the existence
+of roots are specially designed for this proof where we concentrate on
+polynomials with only simple roots and should probably not
+be used in over settings.
+
+On the other hand,  our ``constructive
+intermediate value theorem'' is only specialized to work on polynomials
+and could actually be easily generalized to any uniformly continuous function
+over a bounded interval.  Still, it is fair that these three aspects
+of our formalization: characterization of roots and intermediate value theorem
+are only crutches designed especially for the purpose of this development.
 \subsection{Algebraic structures}
 
 This work is based on the hierarchy of algebraic structures available
@@ -1159,7 +1214,7 @@ The automation given by the type inference based infrastructure is
 relieving the user from many painful formalization issues. Beside the
 sharing of notation and theory mentioned above, which is automatically
 infered on the fly, algebraic manipulation on indexed sums is a
-routine work. The correctness proofs of the transformations mentionned
+routine work. The correctness proofs of the transformations mentioned
 in section \ref{ssec:ops} involve a substantial work on iterated sum
 handling.
 
