@@ -715,39 +715,60 @@ In our formal development, we defined the three operations for
 translating (\(\theta\)), expanding (\(\chi\)),
  and reversing the list of coefficients (\(\rho\)).  We can then
 compute a sequence of coefficients by applying the transformation
-\[\theta_1\circ\rho\circ \chi_{r-l}\circ_{l}\]
+\[\tau = \theta_1\circ\rho\circ \chi_{r-l}\circ \theta_{l}.\]
+When the coefficients we obtain have exactly one sign change, we
+know that the polynomial has exactly one root inside the interval
+\((l,r)\).
 
-The coefficients we obtain satisfy this equality, which can be compared
-with the definition of Bernstein coefficients from
-section~\ref{sec:bernsteindef}.
-It appears that the coefficients \(c_i\) that one obtains through this
-process are
-The
-Bernstein coefficients for a polynomial \(p\)  an interval \((l,r)\)
-are then obtained by, first expanding (composing \(p\) with
-\(x\mapsto (r-l) x + l\), then reversing the list of coefficients, and
-then translating, i.e. composing with \(x \rightarrow x - 1\).  The
-coefficients we obtain through this process, \(c_i\) are related to the
-Bernstein coefficients \(b_i\)
-in the sense that \(c_i = \left(\begin{array}{c}i\\n
-\end{array}\right)b_i\), thus their sign is exactly the sign of the
-Bernstein coefficients.  It is thus enough to reason on the signs of
-the coefficients \(c_i\).  We show that one sign changes in these coefficients
-is sufficient to ensure the existence of exactly one root in the interval
-\((l,r)\).  In particular:
-
-\begin{itemize}
-\item translating a polynomial preserves the criterion for existence
-of exactly one root in bounded intervals and in unbounded intervals,
-\item expanding a polynomial preserves the criterion for existence of
-  exactly one root in bounded intervals,
-\item reversing the list of coefficients maps a polynomial satisfying
-  the criterion for the existence of exactly one root in the unbounded
-  interval \((1,+\infty)\) into a polynomial satisfying the criterion
-  for the existence of exactly one root in the bounded interval \((0,1)\).
-\end{itemize}
+By construction, each of the operation \(\theta\), \(\rho\), \(chi\)
+actually is a linear application
+of the vector space of polynomials of degree less than \(n\) into itself.
+The inverse of \(\theta_a\) is \(\theta_{-a}\), and this is easily proved,
+so that \(\theta_a\) is always bijective.  When \(k\) is nonzero,
+the inverse of \(\chi_k\) is \(\chi_{\frac{1}{k}}\), so this linear
+application is also bijective.  The inverse of \(\rho\) is itself.
+As a result, the whole transformation is also inversible and its inverse
+is \[\tau^{-1}\theta_{-l}\circ\chi_{\frac{1}{r-l}} \circ \rho \circ \theta_{-1}.\]
+We proved that the images of the monomials \(X^i\) by this inverse
+transformation are multiples of the Bernstein polynomials, in reverse order.
+Let us first observe the effect of \(\rho\circ \theta_{-1}\):
+\begin{eqnarray*}
+\tau^{-1}(X^i)=
+\theta_{-l}\circ\chi_{\frac{1}{r-l}} \circ \rho\left(\sum_{j=0}^i\binom{i}{j}(-1)^jx^{i-j}\right)
+&=&
+\theta_{-l}\circ\chi_{\frac{1}{r-l}}\left( \sum_{j=0}^i\binom{i}{j}(-1)^j x^{n-i+j}
+\right)\\
+&=&\theta_{-l}\circ\chi_{\frac{1}{r-l}}\left(x^{n-i}\sum_{j=0}^i\binom{i}{j} (-x)^j\right)\\
+&=&\theta_{-l}\circ\chi_{\frac{1}{r-l}}\left(x^{n-i}(1-x)^i\right)
+\end{eqnarray*}
+Then let's observe the effect of \(\theta_{-l}\circ\chi_{\frac{1}{r-l}}\).
+\begin{eqnarray*}
+\tau^{-1}(X^i)
+&=&\theta_{-l}\left(\frac{x^{n-i}}{(r-l)^{n-i}}\left(1-\frac{x}{r-l}\right)^i\right)\\
+&=&\theta_{-l}\left(\frac{x^{n-i}}{(r-l)^{n-i}}\frac{(r-l-x)^i}{(r-l)^i}\right)
+\\
+&=&\theta_{-l}\left(\frac{x^{n-i}(r-l-x)^i}{(r-l)^n}\right)\\
+&=&\frac{(x-l)^{n-i}(r-l-(x-l))^i}{(r-l)^n}\\
+&=&\frac{1}{\binom{n}{i}}(P_b(n,l,r,n-i))
+\end{eqnarray*}
+If the transformation \(\tau(p)\) leads to a sequence
+of coefficients \(c_i\), this means \(tau(p)=\sum_{i=0}^{n} c_i x^i\).  Now,
+using the fact that both \(\tau\) and \(tau^{-1}\) are linear, we can see
+that the polynomial \(p\) sa
+\begin{eqnarray*}
+p&=&\tau^{-1}\left(\sum_{i=0}^{n} c_i X^i\right)\\
+&=&\sum_{i=0}^{n}c_i\tau^{-1}(x^i)\\
+&=&\sum_{i=0}^{n}c_i\frac{1}{\binom{n}{i}} P_b(n,l,r,n-i)
+\end{eqnarray*}
+Thus, the Bernstein coefficients are obtained in the following manner:
+\[b_i=\binom{n}{n-i}^{-1}c_{n-i} = \binom{n}{i}^{-1}c_{n-i}\]
+Since the number of sign changes does not depend on the order
+in which the list is observed, we obtain the proof that one sign
+change in the sequence of Bernstein coefficients implies the existence
+of a root in the interval \((l,r)\).
 
 \section{Dichotomy}
+
 \label{sec:dicho}
 Bernstein coefficients give precise information when they exhibit
 either zero or one sign change. in the first case, we have the
@@ -799,83 +820,93 @@ conditions for existence of roots based on these coefficients can be
 justified using the transformation described in
 section~\ref{ssec:ops}.
 
-It appears that computing Bernstein polynomials is a costly process.
+It may seem that computing Bernstein coefficients is a costly process.
 Around 1950, De Casteljau noticed that the coefficients for the sub intervals
 were easy to compute from the coefficients for the big interval
 through a simple recursive process. We have also proved the
 correctness of this algorithm. This proof is the topic of the next
 section.
 
-\subsection{Bernstein Bases}
-\label{ssec:basis}
-As soon as \(r\) and \(l\) are different, The transformations used in
-section \ref{ssec:ops} are all inversible.
-The inverse of translating by a constant \(a\) is translating by
-the constant \(a\), the inverse of reversing a list of coefficients
-is reversing again, and the inverse of expanding by a ratio \(k\) is
-expanding by the ratio \(k^{-1}\).
-
 \subsection{splitting algorithm}\label{ssec:split}
 
-Given three pairwise distinct rational numbers $a, b, m$,
+Given three pairwise distinct rational numbers $l, r, m$,
 there exists an efficient algorithm to deduce the two respective lists
-of Bernstein coefficients of a polynomial $P$ on intervals $(a, m)$
-and $(m, b)$ from the list of Bernstein coefficients of $P$ on
-interval $(a, b)$.
+of Bernstein coefficients of a polynomial $P$ on intervals $(l, m)$
+and $(m, r)$ from the list of Bernstein coefficients of $P$ on
+interval $(l, r)$.
 
-Let \C{c} be the sequence of Bernstein coefficients of a polynomial $q$
-for an interval \((a,b)\) with \(a, b\in \mathbb{Q}\) and degree \(n\).
+Let \C{b} be the sequence of Bernstein coefficients of a polynomial $P$
+for an interval \((l,r)\) with \(l, r\in \mathbb{Q}\) and degree \(n\).
 Let $m\in \mathbb{Q}$ be a rational number
-distinct from $a$ and $b$. We pose
-$\alpha := \frac{m - a}{b - a}$ and $\beta := \frac{b - m}{b -a}$. The
+distinct from $l$ and $r$. We pose
+$\alpha := \frac{m - l}{r - l}$ and $\beta := \frac{r - m}{r - l}$. The
 \C{|*de_casteljau*|} algorithm is defined recursively by:
 \begin{lstlisting}
-  Fixpoint |*de_casteljau*| (alpha beta : Qcb) (c : nat -> Qcb) (n : nat) :=
+  Fixpoint |*de_casteljau*| (alpha beta : Qcb) (b : nat -> Qcb) (n : nat) :=
     match n with
     | O => b
     | i.+1 => fun j =>
       (alpha * de_casteljau c i j + beta * de_casteljau c i j.+1)
   end.
 \end{lstlisting}
-where the initial sequence of coefficients \C{c} is represented by an
-infinite sequence of rational numbers, for which only the $p$ first
-elements are relevant.
-It computes the two expected new Bernstein coefficients lists:
+where the initial sequence of coefficients \C{b} is represented by an
+infinite sequence of rational numbers, for which only the first $n$
+elements are relevant.  The following function gives the Bernstein
+coefficients of \(P\) on the finite interval \((l,m)\).
 \begin{lstlisting}
   Definition |*dicho'*| alpha beta c i :=
     de_casteljau alpha beta c i 0.
 \end{lstlisting}
-give the Berstein coefficients of $P$ on the finite interval with
-bounds $a$ and $m$, and:
+The following function gives the Bernstein coefficients of \(P\) on the
+finite interval \((m,r)\).
 \begin{lstlisting}
   Definition |*dicho*| alpha beta p c i :=
      de_casteljau alpha beta c (p - i) i.
 \end{lstlisting}
-gives the Bernstein coefficients of $P$ on the finite interval with
-bounds $m$ and $b$. Note that if in our case, we will only use the de
-Casteljau algorithm with $m$ the midpoint of the initial interval, we
-do not make here any assumption on the respective positions of $a, b$
-and $m$. The aim of this section is to prove that this algorithms is
+
+Observing the function \C{|*de_casteljau*|}
+more precisely, we see that the algorithm actually
+proceeds by creating a succession of lines where the element at rank
+\(j\) in a given line is obtained by computing a weighted sum of the two
+elements at rank \(j\) and \(j+1\) on the previous line.
+
+This process can be illustrated geometrically by a succession of broken
+lines.  For the first line, we take the control line of the initial
+interval.  Then, for each of the segments that compose this control line,
+we cut this segment in the same proportion as the the proportion in which
+the interval is split between \((l,m)\) and \((m,r)\).  This gives us
+a new collection of points.  We started with \(n + 1\) control points and
+thus had \(n\) segments, we now have \(n\) new points, defining \(n-1\)
+new segments.  We repeat this process with the new segments, until we reach
+a situation where there is only one segment and we again split this
+segment into two parts in proportion of \((l,m)\) and \((m,r)\).  The
+last point is guaranteed to lie non the polynomial's curve.
+
+Although we actually only use de Casteljau's algorithm when \(m\) is
+the midpoint of the initial interval, it works for any relative
+positions of \(l\), \(m\), and \(r\), as long as they are pairwise distinct.
+
+The aim of this section is to prove that this algorithms is
 correct, i.e. that the \C{|*dicho*|} and \C{|*dicho'*|} function
 indeed computes the expected Bernstein coefficients. The correctness
 theorems as stated in \Coq{} are:
 \begin{lstlisting}
-Lemma |*dicho'_correct*| : forall (a b m : Qcb)(q : {poly Qcb})(p : nat)
+Lemma |*dicho'_correct*| : forall (l r m : Qcb)(q : {poly Qcb})(p : nat)
 (c : nat -> Qcb)
-(alpha := (b - m) * (b - a)^-1) (beta := (m - a) * (b - a)^-1),
-  m != a ->
-  q = \sum_(i < p.+1)(c i) * bernp a b p i ->
-  q = \sum_(j < p.+1)(dicho' alpha beta c j) * bernp a m p j.
+(alpha := (r - m) * (r - l)^-1) (beta := (m - l) * (r - l)^-1),
+  m != l ->
+  q = \sum_(i < p.+1)(c i) * bernp l r p i ->
+  q = \sum_(j < p.+1)(dicho' alpha beta c j) * bernp l m p j.
 
-Lemma |*dicho_correct*| : forall (a b m : Qcb)(q : {poly Qcb})(p : nat)
+Lemma |*dicho_correct*| : forall (l r m : Qcb)(q : {poly Qcb})(p : nat)
 (c : nat -> Qcb)
-(alpha := (b - m) * (b - a)^-1) (beta := ((m - a) * (b - a)^-1)),
-  m != b ->
-  q = \sum_(i < p.+1)(c i) * bernp a b p i ->
-  q = \sum_(j < p.+1)(dicho alpha beta p c j) * bernp m b p j.
+(alpha := (r - m) * (r - l)^-1) (beta := ((m - l) * (r - l)^-1)),
+  m != r ->
+  q = \sum_(i < p.+1)(c i) * bernp l r p i ->
+  q = \sum_(j < p.+1)(dicho alpha beta p c j) * bernp m r p j.
 \end{lstlisting}
-where \C{(bernp a b p i)} is the $i$-th polynomial in the Bernstein
-basis of degree $p$ with paramters $a$ and $b$.
+where \C{(bernp l r p i)} is the $i$-th polynomial in the Bernstein
+basis of degree $p$ with parameters $l$ and $r$.
 \begin{figure}[ht]\label{bern}
 \begin{center}
 \includegraphics[width=0.5\textwidth]{bern1.pdf}
@@ -886,22 +917,22 @@ basis of degree $p$ with paramters $a$ and $b$.
 
 The properties of computations performed by the de Casteljau algorithm
 are summarized on Figure \ref{bern}. Starting from the input list
-$c := (b_0^(0)\dots b_p^{(0)})$ of coefficients in the basis with
-parameters $a$ and $b$, on the upper side of the triangle, it
+$b := (b_0^(0)\dots b_p^{(0)})$ of coefficients in the basis with
+parameters $l$ and $r$, on the upper side of the triangle, it
 computes the full triangle, so that in the end the two expected output
 lists can be read on the two  other sides of the triangle. The list
-$c' := b_0^{(0)} \dots b_0^{(j)} \dots b_0^{(p)}$ is the list of
-coefficients in the basis with parameters $a$ and $m$ output by
+$b' := b_0^{(0)} \dots b_0^{(j)} \dots b_0^{(p)}$ is the list of
+coefficients in the basis with parameters $l$ and $m$ output by
 \C{dicho'}. The list
-$c'' := b_0^{(p)} \dots b_j^{(p - j)} \dots b_p^{0}$
- is the list of coefficients in the basis with parameters $m$ and $b$
+$b'' := b_0^{(p)} \dots b_j^{(p - j)} \dots b_p^{0}$
+ is the list of coefficients in the basis with parameters $m$ and $r$
  output by \C{dicho}.  The green area on Figure \ref{bern} show which values
-a the computation of an arbitrary given point in the triangle relies on.
+the computation of an arbitrary given point in the triangle relies on.
 This structure is imposed by the fixpoint
  equation of the recursive definition of the de Casteljau algorithm:
 \begin{lstlisting}
-  de_casteljau alpha beta c n.+1 i =
-  (de_casteljau alpha beta c n i) + (de_casteljau alpha beta c n i.+1)
+  de_casteljau alpha beta b n.+1 i =
+  (de_casteljau alpha beta b n i) + (de_casteljau alpha beta b n i.+1)
 \end{lstlisting}
 which looks very similar to the recursive relation governing the
 Pascal triangle.
@@ -910,55 +941,55 @@ Let us first notice that the shape of Bernstein polynomials implies
 that:
 \begin{lstlisting}
 Lemma |*bern_swap*| :
- forall p i l r,
- (i <= p) -> r != l ->  bernp r l p i = bernp l r p (p - i).
+ forall n i l r,
+ (i <= n) -> r != l ->  bernp r l n i = bernp l r n (n - i).
 \end{lstlisting}
-This remark implies that if $c$ is the list of coefficients of the
-polynomial $q$ in the Bernstein basis of degree $p$ with parameters
-$a$ and $b$, then the reverse of $c$ is the list of coefficients of
-the same polynomial $q$ in the Bernstein basis of degree $p$ with
-parameters $b$ and $a$: reversing the list swaps the parameters:
+This remark implies that if $b$ is the list of coefficients of the
+polynomial $p$ in the Bernstein basis of degree $n$ with parameters
+$l$ and $r$, then the reverse of $b$ is the list of coefficients of
+the same polynomial $p$ in the Bernstein basis of degree $n$ with
+parameters $r$ and $l$: reversing the list swaps the parameters:
 
 \begin{lstlisting}
-Lemma |*bern_rev_coef*| : forall (p : nat)(a b : Qcb)(c : nat -> Qcb),
-  \sum_(i < p.+1)(c i) * (bernp a b p i) =
-  \sum_(i < p.+1)(c (p - i)) * (bernp b a p i).
+Lemma |*bern_rev_coef*| : forall (n : nat)(l r : Qcb)(b : nat -> Qcb),
+  \sum_(i < n.+1)(b i) * (bernp l r n i) =
+  \sum_(i < n.+1)(b (n - i)) * (bernp r l n i).
 \end{lstlisting}
 This remark shows that the correctness of the \C{dicho'} function is
 enough to get a certified computation of both Bernstein coefficient
-lists: if $c$ is the
-initial list of Bernstein coefficients with parameters $a$ and $b$, then
-reversing $c$ gives the  coefficients with parameters $b$ and $a$,
-applying \C{dicho'} on the reverse of $c$ using $b$, $a$ amd $m$
-computes the coefficients with parameter $b$ and $m$, hence reversing
-this output gives the result expected for \C{dicho} on $c$ using $a$,
-$b$ and $m$. Using a similar symmetry reasoning on the
+lists: if $b$ is the
+initial list of Bernstein coefficients with parameters $l$ and $r$, then
+reversing $b$ gives the  coefficients with parameters $r$ and $l$,
+applying \C{dicho'} on the reverse of $b$ using $r$, $l$ and $m$
+computes the coefficients with parameter $r$ and $m$, hence reversing
+this output gives the result expected for \C{dicho} on $b$ using $l$,
+$r$ and $m$. Using a similar symmetry on the
 \C{de_casteljau} algorithm, we in fact reduce the proof of the
 \C{dicho_correct} specification to the proof of \C{dicho'_correct}.
 
 By linearity, we can also reduce the proof of the \C{dicho'_correct}
-specification to the case where the input polynomial $q$ is in fact
+specification to the case where the input polynomial $p$ is in fact
 itself a Bernstein polynomial. This means that the input coefficient
-list $c$ only contains zeros except at one position where the
+list $b$ only contains zeros except at one position where the
 coefficient is one.
 
 Let us first compute the expected output of the \C{dicho'} function on
-a such a list. In other words, for any distinct rational numbers $a,
-b, m$ and any $p\in \mathbb{N}$, given $i \leq p$, we want to compute
+a such a list. In other words, for any distinct rational numbers $l,
+r, m$ and any $n\in \mathbb{N}$, given $i \leq n$, we want to compute
 the coefficients of:
-$$Bern_{p, i}(a, b) := \binom{p}{i} \frac{(X - a)^i(X - b)^{p -i}}
-{(b  - a)^p}$$ in the basis $(Bern_{p, i}(a, m))_{i = 0, \dots, p}$.
+$$Bern_{n, i}(l, r) := \binom{n}{i} \frac{(X - l)^i(X - r)^{n -i}}
+{(r - l)^n}$$ in the basis $(Bern_{n, i}(l, m))_{i = 0, \dots, n}$.
 We pose
-$\alpha := \frac{b -  m}{b - a}$ and $\beta := \frac{m - a}{b - a}$.
+$\alpha := \frac{r -  m}{r - l}$ and $\beta := \frac{m - l}{r - l}$.
 In the polynomials of the new basis, formal denominators are of the
-form $(m - a)$. By noticing that:
-$$\frac{X - a}{b - a} = \beta \frac{X - a}{m - a} \quad \textrm{and} \quad
-\frac{b - X}{b - a} = \alpha\frac{X - a}{m - a} +\frac{m - X}{m - a}$$
+form $(m - l)$. By noticing that:
+$$\frac{X - l}{r-l} = \beta \frac{X - l}{m - l} \quad \textrm{and} \quad
+\frac{r - X}{r - l} = \alpha\frac{X - l}{m - l} +\frac{m - X}{m - l}$$
 and by using the binomial identity:
-$$\binom{p}{i}\binom{p - i}{j - i}  = \binom{j}{i}\binom{p}{j}$$
+$$\binom{n}{i}\binom{n - i}{j - i}  = \binom{j}{i}\binom{n}{j}$$
 we obtain that:
-$$Bern_{p, i}(a, b) =
-\sum_{j = i}^p\binom{j}{i}\alpha^{j-i}\beta^i Bern_{p, j}(a, m) \quad (*)$$
+$$Bern_{n, i}(l, r) =
+\sum_{j = i}^n\binom{j}{i}\alpha^{j-i}\beta^i Bern_{n, j}(l, m) \quad (*)$$
 Now to achieve the proof of the \C{dicho'_correct} lemma, it is
 sufficient to prove that the values output by the \C{dicho'} function
 coincide with the ones of $(*)$, which boils down to an induction on $i$.
