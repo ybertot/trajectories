@@ -1097,7 +1097,8 @@ easily from an existing infrastructure. We hence only define these
 linear algebra operation at a low level (catenating zeros,...) and
 prove them correct, which certainly leaves room for improvement.
 
-Correctness proofs  of the transformations involve exact identities between
+Correctness proofs  of the transformations involve exact identities
+between
 polynomials and not extentional identities between polynomial
 functions. For this purpose we need to use normalizing constructors to
 interpret an arbitrary list into a polynomial. The constructor:
@@ -1122,22 +1123,31 @@ Now the operator:
   Definition |*Poly*| := foldr poly_cons 0%:P.
 \end{lstlisting}
 iterates this construction and builds a normal polynomial out of an
-arbitrary list.
+arbitrary list. It is straightforward and useful to have lemmas
+specifying the effects of lists iterator (like catenation,
+mapping,...) under the \C{Poly} construction, specially when dealing
+with the correctness proofs of the Bernstein transformation
+(zero-padding, expansion,..).
 
+An other important consequence of the ring structure available on
+polynomials is that we are allowed to
+define a polynomials by providing its coefficient function
+\C{nat -> R}. This facility is
+in fact a direct application of the iterated operator facilities
+available in \ssr{} \cite{bigops}: given a coefficient function
+\C{c : nat -> R}, and a natural number \C{n} the expression:
+\begin{lstlisting}
+  \sum_(i < n) (c i)%:P * 'X^i
+\end{lstlisting}
+represents the polynomial $\sum_{i < n}c_i X^i$, defined as a sum of
+products of powers of the polynomial \C{'X} by constant polynomials
+built out of the first values of \C{c}.
 
-% Polynomials are equipped with a ring structure as soon as their
-% coeffocoent type is. As an indirect consequence, the \ssr{} polynomial
-% library also allows to define a polynomials on a ring structure \C{R}
-% by providing its coefficient function \C{nat -> R}. This facility is
-% in fact a simple use of the iterated operator facilities available in
-% \ssr{} \cite{bigops}: such a polynomial is simply
-
-% (here comes the Coq definition)
-
-% where \L+\sum+ is a notation for the iteration of the addition of a
-% ring structure. In particular, such sums behave as expected
-% (associativity, commutativity) and combine well with the
-% \L+\prod+ iteration of the associated ring product.
+To avoid dealing with out of bound accesses in coefficient lists, the
+de Casteljau algorithm works on infinite lists of coefficients
+represented as functions \C{nat -> Qcb}. The correctness lemmas
+however reinterpret these coefficient functions as polynomials using
+the above iterated sum facilities.
 
 
 
