@@ -29,8 +29,8 @@ Bernstein coefficients are closely related to splines and Bezier curves
 and they have a very simple geometrical interpretation, which we illustrate
 in section \ref{sec:geometrybernstein}.
 
-Bernstein coefficient are defined for a given polynomial, a given
-degree, and a given interval. if the degree is \(n\), then
+Bernstein coefficients are defined for a given polynomial, a given
+degree, and a given interval. If the degree is \(n\), then
 the coefficients form a sequence of size \(n+1\). In
 this paper, we are interested in three important properties of these
 coefficients:
@@ -51,21 +51,23 @@ concentrating on the second and third properties. These proofs will be
 done in the setting of polynomials with the rational coefficients and
 rational values.
 
-in the following, we will assume that we are working with polynomials
-whose roots are all simple. Starting from an arbitrary polynomial it
-is easy to produce another polynomial with the same roots but all of
-them simple, simply by dividing it by the greatest common divisor of
-this polynomial and its derivative.
+In the following, we will assume that we are working with polynomials
+whose roots are all simple, called separable polynomials.
+Starting from an arbitrary polynomial it is easy to produce a
+separable polynomial with the same roots by computing the greatest
+common divisor of this polynomial and its derivative.
 
 
 The main plan of the proof of the first property is to describe a
 sequence of pairs \((I_0, P_0)\) to \((I_3, P_3)\), each pair
 containing an interval and a polynomial, so that every root of
 polynomial \(P_i\) inside \(I_i\) is in bijective correspondance with
-a root of polynomial \(P_{i+1}\) in the interval \(I_{i+1}\).  The
-first interval and the first polynomial are simply \(I\) and \(P\).
-The last interval is \((0, +\infty)\) and the last polynomial is \(b_0
-+ b_1 X + \cdots + b_n X^n\), where the coefficients \(b_i\) have the
+a root of polynomial \(P_{i+1}\) in the interval \(I_{i+1}\).  If we
+study the roots of the polynomial $P$ on the interval $(l, r)$,
+then $I_0$ and $P_0$ are respectively $(l, r)$ and $P$.
+The last interval $I_3$ is \((0, +\infty)\) and the last polynomial
+$P_3$ is \(b_0 + b_1 X + \cdots + b_n X^n\), where the coefficients
+\(b_i\) have the
 same sign as the Bernstein coefficients.  Going from \(P_i\) to
 \(P_{i+1}\) we apply a given transformation.  The first transformation
 is a change of variable so that \(I_1\) is \((0,1)\) and \(P_1(x) =
