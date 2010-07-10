@@ -1157,32 +1157,47 @@ The automation given by the type inference based infrastructure is
 relieving the user from many painful formalization issues. Beside the
 sharing of notation and theory mentioned above, which is automatically
 infered on the fly, algebraic manipulation on indexed sums is a
-routine work.
+routine work. The correctness proofs of the transformations mentionned
+in section \ref{ssec:ops} involve a substantial work on iterated sum
+handling.
 
-For instance, spliting sums or distributing the product by a constant,
-even a natural number, is straightforward.
-
-(examples comes here).
+Since ring operations are automatically equipped with the iterated
+operation facilities, proof steps like distributing constant or
+natural number product on an iterated sum, replacing an iterated sum
+of zeroes elements by a zero, replacing $\sum_{i = 0}^n r_i$ by
+$\sum_{i = 0}^n r_(n - i)$ only require a single rewriting step.
+Even more complex operations combining associativity and reindexing
+like transforming $\sum_{i = 0}^{n + m} r_i$ into
+$\sum_{i = 0}^{n} r_i + \sum_{i = 0}^{m} r_{n + i}$ is again a single
+rewriting step of a generting lemma about iteration of associative
+operators.
 
 On the other side, a significant part of scripts is devoted to much
 too atomic rewrite steps to normalize ring expressions, or prove trivial
 consequences of the transitivity of order.
 
-The issue on rings should be solvable: in fact \ssr{} ring structures
-are not yet interfaced with \Coq{} automation tools like the \C{ring}
-tactic. This tactic might furthermore be enhanced to be able to deal
-simultaneously with the various ring structures that can be mixed in a
-goal, like the ring of polynomials and the one of its coefficients.
+This \ssr{} library on idexed iterations has been of crucial
+importance in a large part of the proofs.
 
-(example comes here)
+On the other hand, the \ssr{} libraries still lack of the automated
+proof producing decision procedures available in the standard \Coq{}
+system, like ring normalization or linear arithmetic decision. The
+\ssr{} structures are indeed still not connected.
 
-The issue on order statements shall be partially adressed by also
-adapting \Coq{} automated tactics to \ssr{} structures. But in this
-case, order is often combined with non linear expressions, for which
-it is quite difficult to get a truely efficient proof producing decision
-procedure. This is in fact the ultimate goal of the work. So may be
-incomplete but lightweight tools should be crafted to relieve the user
-when possible.
+
+%  This tactic might furthermore be enhanced to be able to deal
+% simultaneously with the various ring structures that can be mixed in a
+% goal, like the ring of polynomials and the one of its coefficients.
+
+% (example comes here)
+
+% The issue on order statements shall be partially adressed by also
+% adapting \Coq{} automated tactics to \ssr{} structures. But in this
+% case, order is often combined with non linear expressions, for which
+% it is quite difficult to get a truely efficient proof producing decision
+% procedure. This is in fact the ultimate goal of the work. So may be
+% incomplete but lightweight tools should be crafted to relieve the user
+% when possible.
 
 (cite the rational tactic?)
 
