@@ -1104,7 +1104,7 @@ functions. For this purpose we need to use normalizing constructors to
 interpret an arbitrary list into a polynomial. The constructor:
 
 \begin{lstlisting}
-Definition poly_cons (c : R)(p : {poly R}) :=
+Definition |*poly_cons*| (c : R)(p : {poly R}) :=
   if p is Polynomial ((_ :: _) as s) ns then
      @Polynomial R (c :: s) ns
   else c%:P.
@@ -1170,16 +1170,14 @@ Even more complex operations combining associativity and reindexing
 like transforming $\sum_{i = 0}^{n + m} r_i$ into
 $\sum_{i = 0}^{n} r_i + \sum_{i = 0}^{m} r_{n + i}$ is again a single
 rewriting step of a generting lemma about iteration of associative
-operators.
+operators. This \ssr{} library on idexed iterations has been of crucial
+importance in a large part of the proofs.
+
 
 On the other side, a significant part of scripts is devoted to much
 too atomic rewrite steps to normalize ring expressions, or prove trivial
-consequences of the transitivity of order.
-
-This \ssr{} library on idexed iterations has been of crucial
-importance in a large part of the proofs.
-
-On the other hand, the \ssr{} libraries still lack of the standard
+consequences of the transitivity of order. The \ssr{} libraries still
+lack of the standard
 automated proof producing decision procedures available in the \Coq{}
 system, like ring normalization or linear arithmetic decision. The
 \ssr{} structures are indeed still not connected to these
