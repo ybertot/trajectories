@@ -1003,102 +1003,92 @@ coincide with the ones of $(*)$, which boils down to an induction on $i$.
 This work is based on the hierarchy of algebraic structures available
 in the \ssr{} repository. This hierarchy, described in \cite{hieralg},
 has be since enriched with interfaces for ordered integral
-domains. The ordered integral domains instances we use here are
+domains and fields. The ordered integral domains instances we use here are
 integers and rational numbers. For this purpose, we have populated the
-hierarchy with the adequate structures on the types provided by the
-standard library of the \Coq{} system. The \ssr{} algebraic
+hierarchy with the adequate structure instances on the types provided
+by the standard library of the \Coq{} system, namely \C{Z}, the type
+of integers as binary words, and \C{Qcb}, the type of rational numbers
+as irreducible fractions. All \ssr{} algebraic
 structures require their carrier type to be equipped with a boolean
 equality test reflecting the structural Leibniz equality available by
 default on the type. In our case, since the only concrete types
 (integers and rational numbers) we manipulate constructively fall into
-this category, this was not a compromise. We have hence equipped
-these standard \Coq{} datatypes with all the desirable \ssr{}
-algebraic structures.
+this category, this was not a compromise.
 
 The libraries already present in the standard distribution of the
-system were containing a sufficient body of lemmas to achieve this
+system were providing a sufficient body of lemmas to achieve this
 formalization. But the \ssr{} layer of interfaces introduces a very
 uniform framework to deal with algebraic manipulations. Instances of a
 same interface in particular share theory, hence lemma names, and
-notations. In what we have described so far, there are for instance
-several ring structures involved, namely the ring of integers, the one
+notations.  The theory we describe in this paper involves for instance
+several ring structures, namely the ring of integers, the one
 of rational numbers, and the ring of polynomial with rational
-coefficients. Being all instances of the ring abstract interface, all
-these structures share the same symbols for operations, like \C{(x * y)} for
-multiplication of \C{x} by \C{y}, \C{(x *+ n)} for the product of \C{x}
-by a natural number (which is in fact defined as iterated
-additions). The latter operation is of special interest to deal with
-binomial coefficients in a transparent way since the theory of
-binomial coefficients, defined as natural numbers, directly applied
-without any further injection.
+coefficients. Being all instances of the ring (and integral domains,
+and even field for rationals and integers) abstract interface, all
+these structures share the same symbols for operations, like
+\C{(x * y)} for multiplication of \C{x} by \C{y}, \C{(x *+ n)} for the
+product of \C{x} by a natural number (which is in fact defined as
+iterated additions).
+This latter operation and generic notation is of special interest to
+deal with binomial coefficients in a transparent way since the theory
+of binomial coefficients, defined as natural numbers, directly applies
+without specifying any specialized injection from natural numbers to
+each ring structure. In fact once rationals and integers are equipped
+with the appropriate structures, our proofs no more involve any
+argument specific to the representation of arithmetic.
+
 
 
 
 \subsection{Representations of polynomials}
 
-The point of this work is to study polynomials seen as functions
-$\mathbb{Q} \rightarrow \mathbb{Q}$. But the criteria we use to study
-the roots of polynomials are dealing with lists of coefficients, in
-various bases. Sometimes it is desirable to envisage this list of
-coefficients to be a finite list, and sometimes it is more convenient
-to consider a coefficient function, regardless of the degree of the
-polynomial it defines. In the case we consider polynomials as finite
-lists of coefficients, it might be useful to normalize this list to
-get a non zero leading coefficient as last element of the list
-representing a non zero polynomial (we work with a big endian
-representation): this allows to get a boolean comparison test for free
-from the one available on coefficients. But in the case polynomials are
-seen as linear combination of a monomial basis for polynomials of
-degree less than a fixed values, zeros in the coefficients become
-meaningful. And this occurs for instance in the de Casteljau algorithm.
+This work is devoted to the study of roots of univariate polynomials,
+in an analytic point on view. A polynomial $P$ is here therefore seen
+as a function $P : \mathbb{Q} \rightarrow \mathbb{Q}$. For this
+purpose we can simply represent a polynomial by a big endian list
+of coefficients in the monomial basis. This representation can be
+simply interpreted as a function $ \mathbb{Q} \rightarrow \mathbb{Q}$
+through a Horner evaluation scheme.
 
-The formal development has to take all these multiple low level
-convenient representations into account not to introduce too much
-noise in the proofs.
+This representation is however not a normal form since the same
+polynomial can be represented by an infinite number of coefficient
+lists, only differing by the number of tail zeroes. The ring structure
+of polynomials of arbitrary degree is actualy based on a normalized version of
+this representation, namely by the type:
+\begin{lstlisting}
+Record |*polynomial*| (R : ringType) :=
+  Polynomial {polyseq :> seq R; _ : last 1 polyseq != 0}.
+\end{lstlisting}
+that is a pair of a list \C{polyseq : (seq R)} with a proof that the
+last element of this list is non zero. The type \C{(polynomial R)} is
+used under the notation \L+{poly R}+.
 
-The algorithms of real root testing operate on bare lists of rational
-numbers, seen as big endian lists of coefficients. But for the
-specification of these operations, and specially
-for the correctness of Bernstein coefficient computations with respect
-to monomials, and by de Casteljau, we stand on the \ssr{} big endian
-representation of polynomials as \emph{normalized} lists of
-coefficients.
+The constant zero polynomial is
+hence represented by the empty list. The \C{:>} symbol indicates that
+the \C{polyseq} constructor is declared as a coercion: a polynomial
+can at any time be seen as a list of coefficient, forgetting about the
+proof it is in normal form.
 
-(here comes the Coq definition)
+Note that polynomials require a ring structure on their coefficients,
+which ensures that arithmetic operations on polynomials will be
+properly defined and specified. The polynomial $X$ is represented
+by the list $[:: 1, 0]$, where $1$ and $0$ are the one and zero
+constant of the underlying coefficient ring.
+Moreover, since \ssr{} ring structure
+embbed a type with boolean equality, polynomials inherit from a
+canonical boolean test.
 
-The big endian choice is well suited for Horner evaluation. The
-monomial $X$ is hence represented by:
-
-
-A polynomial can always be seen as a list of coefficients, because
-there is a coercion from polynomial to lists. But an arbitrary list
-can also be transformed into a polynomial by the \C{Poly} operator,
-which removes the tail zeroes from the list, and pack it with a
-well-formednedd proof. To use this \C{Poly} operator it is convenient
-to dispose of lemmas on the behaviour of list iterators under the
-\C{Poly} construction (ie. to specify their effect on the polynomial
-built).
-
-(here comes the Coq definition)
-
-Polynomials are equipped with a ring structure as soon as their
-coeffocoent type is. As an indirect consequence, the \ssr{} polynomial
-library also allows to define a polynomials on a ring structure \C{R}
-by providing its coefficient function \C{nat -> R}. This facility is
-in fact a simple use of the iterated operator facilities available in
-\ssr{} \cite{bigops}: such a polynomial is simply
-
-(here comes the Coq definition)
-
-where \L+\sum+ is a notation for the iteration of the addition of a
-ring structure. In particular, such sums behave as expected
-(associativity, commutativity) and combine well with the
-\L+\prod+ iteration of the associated ring product.
-
-A last issue to be adressed is the way polynomials are seen as linear
-coefficients of a monomial or Bernstein basis of polynomials of degree
-less than a fixed value. This requires potentially padding
-the list of the above \C{poly} representation with some zeros. This
+At many places however, we need to consider polynomials as lists of
+coefficients in a basis for the vector space of polynomials of degree
+less than a fixed value. In the case of a monomial basis, we need to
+consider lists of coefficients with a meaningfull number of tail
+zeros. This is for instance the case in the proof that the images of
+the monomials $\(X^i\)$ by a certain transformation are positive
+multiples of the Bernstein polynomials (see section \ref{ssec:ops}).
+Befor being transformed, the list representing the normal form of
+polynomial $\(X^i\)$ should be padded with $(p - i)$ tail zeroes to
+obtain the coefficient list of $\(X^i\)$ in the monomial basis of
+polynomials of degree less than $p$. This
 amount to formalizing the fact that polynomials of degree less than a
 fixed value form a finite dimentional vector space and to specify the
 changes in the basis. Unfortunately, the linear algebra part of the
@@ -1107,8 +1097,51 @@ easily from an existing infrastructure. We hence only define these
 linear algebra operation at a low level (catenating zeros,...) and
 prove them correct, which certainly leaves room for improvement.
 
+Correctness proofs  of the transformations involve exact identities between
+polynomials and not extentional identities between polynomial
+functions. For this purpose we need to use normalizing constructors to
+interpret an arbitrary list into a polynomial. The constructor:
 
-\subsection{Automatization issues}
+\begin{lstlisting}
+Definition poly_cons (c : R)(p : {poly R}) :=
+  if p is Polynomial ((_ :: _) as s) ns then
+     @Polynomial R (c :: s) ns
+  else c%:P.
+\end{lstlisting}
+builds the normal form of the polynomial $(c + 'X*p)$, provided that
+\C{p} has type \L+{poly R}+ and is hence in normal form. Since \C{p}
+is in normal form is it either non-zero, and in that case, formed with
+a list \C{s} that has a non-zero element, or zero, and in that case formed
+with the empty list. In the first case, the new normal form is simply
+\C{(c :: s)} and the proof of well-formedness is up to conversion the
+initial proof that \C{p} was well-formed. In the second case, we
+output the constant polynomial with value \C{c}, denoted \C{c%:P}.
+
+Now the operator:
+\begin{lstlisting}
+  Definition |*Poly*| := foldr poly_cons 0%:P.
+\end{lstlisting}
+iterates this construction and builds a normal polynomial out of an
+arbitrary list.
+
+
+% Polynomials are equipped with a ring structure as soon as their
+% coeffocoent type is. As an indirect consequence, the \ssr{} polynomial
+% library also allows to define a polynomials on a ring structure \C{R}
+% by providing its coefficient function \C{nat -> R}. This facility is
+% in fact a simple use of the iterated operator facilities available in
+% \ssr{} \cite{bigops}: such a polynomial is simply
+
+% (here comes the Coq definition)
+
+% where \L+\sum+ is a notation for the iteration of the addition of a
+% ring structure. In particular, such sums behave as expected
+% (associativity, commutativity) and combine well with the
+% \L+\prod+ iteration of the associated ring product.
+
+
+
+\subsection{Automation issues}
 
 The automation given by the type inference based infrastructure is
 relieving the user from many painful formalization issues. Beside the
@@ -1142,6 +1175,8 @@ incomplete but lightweight tools should be crafted to relieve the user
 when possible.
 
 (cite the rational tactic?)
+
+\subsection{Current state of the formalization}
 
 \section{Conclusion}
 {\sf travaux reliés: Bridges et Bishop sur la continuité uniforme, qui est
