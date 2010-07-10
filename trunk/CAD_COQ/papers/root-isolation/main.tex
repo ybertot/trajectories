@@ -1002,7 +1002,7 @@ coincide with the ones of $(*)$, which boils down to an induction on $i$.
 
 This work is based on the hierarchy of algebraic structures available
 in the \ssr{} repository. This hierarchy, described in \cite{hieralg},
-has be since enriched with interfaces for ordered integral
+has been since enriched with interfaces for ordered integral
 domains and fields. The ordered integral domains instances we use here are
 integers and rational numbers. For this purpose, we have populated the
 hierarchy with the adequate structure instances on the types provided
@@ -1012,19 +1012,19 @@ as irreducible fractions. All \ssr{} algebraic
 structures require their carrier type to be equipped with a boolean
 equality test reflecting the structural Leibniz equality available by
 default on the type. In our case, since the only concrete types
-(integers and rational numbers) we manipulate constructively fall into
-this category, this was not a compromise.
+we manipulate (integers and rational numbers) constructively fall into
+this category, this was not a problem.
 
 The libraries already present in the standard distribution of the
 system were providing a sufficient body of lemmas to achieve this
-formalization. But the \ssr{} layer of interfaces introduces a very
-uniform framework to deal with algebraic manipulations. Instances of a
-same interface in particular share theory, hence lemma names, and
+formalization. However, the \ssr{} layer of interfaces introduces a very
+uniform framework to deal with algebraic manipulations.   In particular,
+instances of a same interface share theory, hence lemma names, and
 notations.  The theory we describe in this paper involves for instance
-several ring structures, namely the ring of integers, the one
+several ring structures, namely the ring of integers, the ring
 of rational numbers, and the ring of polynomial with rational
-coefficients. Being all instances of the ring (and integral domains,
-and even field for rationals and integers) abstract interface, all
+coefficients. Being all instances of the ring abstract interface
+(and also integral domains, and even field for rationals and integers), all
 these structures share the same symbols for operations, like
 \C{(x * y)} for multiplication of \C{x} by \C{y}, \C{(x *+ n)} for the
 product of \C{x} by a natural number (which is in fact defined as
@@ -1043,17 +1043,17 @@ argument specific to the representation of arithmetic.
 \subsection{Representations of polynomials}
 
 This work is devoted to the study of roots of univariate polynomials,
-in an analytic point on view. A polynomial $P$ is here therefore seen
+from an analytic point on view.  Therefore, a polynomial $P$ is here seen
 as a function $P : \mathbb{Q} \rightarrow \mathbb{Q}$. For this
 purpose we can simply represent a polynomial by a big endian list
 of coefficients in the monomial basis. This representation can be
 simply interpreted as a function $ \mathbb{Q} \rightarrow \mathbb{Q}$
-through a Horner evaluation scheme.
+using the Horner evaluation scheme.
 
-This representation is however not a normal form since the same
+This representation is however not canonical since the same
 polynomial can be represented by an infinite number of coefficient
 lists, only differing by the number of tail zeroes. The ring structure
-of polynomials of arbitrary degree is actualy based on a normalized version of
+of polynomials of arbitrary degree is actually based on a normalized version of
 this representation, namely by the type:
 \begin{lstlisting}
 Record |*polynomial*| (R : ringType) :=
@@ -1066,30 +1066,30 @@ used under the notation \L+{poly R}+.
 The constant zero polynomial is
 hence represented by the empty list. The \C{:>} symbol indicates that
 the \C{polyseq} constructor is declared as a coercion: a polynomial
-can at any time be seen as a list of coefficient, forgetting about the
-proof it is in normal form.
+can at any time be seen as a list of coefficient, forgetting the
+proof that it is in normal form.
 
 Note that polynomials require a ring structure on their coefficients,
 which ensures that arithmetic operations on polynomials will be
 properly defined and specified. The polynomial $X$ is represented
-by the list $[:: 1, 0]$, where $1$ and $0$ are the one and zero
+by the list $[:: 0, 1]$, where $1$ and $0$ are the one and zero
 constant of the underlying coefficient ring.
-Moreover, since \ssr{} ring structure
-embbed a type with boolean equality, polynomials inherit from a
-canonical boolean test.
+Moreover, since the \ssr{} ring structure
+embeds a type with boolean equality, polynomials inherit from a
+canonical boolean equality test.
 
 At many places however, we need to consider polynomials as lists of
 coefficients in a basis for the vector space of polynomials of degree
 less than a fixed value. In the case of a monomial basis, we need to
 consider lists of coefficients with a meaningfull number of tail
 zeros. This is for instance the case in the proof that the images of
-the monomials $\(X^i\)$ by a certain transformation are positive
+the monomials \(X^i\) by a certain transformation are positive
 multiples of the Bernstein polynomials (see section \ref{ssec:ops}).
-Befor being transformed, the list representing the normal form of
-polynomial $\(X^i\)$ should be padded with $(p - i)$ tail zeroes to
-obtain the coefficient list of $\(X^i\)$ in the monomial basis of
+Before being transformed, the list representing the normal form of
+polynomial \(X^i\) should be padded with $(p - i)$ tail zeroes to
+obtain the coefficient list of \(X^i\) in the monomial basis of
 polynomials of degree less than $p$. This
-amount to formalizing the fact that polynomials of degree less than a
+amounts to formalizing the fact that polynomials of degree less than a
 fixed value form a finite dimentional vector space and to specify the
 changes in the basis. Unfortunately, the linear algebra part of the
 \ssr{} archive is not yet sufficiently well integrated to get this
@@ -1116,7 +1116,7 @@ a list \C{s} that has a non-zero element, or zero, and in that case formed
 with the empty list. In the first case, the new normal form is simply
 \C{(c :: s)} and the proof of well-formedness is up to conversion the
 initial proof that \C{p} was well-formed. In the second case, we
-output the constant polynomial with value \C{c}, denoted \C{c%:P}.
+output the constant polynomial with value \C{c}, denoted \C{c\%:P}.
 
 Now the operator:
 \begin{lstlisting}
