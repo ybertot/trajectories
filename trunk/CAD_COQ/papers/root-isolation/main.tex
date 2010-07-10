@@ -3,6 +3,7 @@
 \usepackage{amsmath, amsfonts}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{babel}
 \input{macro}
 
 \begin{document}
@@ -17,7 +18,7 @@
 
 \maketitle
 
-\section{introduction}
+\section{Introduction}
 Bernstein coefficients provide a discrete approximation of polynomials
 inside a bounded interval. As such they are useful tools to solve
 problems like locating the roots of polynomials, isolating these roots
@@ -97,8 +98,7 @@ Descartes' law of signs for the case where there is only one sign
 change.  Expressing Descartes' law on the coefficients of polynomial
 \(P_3\) yields directly a law expressed in terms of sign changes for
 Bernstein's coefficients of \(P\) with respect to the
-interval\footnote{we name the bounds \(l\) for \emph{left} and \(r\) for
-\emph{right}.}
+interval
 \((l,r)\).   This proof is done in section~\ref{sec:descartes}.
 
 Another part of our work is to describe dichotomy.  Knowing Bernstein
@@ -143,13 +143,56 @@ possible.  We describe these key aspects in section~\ref{sec:formal}.
 
 \section{Bernstein coefficients}
 \label{sec:bernsteindef}
-For an arbitrary natural number \(n\), we can consider the set of polynomials
-of degree smaller than \(n\) as a vector space, and the monomials
-\(x^k\), with \(0 \leq k \leq n\) constitue a basis, the standard basis,
-of of this vector space.
-If \(p\) is a polynomial with coefficients \(a_i\), then
-\(p(x) = \sum_{i=0}^n a_i x^i\)  and the coefficients \(a_i\) are also the
-coefficients of \(p\) in the standard basis.
+B\'ezier curves are parametric curves that widely used to construct
+smooth plane curves whose shape are governed by a finite finite number
+of \emph{control points}. A B\'ezier curve controlled by $n+1$ points is
+a polynomial expression of degree $n$ in its parameter $t$. For
+instance, given two points $P_0$ and $P_1$, the corresponding B\'ezier
+curve is the segment $B_{(P_0, P1)}(t) := tP_0 + (1 - t)P_1$. For three control
+points $P_0, P_1, P_3$, the B\'ezier curve is
+$B_{(P_0, P_1, P_2)}(t) := (1 - t)^2P_0 + 2(1 - t)tP_1 + t^3P_2$.
+We already seen in this case that a B\'ezier
+curve does not meet all its control points. In fact, it is only
+guaranteed to pass through the first and the last control point. In
+the case of the quadratic B\'ezier curve, the middle control point $P_1$
+is the intersection of the tangents to the curve at $P_0$ and
+$P_2$. The general formula giving the B\'ezier curve at $n$ control
+points is:
+$$B_{(P_0, \dots,P_n}(t) := \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
+which satisfies the recursive relation:
+$$B_{(P_0,\dots, P_n)} = (1, t)B_{(P_0, \dots, P_{n-1})} + tB_{(P_1, \dots, P_n)}$$
+
+B\'ezier curves are named after the engineer Paul B\'ezier who was working
+on coachbuilding. These curve have very interesting properties for
+interpolation but also for computer graphics: a B\'ezier curve is
+contained in the convex hull of its control
+points and uniform transformations on the control points like
+translation or rotation have the same effect on the curve. Points
+control the shape of the curve since the $k$-th derivative of the
+curve at its extreme points is governed by the $k+1$ nearest
+control points.
+
+Computer graphics algorithms usually use piecewise polynomial paths
+(called splines) of  low degree. Most modern vector graphics
+standards, like for instance SVG, feature support for B\'ezier splines,
+which have been used for long in TrueType fonts use quadratic B\'ezier
+splines, whereas PostScript or MetaFont \cite{metafont} use cubic
+B\'ezier splines.
+
+
+Bernstein polynomials are defined as the weight assigned to each
+control points: the $k$-th Bernstein polynomial $P_b(n, k)$ is defined by:
+$$B_{(P_0, \dots,P_n}(t) := \sum_{k = 0}^n P_b(n, k)(t)\binom{n}{k}P_i$$
+hence:
+$$P_b(n,  k)(t) = \binom{n}{k}(1 -t)^{n - k}t^k$$
+
+% For an arbitrary natural number \(n\), we can consider the set of polynomials
+% of degree smaller than \(n\) as a vector space, and the monomials
+% \(x^k\), with \(0 \leq k \leq n\) constitue a basis, the standard basis,
+% of of this vector space.
+% If \(p\) is a polynomial with coefficients \(a_i\), then
+% \(p(x) = \sum_{i=0}^n a_i x^i\)  and the coefficients \(a_i\) are also the
+% coefficients of \(p\) in the standard basis.
 
 For arbitrary numbers \(l\) and
 \(r\), we can also consider the following polynomials, called
@@ -159,7 +202,7 @@ the {\em Bernstein polynomials for degree \(n\) and the interval
 These polynomials also constitue a basis of the vector space of polynomial
 of degree \(n\), and we will usually call it the {\em Bernstein basis} leaving
 the degree and the values \(l\) and \(r\) unspecified.
-Every polynomial \(p\) also has a sequence of coefficients
+Every polynomial \(p\) hence has a sequence of coefficients
 \(b_i\), so that \(p(x) = \sum_{i=0}^n P_b(n,l,r,i)(x)\).  The coefficients
 \(b_i\) are the Bernstein coefficients.
 
@@ -201,13 +244,14 @@ We then recognize another binomial formula and can conclude.
 The Bernstein coefficients are related to a broken line (made of
 contiguous straightline segments) which gives a rough approximation of the
 polynomial's function graph.  More precisely, given the bounds \((l,r)\)
-of the interval,
-the bernstein coefficients \((b_0,\ldots, b_n)\) define a collection of points
-with coordinates \(c_i = (l + i \frac{r-l}{n}, b_i)\) each of these points describes
+of the interval, and the Bernstein coefficients \((b_0,\ldots, b_n)\)
+of polynomial $p$, the $n+1$ points with coordinates \((l + i
+\frac{r-l}{n}), b_i)\) are the control points the polynomial
+is a B\'ezier curve of. Each of these points describes
 the behavior of the polynomial when the input \(x\) is close to
-\(l+i\frac{r-l}{n}\).  In a sense, Bernstein coefficients can be said to
+\(l+i\frac{r-l}{n}\). In this sense, Bernstein coefficients can be said to
 {\em control} the behavior of the polynomial in some part of the interval.
-This is why the points \(c_i\) are often called {\em control points}.
+%This is why the points \(c_i\) are often called {\em control points}.
 These points can
 be move about the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
 close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
@@ -371,14 +415,12 @@ our algorithm is \(a_6\), even though there are more roots in the
 vicinity of \(a_1\) and \(a_2\) but neither \(a_1\) nor \(a_2\) is a
 point where the polynomial takes a positive value.  The point \(a_{11}\) could
 also be eligible, but it is not the smallest one.
-\begin{figure}
-\label{ivt}
-\begin{center}
-\includegraphics[clip=true,trim=0cm 9cm 2cm 9cm,scale=0.5]{ivt.pdf}
-\end{center}
-\caption{Finding points where a polynomial's value is very small}
-\end{figure}
 
+\begin{figure}[h]\label{ivt}
+\begin{center}
+\includegraphics[scale=0.5]{ivt.pdf}\caption{Bounding a polynomials value}
+\end{center}
+\end{figure}
 \section{A simple form of Descartes' law of signs}\label{sec:descartes}
 One of the main results studied in this paper
 is that having only one sign changes in the
@@ -829,11 +871,12 @@ section~\ref{ssec:ops}.
 It may seem that computing Bernstein coefficients is a costly process.
 Around 1950, De Casteljau noticed that the coefficients for the sub intervals
 were easy to compute from the coefficients for the big interval
-through a simple recursive process. We have also proved the
+through a simple recursive process, exploiting the recurrence relation
+already given in section \ref{sec:bernsteindef}. We have also proved the
 correctness of this algorithm. This proof is the topic of the next
 section.
 
-\subsection{splitting algorithm}\label{ssec:split}
+\subsection{Splitting algorithm}\label{ssec:split}
 
 Given three pairwise distinct rational numbers $l, r, m$,
 there exists an efficient algorithm to deduce the two respective lists
@@ -1016,7 +1059,7 @@ derivability.  As a result, we do not need to rely on ``book equality'' or
 setoids and express all equalities using ``Leibniz equality''.
 
 As a result, our work is versatile and can be embedded in any choice of
-formalization: it is compatible with constructive mathematics as it 
+formalization: it is compatible with constructive mathematics as it
 relies solely on intuitionistic mathematics and it is also readily usable
 with the ``classical real numbers'' of the standard Coq library since
 it relies on plain equality.
@@ -1265,7 +1308,7 @@ possible.
 \subsection{Current state of the formalization}
 
 \section{Conclusion}
-{\sf travaux reliés: Bridges et Bishop sur la continuité uniforme, qui est
+{\sf travaux reli\'es: Bridges et Bishop sur la continuité uniforme, qui est
 également utilisée dans nos travaux.}
 
 This work on Bernstein polynomials combines techniques coming from
@@ -1330,9 +1373,7 @@ of flat objects grouped together, like broken lines, triangulations,
 or more generally simplicial complexes. However, curvy objects are
 needed if we want to represent faithfully natural objects. It is
 exciting that we are getting closer to using formal methods on models
-of the real world, but we have to remember with caution that nature
-usually is more complex than our models.
-
+of the real world.
 \bibliographystyle{alpha}
 \bibliography{biblio}
 
