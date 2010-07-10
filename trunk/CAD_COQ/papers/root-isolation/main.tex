@@ -1102,9 +1102,12 @@ be used in over settings.
 On the other hand,  our ``constructive
 intermediate value theorem'' is only specialized to work on polynomials
 and could actually be easily generalized to any uniformly continuous function
-over a bounded interval.  Still, it is fair that these three aspects
-of our formalization: characterization of roots and intermediate value theorem
-are only crutches designed especially for the purpose of this development.
+over a bounded interval.  Still, this theorem alone does not give a simple
+way to construct a Cauchy sequence representing a root.  Thus, 
+these three aspects
+of our formalization
+---characterization of roots and intermediate value theorem---
+are designed especially for the purpose of this development.
 \subsection{Algebraic structures}
 
 This work is based on the hierarchy of algebraic structures available
@@ -1309,11 +1312,37 @@ to get a truely efficient proof producing decision procedure. This is
 in fact part of the long term objective of this work, namely to
 certify a complete decision procedure for the full first order theory
 of real closed fields. Yet incomplete but lightweight tools could
-probably crafted to relieve the user from pedestrian steps when
+probably be crafted to relieve the user from pedestrian steps when
 possible.
 
 \subsection{Current state of the formalization}
-
+In this section, we recapitulate the main results described in this paper
+that have a formal proof in our development.
+\begin{itemize}
+\item If a polynomial function \(p\)
+has a negative value in \(x\) and a positive
+value in \(y\), with \(x < y\), then for any \(\varepsilon\) one can
+exhibit \(x'\) and \(y'\) so that \(-\varepsilon < p(x') < p(y') < \varepsilon\).
+\item If a polynomial has only one sign change in its coefficients for the
+standard monomial basis, then this polynomial has exactly one root between
+\(0\) (excluded) and \(+\infty\).
+\item If a polynomial has only one sign change in its Bernstein coefficients
+for a given interval \((l,r)\), then this polynomial has exactly one root 
+between \(l\) and \(r\) (excluded).
+\item The inverse images of monomials are the Bernstein polynomials divided
+by the corresponding binomial coefficient.
+\item De Casteljau's algorithm computes correctly the Bernstein coefficients
+for the intervals \((l,m)\) and \((m,r)\) from the Bernstein coefficients
+for the interval \((l,r)\).
+\end{itemize}
+This work is part of a more ambitious plan, aiming at providing a procedure
+to isolate the roots of any polynomial.  It remains to develop the connections
+between these various results that will constitute this procedure and its proof
+of correctness.  Some of these connections will require large size proofs.
+For instance, we anticipate a sizeable development to describe the procedure
+to reduce the multiplicity of roots (dividing by the greatest common divisor
+between the polynomial and its derivative) and to describe the termination
+of procedure based on successive dichotomy.
 \section{Conclusion}
 {\sf travaux reli\'es: Bridges et Bishop sur la continuité uniforme, qui est
 également utilisée dans nos travaux.}
