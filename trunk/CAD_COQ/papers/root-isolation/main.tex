@@ -67,8 +67,8 @@ a root of polynomial \(P_{i+1}\) in the interval \(I_{i+1}\).  If we
 study the roots of the polynomial $P$ on the interval $(l, r)$,
 then $I_0$ and $P_0$ are respectively $(l, r)$ and $P$.
 The last interval $I_3$ is \((0, +\infty)\) and the last polynomial
-$P_3$ is \(b_0 + b_1 X + \cdots + b_n X^n\), where the coefficients
-\(b_i\) have the
+$P_3$ is \(c_0 + c_1 X + \cdots + c_n X^n\), where the coefficients
+\(c_i\) have the
 same sign as the Bernstein coefficients.  Going from \(P_i\) to
 \(P_{i+1}\) we apply a given transformation.  The first transformation
 is a change of variable so that \(I_1\) is \((0,1)\) and \(P_1(x) =
@@ -130,7 +130,7 @@ statement, expressed as a bounded-value property, does.  Our proof
 development relies on this approach.  We describe the formal aspects
 of this approach to describing roots in section~\ref{sec:rational}.
 
-Our work on Bernstein coefficients is an important stepping stone
+Bernstein coefficients provide an important stepping stone
 to address various aspects of real algebraic numbers, decision
 procedures for real arithmetic, and more ambitious algorithms like
 cylindrical decomposition \cite{bpr, cadcoq}.
@@ -143,28 +143,28 @@ possible.  We describe these key aspects in section~\ref{sec:formal}.
 
 \section{Bernstein coefficients}
 \label{sec:bernsteindef}
-B\'ezier curves \cite{bezier} are parametric curves that widely used
+B\'ezier curves \cite{bezier} are parametric curves that are widely used
 to construct
 smooth plane curves whose shape are governed by a finite finite number
 of \emph{control points}. A B\'ezier curve controlled by $n+1$ points is
 a polynomial expression of degree $n$ in its parameter $t$. For
 instance, given two points $P_0$ and $P_1$, the corresponding B\'ezier
-curve is the segment $B_{(P_0, P1)}(t) := tP_0 + (1 - t)P_1$. For three control
+curve is the segment $B_{(P_0, P1)}(t) = tP_0 + (1 - t)P_1$. For three control
 points $P_0, P_1, P_3$, the B\'ezier curve is
-$B_{(P_0, P_1, P_2)}(t) := (1 - t)^2P_0 + 2(1 - t)tP_1 + t^3P_2$.
-We already seen in this case that a B\'ezier
+$B_{(P_0, P_1, P_2)}(t) = (1 - t)^2P_0 + 2(1 - t)tP_1 + t^3P_2$.
+We already see in this case that a B\'ezier
 curve does not meet all its control points. In fact, it is only
 guaranteed to pass through the first and the last control point. In
 the case of the quadratic B\'ezier curve, the middle control point $P_1$
 is the intersection of the tangents to the curve at $P_0$ and
 $P_2$. The general formula giving the B\'ezier curve at $n$ control
 points is:
-$$B_{(P_0, \dots,P_n}(t) := \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
+$$B_{(P_0, \dots,P_n}(t) = \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
 which satisfies the recursive relation:
 $$B_{(P_0,\dots, P_n)} = (1, t)B_{(P_0, \dots, P_{n-1})} + tB_{(P_1, \dots, P_n)}$$
 
 B\'ezier curves are named after the engineer Paul B\'ezier who was working
-on coachbuilding. These curve have very interesting properties for
+on coachbuilding. These curves have very interesting properties for
 interpolation but also for computer graphics: a B\'ezier curve is
 contained in the convex hull of its control
 points and uniform transformations on the control points like
@@ -175,15 +175,15 @@ control points.
 
 Computer graphics algorithms usually use piecewise polynomial paths
 (called splines) of  low degree. Most modern vector graphics
-standards, like for instance SVG, feature support for B\'ezier splines,
-which have been used for long in TrueType fonts use quadratic B\'ezier
+standards, like for instance SVG, feature support for B\'ezier splines.
+TrueType fonts use quadratic B\'ezier
 splines, whereas PostScript or MetaFont \cite{metafont} use cubic
 B\'ezier splines.
 
 
 Bernstein polynomials are defined as the weight assigned to each
-control points: the $k$-th Bernstein polynomial $P_b(n, k)$ is defined by:
-$$B_{(P_0, \dots,P_n}(t) := \sum_{k = 0}^n P_b(n, k)(t)\binom{n}{k}P_i$$
+control point: the $k$-th Bernstein polynomial $P_b(n, k)$ is defined by:
+$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n P_b(n, k)(t)\binom{n}{k}P_i$$
 hence:
 $$P_b(n,  k)(t) = \binom{n}{k}(1 -t)^{n - k}t^k$$
 
@@ -298,7 +298,7 @@ can be sure that any other bend in the curve stays away of the x-axis.
 \section{Describing roots of a polynomial in the rational setting}
 \label{sec:rational}
 
-Roots of a polynomial with coefficient in a given field are not
+Roots of a polynomial with coefficients in a given field are not
 necessary in this field. This is only  the case with algebraically
 closed fields like the field of complex numbers.
 Real closed fields, like the field of real numbers, give weaker
@@ -317,7 +317,7 @@ coefficients has a single \emph{real} root in a given interval with rational
 endpoints, even without defining real points. In that case indeed the
 polynomial crosses the real x-axis in exactly one point, which
 can be approximated arbitrarily precisely by rational numbers.
-This what we want to make precise in the next two sections.
+This is what we want to make precise in the next two sections.
 
 \subsection{Criteria for the existence of a unique root}
 We concentrate on a sufficient criterion for the existence of a root
@@ -378,12 +378,16 @@ a simplified constructive, real point free, replacement of the intermediate valu
 theorem specialized for polynomials.  The statement we prove has the following
 form:
 
-\[\forall p~x~y~\varepsilon,\]
-\[0 < \varepsilon \ \ \wedge \ \
-p(x) < 0 \leq p(y)\quad \Rightarrow \quad
-[\exists x'~ y',\ -\varepsilon \leq p(x') < 0 \leq p(y') \leq
-\varepsilon\ \  \wedge \ \
-x \leq x' < y' \leq y]\]
+\begin{eqnarray*}
+{\forall p~x~y~\varepsilon,\hskip3cm}\\
+0 < \varepsilon~~\wedge~~
+p(x) < 0 \leq p(y)
+& \Rightarrow &
+[\exists x'~ y', -\varepsilon \leq p(x') < 0 \leq p(y') \leq
+\varepsilon \wedge\\
+&&
+x \leq x' < y' \leq y]
+\end{eqnarray*}
 We call this theorem the {\em constructive intermediate value theorem}.
 
 We again rely on reasoning about slopes. Without loss of generality,
@@ -413,10 +417,9 @@ In a similar way, we can set \(y'= a_j\) because \(0 \leq p(y') < \varepsilon\).
 Our algorithm is illustrated in figure~\ref{ivt}, where the distance
 between the \(a_i\)'s is chosen according to the maximal slope
 occurring between \(l=a_0\) and \(r=a_{12}\). The point selected by
-our algorithm is \(a_6\), even though there are more roots in the
+our algorithm is \(a_8\), even though there are more roots in the
 vicinity of \(a_1\) and \(a_2\) but neither \(a_1\) nor \(a_2\) is a
-point where the polynomial takes a positive value.  The point \(a_{11}\) could
-also be eligible, but it is not the smallest one.
+point where the polynomial takes a positive value.
 
 \begin{figure}[h]\label{ivt}
 \begin{center}
@@ -620,14 +623,14 @@ so that \(P_l\) is negative on the left of \(x\) and has a slope larger than
 \(k\) on the right of \(x\).  However, this does not guarantee that \(x\) is
 the right witness for \(P\) because the slope of \(x\times P_l(x)\) is only
 larger than \(P_l(x) + x \times k\), and \(P_l(x)\) is negative.  The solution
-is to note that \(P_l\) necessary takes a positive value in some point \(v1\)
+is to note that \(P_l\) necessary takes a positive value in some point \(v_1\)
 on the right of \(x\) and to use our
 {\em constructive intermediate value theorem} from
 section~\ref{ssec:civt} to
 build a new value \(x_1\) so that \(-\frac{k v_1}{2} \leq P_l(x_1) \leq 0\).
 Now \(P_l\) is still guaranteed to be negative between \(x\) and \(x_1\),
 because of the slope condition and now the slope on the right of \(x_1\) is
-guaranteed to be larger than \(\frac{v1 k}{2}\), which is positive.
+guaranteed to be larger than \(\frac{k v_1}{2}\), which is positive.
 
 \section{From Bernstein to Descartes}\label{sec:Bernstein}
 In this section, we clarify the polynomial transformations that link
@@ -892,7 +895,7 @@ $n$, defined by $p = \sum_{i  = 0}^n a_iX^i \in
 of its roots by a simple constant defined from the coefficients
 $(a_i){i = 0 \dots n}$, called the Cauchy bound \cite{bpr}:
 $$\forall x \in \mathbb{R}, p(x) = 0 \Rightarrow |x|
-\leq C(p) \quad \textrm{with} \quad C(p) := \sum_{i=0}^n \frac{|a_i|}{|a_n|}$$
+\leq C(p) \quad \textrm{with} \quad C(p) = \sum_{i=0}^n \frac{|a_i|}{|a_n|}$$
 
 Indeed, let $x$ be a root of $p$. If $|x|\leq 1$, since $1 \leq C(p)$,
 the inequality trivialy holds. Then if $|x| > 1$, since $x$ is a root,
@@ -929,7 +932,7 @@ Let \C{b} be the sequence of Bernstein coefficients of a polynomial $P$
 for an interval \((l,r)\) with \(l, r\in \mathbb{Q}\) and degree \(n\).
 Let $m\in \mathbb{Q}$ be a rational number
 distinct from $l$ and $r$. We pose
-$\alpha := \frac{m - l}{r - l}$ and $\beta := \frac{r - m}{r - l}$. The
+$\alpha = \frac{m - l}{r - l}$ and $\beta = \frac{r - m}{r - l}$. The
 \C{|*de_casteljau*|} algorithm is defined recursively by:
 \begin{lstlisting}
   Fixpoint |*de_casteljau*| (alpha beta : Qcb) (b : nat -> Qcb) (n : nat) :=
@@ -1028,14 +1031,14 @@ basis of degree $p$ with parameters $l$ and $r$.
 
 The properties of computations performed by the de Casteljau algorithm
 are summarized on Figure \ref{bern}. Starting from the input list
-$b := (b_0^(0)\dots b_p^{(0)})$ of coefficients in the basis with
+$b = (b_0^(0)\dots b_p^{(0)})$ of coefficients in the basis with
 parameters $l$ and $r$, on the upper side of the triangle, it
 computes the full triangle, so that in the end the two expected output
 lists can be read on the two  other sides of the triangle. The list
-$b' := b_0^{(0)} \dots b_0^{(j)} \dots b_0^{(p)}$ is the list of
+$b' = b_0^{(0)} \dots b_0^{(j)} \dots b_0^{(p)}$ is the list of
 coefficients in the basis with parameters $l$ and $m$ output by
 \C{dicho'}. The list
-$b'' := b_0^{(p)} \dots b_j^{(p - j)} \dots b_p^{0}$
+$b'' = b_0^{(p)} \dots b_j^{(p - j)} \dots b_p^{0}$
  is the list of coefficients in the basis with parameters $m$ and $r$
  output by \C{dicho}.  The green area on Figure \ref{bern} show which values
 the computation of an arbitrary given point in the triangle relies on.
@@ -1088,10 +1091,10 @@ Let us first compute the expected output of the \C{dicho'} function on
 a such a list. In other words, for any distinct rational numbers $l,
 r, m$ and any $n\in \mathbb{N}$, given $i \leq n$, we want to compute
 the coefficients of:
-$$P_b(n, l, r, i) := \binom{n}{i} \frac{(X - l)^i(X - r)^{n -i}}
+$$P_b(n, l, r, i) = \binom{n}{i} \frac{(X - l)^i(X - r)^{n -i}}
 {(r - l)^n}$$ in the basis $(P_b(n, l, m, i))_{i = 0, \dots, n}$.
 We pose
-$\alpha := \frac{r -  m}{r - l}$ and $\beta := \frac{m - l}{r - l}$.
+$\alpha = \frac{r -  m}{r - l}$ and $\beta = \frac{m - l}{r - l}$.
 In the polynomials of the new basis, formal denominators are of the
 form $(m - l)$. By noticing that:
 $$\frac{X - l}{r-l} = \beta \frac{X - l}{m - l} \quad \textrm{and} \quad
@@ -1329,10 +1332,10 @@ in section \ref{ssec:ops} involve a substantial work on iterated sum
 handling.
 
 Since ring operations are automatically equipped with the iterated
-operation facilities, proof steps like distributing constant or
+operation facilities \cite{bigops}, proof steps like distributing constant or
 natural number product on an iterated sum, replacing an iterated sum
 of zeroes elements by a zero, replacing $\sum_{i = 0}^n r_i$ by
-$\sum_{i = 0}^n r_(n - i)$ only require a single rewriting step.
+$\sum_{i = 0}^n r_{n - i}$ only require a single rewriting step.
 Even a  more complex operation combining associativity and reindexing
 like transforming $\sum_{i = 0}^{n + m} r_i$ into
 $\sum_{i = 0}^{n} r_i + \sum_{i = 0}^{m} r_{n + i}$ is again a single
@@ -1341,11 +1344,11 @@ operators. This \ssr{} library on indexed iterations has been of crucial
 importance in a large part of the proofs.
 
 
-On the other side, a significant part of scripts is devoted to much
-too atomic rewrite steps to normalize ring expressions, or prove trivial
+On the other side, a significant part of scripts is devoted to too
+many atomic rewrite steps to normalize ring expressions, or prove trivial
 consequences of the properties of order like transitivity or
 compatibility with field operations. The \ssr{} libraries still
-lack of the standard
+lack the standard
 automated proof producing decision procedures available in the \Coq{}
 system, like ring normalization or linear arithmetic decision. The
 \ssr{} structures are indeed still not connected to these
@@ -1358,7 +1361,7 @@ solved by bridging the gap between structures infered by type inference
 (which is the case of our ring structures) and the OCaml database used
 by \Coq{} tactics.
 
-In the case of the automation of ring identites, it would significantly
+In the case of the automation of ring identities, it would significantly
 help the user if normalization could handle simultaneously the various
 ring and semi-ring structures that can occur in an expression, like
 the rings of polynomial coefficients, polynomials themselves and
@@ -1373,23 +1376,6 @@ certify a complete decision procedure for the full first order theory
 of real closed fields. Yet incomplete but lightweight tools could
 probably be crafted to relieve the user from pedestrian steps when
 possible.
-
-\subsection{Related Work}
-Real root isolation methods by signe changes based methods is a
-classical topic, extensively studied (see \cite{rouillieretal} for a
-review of the related litterature) after the pioneering work of
-Uspensky \cite{uspensky}. Bernstein polynomials are used to provide
-efficient implementations of these methods
-\cite{mourrainetal, rouillieretal}. Up to our knowledge, this work is
-the first mechanized proofs of de Casteljau algorithm,and of the
-building blocks of a real root isolation procedure. The closest work
-to our is probably the study of global optimization methods in Coq
-lead by Roland Zumkeller \cite{zumkellerphd}. Indeed, Bernstein
-polynomials bases are also used to approximate continuous functions on a
-closed domain. This last work results in an implementation in the
-\Coq{} system of tool to find optimums of multivariate continuous real
-functions. Yet we could not find a mention of a formalization of the
-correctness proofs of this tool.
 
 
 \subsection{Current state of the formalization}
@@ -1419,7 +1405,7 @@ This work is part of a more ambitious plan, aiming at providing an
 efficient procedure
 to isolate the roots of any polynomial.  It remains to develop the connections
 between these various results that will constitute this procedure and its proof
-of correctness. To certify a algorithmically naive version of such a
+of correctness. To certify an algorithmically naive version of such a
 procedure, we still need to describe the proceure to reduce the
 multiplicity of roots (dividing by the greatest common divisor
 between the polynomial and its derivative) and to describe the termination
@@ -1435,6 +1421,22 @@ implemented in \cite{cadcoq} or even more optimized codes like the
 ones of \cite{mourrainetal}.
 
 \section{Conclusion}
+
+Real root isolation methods by sign changes based methods is a
+classical topic, extensively studied (see \cite{rouillieretal} for a
+review of the related litterature) after the pioneering work of
+Uspensky \cite{uspensky}. Bernstein polynomials are used to provide
+efficient implementations of these methods
+\cite{mourrainetal, rouillieretal}.  To our knowledge, this work is
+the first mechanized proofs of de Casteljau algorithm,and of the
+building blocks of a real root isolation procedure. The closest work
+to ours is probably the study of global optimization methods in Coq
+lead by Roland Zumkeller \cite{zumkellerphd}. Indeed, Bernstein
+polynomial bases are also used to approximate continuous functions on a
+closed domain. This last work results in an implementation in the
+\Coq{} system of tool to find optimums of multivariate continuous real
+functions. Yet we could not find a mention of a formalization of the
+correctness proofs of this tool.
 
 This work on Bernstein polynomials combines techniques coming from
 analysis, algebra, and geometry. For instance, the properties of
