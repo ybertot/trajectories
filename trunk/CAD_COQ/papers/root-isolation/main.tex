@@ -1090,7 +1090,8 @@ derivability.  As a result, we do not need to rely on ``book equality'' or
 setoids and express all equalities using ``Leibniz equality''.
 
 As a result, our work is versatile and can be embedded in any choice of
-formalization: it is compatible with constructive mathematics as it
+formalization: it is compatible with constructive mathematics, as for
+instance implemented in \Coq{} in \cite{russellreals, russellcoqreals} as it
 relies solely on intuitionistic mathematics and it is also readily usable
 with the ``classical real numbers'' of the standard Coq library since
 it relies on plain equality.
@@ -1126,8 +1127,10 @@ be used in over settings.
 On the other hand,  our ``constructive
 intermediate value theorem'' is only specialized to work on polynomials
 and could actually be easily generalized to any uniformly continuous
-function over a bounded interval.  Still, this theorem alone does not
-give a simple way to construct a Cauchy sequence representing a root.
+function over a bounded interval, as it is standard in constructive
+real analysis \cite{bishop}.  Still, this theorem alone does not
+give a simple way to construct a Cauchy sequence representing a root,
+whereas a root isolation process does.
 Thus, these three aspects of our formalization
 ---characterization of roots and intermediate value theorem---
 are designed especially for the purpose of this development.
@@ -1358,12 +1361,13 @@ functions. Yet we could not find a mention of a formalization of the
 correctness proofs of this tool.
 
 
-
-
 \subsection{Current state of the formalization}
 In this section, we recapitulate the main results described in this paper
 that have a formal proof in our development.
 \begin{itemize}
+\item The absolute values of the real roots of a polynomial is bounded
+  by the Cauchy bound, which is expressed only using the absolute
+  values of the coefficients of the polynomial.
 \item If a polynomial function \(p\)
 has a negative value in \(x\) and a positive
 value in \(y\), with \(x < y\), then for any \(\varepsilon\) one can
@@ -1380,19 +1384,26 @@ by the corresponding binomial coefficient.
 for the intervals \((l,m)\) and \((m,r)\) from the Bernstein coefficients
 for the interval \((l,r)\).
 \end{itemize}
-This work is part of a more ambitious plan, aiming at providing a procedure
+This work is part of a more ambitious plan, aiming at providing an
+efficient procedure
 to isolate the roots of any polynomial.  It remains to develop the connections
 between these various results that will constitute this procedure and its proof
-of correctness.  Some of these connections will require large size proofs.
-For instance, we anticipate a sizeable development to describe the procedure
-to reduce the multiplicity of roots (dividing by the greatest common divisor
+of correctness. To certify a algorithmically naive version of such a
+procedure, we still need to describe the proceure to reduce the
+multiplicity of roots (dividing by the greatest common divisor
 between the polynomial and its derivative) and to describe the termination
-of procedure based on successive dichotomy.
-include Cauchy bounds.
+of procedure based on successive dichotomy. The reduction to separable
+polynomials should not require too much effort considering the
+libraries already available in the \ssr{} package. The study of
+termination might however require a subtantial work.
+
+An other issue will be to connect the correctness proof of such a
+naive implementation with more realistic programs, like an
+implementation of de Casteljau linear in the degree of the input, as
+implemented in \cite{caadcoq} or even more optimized codes like the
+ones of \cite{mourrainetal}.
 
 \section{Conclusion}
-{\sf travaux reli\'es: Bridges et Bishop sur la continuité uniforme, qui est
-également utilisée dans nos travaux.}
 
 This work on Bernstein polynomials combines techniques coming from
 analysis, algebra, and geometry. For instance, the properties of
