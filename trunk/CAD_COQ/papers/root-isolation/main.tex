@@ -927,7 +927,8 @@ proceeds by creating a succession of lines where the element at rank
 elements at rank \(j\) and \(j+1\) on the previous line.
 
 This process can be illustrated geometrically by a succession of broken
-lines.  For the first line, we take the control line of the initial
+lines.
+For the first line, we take the control line of the initial
 interval.  Then, for each of the segments that compose this control line,
 we cut this segment in the same proportion as the the proportion in which
 the interval is split between \((l,m)\) and \((m,r)\).  This gives us
@@ -941,6 +942,16 @@ last point is guaranteed to lie on the polynomial's curve.
 Although we actually only use de Casteljau's algorithm when \(m\) is
 the midpoint of the initial interval, it works for any relative
 positions of \(l\), \(m\), and \(r\), as long as they are pairwise distinct.
+
+The different points computed by the de Casteljau algorithm are
+represented on figure \ref{dichobern}. The innermost points are the
+control points in the two new bases, computed from the originial control
+points $\{B0, \dots, B5\}$.
+The middle innermost control point, on the curve, belongs to the two
+new lists of control points. Points $\{C0, \dots, C5\}$ are the
+control points in the left half, $\{D0, \dots, D5\}$ are the control
+points on the right half.
+
 
 The aim of this section is to prove that this algorithms is
 correct, i.e. that the \C{|*dicho*|} and \C{|*dicho'*|} function
@@ -1276,28 +1287,29 @@ operation facilities, proof steps like distributing constant or
 natural number product on an iterated sum, replacing an iterated sum
 of zeroes elements by a zero, replacing $\sum_{i = 0}^n r_i$ by
 $\sum_{i = 0}^n r_(n - i)$ only require a single rewriting step.
-Even more complex operations combining associativity and reindexing
+Even a  more complex operation combining associativity and reindexing
 like transforming $\sum_{i = 0}^{n + m} r_i$ into
 $\sum_{i = 0}^{n} r_i + \sum_{i = 0}^{m} r_{n + i}$ is again a single
-rewriting step of a generting lemma about iteration of associative
-operators. This \ssr{} library on idexed iterations has been of crucial
+rewriting step of a generic lemma about iteration of associative
+operators. This \ssr{} library on indexed iterations has been of crucial
 importance in a large part of the proofs.
 
 
 On the other side, a significant part of scripts is devoted to much
 too atomic rewrite steps to normalize ring expressions, or prove trivial
-consequences of the transitivity of order. The \ssr{} libraries still
+consequences of the properties of order like transitivity or
+compatibility with field operations. The \ssr{} libraries still
 lack of the standard
 automated proof producing decision procedures available in the \Coq{}
 system, like ring normalization or linear arithmetic decision. The
 \ssr{} structures are indeed still not connected to these
-mechanism. The \Coq{} tactics on linear arithmetic are hardcoding the
+mechanisms. The \Coq{} tactics on linear arithmetic are hardcoding the
 representation of integers and coefficients and should rely on a more
 abstract structure like the one of ordered field. Moreover an \ssr{}
 ring structure instance is not automatically registered as a
-legal ring structure for the \C{ring} tactic. This issue should be
-solved by bridging the gap between structured infered by type inference
-(which is the cas of our ring structures) and the OCaml database used
+valid ring structure for the \C{ring} tactic. This issue should be
+solved by bridging the gap between structures infered by type inference
+(which is the case of our ring structures) and the OCaml database used
 by \Coq{} tactics.
 
 In the case of the automation of ring identites, it would significantly
@@ -1308,8 +1320,9 @@ possibly the semi-ring of integers.
 
 In the case of the automation of ordered arithmetic, proof steps
 often involve non linear expressions, for which it is quite difficult
-to get a truely efficient proof producing decision procedure. This is
-in fact part of the long term objective of this work, namely to
+to get a truely generic and efficient proof producing decision
+procedure. This is in fact part of the long term objectives of this
+work, namely to
 certify a complete decision procedure for the full first order theory
 of real closed fields. Yet incomplete but lightweight tools could
 probably be crafted to relieve the user from pedestrian steps when
@@ -1343,6 +1356,7 @@ For instance, we anticipate a sizeable development to describe the procedure
 to reduce the multiplicity of roots (dividing by the greatest common divisor
 between the polynomial and its derivative) and to describe the termination
 of procedure based on successive dichotomy.
+include Cauchy bounds.
 \section{Conclusion}
 {\sf travaux reli\'es: Bridges et Bishop sur la continuité uniforme, qui est
 également utilisée dans nos travaux.}
