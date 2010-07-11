@@ -885,6 +885,38 @@ already given in section \ref{sec:bernsteindef}. We have also proved the
 correctness of this algorithm. This proof is the topic of the next
 section.
 
+\subsection{Initialization}\label{ssec:cauchy}
+Given an arbitrary polynomial non constant polynomial $p$ of degree
+$n$, defined by $p := \sum_{i  = 0}^n a_iX^i \in
+\mathbb{Q}[X]$ it is actually  possible to bound the absolute values
+of its roots by a simple constant defined from the coefficients
+$(a_i){i = 0 \dots n}$, called the Cauchy bound \cite{bpr}:
+$$\forall x \in \mathbb{R}, p(x) = 0 \Rightarrow |x|
+\leq C(p) \quad \textrm{with} \quad C(p) := \sum_{i=0}^n \frac{|a_i|}{|a_n|}$$
+
+Indeed, let $x$ be a root of $p$. If $|x|\leq 1$, since $1 \leq C(p)$,
+the inequality trivialy holds. Then if $|x| > 1$, since $x$ is a root,
+and $a_n \neq 0$
+$$x^n = - \frac{1}{a_n}\sum_{i = 0}^{n-1}a_i x^i$$
+Hence:
+$$|x|^n \leq \frac{1}{|a_n|}\sum_{i = 0}^{n-1}|a_i| |x|^i \leq
+\frac{1}{|a_n|}\sum_{i = 0}^{n}|a_i| |x|^i$$
+first by triangular inequality, then by adding a non-negative constant
+on the right (otherwise the sum might be empty). Then:
+$$|x| \leq \frac{1}{|a_n|}\sum_{i = 0}^{n}|a_i| |x|^{i - n} \leq
+\frac{1}{|a_n|}\sum_{i = 0}^{n}|a_i| $$
+since $|x| > 1$ implies that forall $i = 0 \dots n$,
+$|x|^{i - n} \leq 1$.
+
+This means that to start studying the roots of a polynomial $p$ we can
+restrict the infinite real line to a bounded interval
+$(- C(p), C(p))$. This justifies we can start a real root isolation
+process by providing the initial interval of interest. On this first
+interval, we compute Bernstein coefficients from the transformations
+presented in the previous section. Then in case of more that one sign
+change, we continue by invoking the splitting de Casteljau algorithm
+exposed in the next subsection.
+
 \subsection{Splitting algorithm}\label{ssec:split}
 
 Given three pairwise distinct rational numbers $l, r, m$,
@@ -953,15 +985,14 @@ The middle innermost control point, on the curve, belongs to the two
 new lists of control points. Points $\{C0, \dots, C5\}$ are the
 control points in the left half, $\{D0, \dots, D5\}$ are the control
 points on the right half.
-
-De Casteljau algorithm is widely used in computer  graphics for
-rasterizing Bézier curves.
+De Casteljau algorithm is extensively used in computer  graphics for
+rasterizing B{\'e}zier curves.
 
 \begin{figure}[h]
 \begin{center}
 \includegraphics[width=0.6\textwidth]{dicho_bern.pdf}
 \caption{\label{dichobern}Intermediate points computed by de Casteljau
-algorithm}
+splittling algorithm applied at the middle of $[B0, B5]$}
 \end{center}
 \end{figure}
 
