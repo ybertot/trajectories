@@ -952,6 +952,14 @@ new lists of control points. Points $\{C0, \dots, C5\}$ are the
 control points in the left half, $\{D0, \dots, D5\}$ are the control
 points on the right half.
 
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.6\textwidth]{dicho_bern.pdf}
+\caption{\label{dichobern}Intermediate points computed by de Casteljau
+algorithm}
+\end{center}
+\end{figure}
+
 
 The aim of this section is to prove that this algorithms is
 correct, i.e. that the \C{|*dicho*|} and \C{|*dicho'*|} function
@@ -1114,7 +1122,7 @@ On the other hand,  our ``constructive
 intermediate value theorem'' is only specialized to work on polynomials
 and could actually be easily generalized to any uniformly continuous function
 over a bounded interval.  Still, this theorem alone does not give a simple
-way to construct a Cauchy sequence representing a root.  Thus, 
+way to construct a Cauchy sequence representing a root.  Thus,
 these three aspects
 of our formalization
 ---characterization of roots and intermediate value theorem---
@@ -1340,7 +1348,7 @@ exhibit \(x'\) and \(y'\) so that \(-\varepsilon < p(x') < p(y') < \varepsilon\)
 standard monomial basis, then this polynomial has exactly one root between
 \(0\) (excluded) and \(+\infty\).
 \item If a polynomial has only one sign change in its Bernstein coefficients
-for a given interval \((l,r)\), then this polynomial has exactly one root 
+for a given interval \((l,r)\), then this polynomial has exactly one root
 between \(l\) and \(r\) (excluded).
 \item The inverse images of monomials are the Bernstein polynomials divided
 by the corresponding binomial coefficient.
