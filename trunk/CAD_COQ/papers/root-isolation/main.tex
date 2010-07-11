@@ -77,7 +77,8 @@ P_0(x \times r + (1 - x) l)\).  The second transformation is so that
 = 0\), as long as \(x\neq 0\).  The third transformation is a
 translation so that \(I_3 = (0,+\infty)\) and \(P_3(x) = P_2(1+x)\).
 We will show that the condition on Bernstein coefficients simply
-boils down to Descartes' law of sign for polynomial \(P_3\) in the
+boils down to Descartes' law of sign \cite{descartes, bpr} for
+polynomial \(P_3\) in the
 case where there is exactly one sign change in this polynomial's coefficients.
 This path from one polynomial to another is described in section~\ref{sec:Bernstein}.
 
@@ -103,7 +104,7 @@ interval
 Another part of our work is to describe dichotomy.  Knowing Bernstein
 coefficients for a polynomial and a given interval, it is easy to
 obtain the Bernstein coefficients for the two half intervals, using
-an algorithm due to de Casteljau.  In the process, we increase
+an algorithm due to de Casteljau \cite{castel}.  In the process, we increase
 the precision of the approximation given by the Bernstein
 coefficients.  De Casteljau's algorithm is a simple combinatorial
 algorithm based on taking arithmetic means of successive coefficients.
@@ -132,17 +133,18 @@ of this approach to describing roots in section~\ref{sec:rational}.
 Our work on Bernstein coefficients is an important stepping stone
 to address various aspects of real algebraic numbers, decision
 procedures for real arithmetic, and more ambitious algorithms like
-cylindrical decomposition.
+cylindrical decomposition \cite{bpr, cadcoq}.
 
 The formal work described in this paper has been performed using
-the Coq system\cite{coqart}, with ssreflect extension
+the \Coq{} system\cite{coqart}, with \ssr{} extension
 \cite{GONTHIER:2008:INRIA-00258384:4}.  We think some characteristics
 of the proof system played a key role in making this development
 possible.  We describe these key aspects in section~\ref{sec:formal}.
 
 \section{Bernstein coefficients}
 \label{sec:bernsteindef}
-B\'ezier curves are parametric curves that widely used to construct
+B\'ezier curves \cite{bezier} are parametric curves that widely used
+to construct
 smooth plane curves whose shape are governed by a finite finite number
 of \emph{control points}. A B\'ezier curve controlled by $n+1$ points is
 a polynomial expression of degree $n$ in its parameter $t$. For
@@ -952,7 +954,10 @@ new lists of control points. Points $\{C0, \dots, C5\}$ are the
 control points in the left half, $\{D0, \dots, D5\}$ are the control
 points on the right half.
 
-\begin{figure}
+De Casteljau algorithm is widely used in computer  graphics for
+rasterizing Bézier curves.
+
+\begin{figure}[h]
 \begin{center}
 \includegraphics[width=0.6\textwidth]{dicho_bern.pdf}
 \caption{\label{dichobern}Intermediate points computed by de Casteljau
@@ -1120,11 +1125,10 @@ be used in over settings.
 
 On the other hand,  our ``constructive
 intermediate value theorem'' is only specialized to work on polynomials
-and could actually be easily generalized to any uniformly continuous function
-over a bounded interval.  Still, this theorem alone does not give a simple
-way to construct a Cauchy sequence representing a root.  Thus,
-these three aspects
-of our formalization
+and could actually be easily generalized to any uniformly continuous
+function over a bounded interval.  Still, this theorem alone does not
+give a simple way to construct a Cauchy sequence representing a root.
+Thus, these three aspects of our formalization
 ---characterization of roots and intermediate value theorem---
 are designed especially for the purpose of this development.
 \subsection{Algebraic structures}
@@ -1336,6 +1340,26 @@ of real closed fields. Yet incomplete but lightweight tools could
 probably be crafted to relieve the user from pedestrian steps when
 possible.
 
+\subsection{Related Work}
+Real root isolation methods by signe changes based methods is a
+classical topic, extensively studied (see \cite{rouillieretal} for a
+review of the related litterature) after the pioneering work of
+Uspensky \cite{uspensky}. Bernstein polynomials are used to provide
+efficient implementations of these methods
+\cite{mourrainetal, rouillieretal}. Up to our knowledge, this work is
+the first mechanized proofs of de Casteljau algorithm,and of the
+building blocks of a real root isolation procedure. The closest work
+to our is probably the study of global optimization methods in Coq
+lead by Roland Zumkeller \cite{zumkellerphd}. Indeed, Bernstein
+polynomials bases are also used to approximate continuous functions on a
+closed domain. This last work results in an implementation in the
+\Coq{} system of tool to find optimums of multivariate continuous real
+functions. Yet we could not find a mention of a formalization of the
+correctness proofs of this tool.
+
+
+
+
 \subsection{Current state of the formalization}
 In this section, we recapitulate the main results described in this paper
 that have a formal proof in our development.
@@ -1365,6 +1389,7 @@ to reduce the multiplicity of roots (dividing by the greatest common divisor
 between the polynomial and its derivative) and to describe the termination
 of procedure based on successive dichotomy.
 include Cauchy bounds.
+
 \section{Conclusion}
 {\sf travaux reli\'es: Bridges et Bishop sur la continuité uniforme, qui est
 également utilisée dans nos travaux.}
@@ -1384,7 +1409,8 @@ of mathematics.
 
 This development is not made just for the beauty of it. The initial
 goal is to provide one of the basic blocks required for cylindrical
-algebraic decomposition. In the short term, we want to complete this
+algebraic decomposition \cite{bpr, cadcoq}. In the short term, we
+want to complete this
 into a full algorithm to isolate the roots of an arbitrary
 polynomial. This involves proving the technique to reduce the
 multiplicity of roots that we already described in the introduction,
