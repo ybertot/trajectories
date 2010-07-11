@@ -3,6 +3,7 @@
 \usepackage{amsmath, amsfonts}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{url}
 \input{macro}
 
 \begin{document}
@@ -1109,6 +1110,9 @@ coincide with the ones of $(*)$, which boils down to an induction on $i$.
 
 \section{Formalization issues}
 \label{sec:formal}
+The sources of this development are available from\\
+{\url{http://www.inria.fr/sophia/members/Yves.Bertot/proofs/bernstein.html}}
+
 \subsection{Numbers}
 The work we describe in this article was intentionally not based on any
 implementation of real numbers, but expressed solely in terms natural
@@ -1124,7 +1128,8 @@ setoids and express all equalities using ``Leibniz equality''.
 
 As a result, our work is versatile and can be embedded in any choice of
 formalization: it is compatible with constructive mathematics, as for
-instance implemented in \Coq{} in \cite{russellreals, russellcoqreals} as it
+instance implemented in \Coq{} in \cite{DBLP:conf/mkm/Cruz-FilipeGW04,
+russellreals, russellcoqreals} as it
 relies solely on intuitionistic mathematics and it is also readily usable
 with the ``classical real numbers'' of the standard Coq library since
 it relies on plain equality.
