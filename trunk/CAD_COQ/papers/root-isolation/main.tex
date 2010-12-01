@@ -91,7 +91,7 @@ expresses a relation between the number of roots of a polynomial
 between 0 and \(+\infty\) and the number of sign changes in the
 coefficients of this polynomial.  The number of sign changes is larger
 than the number of roots and the difference between the two numbers is
-a multiple of 2.  Thus, if the number of sign changes is 1, there is
+even.  Thus, if the number of sign changes is 1, there is
 exactly one root between 0 and \(+\infty\).
 
 For our development, we only prove the corollary  of
@@ -114,10 +114,12 @@ section~\ref{sec:dicho} that Bernstein
 coefficients actually are the coefficients of the polynomial in a
 different basis from the usual monomials, called the {\em Bernstein basis}.
 
-Most of our proofs were made using only rational numbers as numeric
-values.  Thus, we work with a type of numbers where equality and
-comparison are decidable and the process we describe can effectively
-be used in a decision procedure.
+All these results deal with polynomial functions over real numbers. In
+order to make this formal study as generic as possible, we abstract
+from the choice of the subset of real numbers of interest for the
+user and only rely on rational numbers arithmetics. Comparison of
+rational numbers being effective, the process we describe can
+effectively be used in a decision procedure.
 
 When considering only rational numbers, the existence of roots takes a
 different meaning: if a polynomial has a single simple real root in an
@@ -142,7 +144,7 @@ the \Coq{} system\cite{coqart}, with \ssr{} extension
 of the proof system played a key role in making this development
 possible.  We describe these key aspects in section~\ref{sec:formal}.
 
-\section{Bernstein coefficients}
+\section{Bernstein polynomials, Bernstein coefficients}
 \label{sec:bernsteindef}
 B\'ezier curves \cite{bezier} are parametric curves that are widely used
 to construct
@@ -151,8 +153,8 @@ of \emph{control points}. A B\'ezier curve controlled by $n+1$ points is
 a polynomial expression of degree $n$ in its parameter $t$. For
 instance, given two points $P_0$ and $P_1$, the corresponding B\'ezier
 curve is the segment $B_{(P_0, P1)}(t) = tP_0 + (1 - t)P_1$. For three control
-points $P_0, P_1, P_3$, the B\'ezier curve is
-$B_{(P_0, P_1, P_2)}(t) = (1 - t)^2P_0 + 2(1 - t)tP_1 + t^3P_2$.
+points $P_0, P_1, P_2$, the B\'ezier curve is
+$B_{(P_0, P_1, P_2)}(t) = (1 - t)^2P_0 + 2(1 - t)tP_1 + t^2P_2$.
 We already see in this case that a B\'ezier
 curve does not meet all its control points. In fact, it is only
 guaranteed to pass through the first and the last control point. In
@@ -160,9 +162,9 @@ the case of the quadratic B\'ezier curve, the middle control point $P_1$
 is the intersection of the tangents to the curve at $P_0$ and
 $P_2$. The general formula giving the B\'ezier curve at $n$ control
 points is:
-$$B_{(P_0, \dots,P_n}(t) = \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
+$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
 which satisfies the recursive relation:
-$$B_{(P_0,\dots, P_n)} = (1, t)B_{(P_0, \dots, P_{n-1})} + tB_{(P_1, \dots, P_n)}$$
+$$B_{(P_0,\dots, P_n)} = (1 - t)B_{(P_0, \dots, P_{n-1})} + tB_{(P_1, \dots, P_n)}$$
 
 B\'ezier curves are named after the engineer Paul B\'ezier who was working
 in the design division of a car manufacturing company. These curves have very interesting properties for
@@ -200,21 +202,23 @@ For arbitrary numbers \(l\) and
 \(r\), we can also consider the following polynomials, called
 the {\em Bernstein polynomials for degree \(n\) and the interval
 \((l,r)\)} for \(0 \leq k \leq n\)
-\[P_b(n, l, r, k) = \binom{n}{k} \frac{(x-l)^{n-k}(r-x)^k}{r-l}^n.\]
+\[P_b(n, l, r, k) = \binom{n}{k} \frac{(x-l)^{k}(r-x)^{n - k}}{(r-l)^n}\]
 These polynomials also constitue a basis of the vector space of polynomial
 of degree \(n\), and we will usually call it the {\em Bernstein basis} leaving
 the degree and the values \(l\) and \(r\) unspecified.
 Every polynomial \(p\) of degree \(n\) hence has a sequence of coefficients
-\((b_i)_{0\leq i \leq n}\), such that \(p(x) = \sum_{i=0}^n P_b(n,l,r,i)(x)\).  The coefficients
-\(b_i\) are the Bernstein coefficients.
+\((b_i)_{0\leq i \leq n}\), such that \(p(x) = \sum_{i=0}^n b_i P_b(n,l,r,i)(x)\).  The coefficients
+\(b_i\) are the Bernstein coefficients of $p$.
 
-When \(l < r\), the Bernstein polynomials are positive and each polynomial
+When \(l < r\), the Bernstein polynomials are positive on $(l, r)$ and
+each polynomial
 of index \(k\) reaches its maximum at the point \(d_k=l+\frac{(r-l)k}{n}\), so
 that each coefficient \(b_k\) somehow has a dominant influence on the value
 of the polynomial around \(d_k\).  Moreover, the coefficients
-\(\binom{n}{k}\) included in the definition of \(P_b(n,k,r,k)\) are chosen
-in such a way that the coefficient \(b_k\) would tend to have a value
-close to the value of the polynomial in \(d_k\).  For instance, if the
+\(\binom{n}{k}\) included in the definition of \(P_b(n,l,r,k)\) are chosen
+in such a way that the $k$-th coefficient \(b_k\) of $p$ would tend to
+have a value
+close to the one of $p$  in \(d_k\).  For instance, if the
 \(p_1\) is the constant polynomial with value \(1\), then all its Bernstein
 coefficients are equal to 1; similarly, if \(p_2\) is the identity polynomial,
 and \(n\) is larger than \(0\),
@@ -222,7 +226,7 @@ then the Bernstein coefficients for \(p_2\)
 are \(l + \frac{(r-l) k}{n}\), as can
 be verified using the following computation:
 \begin{eqnarray*}
-\lefteqn{\sum_{i=0}^n \left(l + \frac{(r-l)i}{n}\right) \binom{n}{i} \frac{(x-l)^i (r-x)^{n-i}}
+\lefteqn{\sum_{i=0}^n \left(l + \frac{(r-l)i}{n}\right) \binom{n}{i} \frac{(x-l)^i (r-x)^{n-1}}
 {(r-l)^n}}\\
 &=& \sum_{i=0}^n l \binom{n}{i}\frac{(x-l)^i(r-x)^{n-i}}{(r-l)^n} +
 \sum_{i=0}^n \frac{i}{n}\binom{n}{i}\frac{(x-l)^i(r-x)^{n-i}}{(r-l)^{n-1}}\\
@@ -247,7 +251,7 @@ The Bernstein coefficients are related to a broken line (made of
 contiguous straightline segments) which gives a rough approximation of the
 polynomial's function graph.  More precisely, given the bounds \((l,r)\)
 of the interval, and the Bernstein coefficients \((b_0,\ldots, b_n)\)
-of polynomial $p$, the $n+1$ points with coordinates \((l + i
+of polynomial $p$, the $n+1$ points with coordinates \(((l + i
 \frac{r-l}{n}), b_i)\) are the control points for the B\'ezier curve
 that coincides with the polynomial's graph. Each of these points describes
 the behavior of the polynomial when the input \(x\) is close to
@@ -255,7 +259,7 @@ the behavior of the polynomial when the input \(x\) is close to
 {\em control} the behavior of the polynomial in some part of the interval.
 %This is why the points \(c_i\) are often called {\em control points}.
 These points can
-be moved about the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
+be moved around the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
 close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
 \(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the
 behavior of the polynomial in this area is quite eventless.  But when \(c_i\)
@@ -302,25 +306,46 @@ can be sure that any other bend in the curve stays away of the x-axis.
 Roots of a polynomial with coefficients in a given field are not
 necessary in this field. This is only  the case with algebraically
 closed fields like the field of complex numbers.
+
 Real closed fields, like the field of real numbers, give weaker
 properties on the existence of roots: only polynomials with odd degree
 have at least one root in the real closed field of their coefficients.
 These fields are ordered and contain enough elements
-so that they enjoy the existence of the {\em intermediate value theorem}:
+so that they enjoy the existence of the {\em intermediate value
+  theorem} for polynomial functions:
 any polynomial that has a negative value in one point \(a\) and a positive value
 in another point \(b\) is guaranteed to have a root at some point between
-\(a\) and \(b\).
+\(a\) and \(b\). Real algebraic numbers are an intuitionistic model of
+this theory, and the intermediate value property is completely
+effective for these numbers.
 
-Then, we can consider even smaller fields, like the field of rational numbers.
-Here the {\em intermediate value theorem} does not hold
-anymore. Still, it makes sense to say that a polynomial with rational
-coefficients has a single \emph{real} root in a given interval with rational
-endpoints, even without defining real points. In that case indeed the
-polynomial crosses the real x-axis in exactly one point, which
+Yet real algebraic numbers form a relatively small subset of numbers,
+which soon proves not sufficient to encompass standard results in
+analysis. As soon as one need transcendental real numbers, like $\pi$,
+this set is too small.
+
+Of course, the full classical theory of reals provide the intermediate
+value property but it is by no mean effective. And this property vanishes
+as such when constructive real numbers are considered.
+
+We propose to work with an intuitionistic reformulation of the classical
+theory of polynomial function which allows to abstract from these various
+flavors of real numbers. For that purpose, we only work within the
+first order theory of rational numbers, which is a common core
+necessarily shared by all of the previous subsets of real numbers.
+Therefore, we need to reformulate the notion of root of a polynomial.
+
+Of course, the {\em intermediate value theorem} does not hold
+on rational numbers. Still, it makes sense to say that a polynomial
+with rational coefficients has a single \emph{real} root in a given
+interval with rational endpoints, even without defining real
+points. In that case indeed the polynomial crosses the real x-axis in
+exactly one point, which
 can be approximated arbitrarily precisely by rational numbers.
 This is what we want to make precise in the next two sections.
 
 \subsection{Criteria for the existence of a unique root}
+
 We concentrate on a sufficient criterion for the existence of a root
 inside an interval.  This criterion is strong enough to build a Cauchy
 sequence whose limit in the real numbers would be the root.  Our
@@ -365,6 +390,8 @@ interval.
 \caption{\label{unbounded_decompose} A sufficient criterion for the existence of a single root in an unbounded interval}
 \end{figure}
 \end{enumerate}
+
+
 \subsection{Finding locations where a polynomial's value is
   arbitrarily small}
 \label{ssec:civt}
@@ -386,14 +413,15 @@ form:
 x \leq x' < y' \leq y]
 \end{array}
 \]
-We call this theorem the {\em constructive intermediate value theorem}.
+We call this theorem the {\em constructive intermediate value theorem}
+(for polynomial functions).
 
 We again rely on reasoning about slopes. Without loss of generality,
 we can assume that the two values \(x\) and \(y\) are positive. Assuming
 that the polynomial has the shape \(a + X \times p'\), we construct
 another
 polynomial \(P''\) whose coefficients are the absolute values of the
-coefficients of \(P''\).  This polynomial is increasing and its maximum
+coefficients of \(P''\).  This polynomial is increasing so its maximum
 value in \([x,y]\) is reached in \(y\).   We prove that the slope
 of the polynomial between any two points inside \([x,y]\) is smaller than
 \(k  = P''(y)\).  Thus, we establish that the
@@ -428,7 +456,7 @@ point where the polynomial takes a positive value.
 \section{A simple form of Descartes' law of signs}\label{sec:descartes}
 One of the main results studied in this paper
 is that having only one sign change in the
-sequence of Bernstein coefficients for the polynomial \(p\) and the
+sequence of Bernstein coefficients for the square-free polynomial \(p\) and the
 interval \((l,r)\) ensures that there is only one root of \(p\) inside
 \((l,r)\).  The proof of this result relies on a similar property for
 the standard coefficients of another polynomial \(q\): if there is
@@ -488,7 +516,7 @@ used in the formal proof.
 
 \subsection{Lemmas for polynomials with non-negative coefficients}
 Polynomials are simply encoded by their lists of coefficients, evaluating
-a polynomial on a given number is done recursively following Horner's scheme,
+a polynomial at a given point is done recursively following Horner's scheme,
 and recognizing polynomials with only non-negative coefficients is also
 done using a simple recursive function, written in the following form:
 \begin{lstlisting}
@@ -551,7 +579,7 @@ bound of interval \(I_2\) as used in the criterion for existence of a unique
 root in an unbounded interval (see Figure~\ref{unbounded_decompose}).
 
 \subsection{Polynomials with exactly one sign change}
-We can then address the case of polynomials with exactly one sign
+We can now address the case of polynomials with exactly one sign
 change.  We want
 to show that these polynomials have exactly one root.  We exhibit the
 two intervals described in the criterion for unbounded intervals (see
@@ -647,10 +675,12 @@ law of signs works for the interval \((0,+\infty)\).  This criterion
 can easily be adapted to any half-line interval \((a,+\infty)\) and
 more precisely to \((1,+\infty)\).  Then a criterion on \((1,+\infty)\)
 can be transformed into a criterion on \((0,1)\). This can, in turn,
-be transposed to any interval.  It happens that this path gives a way to
+be transposed to any interval by translation and dilatation.  It
+happens that this path gives a way to
 reason on Bernstein coefficients.
 \subsection{A criterion for the interval \((1,+\infty)\)}
-The law of signs gives us a sufficient condition to determine when the
+Descartes' weak law of signs gives us a sufficient condition to
+determine when the
 unbounded interval \((0,+\infty)\) contains exactly one root for a
 polynomial. Through a change of variable, we obtain a similar
 criterion for the interval \((1, +\infty)\).
@@ -710,7 +740,7 @@ polynomials description with enough 0 coefficients.
 
 To illustrate the correspondence between a polynomial and its reverse,
 we can consider the polynomial \(P(x) = x^2 + \frac{3}{2} x - 1\),
-the reversed polynomial is \(Q(x) = -x^2 + \frac{3}{2} + 1\) and after
+the reversed polynomial is \(Q(x) = -x^2 + \frac{3}{2}x + 1\) and after
 the variable change we obtain the polynomial \(-x^2-2x+1\)
 which exhibits only one sign change.  This predicts that the polynomial has
 exactly one root between 0 and 1, and indeed the two roots of the initial
@@ -746,10 +776,10 @@ between \(l\) and \(r\) if and only if the polynomial function which
 maps any \(y\) to \(p((r - l) y + l)\) has a root between 0 and 1.
 
 Here again, we can define a generic transformation on polynomials,
-named \(\chi_k\) that corresponds to expanding with a given ratio.
+named \(\chi_k\) that corresponds to expanding with a given ratio $k$.
 For an arbitrary polynomial \(p=\sum_{i=0}^n a_i X^i\), the polynomial
 \(\chi_k(p)\) is defined as follows:
-\[\chi_k(p) = \sum_{i=0}^n a_i(kX^i) = \sum_i{i=0}^n a_ik^i x^i\]
+\[\chi_k(p) = \sum_{i=0}^n a_i(kX^i) = \sum_{i=0}^n a_ik^i X^i\]
 
 Thus, the change of variable to study the roots of polynomial \(p\)
 is actually represented by \(\chi_{r-l}\circ \theta_l\).
@@ -791,7 +821,7 @@ We proved that the images of the monomials \(X^i\) by this inverse
 transformation are multiples of the Bernstein polynomials, in reverse order.
 Let us first observe the effect of \(\rho\circ \theta_{-1}\):
 \begin{eqnarray*}
-\tau^{-1}(X^i)=
+\tau^{-1}(x^i)=
 \theta_{-l}\circ\chi_{\frac{1}{r-l}} \circ \rho\left(\sum_{j=0}^i\binom{i}{j}(-1)^jx^{i-j}\right)
 &=&
 \theta_{-l}\circ\chi_{\frac{1}{r-l}}\left( \sum_{j=0}^i\binom{i}{j}(-1)^j x^{n-i+j}
@@ -1116,14 +1146,15 @@ The sources of this development are available from\\
 The work we describe in this article was intentionally not based on any
 implementation of real numbers, but expressed solely in terms of natural
 numbers and rational numbers.  Our intention is to provide a description
-of Bernstein polynomials and their characteristics that will be usable in any
-real closed field, but without assuming the intermediate value theorem.
+of Bernstein polynomials and their characteristics that will be usable
+for any choice of real numbers, without assuming an effective
+intermediate value theorem.
 
 We proved a minimal set of properties of polynomial functions by expressing
 these properties in the first-order theory of rational numbers.  Thus, we
 do not treat a general notion of Cauchy sequences, continuous functions, or
 derivability.  As a result, we do not need to rely on ``book equality'' or
-setoids and express all equalities using ``Leibniz equality''.
+setoids and express all equalities using the structural ``Leibniz equality''.
 
 As a result, our work is versatile and can be embedded in any choice of
 formalization: it is compatible with constructive mathematics, as for
