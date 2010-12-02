@@ -1,6 +1,6 @@
 Require Import QArith ZArith Zwf Omega.
 Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun.
-Require Import bigops groups choice.
+Require Import bigop fingroup choice.
 Require Export ssralg orderedalg infra pol.
 
 Import GroupScope .
@@ -264,7 +264,6 @@ Qed.
 Lemma constructive_ivt :
   forall l x y, x < y -> eval_pol l x < 0%R -> 0%R <= eval_pol l y  ->
        forall epsilon, 0 < epsilon ->
-
        exists x', exists y',  - epsilon <= eval_pol l x' /\
          eval_pol l x' < 0 /\ 0 <= eval_pol l y' /\
          eval_pol l y' <= epsilon /\ x <= x' /\ x' < y' /\ y' <= y.

@@ -1,5 +1,5 @@
 Require Import ssreflect ssrbool eqtype ssrnat seq.
-Require Import choice fintype finfun ssrfun bigops ssralg orderedalg.
+Require Import choice fintype finfun ssrfun bigop ssralg orderedalg.
 
 Require Import Zbool.
 Require Import QArith.

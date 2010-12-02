@@ -1,6 +1,6 @@
 Require Import QArith List Omega ZArith (* sos *).
 Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun.
-Require Import bigops groups choice .
+Require Import bigop fingroup choice .
 Require Export ssralg orderedalg infra pol cmvt.
 
 (* Defining function over lists of rationals that find lists containing

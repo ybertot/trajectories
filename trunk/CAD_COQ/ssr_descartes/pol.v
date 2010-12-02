@@ -1,6 +1,6 @@
 Require Import QArith ZArith Zwf Omega.
 Require Import ssreflect ssrbool eqtype  ssrfun ssrnat binomial div seq choice.
-Require Import fintype bigops groups ssralg orderedalg.
+Require Import fintype bigop fingroup ssralg orderedalg.
 Require Export infra.
 
 Import GroupScope .

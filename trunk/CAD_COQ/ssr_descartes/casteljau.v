@@ -1,4 +1,4 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat binomial seq fintype bigops.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat binomial seq fintype bigop.
 Require Import ssralg poly polydiv orderedalg.
 Require Import  Qcanon.
 Require Import infra pol.
@@ -305,7 +305,7 @@ rewrite -size_poly_eq0 size_mul_id // -?size_poly_eq0 ?size_polyXn size_factor_e
 by rewrite addn_eq0 negb_and size_poly_eq0 nq10 orbT.
 Qed.
 
-(* to clean: a simple induction is probably enough *)
+(* to be cleaned: a simple induction is probably enough *)
 Lemma translate_padded_l : forall (i : nat) (q : seq Qcb)(c : Qcb) , 
   translate_pol' (q ++ (nseq i 0)) c = (translate_pol' q c) ++ (nseq i 0).
 Proof.
@@ -678,6 +678,7 @@ rewrite -polyC_opp -translate_pol'Xn translateXn_addr oppr_sub addrC addrA addNr
 by rewrite add0r translate_pol'Xn polyC_opp.
 Qed.
 
+End BernsteinPols.
 
 Lemma dicho'_delta_bern : forall a b m k p (alpha := (b - m) * (b - a)^-1)(beta := ((m - a) * (b - a)^-1)),
   m != a ->
@@ -711,7 +712,8 @@ have -> : (('X - a%:P) ^+ k * ((b - a) ^- k)%:P) = (beta^+k)%:P * (('X - a%:P) ^
 rewrite -(expr_inv (b - a)) [(((b - a)^-1)^+_)%:P]polyC_exp -[_^+(p - k) * _]exprn_mull.
 have -> : (b%:P - 'X) * ((b - a)^-1)%:P = 
    ((m%:P - 'X) * (m - a)^-1%:P) + (alpha%:P * ('X - a%:P) * (m - a)^-1%:P).
- admit.
+ (* a ring tactic would be nice here *)
+  admit.
 rewrite [_^+ (p - k)]exprn_addl /= leq_subS //.
 rewrite -(big_mkord (fun _ => true) (fun i => ((m%:P - 'X) * ((m - a)^-1)%:P) ^+ (p - k - i) *
        (alpha%:P * ('X - a%:P) * ((m - a)^-1)%:P) ^+ i *+ 'C(
@@ -793,7 +795,6 @@ rewrite [(r%:P - 'X)^+i * _]mulrC !mulrA polyC1 -!exprn_addr.
 by rewrite -addnA subnKC // -signr_odd odd_add addbb /= expr0 mul1r.
 Qed.
 
-(* This should come after bern_swap ! *)
 Lemma bern_rev_coef : forall (p : nat)(a b : Qcb)(c : nat -> Qcb),
   \sum_(i < p.+1)(c i)%:P * (bernp a b p i) = 
   \sum_(i < p.+1)(c (p - i)%N)%:P * (bernp b a p i).
