@@ -16,6 +16,11 @@
     French ANR.
 }}
 
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+
 \maketitle
 
 \section{Introduction}
@@ -128,7 +133,7 @@ corresponding property on rational numbers: there exists a
 sub-interval inside which the absolute value of the slope is bounded
 below, and such that the values of the polynomial at the sub-interval
 bounds have opposite signs.  In a similar vein, the intermediate value
-theorem does not hold with rational numbers, but a corresponding
+theorem (IVT) does not hold with rational numbers, but a corresponding
 statement, expressed as a bounded-value property, does.  Our proof
 development relies on this approach.  We describe the formal aspects
 of this approach to describing roots in section~\ref{sec:rational}.
@@ -143,222 +148,224 @@ the \Coq{} system\cite{coqart}, with \ssr{} extension
 \cite{GONTHIER:2008:INRIA-00258384:4}.  We think some characteristics
 of the proof system played a key role in making this development
 possible.  We describe these key aspects in section~\ref{sec:formal}.
+The sources of this development are available from\\
+{\url{http://www.inria.fr/sophia/members/Yves.Bertot/proofs/bernstein.html}}
 
-\section{Bernstein polynomials, Bernstein coefficients}
-\label{sec:bernsteindef}
-B\'ezier curves \cite{bezier} are parametric curves that are widely used
-to construct
-smooth plane curves whose shapes are governed by a finite finite number
-of \emph{control points}. A B\'ezier curve controlled by $n+1$ points is
-a polynomial expression of degree $n$ in its parameter $t$. For
-instance, given two points $P_0$ and $P_1$, the corresponding B\'ezier
-curve is the segment $B_{(P_0, P1)}(t) = tP_0 + (1 - t)P_1$. For three control
-points $P_0, P_1, P_2$, the B\'ezier curve is
-$B_{(P_0, P_1, P_2)}(t) = (1 - t)^2P_0 + 2(1 - t)tP_1 + t^2P_2$.
-We already see in this case that a B\'ezier
-curve does not meet all its control points. In fact, it is only
-guaranteed to pass through the first and the last control point. In
-the case of the quadratic B\'ezier curve, the middle control point $P_1$
-is the intersection of the tangents to the curve at $P_0$ and
-$P_2$. The general formula giving the B\'ezier curve at $n$ control
-points is:
-$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
-which satisfies the recursive relation:
-$$B_{(P_0,\dots, P_n)} = (1 - t)B_{(P_0, \dots, P_{n-1})} + tB_{(P_1, \dots, P_n)}$$
-
-B\'ezier curves are named after the engineer Paul B\'ezier who was working
-in the design division of a car manufacturing company. These curves have very interesting properties for
-interpolation but also for computer graphics: a B\'ezier curve is
-contained in the convex hull of its control
-points and uniform transformations on the control points like
-translation or rotation have the same effect on the curve. Points
-control the shape of the curve since the $k$-th derivative of the
-curve at its extreme points is governed by the $k+1$ nearest
-control points.
-
-Computer graphics algorithms usually use piecewise polynomial paths
-(called splines) of  low degree. Most modern vector graphics
-standards, like for instance SVG, feature support for B\'ezier splines.
-TrueType fonts use quadratic B\'ezier
-splines, whereas PostScript or MetaFont \cite{metafont} use cubic
-B\'ezier splines.
-
-
-Bernstein polynomials are defined as the weight assigned to each
-control point: the $k$-th Bernstein polynomial $P_b(n, k)$ is defined by:
-$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n P_b(n, k)(t)\binom{n}{k}P_i$$
-hence:
-$$P_b(n,  k)(t) = \binom{n}{k}(1 -t)^{n - k}t^k$$
-
-% For an arbitrary natural number \(n\), we can consider the set of polynomials
-% of degree smaller than \(n\) as a vector space, and the monomials
-% \(x^k\), with \(0 \leq k \leq n\) constitue a basis, the standard basis,
-% of of this vector space.
-% If \(p\) is a polynomial with coefficients \(a_i\), then
-% \(p(x) = \sum_{i=0}^n a_i x^i\)  and the coefficients \(a_i\) are also the
-% coefficients of \(p\) in the standard basis.
-
-For arbitrary numbers \(l\) and
-\(r\), we can also consider the following polynomials, called
-the {\em Bernstein polynomials for degree \(n\) and the interval
-\((l,r)\)} for \(0 \leq k \leq n\)
-\[P_b(n, l, r, k) = \binom{n}{k} \frac{(x-l)^{k}(r-x)^{n - k}}{(r-l)^n}\]
-These polynomials also constitue a basis of the vector space of polynomial
-of degree \(n\), and we will usually call it the {\em Bernstein basis} leaving
-the degree and the values \(l\) and \(r\) unspecified.
-Every polynomial \(p\) of degree \(n\) hence has a sequence of coefficients
-\((b_i)_{0\leq i \leq n}\), such that \(p(x) = \sum_{i=0}^n b_i P_b(n,l,r,i)(x)\).  The coefficients
-\(b_i\) are the Bernstein coefficients of $p$.
-
-When \(l < r\), the Bernstein polynomials are positive on $(l, r)$ and
-each polynomial
-of index \(k\) reaches its maximum at the point \(d_k=l+\frac{(r-l)k}{n}\), so
-that each coefficient \(b_k\) somehow has a dominant influence on the value
-of the polynomial around \(d_k\).  Moreover, the coefficients
-\(\binom{n}{k}\) included in the definition of \(P_b(n,l,r,k)\) are chosen
-in such a way that the $k$-th coefficient \(b_k\) of $p$ would tend to
-have a value
-close to the one of $p$  in \(d_k\).  For instance, if the
-\(p_1\) is the constant polynomial with value \(1\), then all its Bernstein
-coefficients are equal to 1; similarly, if \(p_2\) is the identity polynomial,
-and \(n\) is larger than \(0\),
-then the Bernstein coefficients for \(p_2\)
-are \(l + \frac{(r-l) k}{n}\), as can
-be verified using the following computation:
-\begin{eqnarray*}
-\lefteqn{\sum_{i=0}^n \left(l + \frac{(r-l)i}{n}\right) \binom{n}{i} \frac{(x-l)^i (r-x)^{n-1}}
-{(r-l)^n}}\\
-&=& \sum_{i=0}^n l \binom{n}{i}\frac{(x-l)^i(r-x)^{n-i}}{(r-l)^n} +
-\sum_{i=0}^n \frac{i}{n}\binom{n}{i}\frac{(x-l)^i(r-x)^{n-i}}{(r-l)^{n-1}}\\
-&=& l \frac{((x -l) + (r - x))^n}{(r-l)^n} +\sum_{i=1}^n \binom{n-1}{i-1}\frac{(x-l)^i(r-x)^{n-i}}{(r-l)^{n-1}}\\
-&=& l +{ (x-l)\sum_{i=0}^{n-1}\binom{n-1}{i} \frac{(x-l)^i(r-x)^{(n-1)-i}}
-{(r-l)^{n-1}}}\\
-&=& l + (x -l) \frac{((x-l) + (r - x))^{n-1}}{(r-l)^{n-1}} = x
-\end{eqnarray*}
-At the first equality sign, we distribute inside the first sum; in the
-second term, we simplify the denominator with the numerator \((r-l)\).
-At the second equality sign, we recognize that the first term contains
-a binomial formula corresponding to \(((x-l)+(r-x))^n\); in the second
-term, we recognize that the first element of the sum can be removed
-because it is 0, also we recognize that \(\frac{i}{n}\binom{n}{i}\) is
-\(\binom{n-1}{i-1}\) when \(i\neq 0\).  At the third equality sign,
-we use the equality \((x-l)+(r-x)=r-l\) for the first term and
-we factor out \((x-l)\) from the remaining indexed sum and re-index that sum.
-We then recognize another binomial formula and can conclude.
-
-\label{sec:geometrybernstein}
-The Bernstein coefficients are related to a broken line (made of
-contiguous straightline segments) which gives a rough approximation of the
-polynomial's function graph.  More precisely, given the bounds \((l,r)\)
-of the interval, and the Bernstein coefficients \((b_0,\ldots, b_n)\)
-of polynomial $p$, the $n+1$ points with coordinates \(((l + i
-\frac{r-l}{n}), b_i)\) are the control points for the B\'ezier curve
-that coincides with the polynomial's graph. Each of these points describes
-the behavior of the polynomial when the input \(x\) is close to
-\(l+i\frac{r-l}{n}\). In this sense, Bernstein coefficients can be said to
-{\em control} the behavior of the polynomial in some part of the interval.
-%This is why the points \(c_i\) are often called {\em control points}.
-These points can
-be moved around the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
-close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
-\(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the
-behavior of the polynomial in this area is quite eventless.  But when \(c_i\)
-is significantly removed from this segment, \(c_i\) appears to be pulling the
-polynomial's curve in its direction, with the curve of the polynomial usually
-crossing the vertical line \(x=l+i\frac{r-l}{n}\) between the segment and
-the point \(c_i\).  This is illustrated in the Figure~\ref{control}.
-\begin{figure}
-\begin{center}
-\begin{tabular}{ccc}
-\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
-{control.pdf}&
-\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
-{control2.pdf}&
-\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
-{control3.pdf}\\
-(a) 1, 3, -10, 1, 4, 1 & (b) 1, 3, -1, 1, 4, 1 & (c) 3, 0, 1, 10, -2, -1\
-\end{tabular}
-\end{center}
-\caption{\label{control} Bernstein Control points and corresponding polynomial curves}
-\end{figure}
-
-In Figure~{(\ref{control}-a)} the illustration shows that a peak in
-the disposition of the control points corresponds to an inflexion in the
-polynomial's curve (the Bernstein coefficients are 1, 3, -10, 1, 4, 1
-and -10 corresponds to a downward peak).  In this case, the peak
-provokes two sign changes, which are reproduced in the shape of the
-curve and correspond to the existence of two roots inside the
-interval.  In Figure~(\ref{control}-b), the coefficients still exhibit
-a downward peak with a negative coefficient, but the polynomial's
-curve stays away from the x-axis and the two sign changes in the
-Bernstein coefficients do not correspond to any real root for the
-polynomial (this is a false alert).  In Figure~(\ref{control}-c),
-there is one sign change, so that the first and last coefficients have
-opposite signs.  In fact, the first and the last Bernstein
-coefficients are equal to the values of the polynomial at the bounds
-of the interval, so this imposes the existence of at least one root.
-But because there is exactly one sign change in the coefficients, we
-can be sure that any other bend in the curve stays away of the x-axis.
-
-\section{Describing roots of a polynomial in the rational setting}
+\section{Formalization viewpoints}
 \label{sec:rational}
 
-Roots of a polynomial with coefficients in a given field are not
-necessary in this field. This is only  the case with algebraically
-closed fields like the field of complex numbers.
+\subsection{A formalization in the first order theory of rational
+  numbers}
+
+This formal study is devoted to real roots of polynomial with rational
+coefficients. Roots of a polynomial with coefficients in a given field
+are not necessary in this field, unless it is algebraically closed
+like the field on complex numbers.
 
 Real closed fields, like the field of real numbers, give weaker
 properties on the existence of roots: only polynomials with odd degree
 have at least one root in the real closed field of their coefficients.
 These fields are ordered and contain enough elements
 so that they enjoy the existence of the {\em intermediate value
-  theorem} for polynomial functions:
-any polynomial that has a negative value in one point \(a\) and a positive value
-in another point \(b\) is guaranteed to have a root at some point between
-\(a\) and \(b\). Real algebraic numbers are an intuitionistic model of
-this theory, and the intermediate value property is completely
-effective for these numbers.
+  theorem} (IVT) for polynomial functions:
+any polynomial that has a negative value in one point \(a\) and a
+positive value in another point \(b\) is guaranteed to have a root at
+some point between \(a\) and \(b\). Real algebraic numbers are an
+intuitionistic model of this theory, and the intermediate value
+property is completely effective in this model.
 
 Yet real algebraic numbers form a relatively small subset of numbers,
 which soon proves not sufficient to encompass standard results in
-analysis. As soon as one need transcendental real numbers, like $\pi$,
-this set is too small.
+analysis. As soon as one need to consider transcendental real numbers,
+like $\pi$ or $e$, this set is too small.
 
 Of course, the full classical theory of reals provide the intermediate
-value property but it is by no mean effective. And this property vanishes
-as such when constructive real numbers are considered.
+value property, for continuous functions, but it is by no mean
+effective. This property vanishes as such when constructive real
+numbers are considered. Yet several alternative formulations can be
+obtained constructively, either by strengthening the hypothesis on the
+function, for instance requiring that it is locally non-zero, or by
+weakening the conclusion of the theorem, providing only arbitrarily
+small value for the function but not an explicit zero.
 
-We propose to work with an intuitionistic reformulation of the classical
-theory of polynomial function which allows to abstract from these various
-flavors of real numbers. For that purpose, we only work within the
-first order theory of rational numbers, which is a common core
-necessarily shared by all of the previous subsets of real numbers.
-Therefore, we need to reformulate the notion of root of a polynomial.
+In all what follows, we only work with polynomial functions, a very
+specific case of (uniformly) continuous functions. We do not provide
+nor rely on a theory of continuous functions. Our aim is moreover to
+provide a constructive formalization of the theory of Bernstein
+polynomials, and to be as independent as possible from the choice of
+implementation for real numbers. For this purpose, we even eliminate
+real points from the
+formalization and formulate and prove all the results in the first
+order theory of rational numbers. The drawbacks of this choice is that
+we consider only polynomials with rational (and not real)
+coefficients, and that we need to adjust the definition of root of
+polynomial since we do not have access to real points, even algebraic
+ones. Restricting the study to rational coefficients is however a
+necessary milestone to go to constructive real coefficients. And we
+will show that a criterium for the existence of a single real root in
+an interval, expressed in the first order language of rational
+numbers, is sufficient in our setting.
 
-Of course, the {\em intermediate value theorem} does not hold
-on rational numbers. Still, it makes sense to say that a polynomial
-with rational coefficients has a single \emph{real} root in a given
-interval with rational endpoints, even without defining real
-points. In that case indeed the polynomial crosses the real x-axis in
-exactly one point, which
-can be approximated arbitrarily precisely by rational numbers.
-This is what we want to make precise in the next two sections.
+\subsection{Rational numbers}
+% The work we describe in this article was intentionally not based on any
+% implementation of real numbers, but expressed solely in terms of natural
+% numbers and rational numbers.  Our intention is to provide a description
+% of Bernstein polynomials and their characteristics that will be usable
+% for any choice of real numbers, without assuming an effective
+% intermediate value theorem.
+
+% We proved a minimal set of properties of polynomial functions by expressing
+% these properties in the first-order theory of rational numbers.  Thus, we
+% do not treat a general notion of Cauchy sequences, continuous functions, or
+% derivability.  As a result, we do not need to rely on ``book equality'' or
+% setoids and express all equalities using the structural ``Leibniz equality''.
+
+% As a result, our work is versatile and can be embedded in any choice of
+% formalization: it is compatible with constructive mathematics, as for
+% instance implemented in \Coq{} in \cite{DBLP:conf/mkm/Cruz-FilipeGW04,
+% russellreals, russellcoqreals} as it
+% relies solely on intuitionistic mathematics and it is also readily usable
+% with the ``classical real numbers'' of the standard Coq library since
+% it relies on plain equality.
+
+% It was instrumental in our work that we could reason on rational numbers by
+% assuming that they are in a field with decidable Leibniz equality.
+% In our first experiments, started around 2005, we used a model of rational
+% numbers that only provided a setoid structure.  This approach turned out to be
+% too limiting and the development pace has improved drastically once we came
+% back to decidable equality on rational numbers.  The current formalization
+% {\tt Qcb} relies on reduced fractions, composed of a numerator, a denominator,
+% and a proof that they are relatively prime, expressed using a boolean
+% predicate to benefit from the unicity of equality proofs in the boolean type.
+% An alternative representation of rational numbers with
+% Leibniz equality can also be found in \cite{canonicalrationals03}.
+
+% The criteria we have chosen to describe the existence of roots are
+% not faithful to the usual notion of having a root.  For instance, they
+% are not satisfied by the polynomials \(x^4- x^2 + \frac{1}{4}\) and
+% \(x^3-\frac{3}{2} x^2 +\frac{3}{4} x -\frac{1}{8}\), which both would
+% be thought of as having roots inside \((0,1)\) in the usual sense, these
+% root being respectively \(\frac{1}{\sqrt{2}}\) and \(\frac{1}{2}\).
+% The curve of the first polynomial only touches the x-axis in a place that is
+% not a rational number, but stays on the positive side.  The curve of
+% the second one really crosses the x-axis, moreover it does so in a
+% rational number.  The problem is that in both case the root is multiple
+% and the slope does not satisfy the property of staying away from 0.
+% This shows that the trick we used to represent roots are specially
+% designed for polynomials with only simple roots and should probably not
+% be used in other settings.
+
+% On the other hand,  our ``constructive
+% intermediate value theorem'' is only specialized to work on polynomials
+% and could actually be easily generalized to any uniformly continuous
+% function over a bounded interval, as it is standard in constructive
+% real analysis \cite{bishop}.  Still, this theorem alone does not
+% give a simple way to construct a Cauchy sequence representing a root,
+% whereas a root isolation process does.
+% Thus, these three aspects of our formalization
+% ---characterization of roots and intermediate value theorem---
+% are designed especially for the purpose of this development.
+
+\subsection{Representation of polynomials}
+
+We rely here on the \ssr{} library on polynomials. This library
+represents polynomials by a big endian list of coefficients in
+the monomial basis. A polynomial function can be easily defined from
+such a list through the Horner evaluation scheme.
+
+A bare list of coefficients would however not
+provide a canonical representation since the same
+polynomial can be represented by an infinite number of coefficient
+lists, only differing by the number of tail zeroes. The actual
+definition is in fact the following one:
+\begin{lstlisting}
+Record |*polynomial*| R :=
+  Polynomial {polyseq :> seq R; _ : last 1 polyseq != 0}.
+\end{lstlisting}
+A polynomial is hence
+represented by a dependent pair of a list \C{polyseq : (seq R)} and a
+proof that the last element of this list is non zero. The type
+\C{(polynomial R)} is used under the notation \L+{poly R}+. The
+parameter \C{R} is the type of the coefficients. It should in fact
+be equipped with a ring structure, which provides the zero element
+used in the test of the proof component.
+
+The constant zero polynomial is represented by the empty list. A
+constant non zero polynomial is represented by a list with a single
+element. The monomial $X$ is represented
+by the list $[:: 0, 1]$, where $1$ and $0$ are the one and zero
+constant of the underlying coefficient ring.
+More generally, a non zero polynomial of degree $n+1$ is
+represented by a list with $n+1$ elements. The \C{:>} symbol indicates
+that the \C{polyseq} constructor is declared as a coercion: a
+polynomial can at any time be seen as a list of coefficients,
+forgetting the proof that it is in normal form.
+
+In this representation, comparing two polynomials seems however to
+amount to comparing component-wise two dependent pairs: the first
+components of
+the two pairs being the actual polynomials, and the second components
+of the pairs being there normalization proofs. The calculus of
+inductive construction (CIC) underlying the Coq system is not proof
+irrelevant: two proofs of the same statements are not equal in
+general. Hence a naive design of these polynomials as dependent pairs
+would lead to an uncomfortable situation where two equal lists of
+coefficients would not necessarily give two equal polynomials because
+they are associated with two different proofs of normalization. Yet if
+proof irrelevance does not hold in general, two proofs of the same
+boolean equality are nonetheless provably equal in CIC without axiom.
+If the type \C{R} of coefficients is equipped with a decidable
+(boolean) equality test, the second component of polynomials becomes a
+proof that a certain boolean is equal to the boolean \C{true}, and
+hence a proof of a boolean equality. Comparing two polynomials now
+boils down to comparing their first component, since their equality
+will entail the equality of their last proof component. This
+handiness of proof irrelevant dependant pairs is widely used in \ssr{}
+libraries, which therefore provide a generic infrastructure to
+manipulate comparisons of their inhabitants. Moreover, again thanks
+to the infrastructure of \ssr{} libraries, polynomials
+canonically inherit from the boolean comparison available on
+coefficients, lifted to the element-wise comparison of lists.
+
+
+% This work is devoted to the study of roots of univariate polynomials,
+% from an analytic point on view.  Therefore, a polynomial $P$ is here seen
+% as a function $P : \mathbb{Q} \rightarrow \mathbb{Q}$. For this
+% purpose we can simply represent a polynomial  This representation can be
+% simply interpreted as a function $ \mathbb{Q} \rightarrow \mathbb{Q}$
+% using the Horner evaluation scheme.
+
+
+% Note that polynomials require a ring structure on their coefficients,
+% which ensures that arithmetic operations on polynomials will be
+% properly defined and specified. Lists in {\tt ssreflect} are written
+% as
+% $[:: a_1, a_2, \ldots, a_n]$.  
+% Moreover, since the \ssr{} ring structure
+% embeds a type with boolean equality, polynomials inherit from a
+% canonical boolean equality test.
+
 
 \subsection{Criteria for the existence of a unique root}
 
 We concentrate on a sufficient criterion for the existence of a root
 inside an interval.  This criterion is strong enough to build a Cauchy
-sequence whose limit in the real numbers would be the root.  Our
-criterion is based on slopes.
+sequence (and its modulus of convergence) whose limit in the real numbers
+would be the root. Our criterion is based on slopes.
 
 Ensuring that the slope is positive or negative in some interval helps
-making sure that there are not two roots. in this interval.  In our setting, where the
-polynomials we consider only have simple roots, we have the stronger
+making sure that there are not two roots in this interval.  In our
+setting, where the polynomials we consider only have simple roots, we
+have the stronger
 property that the slope is separated from 0 by a given ratio.  In the
 case of positive slopes, we write the slope requirement for a
 polynomial \(p\) inside a given interval \(I\) as follows:
+\begin{definition}[Slope requirement (positive case)]
+A polynomial $p$ satisfies the positive slope requirement if:
 \[\exists k, (0 < k \quad \wedge \quad \forall x\ y, [x \in I \wedge y \in I
 \wedge x < y \Rightarrow k(y - x) < p(y) - p (x)]) \]
+\end{definition}
+We also define the analogous requirement for negative slopes.
 
 Depending on the kind of interval that we will consider, we will have
 two different ways to express the existence of a single root in the
@@ -367,9 +374,11 @@ interval.
 \begin{enumerate}
 \item If the interval is bounded, we express that the interval can be
   decomposed into three parts, the first part where the polynomial's
-  value is always negative (\(I_1\) in Figure~\ref{bounded_decompose}, the second part where the polynomial's
+  value is always negative (\(I_1\) in Figure~\ref{bounded_decompose},
+  the second part where the polynomial's
   value goes from negative to positive with a requirement on the
-  slope (\(I_2\) in Figure~\ref{bounded_decompose}), and the third part where the polynomial's value is always
+  slope (\(I_2\) in Figure~\ref{bounded_decompose}), and the third
+  part where the polynomial's value is always
   positive (\(I_3\) in Figure \ref{bounded_decompose}).
 \begin{figure}[h]
 \begin{center}
@@ -405,6 +414,7 @@ thanks to the {\em intermediate value theorem}. For this work, we establish
 a simplified constructive, real point free, replacement of the intermediate value
 theorem specialized for polynomials.  The statement we prove has the following
 form:
+\begin{theorem}[Constructive IVT for polynomial functions]
 \[
 \begin{array}{l}
 {\forall p~x~y~\varepsilon,\quad 0 < \varepsilon~~\wedge~~p(x) < 0 \leq p(y)}\\
@@ -413,9 +423,8 @@ form:
 x \leq x' < y' \leq y]
 \end{array}
 \]
-We call this theorem the {\em constructive intermediate value theorem}
-(for polynomial functions).
-
+\end{theorem}
+\begin{proof}
 We again rely on reasoning about slopes. Without loss of generality,
 we can assume that the two values \(x\) and \(y\) are positive. Assuming
 that the polynomial has the shape \(a + X \times p'\), we construct
@@ -439,7 +448,7 @@ prefix are negative.  We can set \(x' =a_{j-1}\), because the next
 value \(a_j\) is necessarily non-negative and
 \(p(a_j) - p(x') < \varepsilon\), thus \(-\varepsilon < p(x') < 0\).
 In a similar way, we can set \(y'= a_j\) because \(0 \leq p(y') < \varepsilon\).
-
+\end{proof}
 Our algorithm is illustrated in Figure~\ref{ivt}, where the distance
 between the \(a_i\)'s is chosen according to the maximal slope
 occurring between \(l=a_0\) and \(r=a_{12}\). The point selected by
@@ -658,6 +667,164 @@ build a new value \(x_1\) such that \(-\frac{k v_1}{2} \leq P_l(x_1) \leq 0\).
 Now \(P_l\) is still guaranteed to be negative between \(x\) and \(x_1\),
 because of the slope condition and now the slope on the right of \(x_1\) is
 guaranteed to be larger than \(\frac{k v_1}{2}\), which is positive.
+
+
+\section{Bernstein polynomials, Bernstein coefficients}
+\label{sec:bernsteindef}
+B\'ezier curves \cite{bezier} are parametric curves that are widely used
+to construct
+smooth plane curves whose shapes are governed by a finite finite number
+of \emph{control points}. A B\'ezier curve controlled by $n+1$ points is
+a polynomial expression of degree $n$ in its parameter $t$. For
+instance, given two points $P_0$ and $P_1$, the corresponding B\'ezier
+curve is the segment $B_{(P_0, P1)}(t) = tP_0 + (1 - t)P_1$. For three control
+points $P_0, P_1, P_2$, the B\'ezier curve is
+$B_{(P_0, P_1, P_2)}(t) = (1 - t)^2P_0 + 2(1 - t)tP_1 + t^2P_2$.
+We already see in this case that a B\'ezier
+curve does not meet all its control points. In fact, it is only
+guaranteed to pass through the first and the last control point. In
+the case of the quadratic B\'ezier curve, the middle control point $P_1$
+is the intersection of the tangents to the curve at $P_0$ and
+$P_2$. The general formula giving the B\'ezier curve at $n$ control
+points is:
+$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
+which satisfies the recursive relation:
+$$B_{(P_0,\dots, P_n)} = (1 - t)B_{(P_0, \dots, P_{n-1})} + tB_{(P_1, \dots, P_n)}$$
+
+B\'ezier curves are named after the engineer Paul B\'ezier who was working
+in the design division of a car manufacturing company. These curves have very interesting properties for
+interpolation but also for computer graphics: a B\'ezier curve is
+contained in the convex hull of its control
+points and uniform transformations on the control points like
+translation or rotation have the same effect on the curve. Points
+control the shape of the curve since the $k$-th derivative of the
+curve at its extreme points is governed by the $k+1$ nearest
+control points.
+
+Computer graphics algorithms usually use piecewise polynomial paths
+(called splines) of  low degree. Most modern vector graphics
+standards, like for instance SVG, feature support for B\'ezier splines.
+TrueType fonts use quadratic B\'ezier
+splines, whereas PostScript or MetaFont \cite{metafont} use cubic
+B\'ezier splines.
+
+
+Bernstein polynomials are defined as the weight assigned to each
+control point: the $k$-th Bernstein polynomial $P_b(n, k)$ is defined by:
+$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n P_b(n, k)(t)\binom{n}{k}P_i$$
+hence:
+$$P_b(n,  k)(t) = \binom{n}{k}(1 -t)^{n - k}t^k$$
+
+% For an arbitrary natural number \(n\), we can consider the set of polynomials
+% of degree smaller than \(n\) as a vector space, and the monomials
+% \(x^k\), with \(0 \leq k \leq n\) constitue a basis, the standard basis,
+% of of this vector space.
+% If \(p\) is a polynomial with coefficients \(a_i\), then
+% \(p(x) = \sum_{i=0}^n a_i x^i\)  and the coefficients \(a_i\) are also the
+% coefficients of \(p\) in the standard basis.
+
+For arbitrary numbers \(l\) and
+\(r\), we can also consider the following polynomials, called
+the {\em Bernstein polynomials for degree \(n\) and the interval
+\((l,r)\)} for \(0 \leq k \leq n\)
+\[P_b(n, l, r, k) = \binom{n}{k} \frac{(x-l)^{k}(r-x)^{n - k}}{(r-l)^n}\]
+These polynomials also constitue a basis of the vector space of polynomial
+of degree \(n\), and we will usually call it the {\em Bernstein basis} leaving
+the degree and the values \(l\) and \(r\) unspecified.
+Every polynomial \(p\) of degree \(n\) hence has a sequence of coefficients
+\((b_i)_{0\leq i \leq n}\), such that \(p(x) = \sum_{i=0}^n b_i P_b(n,l,r,i)(x)\).  The coefficients
+\(b_i\) are the Bernstein coefficients of $p$.
+
+When \(l < r\), the Bernstein polynomials are positive on $(l, r)$ and
+each polynomial
+of index \(k\) reaches its maximum at the point \(d_k=l+\frac{(r-l)k}{n}\), so
+that each coefficient \(b_k\) somehow has a dominant influence on the value
+of the polynomial around \(d_k\).  Moreover, the coefficients
+\(\binom{n}{k}\) included in the definition of \(P_b(n,l,r,k)\) are chosen
+in such a way that the $k$-th coefficient \(b_k\) of $p$ would tend to
+have a value
+close to the one of $p$  in \(d_k\).  For instance, if the
+\(p_1\) is the constant polynomial with value \(1\), then all its Bernstein
+coefficients are equal to 1; similarly, if \(p_2\) is the identity polynomial,
+and \(n\) is larger than \(0\),
+then the Bernstein coefficients for \(p_2\)
+are \(l + \frac{(r-l) k}{n}\), as can
+be verified using the following computation:
+\begin{eqnarray*}
+\lefteqn{\sum_{i=0}^n \left(l + \frac{(r-l)i}{n}\right) \binom{n}{i} \frac{(x-l)^i (r-x)^{n-i}}
+{(r-l)^n}}\\
+&=& \sum_{i=0}^n l \binom{n}{i}\frac{(x-l)^i(r-x)^{n-i}}{(r-l)^n} +
+\sum_{i=0}^n \frac{i}{n}\binom{n}{i}\frac{(x-l)^i(r-x)^{n-i}}{(r-l)^{n-1}}\\
+&=& l \frac{((x -l) + (r - x))^n}{(r-l)^n} +\sum_{i=1}^n \binom{n-1}{i-1}\frac{(x-l)^i(r-x)^{n-i}}{(r-l)^{n-1}}\\
+&=& l +{ (x-l)\sum_{i=0}^{n-1}\binom{n-1}{i} \frac{(x-l)^i(r-x)^{(n-1)-i}}
+{(r-l)^{n-1}}}\\
+&=& l + (x -l) \frac{((x-l) + (r - x))^{n-1}}{(r-l)^{n-1}} = x
+\end{eqnarray*}
+At the first equality sign, we distribute inside the first sum; in the
+second term, we simplify the denominator with the numerator \((r-l)\).
+At the second equality sign, we recognize that the first term contains
+a binomial formula corresponding to \(((x-l)+(r-x))^n\); in the second
+term, we recognize that the first element of the sum can be removed
+because it is 0, also we recognize that \(\frac{i}{n}\binom{n}{i}\) is
+\(\binom{n-1}{i-1}\) when \(i\neq 0\).  At the third equality sign,
+we use the equality \((x-l)+(r-x)=r-l\) for the first term and
+we factor out \((x-l)\) from the remaining indexed sum and re-index that sum.
+We then recognize another binomial formula and can conclude.
+
+\label{sec:geometrybernstein}
+The Bernstein coefficients are related to a broken line (made of
+contiguous straightline segments) which gives a rough approximation of the
+polynomial's function graph.  More precisely, given the bounds \((l,r)\)
+of the interval, and the Bernstein coefficients \((b_0,\ldots, b_n)\)
+of polynomial $p$, the $n+1$ points with coordinates \(((l + i
+\frac{r-l}{n}), b_i)\) are the control points for the B\'ezier curve
+that coincides with the polynomial's graph. Each of these points describes
+the behavior of the polynomial when the input \(x\) is close to
+\(l+i\frac{r-l}{n}\). In this sense, Bernstein coefficients can be said to
+{\em control} the behavior of the polynomial in some part of the interval.
+%This is why the points \(c_i\) are often called {\em control points}.
+These points can
+be moved around the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
+close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
+\(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the
+behavior of the polynomial in this area is quite eventless.  But when \(c_i\)
+is significantly removed from this segment, \(c_i\) appears to be pulling the
+polynomial's curve in its direction, with the curve of the polynomial usually
+crossing the vertical line \(x=l+i\frac{r-l}{n}\) between the segment and
+the point \(c_i\).  This is illustrated in the Figure~\ref{control}.
+\begin{figure}
+\begin{center}
+\begin{tabular}{ccc}
+\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
+{control.pdf}&
+\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
+{control2.pdf}&
+\includegraphics[width=.30\textwidth,clip=true, trim=2cm 4cm 1cm 6.3cm]
+{control3.pdf}\\
+(a) 1, 3, -10, 1, 4, 1 & (b) 1, 3, -1, 1, 4, 1 & (c) 3, 0, 1, 10, -2, -1\
+\end{tabular}
+\end{center}
+\caption{\label{control} Bernstein Control points and corresponding polynomial curves}
+\end{figure}
+
+In Figure~{(\ref{control}-a)} the illustration shows that a peak in
+the disposition of the control points corresponds to an inflexion in the
+polynomial's curve (the Bernstein coefficients are 1, 3, -10, 1, 4, 1
+and -10 corresponds to a downward peak).  In this case, the peak
+provokes two sign changes, which are reproduced in the shape of the
+curve and correspond to the existence of two roots inside the
+interval.  In Figure~(\ref{control}-b), the coefficients still exhibit
+a downward peak with a negative coefficient, but the polynomial's
+curve stays away from the x-axis and the two sign changes in the
+Bernstein coefficients do not correspond to any real root for the
+polynomial (this is a false alert).  In Figure~(\ref{control}-c),
+there is one sign change, so that the first and last coefficients have
+opposite signs.  In fact, the first and the last Bernstein
+coefficients are equal to the values of the polynomial at the bounds
+of the interval, so this imposes the existence of at least one root.
+But because there is exactly one sign change in the coefficients, we
+can be sure that any other bend in the curve stays away of the x-axis.
+
 
 \section{From Bernstein to Descartes}\label{sec:Bernstein}
 In this section, we clarify the polynomial transformations that link
@@ -1139,151 +1306,11 @@ coincide with the ones of $(*)$, which boils down to an induction on $i$.
 
 \section{Formalization issues}
 \label{sec:formal}
-The sources of this development are available from\\
-{\url{http://www.inria.fr/sophia/members/Yves.Bertot/proofs/bernstein.html}}
 
-\subsection{Numbers}
-The work we describe in this article was intentionally not based on any
-implementation of real numbers, but expressed solely in terms of natural
-numbers and rational numbers.  Our intention is to provide a description
-of Bernstein polynomials and their characteristics that will be usable
-for any choice of real numbers, without assuming an effective
-intermediate value theorem.
+\subsection{Polynomials, summations}
 
-We proved a minimal set of properties of polynomial functions by expressing
-these properties in the first-order theory of rational numbers.  Thus, we
-do not treat a general notion of Cauchy sequences, continuous functions, or
-derivability.  As a result, we do not need to rely on ``book equality'' or
-setoids and express all equalities using the structural ``Leibniz equality''.
-
-As a result, our work is versatile and can be embedded in any choice of
-formalization: it is compatible with constructive mathematics, as for
-instance implemented in \Coq{} in \cite{DBLP:conf/mkm/Cruz-FilipeGW04,
-russellreals, russellcoqreals} as it
-relies solely on intuitionistic mathematics and it is also readily usable
-with the ``classical real numbers'' of the standard Coq library since
-it relies on plain equality.
-
-It was instrumental in our work that we could reason on rational numbers by
-assuming that they are in a field with decidable Leibniz equality.
-In our first experiments, started around 2005, we used a model of rational
-numbers that only provided a setoid structure.  This approach turned out to be
-too limiting and the development pace has improved drastically once we came
-back to decidable equality on rational numbers.  The current formalization
-{\tt Qcb} relies on reduced fractions, composed of a numerator, a denominator,
-and a proof that they are relatively prime, expressed using a boolean
-predicate to benefit from the unicity of equality proofs in the boolean type.
-An alternative representation of rational numbers with
-Leibniz equality can also be found in \cite{canonicalrationals03}.
-
-The criteria we have chosen to describe the existence of roots are
-not faithful to the usual notion of having a root.  For instance, they
-are not satisfied by the polynomials \(x^4- x^2 + \frac{1}{4}\) and
-\(x^3-\frac{3}{2} x^2 +\frac{3}{4} x -\frac{1}{8}\), which both would
-be thought of as having roots inside \((0,1)\) in the usual sense, these
-root being respectively \(\frac{1}{\sqrt{2}}\) and \(\frac{1}{2}\).
-The curve of the first polynomial only touches the x-axis in a place that is
-not a rational number, but stays on the positive side.  The curve of
-the second one really crosses the x-axis, moreover it does so in a
-rational number.  The problem is that in both case the root is multiple
-and the slope does not satisfy the property of staying away from 0.
-This shows that the trick we used to represent roots are specially
-designed for polynomials with only simple roots and should probably not
-be used in other settings.
-
-On the other hand,  our ``constructive
-intermediate value theorem'' is only specialized to work on polynomials
-and could actually be easily generalized to any uniformly continuous
-function over a bounded interval, as it is standard in constructive
-real analysis \cite{bishop}.  Still, this theorem alone does not
-give a simple way to construct a Cauchy sequence representing a root,
-whereas a root isolation process does.
-Thus, these three aspects of our formalization
----characterization of roots and intermediate value theorem---
-are designed especially for the purpose of this development.
-\subsection{Algebraic structures}
-
-This work is based on the hierarchy of algebraic structures available
-in the \ssr{} repository. This hierarchy, described in \cite{hieralg},
-has been since enriched with interfaces for ordered integral
-domains and fields. The ordered integral domains instances we use here are
-integers and rational numbers. For this purpose, we have populated the
-hierarchy with the adequate structure instances on the types provided
-by the standard library of the \Coq{} system, namely \C{Z}, the type
-of integers as binary words, and \C{Qcb}, the type of rational numbers
-as irreducible fractions. All \ssr{} algebraic
-structures require their carrier type to be equipped with a boolean
-equality test reflecting the structural Leibniz equality available by
-default on the type. In our case, since the only concrete types
-we manipulate (integers and rational numbers) constructively fall into
-this category, this was not a problem.
-
-The libraries already present in the standard distribution of the
-system were providing a sufficient body of lemmas to achieve this
-formalization. However, the \ssr{} layer of interfaces introduces a very
-uniform framework to deal with algebraic manipulations.   In particular,
-instances of a same interface share theory, hence lemma names, and
-notations.  The theory we describe in this paper involves for instance
-several ring structures, namely the ring of integers, the ring
-of rational numbers, and the ring of polynomials with rational
-coefficients. Being all instances of the ring abstract interface
-(and also integral domains, and even field for rationals and integers), all
-these structures share the same symbols for operations, like
-\C{(x * y)} for multiplication of \C{x} by \C{y}, \C{(x *+ n)} for the
-product of \C{x} by a natural number (which is in fact defined as
-iterated additions).
-This latter operation and generic notation is of special interest to
-deal with binomial coefficients in a transparent way since the theory
-of binomial coefficients, defined as natural numbers, directly applies
-without specifying any specialized injection from natural numbers to
-each ring structure. In fact once rationals and integers are equipped
-with the appropriate structures, our proofs no more involve any
-argument specific to the representation of arithmetic.
-
-
-
-
-\subsection{Representations of polynomials}
-
-This work is devoted to the study of roots of univariate polynomials,
-from an analytic point on view.  Therefore, a polynomial $P$ is here seen
-as a function $P : \mathbb{Q} \rightarrow \mathbb{Q}$. For this
-purpose we can simply represent a polynomial by a big endian list
-of coefficients in the monomial basis. This representation can be
-simply interpreted as a function $ \mathbb{Q} \rightarrow \mathbb{Q}$
-using the Horner evaluation scheme.
-
-This representation is however not canonical since the same
-polynomial can be represented by an infinite number of coefficient
-lists, only differing by the number of tail zeroes. The ring structure
-of polynomials of arbitrary degree is actually based on a normalized version of
-this representation, namely by the type:
-\begin{lstlisting}
-Record |*polynomial*| (R : ringType) :=
-  Polynomial {polyseq :> seq R; _ : last 1 polyseq != 0}.
-\end{lstlisting}
-that is a pair of a list \C{polyseq : (seq R)} with a proof that the
-last element of this list is non zero. The type \C{(polynomial R)} is
-used under the notation \L+{poly R}+.
-
-The constant zero polynomial is
-hence represented by the empty list. The \C{:>} symbol indicates that
-the \C{polyseq} constructor is declared as a coercion: a polynomial
-can at any time be seen as a list of coefficients, forgetting the
-proof that it is in normal form.
-
-Note that polynomials require a ring structure on their coefficients,
-which ensures that arithmetic operations on polynomials will be
-properly defined and specified. Lists in {\tt ssreflect} are written
-as
-$[:: a_1, a_2, \ldots, a_n]$.  The polynomial $X$ is represented
-by the list $[:: 0, 1]$, where $1$ and $0$ are the one and zero
-constant of the underlying coefficient ring.
-Moreover, since the \ssr{} ring structure
-embeds a type with boolean equality, polynomials inherit from a
-canonical boolean equality test.
-
-At many places however, we need to consider polynomials as lists of
+At many places in this development, we need to consider polynomials as
+lists of
 coefficients in a basis for the vector space of polynomials of degree
 less than a fixed value. In the case of a monomial basis, we need to
 consider lists of coefficients with a meaningful number of tail
@@ -1303,8 +1330,7 @@ linear algebra operation at a low level (catenating zeros,...) and
 prove them correct, which certainly leaves room for improvement.
 
 Correctness proofs  of the transformations involve exact identities
-between
-polynomials and not extensional identities between polynomial
+between polynomials and not extensional identities between polynomial
 functions. For this purpose we need to use normalizing constructors to
 interpret an arbitrary list into a polynomial. The constructor:
 
@@ -1353,6 +1379,49 @@ de Casteljau algorithm works on infinite lists of coefficients
 represented as functions \C{nat -> Qcb}. The correctness lemmas
 however reinterpret these coefficient functions as polynomials using
 the above iterated sum facilities.
+
+\subsection{Algebraic structures}
+
+This work is based on the hierarchy of algebraic structures available
+in the \ssr{} repository. This hierarchy, described in \cite{hieralg},
+has been since enriched with interfaces for ordered integral
+domains and fields. The ordered integral domains instances we use here are
+integers and rational numbers. For this purpose, we have populated the
+hierarchy with the adequate structure instances on the types provided
+by the standard library of the \Coq{} system, namely \C{Z}, the type
+of integers as binary words, and \C{Qcb}, the type of rational numbers
+as irreducible fractions. All \ssr{} algebraic
+structures require their carrier type to be equipped with a boolean
+equality test reflecting the structural Leibniz equality available by
+default on the type. In our case, since the only concrete types
+we manipulate (integers and rational numbers) constructively fall into
+this category, this was not a problem.
+
+The libraries already present in the standard distribution of the
+system were providing a sufficient body of lemmas to achieve this
+formalization. However, the \ssr{} layer of interfaces introduces a very
+uniform framework to deal with algebraic manipulations.   In particular,
+instances of a same interface share theory, hence lemma names, and
+notations.  The theory we describe in this paper involves for instance
+several ring structures, namely the ring of integers, the ring
+of rational numbers, and the ring of polynomials with rational
+coefficients. Being all instances of the ring abstract interface
+(and also integral domains, and even field for rationals and integers), all
+these structures share the same symbols for operations, like
+\C{(x * y)} for multiplication of \C{x} by \C{y}, \C{(x *+ n)} for the
+product of \C{x} by a natural number (which is in fact defined as
+iterated additions).
+This latter operation and generic notation is of special interest to
+deal with binomial coefficients in a transparent way since the theory
+of binomial coefficients, defined as natural numbers, directly applies
+without specifying any specialized injection from natural numbers to
+each ring structure. In fact once rationals and integers are equipped
+with the appropriate structures, our proofs no more involve any
+argument specific to the representation of arithmetic.
+
+
+
+
 
 
 
@@ -1538,6 +1607,11 @@ or more generally simplicial complexes. However, curvy objects are
 needed if we want to represent faithfully natural objects. It is
 exciting that we are getting closer to using formal methods on models
 of the real world.
+
+\section{Acknowledgments} The authors whish to gratefully thank the
+anonymous referees who have suggested numerous improvements both for
+the formalization and for its description.
+
 \bibliographystyle{alpha}
 \bibliography{biblio}
 
