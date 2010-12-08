@@ -54,7 +54,7 @@ coefficients:
 \end{enumerate}
 
 We describe a formal proof of these three properties,
-concentrating on the second and third properties. These proofs will be
+concentrating on the first and third properties. These proofs will be
 done in the setting of polynomials with rational coefficients and
 rational values.
 
@@ -78,7 +78,7 @@ $P_3$ is \(c_0 + c_1 X + \cdots + c_n X^n\), where the coefficients
 same sign as the Bernstein coefficients.  Going from \(P_i\) to
 \(P_{i+1}\) we apply a given transformation.  The first transformation
 is a change of variable such that \(I_1\) is \((0,1)\) and \(P_1(x) =
-P_0(x \times r + (1 - x) \times l)\).  The second transformation is such that
+P_0(r x + l (1 - x))\).  The second transformation is such that
 \(I_2\) is \((1,+\infty)\) and \(P_2(x) = 0\) exactly when \(P_1(1/x)
 = 0\), as long as \(x\neq 0\).  The third transformation is a
 translation such that \(I_3 = (0,+\infty)\) and \(P_3(x) = P_2(1+x)\).
@@ -138,13 +138,8 @@ statement, expressed as a bounded-value property, does.  Our proof
 development relies on this approach.  We describe the formal aspects
 of this approach to describing roots in section~\ref{sec:rational}.
 
-Bernstein coefficients provide an important stepping stone
-to address various aspects of real algebraic numbers, decision
-procedures for real arithmetic, and more ambitious algorithms like
-cylindrical decomposition \cite{bpr, cadcoq}.
-
 The formal work described in this paper has been performed using
-the \Coq{} system\cite{coqart}, with \ssr{} extension
+the \Coq{} system\cite{coqart}, with the \ssr{} extension
 \cite{GONTHIER:2008:INRIA-00258384:4}.  We think some characteristics
 of the proof system played a key role in making this development
 possible.  We describe these key aspects in section~\ref{sec:formal}.
@@ -165,8 +160,7 @@ like the field on complex numbers.
 Real closed fields, like the field of real numbers, give weaker
 properties on the existence of roots: only polynomials with odd degree
 have at least one root in the real closed field of their coefficients.
-These fields are ordered and contain enough elements
-so that they enjoy the existence of the {\em intermediate value
+They enjoy the existence of the {\em intermediate value
   theorem} (IVT) for polynomial functions:
 any polynomial that has a negative value in one point \(a\) and a
 positive value in another point \(b\) is guaranteed to have a root at
@@ -180,7 +174,7 @@ analysis. As soon as one need to consider transcendental real numbers,
 like $\pi$ or $e$, this set is too small.
 
 Of course, the full classical theory of reals provide the intermediate
-value property, for continuous functions, but it is by no mean
+value property for continuous functions, but it is by no mean
 effective. This property vanishes as such when constructive real
 numbers are considered. Yet several alternative formulations can be
 obtained constructively, either by strengthening the hypothesis on the
@@ -196,12 +190,12 @@ polynomials, and to be as independent as possible from the choice of
 implementation for real numbers. For this purpose, we even eliminate
 real points from the
 formalization and formulate and prove all the results in the first
-order theory of rational numbers. The drawbacks of this choice is that
+order theory of rational numbers. The drawback of this choice is that
 we consider only polynomials with rational (and not real)
-coefficients, and that we need to adjust the definition of root of
-polynomial since we do not have access to real points, even algebraic
+coefficients, and that we need to adjust the definition of {\em root of
+a polynomial} since we do not have access to real points, even algebraic
 ones. Restricting the study to rational coefficients is however a
-necessary milestone to go to constructive real coefficients. And we
+necessary milestone on the way to constructive real coefficients. And we
 will show that a criterium for the existence of a single real root in
 an interval, expressed in the first order language of rational
 numbers, is sufficient in our setting.
@@ -218,7 +212,7 @@ numbers, is sufficient in our setting.
 % these properties in the first-order theory of rational numbers.  Thus, we
 % do not treat a general notion of Cauchy sequences, continuous functions, or
 % derivability.  As a result, we do not need to rely on ``book equality'' or
-% setoids and express all equalities using the structural ``Leibniz equality''.
+% setoids and we express all equalities using the structural ``Leibniz equality''.
 
 % As a result, our work is versatile and can be embedded in any choice of
 % formalization: it is compatible with constructive mathematics, as for
@@ -270,7 +264,7 @@ numbers, is sufficient in our setting.
 
 We rely here on the \ssr{} library on polynomials. This library
 represents polynomials by a big endian list of coefficients in
-the monomial basis. A polynomial function can be easily defined from
+the monomial basis. A polynomial function can easily be defined from
 such a list through the Horner evaluation scheme.
 
 A bare list of coefficients would however not
@@ -283,7 +277,7 @@ Record |*polynomial*| R :=
   Polynomial {polyseq :> seq R; _ : last 1 polyseq != 0}.
 \end{lstlisting}
 A polynomial is hence
-represented by a dependent pair of a list \C{polyseq : (seq R)} and a
+represented by a dependent pair of a list \C{polyseq} of type \C{(seq R)} and a
 proof that the last element of this list is non zero. The type
 \C{(polynomial R)} is used under the notation \L+{poly R}+. The
 parameter \C{R} is the type of the coefficients. It should in fact
@@ -417,7 +411,7 @@ form:
 \begin{theorem}[Constructive IVT for polynomial functions]
 \[
 \begin{array}{l}
-{\forall p~x~y~\varepsilon,\quad 0 < \varepsilon~~\wedge~~p(x) < 0 \leq p(y)}\\
+{\forall p~x~y~\varepsilon,\quad x < y~~\wedge~~0 < \varepsilon~~\wedge~~p(x) < 0 \leq p(y)}\\
 \qquad\Rightarrow [\exists x'~ y', -\varepsilon \leq p(x') < 0 \leq p(y') \leq
 \varepsilon ~~\wedge~~
 x \leq x' < y' \leq y]
@@ -429,11 +423,11 @@ We again rely on reasoning about slopes. Without loss of generality,
 we can assume that the two values \(x\) and \(y\) are positive. Assuming
 that the polynomial has the shape \(a + X \times p'\), we construct
 another
-polynomial \(P''\) whose coefficients are the absolute values of the
-coefficients of \(P''\).  This polynomial is increasing so its maximum
+polynomial \(p''\) whose coefficients are the absolute values of the
+coefficients of \(p'\).  This polynomial is increasing so its maximum
 value in \([x,y]\) is reached in \(y\).   We prove that the slope
 of the polynomial between any two points inside \([x,y]\) is smaller than
-\(k  = P''(y)\).  Thus, we establish that the
+\(k  = p''(y)\).  Thus, we establish that the
 slope of any polynomial is bounded in absolute value on any bounded
 interval.  In particular, for any \(z, t\in [x,y]\), we have
 \[|p(z)-p(t)| \leq |k \times (z - t)|.\]
@@ -449,9 +443,7 @@ value \(a_j\) is necessarily non-negative and
 \(p(a_j) - p(x') < \varepsilon\), thus \(-\varepsilon < p(x') < 0\).
 In a similar way, we can set \(y'= a_j\) because \(0 \leq p(y') < \varepsilon\).
 \end{proof}
-Our algorithm is illustrated in Figure~\ref{ivt}, where the distance
-between the \(a_i\)'s is chosen according to the maximal slope
-occurring between \(l=a_0\) and \(r=a_{12}\). The point selected by
+Our algorithm is illustrated in Figure~\ref{ivt}. The point selected by
 our algorithm is \(a_8\), even though there are more roots in the
 vicinity of \(a_1\) and \(a_2\) but neither \(a_1\) nor \(a_2\) is a
 point where the polynomial takes a positive value.
@@ -541,14 +533,14 @@ rational number as fractions in canonical form (hence the letter {\tt c}), where
 the verification that the fraction is in canonical form is also expressed
 using a boolean function (hence the letter {\tt b}).  Since these numbers
 are in canonical form, the equality test between two fractions is simply based
-on syntactic equality, in other words Leibnitz equality.  The type constructor
-{\tt seq } is a type for lists, with extra constraints on the types
+on syntactic equality, in other words Leibniz equality.  The type constructor
+{\tt seq} is a type for lists, with extra constraints on the types
 that can be
 stored in such lists: equality must be decidable, a feature that can then be
 exploited intensively by the \ssr{} package
 \cite{GONTHIER:2008:INRIA-00258384:4}.
 
-We should remark that polynomials satisfying the boolean predicate
+We should notice that polynomials satisfying the boolean predicate
 {\tt all\_pos\_or\_zero} may not contain any positive coefficients: for this
 reason, we cannot guarantee that they are increasing or strictly positive
 anywhere between 0 and \(+\infty\).
@@ -558,22 +550,22 @@ coefficients, then the corresponding polynomial always has a positive value
 in \((0,+\infty)\) and from then, we also prove by induction that
 any polynomial with only non-negative coefficients is increasing.
 
-We then prove that for every polynomial \(P\)  with non-negative coefficients,
-the product \(x \times P(x)\) can be made arbitrarily close to 0 while
+We then prove that for every polynomial \(p\)  with non-negative coefficients,
+the product \(x \times p(x)\) can be made arbitrarily close to 0 while
 $x$ stays in \((0,+\infty)\).
 
 \subsection{Two lemmas on slopes}
 A first lemma on slopes concerns the existence of points where a
-polynomial \(P\) takes a value above an arbitrary bound \(a\).  If the slope
+polynomial \(p\) takes a value above an arbitrary bound \(a\).  If the slope
 is bounded below by a positive ratio \(k\), this is guaranteed as it
-suffices to take a value that is large enough.  As the proof is
+suffices to take an input that is large enough.  As the proof is
 constructive, we need to be more precise: assuming the slope is larger
 than \(k\) for any \(y\) larger than \(x_1\), it suffices to take any
-value larger than \(x_1 + \frac{a - P(x_1)}{k}\).  This result is
+input larger than \(x_1 + \frac{a - p(x_1)}{k}\).  This result is
 remembered in our development under the name \C{|*above\_slope*|}.
 
 A second lemma on slopes concerns the slope of a product of the form
-\(x \times P(x)\).  This
+\(x \times p(x)\).  This
 lemma reproduces the known formulas for the derivative of products of derivable
 functions, but is expressed solely in terms of lower bounds of slopes:
  If  a function \(f\) has a slope larger than or equal to a non-negative
@@ -611,60 +603,55 @@ Fixpoint |*alternate_1*| (l:seq Qcb) : bool :=
 \end{lstlisting}
 The second function, which we call {\tt alternate}, checks for the
 presence of at least one negative coefficient and then calls {\tt alternate\_1}.
-Thus, {\tt alternate} calls itself recursively
-as long as it finds zero coefficients, the function {\tt alternate\_1}
-also calls itself recursively as long as it finds
-non-positive arguments.
 
 As we have two recursive functions, {\tt alternate\_1} and {\tt alternate},
 we actually need to perform two proofs by induction.  Each proof by induction
 shows that some invariant is satisfied.
 
 The invariant for {\tt alternate\_1}
-must be satisfied by a polynomial \(P\) that may or may not contain a negative
+must be satisfied by a polynomial \(p\) that may or may not contain a negative
 coefficient, so that this invariant cannot guarantee the existence of
 places where the polynomial takes a negative value.  Instead, this invariant
 guarantees for any positive \(\varepsilon\) the existence of a positive {\tt x}
 and a \(k\) such that:
 \begin{enumerate}
-\item for any \(y\) between \(0\) and \(x\), \(P(y) \leq P (x)\) ,
-\item the slope between two points larger \(x\) is guaranteed to be larger
+\item for any \(y\) between \(0\) and \(x\), \(p(y) \leq p (x)\) ,
+\item the slope between two points larger than \(x\) is guaranteed to be larger
 than \(k\),
-\item the number \(x \times P(x)\) is between \(0\) and \(\varepsilon\).
+\item the number \(x \times p(x)\) is between \(0\) and \(\varepsilon\).
 \end{enumerate}
 
 The invariant for {\tt alternate} is exactly the criterion we use
 to describe the existence of exactly one root in an unbounded interval.
 This proof by induction is done by induction on the list.  The empty list
 does not satisfy the predicate {\tt alternate} so that this case is
-taken care of easily.  The other case is when the polynomial is described
+easily taken care of.  The other case is when the polynomial is described
 by a list of the form {\tt \(a\)::\(l\)}, so that \(l\) represents another polynomial
-\(P_l\) and \(P(x) = a + x \times P_l(x)\).  Here another case distinction must be
+\(p_l\) and \(p(x) = a + x \times p_l(x)\).  Here another case distinction must be
 studied, depending on whether \(a\) is zero or negative.
 
 If \(a\) is negative, we cannot use an induction hypothesis, because in
 this case \(l\) is only guaranteed to satisfy the predicate
 {\tt alternate\_1}.  On the other hand, the invariant for {\tt alternate\_1}
-guarantees the existence of an \(x\) such that \(x\times P_l(x)\) is positive
+guarantees the existence of an \(x\) such that \(x\times p_l(x)\) is positive
 and smaller than \(-a\), this \(x\) is the right witness and the slope is
-\(P_l(x)\).  Since \(P_l\) is negative at the left of \(x\) it is easy to
-prove that \(y\times P_l(y)\) is negative when \(0 < y \leq x\), and thus
-\(P(y)\) is negative.  To reason on the slope, we use our lemma about the
-slope of \(x \times P(x)\), using \(0\) for the slope of \(P\) (we only
+\(p_l(x)\).  Since \(p_l(y) \leq p_l(x)\) when \(y< x\) it is easy to
+prove that \(a+y\times p_l(y)=p(y)\) is negative when \(0 < y \leq x\).  To reason on the slope, we use our lemma about the
+slope of \(x \times p_l(x)\), using \(0\) as a lower bound for the slope of \(p_l\) (we only
 know that it is increasing).
 
 If {\tt a} is
 zero, we have by induction hypothesis that there exist \(x\) and \(k\)
-such that \(P_l\) is negative on the left of \(x\) and has a slope larger than
+such that \(p_l\) is negative on the left of \(x\) and has a slope larger than
 \(k\) on the right of \(x\).  However, this does not guarantee that \(x\) is
-the right witness for \(P\) because the slope of \(x\times P_l(x)\) is only
-larger than \(P_l(x) + x \times k\), and \(P_l(x)\) is negative.  The solution
-is to note that \(P_l\) necessary takes a positive value in some point \(v_1\)
+the right witness for \(p\) because the slope of \(x\times p_l(x)\) is only
+larger than \(p_l(x) + x \times k\), and \(p_l(x)\) is negative.  The solution
+is to note that \(p_l\) necessary takes a positive value in some point \(v_1\)
 on the right of \(x\) and to use our
 {\em constructive intermediate value theorem} from
 section~\ref{ssec:civt} to
-build a new value \(x_1\) such that \(-\frac{k v_1}{2} \leq P_l(x_1) \leq 0\).
-Now \(P_l\) is still guaranteed to be negative between \(x\) and \(x_1\),
+build a new value \(x_1\) such that \(-\frac{k v_1}{2} \leq p_l(x_1) \leq 0\).
+Now \(p_l\) is still guaranteed to be negative between \(x\) and \(x_1\),
 because of the slope condition and now the slope on the right of \(x_1\) is
 guaranteed to be larger than \(\frac{k v_1}{2}\), which is positive.
 
@@ -689,7 +676,7 @@ $P_2$. The general formula giving the B\'ezier curve at $n$ control
 points is:
 $$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
 which satisfies the recursive relation:
-$$B_{(P_0,\dots, P_n)} = (1 - t)B_{(P_0, \dots, P_{n-1})} + tB_{(P_1, \dots, P_n)}$$
+$$B_{(P_0,\dots, P_n)}(t) = (1 - t)B_{(P_0, \dots, P_{n-1})} + tB_{(P_1, \dots, P_n)}$$
 
 B\'ezier curves are named after the engineer Paul B\'ezier who was working
 in the design division of a car manufacturing company. These curves have very interesting properties for
@@ -728,7 +715,7 @@ For arbitrary numbers \(l\) and
 the {\em Bernstein polynomials for degree \(n\) and the interval
 \((l,r)\)} for \(0 \leq k \leq n\)
 \[P_b(n, l, r, k) = \binom{n}{k} \frac{(x-l)^{k}(r-x)^{n - k}}{(r-l)^n}\]
-These polynomials also constitue a basis of the vector space of polynomial
+These polynomials also constitute a basis of the vector space of polynomial
 of degree \(n\), and we will usually call it the {\em Bernstein basis} leaving
 the degree and the values \(l\) and \(r\) unspecified.
 Every polynomial \(p\) of degree \(n\) hence has a sequence of coefficients
@@ -743,7 +730,7 @@ of the polynomial around \(d_k\).  Moreover, the coefficients
 \(\binom{n}{k}\) included in the definition of \(P_b(n,l,r,k)\) are chosen
 in such a way that the $k$-th coefficient \(b_k\) of $p$ would tend to
 have a value
-close to the one of $p$  in \(d_k\).  For instance, if the
+close to the one of $p$  in \(d_k\).  For instance, if 
 \(p_1\) is the constant polynomial with value \(1\), then all its Bernstein
 coefficients are equal to 1; similarly, if \(p_2\) is the identity polynomial,
 and \(n\) is larger than \(0\),
@@ -776,22 +763,9 @@ The Bernstein coefficients are related to a broken line (made of
 contiguous straightline segments) which gives a rough approximation of the
 polynomial's function graph.  More precisely, given the bounds \((l,r)\)
 of the interval, and the Bernstein coefficients \((b_0,\ldots, b_n)\)
-of polynomial $p$, the $n+1$ points with coordinates \(((l + i
-\frac{r-l}{n}), b_i)\) are the control points for the B\'ezier curve
-that coincides with the polynomial's graph. Each of these points describes
-the behavior of the polynomial when the input \(x\) is close to
-\(l+i\frac{r-l}{n}\). In this sense, Bernstein coefficients can be said to
-{\em control} the behavior of the polynomial in some part of the interval.
-%This is why the points \(c_i\) are often called {\em control points}.
-These points can
-be moved around the vertical line \(x=l + i\frac{r-l}{n}\).  When \(b_i\) is
-close to the average between \(b_{i-1}\) and \(b_{i+1}\) (in other words, when
-\(c_i\) is close to the segment joining \(c_{i-1}\) and \(c_{i+1}\)), the
-behavior of the polynomial in this area is quite eventless.  But when \(c_i\)
-is significantly removed from this segment, \(c_i\) appears to be pulling the
-polynomial's curve in its direction, with the curve of the polynomial usually
-crossing the vertical line \(x=l+i\frac{r-l}{n}\) between the segment and
-the point \(c_i\).  This is illustrated in the Figure~\ref{control}.
+of polynomial $p$, the $n+1$ points with coordinates \((l + i
+\frac{r-l}{n}, b_i)\) are the control points for the B\'ezier curve
+that coincides with the polynomial's graph. This is illustrated in the Figure~\ref{control}.
 \begin{figure}
 \begin{center}
 \begin{tabular}{ccc}
@@ -836,15 +810,6 @@ the interval \((0,+\infty)\).  These transformations make it possible to
 compute another collection of coefficients, which happen to be very simply
 related to Bernstein coefficients.
 
-Proving the properties of Bernstein coefficients works by establishing
-a route from Descartes' law of signs to Bernstein coefficients.  Descartes'
-law of signs works for the interval \((0,+\infty)\).  This criterion
-can easily be adapted to any half-line interval \((a,+\infty)\) and
-more precisely to \((1,+\infty)\).  Then a criterion on \((1,+\infty)\)
-can be transformed into a criterion on \((0,1)\). This can, in turn,
-be transposed to any interval by translation and dilatation.  It
-happens that this path gives a way to
-reason on Bernstein coefficients.
 \subsection{A criterion for the interval \((1,+\infty)\)}
 Descartes' weak law of signs gives us a sufficient condition to
 determine when the
@@ -853,18 +818,17 @@ polynomial. Through a change of variable, we obtain a similar
 criterion for the interval \((1, +\infty)\).
 
 In the following, we will call \(\theta_v\) the transformation that
-maps any polynomial \(P\) to the polynomial \(y \mapsto P(y+v)\).  If
-\(P=\sum_{i=0}^n a_i x^i\), we have the following formula:
-\[P(y+v)= \sum_{i=0}^{n} a_i (y+v)^i = \sum_{k=0}^{n}
+maps any polynomial \(p\) to the polynomial \(y \mapsto p(y+v)\).  If
+\(p=\sum_{i=0}^n a_i x^i\), we have the following formula:
+\[p(y+v)= \sum_{i=0}^{n} a_i (y+v)^i = \sum_{k=0}^{n}
 (\sum_{i=k}^{n}a_i\binom{i}{k}v^{i-k}) y^k\]
 
-The polynomial \(P\) has exactly one root in the interval \((v,+\infty)\)
+The polynomial \(p\) has exactly one root in the interval \((v,+\infty)\)
 if  and only if
 the polynomial \(\theta_v(P)\) has exactly one root in the interval
 \((0,+\infty)\).  % This is particularly interesting for the case where
 % \(v=1\).
-We proved this lemma, using our criterion for a unique root
-in an unbounded interval.
+We proved this lemma.
 
 Thus, if we apply Descartes's law of signs on the coefficients
 \(\sum_{i=k}^{n}a_i\binom{i}{k}\)
@@ -881,14 +845,14 @@ number of sign changes in the reversed list.
 
 However, the roots of a polynomial on the interval \((1,+\infty)\)
 are in one-to-one correspondence with the roots of the
-reversed polynomial between zero and one. This is due to the following
+reversed polynomial in \((0,1)\). This is due to the following
 equation:
 \[\sum_{i=0}^{n}a_i x^i = x^n\times\sum_{i=0}^{n}a_i x^{i-n}\]
 We can now perform another change of variable, here \(y=1/x\) and a
 change of index \(j=n-i\) in the sum.
 \[\sum_{i=0}^{n}a_i x^i = (\frac{1}{y})^n \sum_{j=0}^{n}a_{n-j} y^j\]
 The polynomial \(\sum_{j=0}^{n} a_{n-j}y^j\) is exactly the reversed
-polynomial, and the expression \((\frac{1}{y})^n\) never becomes 0 for
+polynomial in \(y\), and the expression \((\frac{1}{y})^n\) never becomes 0 for
 \(y\in (0,1)\).  Thus, \(x\) is a root of the polynomial between \(1\)
 and \(+\infty\) if and only if \(y=x^{-1}\) is a root of the reversed
 polynomial between \(0\) and \(1\).
@@ -906,30 +870,32 @@ polynomials description with enough 0 coefficients.
 
 
 To illustrate the correspondence between a polynomial and its reverse,
-we can consider the polynomial \(P(x) = x^2 + \frac{3}{2} x - 1\),
-the reversed polynomial is \(Q(x) = -x^2 + \frac{3}{2}x + 1\) and after
+we can consider the polynomial \(p(x) = x^2 + \frac{3}{2} x - 1\),
+the reversed polynomial is \(q(x) = -x^2 + \frac{3}{2}x + 1\) and after
 the variable change we obtain the polynomial \(-x^2-2x+1\)
 which exhibits only one sign change.  This predicts that the polynomial has
 exactly one root between 0 and 1, and indeed the two roots of the initial
 polynomial are -2 and 1/2.  This is illustrated in
 Figure~\ref{invert} where the curve with a solid line is the curve for the
-polynomial \(P\), while the curve with a dashed line is the curve for
-the polynomial \(Q\), which has a single root between 1 and \(+\infty\).
+polynomial \(p\), while the curve with a dashed line is the curve for
+the polynomial \(q\), which has a single root between 1 and \(+\infty\).
 \begin{figure}
 \begin{center}
 \includegraphics[clip=true,trim=0cm 2cm 0cm 9cm, width=0.5\textwidth]{invert.pdf}
 \end{center}
-\caption{\label{invert} Curves of \(x^2+\frac{3}{2}x1\) (solid line)
-and its reverse \(-x^2 + \frac{3}{2} x - 1\) (dashed)}
+\caption{\label{invert} Curves of \(x^2+\frac{3}{2}x-1\) (solid line)
+and its reverse \(-x^2 + \frac{3}{2} x + 1\) (dashed)}
 \end{figure}
 
-As a conclusion, we can also establish a correspondence between unique
+As a conclusion, we can establish a correspondence between unique
 roots in \((1,+\infty)\) and unique roots in \((0,1)\), but not for the
 same polynomials.  When working on rational numbers, this
 correspondence works by linking the criterion for unbounded intervals
-with the criterion for bounded intervals.  This proof involves the
+with the criterion for bounded intervals.  The proof of this
+correspondence
+involves the
 computation of the slope for a \(x^np(1/x)\) from the slope of \(p\),
-which makes it trickier than the rest.  This is again a place where
+which makes it trickier than other proofs of this section.  This is again a place where
 our constructive intermediate value theorem plays a role.
 
 \subsection{Handling arbitrary bounded intervals}
@@ -1080,7 +1046,11 @@ Around 1950, while studying B\'ezier curves, De Casteljau noticed that
 the coefficients for the sub intervals
 were easy to compute from the coefficients for the big interval
 through a simple recursive process, exploiting the recurrence relation
-already given in section \ref{sec:bernsteindef}. We have also proved the
+already given in section \ref{sec:bernsteindef}.  This suggests
+another recursive algorithm, starting from a large interval that is
+guaranteed to contain all the roots of a polynomial and splitting this
+interval into smaller pieces until all roots have been isolated.  
+We have also proved the
 correctness of this algorithm. This proof is the topic of the next
 section.
 
@@ -1135,7 +1105,7 @@ $\alpha = \frac{m - l}{r - l}$ and $\beta = \frac{r - m}{r - l}$. The
     match n with
     | O => b
     | i.+1 => fun j =>
-      (alpha * de_casteljau c i j + beta * de_casteljau c i j.+1)
+      (alpha * de_casteljau b i j + beta * de_casteljau b i j.+1)
   end.
 \end{lstlisting}
 where the initial sequence of coefficients \C{b} is represented by an
@@ -1190,8 +1160,8 @@ rasterizing B{\'e}zier curves.
 \begin{figure}[h]
 \begin{center}
 \includegraphics[width=0.6\textwidth]{dicho_bern.pdf}
-\caption{\label{dichobern}Intermediate points computed by de Casteljau
-splittling algorithm applied at the middle of $[B0, B5]$}
+\caption{\label{dichobern}Intermediate points computed by de Casteljau's
+splitting algorithm in the middle of $[B0, B5]$}
 \end{center}
 \end{figure}
 
@@ -1355,8 +1325,8 @@ Now the operator:
 \end{lstlisting}
 iterates this construction and builds a normal polynomial out of an
 arbitrary list. It is straightforward and useful to have lemmas
-specifying the effects of lists iterator (like catenation,
-mapping,...) under the \C{Poly} construction, specially when dealing
+specifying the effects of list operators (like catenation,
+mapping,...) under the \C{Poly} construction, especially when dealing
 with the correctness proofs of the Bernstein transformation
 (zero-padding, expansion,..).
 
@@ -1365,7 +1335,7 @@ polynomials is that we are allowed to
 define a polynomial by providing its coefficient function
 \C{nat -> R}. This facility is
 in fact a direct application of the iterated operator facilities
-available in \ssr{} \cite{bigops}: given a coefficient function
+available in \ssr{} \cite{BGOBP:BIG08}: given a coefficient function
 \C{c : nat -> R}, and a natural number \C{n} the expression:
 \begin{lstlisting}
   \sum_(i < n) (c i)%:P * 'X^i
@@ -1400,7 +1370,7 @@ this category, this was not a problem.
 The libraries already present in the standard distribution of the
 system were providing a sufficient body of lemmas to achieve this
 formalization. However, the \ssr{} layer of interfaces introduces a very
-uniform framework to deal with algebraic manipulations.   In particular,
+uniform framework to deal with algebraic manipulations \cite{packagingmathstructures}.   In particular,
 instances of a same interface share theory, hence lemma names, and
 notations.  The theory we describe in this paper involves for instance
 several ring structures, namely the ring of integers, the ring
@@ -1436,7 +1406,7 @@ in section \ref{ssec:ops} involve a substantial work on iterated sum
 handling.
 
 Since ring operations are automatically equipped with the iterated
-operation facilities \cite{bigops}, proof steps like distributing constant or
+operation facilities \cite{BGOBP:BIG08}, proof steps like distributing constant or
 natural number product on an iterated sum, replacing an iterated sum
 of zeroes elements by a zero, replacing $\sum_{i = 0}^n r_i$ by
 $\sum_{i = 0}^n r_{n - i}$ only require a single rewriting step.
@@ -1448,7 +1418,7 @@ operators. This \ssr{} library on indexed iterations has been of crucial
 importance in a large part of the proofs.
 
 
-On the other side, a significant part of scripts is devoted to too
+On the other hand, a significant part of scripts is devoted to too
 many atomic rewrite steps to normalize ring expressions, or prove trivial
 consequences of the properties of order like transitivity or
 compatibility with field operations. The \ssr{} libraries still
@@ -1486,21 +1456,21 @@ possible.
 In this section, we recapitulate the main results described in this paper
 that have a formal proof in our development.
 \begin{itemize}
-\item The absolute values of the real roots of a polynomial is bounded
+\item The absolute values of the real roots of a polynomial are bounded
   by the Cauchy bound, which is expressed only using the absolute
   values of the coefficients of the polynomial.
 \item If a polynomial function \(p\)
 has a negative value in \(x\) and a positive
 value in \(y\), with \(x < y\), then for any \(\varepsilon\) one can
 exhibit \(x'\) and \(y'\) such that \(-\varepsilon < p(x') < p(y') < \varepsilon\).
-\item If a polynomial has only one sign change in its coefficients for the
+\item If a polynomial only has one sign change in its coefficients for the
 standard monomial basis, then this polynomial has exactly one root between
 \(0\) (excluded) and \(+\infty\).
-\item If a polynomial has only one sign change in its Bernstein coefficients
+\item If a polynomial only has one sign change in its Bernstein coefficients
 for a given interval \((l,r)\), then this polynomial has exactly one root
 between \(l\) and \(r\) (excluded).
-\item The inverse images of monomials are the Bernstein polynomials divided
-by the corresponding binomial coefficient.
+\item The transformation that maps any polynomial to its Bernstein
+  coefficients maps Bernstein polynomials to plain monomials.
 \item De Casteljau's algorithm computes correctly the Bernstein coefficients
 for the intervals \((l,m)\) and \((m,r)\) from the Bernstein coefficients
 for the interval \((l,r)\).
@@ -1508,15 +1478,16 @@ for the interval \((l,r)\).
 This work is part of a more ambitious plan, aiming at providing an
 efficient procedure
 to isolate the roots of any polynomial.  It remains to develop the connections
-between these various results that will constitute this procedure and its proof
+between the various results that will constitute this procedure and its proof
 of correctness. To certify an algorithmically naive version of such a
-procedure, we still need to describe the procedure to reduce the
-multiplicity of roots (dividing by the greatest common divisor
-between the polynomial and its derivative) and to describe the termination
-of a procedure based on successive dichotomy. The reduction to separable
+procedure, we still need to describe the procedure to reduce any
+polynomial to a separable polynomial (a polynomial where all roots
+have multiplicity 1).  The easy approach is to divide by he greatest common divisor
+between the polynomial and its derivative. The reduction to separable
 polynomials should not require too much effort considering the
-libraries already available in the \ssr{} package. The study of
-termination might however require a subtantial work.
+libraries already available in the \ssr{} package.    We also need to describe the termination
+of a procedure based on successive dichotomy.  This study of
+termination might however require more subtantial work.
 
 Another issue will be to connect the correctness proof of such a
 naive implementation with more realistic programs, like an
@@ -1539,7 +1510,7 @@ to ours is probably the study of global optimization methods in Coq
 lead by Roland Zumkeller \cite{zumkellerphd}. Indeed, Bernstein
 polynomial bases are also used to approximate continuous functions on a
 closed domain. This last work results in an implementation in the
-\Coq{} system of a tool to find optimums of multivariate continuous real
+\Coq{} system of a tool to find optima of multivariate continuous real
 functions. Yet we could not find mention of a formalization of the
 correctness proofs of this tool.
 
@@ -1597,16 +1568,7 @@ theorem provers equipped with a library on Bernstein coefficients
 could be useful to reason on designs, for instance to check that
 several parts do not collide or that some surface has the right
 topological properties. Concerning robotics, splines and B\'ezier curves
-can also be used to describe the trajectory of moving vehicles. Here,
-we can dream of a time where theorem proving may play a role in
-verifying that robots will not run into trouble or endanger people. Of
-course, not all geometrical objects are described using polynomials
-and many objects are often described in the computer as a collections
-of flat objects grouped together, like broken lines, triangulations,
-or more generally simplicial complexes. However, curvy objects are
-needed if we want to represent faithfully natural objects. It is
-exciting that we are getting closer to using formal methods on models
-of the real world.
+can also be used to describe the trajectory of moving vehicles.
 
 \section{Acknowledgments} The authors whish to gratefully thank the
 anonymous referees who have suggested numerous improvements both for
