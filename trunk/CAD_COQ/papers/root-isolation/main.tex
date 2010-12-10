@@ -185,8 +185,8 @@ of constructive numbers, then the conclusion of the intermediate
 value theorem is sufficient to implement the modulus of convergence of
 a Cauchy sequence, which will be the constructive root of the
 polynomial. Of course, this work is readily usable  with the
-``classical real numbers'' of the standard Coq library, but it is also
-compatible with the constructive libraries also implemented in the Coq
+``classical real numbers'' of the standard \Coq{} library, but it also
+complies with the constructive libraries also implemented in the \Coq{}
 system like \cite{DBLP:conf/mkm/Cruz-FilipeGW04, russellreals,
   russellcoqreals}.
 
@@ -207,24 +207,45 @@ system like \cite{DBLP:conf/mkm/Cruz-FilipeGW04, russellreals,
 
 \subsection{Small scale reflection libraries}
 This work is based on the \ssr{} libraries \cite{ssrsite}
-developped with the \ssr{} extension
+developed with the \ssr{} extension
 \cite{GONTHIER:2008:INRIA-00258384:4} of the \Coq{} system.
 These libraries cover basic theories - like the ones of sequences, natural
-numbers, finite types, finite sets...-, infrastrcture for notations and
+numbers, finite types, finite sets...-, infrastructure for notations and
 theory sharing -like containers, iterated operators, algebraic
-hierarchies,...- and elementary algebra and arithmetics. We also rely
-on an extention of these libraries realized by Cyril Cohen.
+hierarchies,...- and elementary algebra and arithmetics. 
 
+The \ssr{} libraries are developed along the path of the proof of a
+historical result in finite group theory (namely the Odd Order
+Theorem), to demonstrate that a well
+understood art of formalization leads to modular, reusable formal
+libraries. This work addresses theories that
+are not on this path, it hence challenges the reusability of the
+distributed libraries and demonstrate that they can indeed be reused
+and extended.
 
+One of the main characteristic of the methodology deployed in these
+libraries, is small scale reflection 
+\cite{ssr-tutorial}, a proof methodology which is based on the
+pervasive use of computations with symbolic symbols. 
+As a consequence, predicates are formalized as often as possible as
+boolean functions. This approach is supported by a set of tactics
+designed for the user take benefit of these formalization
+choices. It provides for instance a powerful automation for propositional
+reasoning: in this framework, reasoning in the intutionistically
+classical fragment of the \Coq{} logic is almost as convenient as it
+could be in a fully classical system.
 
+The impact of boolean representations is deeper than the automation of
+propositional reasoning: it also affects the manipulation of dependant
+types, and specially of dependant pairs (also called
+$\Sigma$-types). The \ssr{} library on polynomials we rely on
+illustrate this fact as described in section \ref{ssec:polys}.
 
-\subsection{Representation of polynomials}
-
-We rely here on the \ssr{} library on polynomials. This library
-represents polynomials by a big endian list of coefficients in
+\subsection{Representation of polynomials}\label{ssec:polys}
+In \ssr{} libraries 
+polynomials are represented by a big endian list of coefficients in
 the monomial basis. A polynomial function can easily be defined from
 such a list through the Horner evaluation scheme.
-
 A bare list of coefficients would however not
 provide a canonical representation since the same
 polynomial can be represented by an infinite number of coefficient
@@ -245,19 +266,19 @@ used in the test of the proof component.
 The constant zero polynomial is represented by the empty list. A
 constant non zero polynomial is represented by a list with a single
 element. The monomial $X$ is represented
-by the list $[:: 0, 1]$, where $1$ and $0$ are the one and zero
+by the list $[0, 1]$, where $1$ and $0$ are the one and zero
 constant of the underlying coefficient ring.
 More generally, a non zero polynomial of degree $n+1$ is
 represented by a list with $n+1$ elements. The \C{:>} symbol indicates
 that the \C{polyseq} constructor is declared as a coercion: a
 polynomial can at any time be seen as a list of coefficients,
-forgetting the proof that it is in normal form.
+forgetting about the proof that it is in normal form.
 
 In this representation, comparing two polynomials seems however to
 amount to comparing component-wise two dependent pairs: the first
 components of
 the two pairs being the actual polynomials, and the second components
-of the pairs being their normalization proofs. The calculus of
+of the pairs being their normalization proofs.  The calculus of
 inductive constructions underlying the Coq system is not proof
 irrelevant: two proofs of the same statements are not equal in
 general. Hence a naive design of these polynomials as dependent pairs
@@ -267,6 +288,7 @@ they would be associated with two different proofs of normalization. Yet if
 proof irrelevance does not hold in general, two proofs of the same
 boolean equality are nonetheless provably equal in the calculus of
 inductive constructions without axiom.
+
 If the type \C{R} of coefficients is equipped with a decidable
 (boolean) equality test, the second component of polynomials becomes a
 proof that a certain boolean is equal to the boolean \C{true}, and
@@ -279,7 +301,6 @@ manipulate comparisons of their inhabitants. Moreover, again thanks
 to the infrastructure of \ssr{} libraries, polynomials
 canonically inherit from the boolean comparison available on
 coefficients, lifted to the element-wise comparison of lists.
-
 
 
 \subsection{Criteria for the existence of a unique root}
@@ -1234,118 +1255,172 @@ coincide with the ones of $(*)$, which boils down to an induction on $i$.
 \section{Formalization issues}
 \label{sec:formal}
 
-\subsection{Polynomials, summations}
+\subsection{Modularity at work}\label{ssec:modularity}
 
-At many places in this development, we need to consider polynomials as
-lists of
-coefficients in a basis for the vector space of polynomials of degree
-less than a fixed value. In the case of a monomial basis, we need to
-consider lists of coefficients with a meaningful number of tail
-zeros. This is for instance the case in the proof that the images of
-the monomials \(X^i\) by a certain transformation are positive
-multiples of the Bernstein polynomials (see section \ref{ssec:ops}).
-Before being transformed, the list representing the normal form of
-polynomial \(X^i\) should be padded with $(p - i)$ tail zeroes to
-obtain the coefficient list of \(X^i\) in the monomial basis of
-polynomials of degree less than $p$. This
-amounts to formalizing the fact that polynomials of degree less than a
-fixed value form a finite dimensional vector space and to specify the
-changes in the basis. Unfortunately, the linear algebra part of the
-\ssr{} archive is not yet sufficiently well integrated to get this
-easily from an existing infrastructure. We hence only define these
-linear algebra operation at a low level (catenating zeros,...) and
-prove them correct, but we would rather use a generic library than
-rely on ad-hoc developments.
-
-Correctness proofs  of the transformations involve exact identities
-between polynomials and not extensional identities between polynomial
-functions. For this purpose we need to use normalizing constructors to
-interpret an arbitrary list into a polynomial. The constructor:
-
+One of the key feature of \ssr{} libraries is that they devote a
+substancial effort to infrastructure. For instance the library about
+sequences contains as many operator as one would expect from a
+functional language standard library: factories, access, filtering,
+surgery,... plus a comprehensive set of specification of these
+operators. The library is geared towards reflection and is best used
+when the type of elements is equipped with a boolean comparison. Now
+for instance to construct the subdivision used in the proof of the
+weak intermediate value theorem proposed in section \ref{ssec:civt},
+it is enough to use the following tactic line in the proof:
 \begin{lstlisting}
-Definition |*poly_cons*| (c : R)(p : {poly R}) :=
-  if p is Polynomial ((_ :: _) as s) ns then
-     @Polynomial R (c :: s) ns
-  else c%:P.
+pose sl := map (fun k => x + (y - x) * (k%:R / (n.+1%:R))) (iota 0 n.+2).
 \end{lstlisting}
-builds the normal form of the polynomial $(c + X*p)$, provided that
-\C{p} has type \L+{poly R}+ and is hence in normal form. Since \C{p}
-is in normal form it is either non-zero, and in this case formed with
-a list \C{s} that has a non-zero last element, or zero, and in this case formed
-with the empty list. In the first case, the new normal form is simply
-\C{(c :: s)} and the proof of well-formedness is up to conversion the
-initial proof that \C{p} was well-formed (called \C{ns}). In the second case, we
-output the constant polynomial with value \C{c}, denoted \C{c\%:P}.
-
-Now the operator:
+The \C{(iota 0 n.+2)} operator constructs the sequence of integers between
+\C{0} and \C{n.+2}. Then the \C{map} generic list operator maps this
+sequence to the desired subdivision of the interval $[x, y]$. The
+\L+%:R+ annotation is a postfix notation for the injection of any
+integer in any ring structure (see section \ref{ssec:algstruct}).
+Now the index of the first point in this sequence where the polynomial has a
+negative value is found by the following definition:
 \begin{lstlisting}
-  Definition |*Poly*| := foldr poly_cons 0%:P.
+pose a'_index := find (fun x => p.[x] >= 0) sl.
 \end{lstlisting}
-iterates this construction and builds a normal polynomial out of an
-arbitrary list. It is straightforward and useful to have lemmas
-specifying the effects of list operators (like catenation,
-mapping,...) under the \C{Poly} construction, especially when dealing
-with the correctness proofs of the Bernstein transformation
-(zero-padding, expansion,..).
+where again the \C{find} operator is a generic construction. The
+theory available on \C{find} is sufficient to prove all the results
+needed in the proof.
 
-Another important consequence of the ring structure available on
-polynomials is that we are allowed to
-define a polynomial by providing its coefficient function
-\C{nat -> R}. This facility is
-in fact a direct application of the iterated operator facilities
-available in \ssr{} \cite{BGOBP:BIG08}: given a coefficient function
-\C{c : nat -> R}, and a natural number \C{n} the expression:
-\begin{lstlisting}
-  \sum_(i < n) (c i)%:P * 'X^i
-\end{lstlisting}
-represents the polynomial $\sum_{i < n}c_i X^i$, defined as a sum of
-products of powers of the polynomial \C{'X} by constant polynomials
-built out of the first values of \C{c}.
+In the \ssr{} distribution, the sequence library is extended by a
+library about iterated operations \cite{BGOBP:BIG08}. This library
+again provides a comprehensive infrastructure to work with the finite
+iteration of operators equipped with some known properties like
+associativity, commutativity or distributivity. Although the
+definition of iteration is naturally based on a sequence, the library
+includes a varierty of indexing facilities. This library is
+crucial in the proof of the de Casteljau algorithm presented in
+section \ref{ssec:split}, both for the initialization with Cauchy
+bounds and for proving the correctness of the computation, that is
+that the output coefficients indeed provide a correct decomposition of
+the initial polynomial on the Bernstein basis. The \L+\sum+ summation
+indeed carries implicitly the properties that this iterated operation
+is commutative, associative, and that it is associated to a product
+law which distributes over the sum. The \L+\sum_(i < n)+ notation
+indicates that the iteration is performed on the sequence of intergers
+from \C{0} to {n.-1} (meaning the sum might be empty).
+Manipulations of these expressions are obtained from the generic
+theory of iterated operators.
 
-To avoid dealing with out of bound accesses in coefficient lists, the
-de Casteljau algorithm works on infinite lists of coefficients
-represented as functions of type \C{nat -> Qcb}. The correctness lemmas
-however reinterpret these coefficient functions as polynomials using
-the above iterated sum facilities.
+Sequence are also the core of the definition of polynomials. The
+definition given in section \ref{ssec:polys}
 
-\subsection{Algebraic structures}
+\subsection{Algebraic structures}\label{ssec:algstruct}
 
-This work is based on the hierarchy of algebraic structures available
-in the \ssr{} repository. This hierarchy, described in \cite{hieralg},
-has been since enriched with interfaces for ordered integral
-domains and fields. The ordered integral domains instances we use here are
-integers and rational numbers. For this purpose, we have populated the
-hierarchy with the adequate structure instances on the types provided
-by the standard library of the \Coq{} system, namely \C{Z}, the type
-of integers as binary words, and \C{Qcb}, the type of rational numbers
-as irreducible fractions. All \ssr{} algebraic
-structures require their carrier type to be equipped with a boolean
-equality test reflecting the structural Leibniz equality available by
-default on the type. In our case, since the only concrete types
-we manipulate (integers and rational numbers) constructively fall into
-this category, this was not a problem.
+% \subsection{Polynomials, summations}
 
-The libraries already present in the standard distribution of the
-system were providing a sufficient body of lemmas to achieve this
-formalization. However, the \ssr{} layer of interfaces introduces a very
-uniform framework to deal with algebraic manipulations \cite{packagingmathstructures}.   In particular,
-instances of a same interface share theory, hence lemma names, and
-notations.  The theory we describe in this paper involves for instance
-several ring structures, namely the ring of integers, the ring
-of rational numbers, and the ring of polynomials with rational
-coefficients. Being all instances of the ring abstract interface
-(and also integral domains, and even field for rationals and integers), all
-these structures share the same symbols for operations, like
-\C{(x * y)} for multiplication of \C{x} by \C{y}, \C{(x *+ n)} for the
-product of \C{x} by a natural number (which is in fact defined as
-iterated additions).
-This latter operation and generic notation is of special interest to
-deal with binomial coefficients in a transparent way since the theory
-of binomial coefficients, defined as natural numbers, directly applies
-without specifying any specialized injection from natural numbers to
-each ring structure. In fact once rationals and integers are equipped
-with the appropriate structures, our proofs no more involve any
-argument specific to the representation of arithmetic.
+% At many places in this development, we need to consider polynomials as
+% lists of
+% coefficients in a basis for the vector space of polynomials of degree
+% less than a fixed value. In the case of a monomial basis, we need to
+% consider lists of coefficients with a meaningful number of tail
+% zeros. This is for instance the case in the proof that the images of
+% the monomials \(X^i\) by a certain transformation are positive
+% multiples of the Bernstein polynomials (see section \ref{ssec:ops}).
+% Before being transformed, the list representing the normal form of
+% polynomial \(X^i\) should be padded with $(p - i)$ tail zeroes to
+% obtain the coefficient list of \(X^i\) in the monomial basis of
+% polynomials of degree less than $p$. This
+% amounts to formalizing the fact that polynomials of degree less than a
+% fixed value form a finite dimensional vector space and to specify the
+% changes in the basis. Unfortunately, the linear algebra part of the
+% \ssr{} archive is not yet sufficiently well integrated to get this
+% easily from an existing infrastructure. We hence only define these
+% linear algebra operation at a low level (catenating zeros,...) and
+% prove them correct, but we would rather use a generic library than
+% rely on ad-hoc developments.
+
+% Correctness proofs  of the transformations involve exact identities
+% between polynomials and not extensional identities between polynomial
+% functions. For this purpose we need to use normalizing constructors to
+% interpret an arbitrary list into a polynomial. The constructor:
+
+% \begin{lstlisting}
+% Definition |*poly_cons*| (c : R)(p : {poly R}) :=
+%   if p is Polynomial ((_ :: _) as s) ns then
+%      @Polynomial R (c :: s) ns
+%   else c%:P.
+% \end{lstlisting}
+% builds the normal form of the polynomial $(c + X*p)$, provided that
+% \C{p} has type \L+{poly R}+ and is hence in normal form. Since \C{p}
+% is in normal form it is either non-zero, and in this case formed with
+% a list \C{s} that has a non-zero last element, or zero, and in this case formed
+% with the empty list. In the first case, the new normal form is simply
+% \C{(c :: s)} and the proof of well-formedness is up to conversion the
+% initial proof that \C{p} was well-formed (called \C{ns}). In the second case, we
+% output the constant polynomial with value \C{c}, denoted \C{c\%:P}.
+
+% Now the operator:
+% \begin{lstlisting}
+%   Definition |*Poly*| := foldr poly_cons 0%:P.
+% \end{lstlisting}
+% iterates this construction and builds a normal polynomial out of an
+% arbitrary list. It is straightforward and useful to have lemmas
+% specifying the effects of list operators (like catenation,
+% mapping,...) under the \C{Poly} construction, especially when dealing
+% with the correctness proofs of the Bernstein transformation
+% (zero-padding, expansion,..).
+
+% Another important consequence of the ring structure available on
+% polynomials is that we are allowed to
+% define a polynomial by providing its coefficient function
+% \C{nat -> R}. This facility is
+% in fact a direct application of the iterated operator facilities
+% available in \ssr{} \cite{BGOBP:BIG08}: given a coefficient function
+% \C{c : nat -> R}, and a natural number \C{n} the expression:
+% \begin{lstlisting}
+%   \sum_(i < n) (c i)%:P * 'X^i
+% \end{lstlisting}
+% represents the polynomial $\sum_{i < n}c_i X^i$, defined as a sum of
+% products of powers of the polynomial \C{'X} by constant polynomials
+% built out of the first values of \C{c}.
+
+% To avoid dealing with out of bound accesses in coefficient lists, the
+% de Casteljau algorithm works on infinite lists of coefficients
+% represented as functions of type \C{nat -> Qcb}. The correctness lemmas
+% however reinterpret these coefficient functions as polynomials using
+% the above iterated sum facilities.
+
+% \subsection{Algebraic structures}
+
+% This work is based on the hierarchy of algebraic structures available
+% in the \ssr{} repository. This hierarchy, described in \cite{hieralg},
+% has been since enriched with interfaces for ordered integral
+% domains and fields. The ordered integral domains instances we use here are
+% integers and rational numbers. For this purpose, we have populated the
+% hierarchy with the adequate structure instances on the types provided
+% by the standard library of the \Coq{} system, namely \C{Z}, the type
+% of integers as binary words, and \C{Qcb}, the type of rational numbers
+% as irreducible fractions. All \ssr{} algebraic
+% structures require their carrier type to be equipped with a boolean
+% equality test reflecting the structural Leibniz equality available by
+% default on the type. In our case, since the only concrete types
+% we manipulate (integers and rational numbers) constructively fall into
+% this category, this was not a problem.
+
+% The libraries already present in the standard distribution of the
+% system were providing a sufficient body of lemmas to achieve this
+% formalization. However, the \ssr{} layer of interfaces introduces a very
+% uniform framework to deal with algebraic manipulations \cite{packagingmathstructures}.   In particular,
+% instances of a same interface share theory, hence lemma names, and
+% notations.  The theory we describe in this paper involves for instance
+% several ring structures, namely the ring of integers, the ring
+% of rational numbers, and the ring of polynomials with rational
+% coefficients. Being all instances of the ring abstract interface
+% (and also integral domains, and even field for rationals and integers), all
+% these structures share the same symbols for operations, like
+% \C{(x * y)} for multiplication of \C{x} by \C{y}, \C{(x *+ n)} for the
+% product of \C{x} by a natural number (which is in fact defined as
+% iterated additions).
+% This latter operation and generic notation is of special interest to
+% deal with binomial coefficients in a transparent way since the theory
+% of binomial coefficients, defined as natural numbers, directly applies
+% without specifying any specialized injection from natural numbers to
+% each ring structure. In fact once rationals and integers are equipped
+% with the appropriate structures, our proofs no more involve any
+% argument specific to the representation of arithmetic.
 
 
 
@@ -1353,61 +1428,61 @@ argument specific to the representation of arithmetic.
 
 
 
-\subsection{Automation issues}
+% \subsection{Automation issues}
 
-The automation given by the type inference based infrastructure is
-relieving the user from many painful formalization issues. Beside the
-sharing of notation and theory mentioned above, which is automatically
-inferred on the fly, algebraic manipulation on indexed sums is a
-routine work. The correctness proofs of the transformations mentioned
-in section \ref{ssec:ops} involve a substantial work on iterated sum
-handling.
+% The automation given by the type inference based infrastructure is
+% relieving the user from many painful formalization issues. Beside the
+% sharing of notation and theory mentioned above, which is automatically
+% inferred on the fly, algebraic manipulation on indexed sums is a
+% routine work. The correctness proofs of the transformations mentioned
+% in section \ref{ssec:ops} involve a substantial work on iterated sum
+% handling.
 
-Since ring operations are automatically equipped with iterated
-operation facilities \cite{BGOBP:BIG08}, proof steps like distributing constant or
-natural number product on an iterated sum, replacing an iterated sum
-of zeroes elements by a zero, replacing $\sum_{i = 0}^n r_i$ by
-$\sum_{i = 0}^n r_{n - i}$ only require a single rewriting step.
-Even a  more complex operation combining associativity and reindexing
-like transforming $\sum_{i = 0}^{n + m} r_i$ into
-$\sum_{i = 0}^{n} r_i + \sum_{i = 0}^{m} r_{n + i}$ is again a single
-rewriting step of a generic lemma about iteration of associative
-operators. This \ssr{} library on indexed iterations has been of crucial
-importance in a large part of the proofs.
+% Since ring operations are automatically equipped with iterated
+% operation facilities \cite{BGOBP:BIG08}, proof steps like distributing constant or
+% natural number product on an iterated sum, replacing an iterated sum
+% of zeroes elements by a zero, replacing $\sum_{i = 0}^n r_i$ by
+% $\sum_{i = 0}^n r_{n - i}$ only require a single rewriting step.
+% Even a  more complex operation combining associativity and reindexing
+% like transforming $\sum_{i = 0}^{n + m} r_i$ into
+% $\sum_{i = 0}^{n} r_i + \sum_{i = 0}^{m} r_{n + i}$ is again a single
+% rewriting step of a generic lemma about iteration of associative
+% operators. This \ssr{} library on indexed iterations has been of crucial
+% importance in a large part of the proofs.
 
 
-On the other hand, a significant part of scripts is devoted to too
-many atomic rewrite steps to normalize ring expressions, or prove trivial
-consequences of the properties of order like transitivity or
-compatibility with field operations. The \ssr{} libraries still
-lack the standard
-automated proof producing decision procedures available in the \Coq{}
-system, like ring normalization or linear arithmetic decision. The
-\ssr{} structures are indeed still not connected to these
-mechanisms. The \Coq{} tactics on linear arithmetic are hardcoding the
-representation of integers and coefficients and should rely on a more
-abstract structure like the one of ordered field. Moreover an \ssr{}
-ring structure instance is not automatically registered as a
-valid ring structure for the \C{ring} tactic. This issue should be
-resolved by bridging the gap between structures infered by type inference
-(which is the case of our ring structures) and the OCaml database used
-by \Coq{} tactics.
+% On the other hand, a significant part of scripts is devoted to too
+% many atomic rewrite steps to normalize ring expressions, or prove trivial
+% consequences of the properties of order like transitivity or
+% compatibility with field operations. The \ssr{} libraries still
+% lack the standard
+% automated proof producing decision procedures available in the \Coq{}
+% system, like ring normalization or linear arithmetic decision. The
+% \ssr{} structures are indeed still not connected to these
+% mechanisms. The \Coq{} tactics on linear arithmetic are hardcoding the
+% representation of integers and coefficients and should rely on a more
+% abstract structure like the one of ordered field. Moreover an \ssr{}
+% ring structure instance is not automatically registered as a
+% valid ring structure for the \C{ring} tactic. This issue should be
+% resolved by bridging the gap between structures infered by type inference
+% (which is the case of our ring structures) and the OCaml database used
+% by \Coq{} tactics.
 
-In the case of the automation of ring identities, it would significantly
-help the user if normalization could handle simultaneously the various
-ring and semi-ring structures that can occur in an expression, like
-the rings of polynomial coefficients, polynomials themselves and
-possibly the semi-ring of natural numbers.
+% In the case of the automation of ring identities, it would significantly
+% help the user if normalization could handle simultaneously the various
+% ring and semi-ring structures that can occur in an expression, like
+% the rings of polynomial coefficients, polynomials themselves and
+% possibly the semi-ring of natural numbers.
 
-In the case of the automation of ordered arithmetic, proof steps
-often involve non linear expressions, for which it is quite difficult
-to get a truly generic and efficient proof producing decision
-procedure. This is in fact part of the long term objectives of this
-work, namely to
-certify a complete decision procedure for the full first order theory
-of real closed fields. Yet incomplete but lightweight tools could
-probably be crafted to relieve the user from pedestrian steps when
-possible.
+% In the case of the automation of ordered arithmetic, proof steps
+% often involve non linear expressions, for which it is quite difficult
+% to get a truly generic and efficient proof producing decision
+% procedure. This is in fact part of the long term objectives of this
+% work, namely to
+% certify a complete decision procedure for the full first order theory
+% of real closed fields. Yet incomplete but lightweight tools could
+% probably be crafted to relieve the user from pedestrian steps when
+% possible.
 
 
 \subsection{Current state of the formalization}
