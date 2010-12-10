@@ -4,6 +4,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{url}
+\usepackage{hyperref}
 \input{macro}
 
 \begin{document}
@@ -32,7 +33,7 @@ computer aided design, they are also used intensively as they give an
 efficient tool to draw curves that are controlled by points that users
 can grab and drag, with instantaneous and intuitive feedback on the
 shape the curve will take as the control points move around.
-Bernstein coefficients are closely related to splines and B\'ezier curves
+Bernstein coefficients are closely related to B\'ezier curves
 and they have a very simple geometrical interpretation, which we illustrate
 in section \ref{sec:geometrybernstein}.
 
@@ -133,13 +134,13 @@ corresponding property on rational numbers: there exists a
 sub-interval inside which the absolute value of the slope is bounded
 below, and such that the values of the polynomial at the sub-interval
 bounds have opposite signs.  In a similar vein, the intermediate value
-theorem (IVT) does not hold with rational numbers, but a corresponding
+theorem  does not hold with rational numbers, but a corresponding
 statement, expressed as a bounded-value property, does.  Our proof
 development relies on this approach.  We describe the formal aspects
 of this approach to describing roots in section~\ref{sec:rational}.
 
 The formal work described in this paper has been performed using
-the \Coq{} system\cite{coqart}, with the \ssr{} extension
+the \Coq{} system\cite{coqart, coqsite}, with the \ssr{} extension
 \cite{GONTHIER:2008:INRIA-00258384:4}.  We think some characteristics
 of the proof system played a key role in making this development
 possible.  We describe these key aspects in section~\ref{sec:formal}.
@@ -149,90 +150,45 @@ The sources of this development are available from\\
 \section{Formalization viewpoints}
 \label{sec:rational}
 
-\subsection{A formalization in the first order theory of rational
-  numbers}
+\subsection{A constructive and abstract approach}
+In this formal study we manipulate polynomials with rational numbers,
+and their real roots, from a constructive point of view.
 
-This formal study is devoted to real roots of polynomial with rational
-coefficients. Roots of a polynomial with coefficients in a given field
-are not necessary in this field, unless it is algebraically closed
-like the field on complex numbers.
+Our aim is to provide a constructive formalization of the theory of
+Bernstein polynomials, and to be as independent as possible from the
+choice of implementation of rational numbers and real numbers. For this
+purpose, we eliminate real points from the formalization. Our choice
+is to consider polynomials with coefficients in an abstract ordered and
+archimedean field. The axioms of this structure are the ones of a
+field with decidable equality, with a decidable order relation which is
+compatible with the field operations. We do not provide
+nor rely on a general theory of continuous functions but rather prove
+that such polynomials are necessarily continuous (and even uniformly
+continuous on bounded intervals) using $\epsilon$-$\delta$ statements
+quantified on elements of the coefficient field.
 
-Real closed fields, like the field of real numbers, give weaker
-properties on the existence of roots: only polynomials with odd degree
-have at least one root in the real closed field of their coefficients.
-They enjoy the existence of the {\em intermediate value
-  theorem} (IVT) for polynomial functions:
-any polynomial that has a negative value in one point \(a\) and a
-positive value in another point \(b\) is guaranteed to have a root at
-some point between \(a\) and \(b\). Real algebraic numbers are an
-intuitionistic model of this theory, and the intermediate value
-property is completely effective in this model.
-
-Yet real algebraic numbers form a relatively small subset of numbers,
-which soon proves not sufficient to encompass standard results in
-analysis. As soon as one need to consider transcendental real numbers,
-like $\pi$ or $e$, this set is too small.
-
-Of course, the full classical theory of reals provide the intermediate
-value property for continuous functions, but it is by no mean
-effective. This property vanishes as such when constructive real
-numbers are considered. Yet several alternative formulations can be
-obtained constructively, either by strengthening the hypothesis on the
-function, for instance requiring that it is locally non-zero, or by
-weakening the conclusion of the theorem, providing only arbitrarily
-small value for the function but not an explicit zero.
-
-In all what follows, we only work with polynomial functions, a very
-specific case of (uniformly) continuous functions. We do not provide
-nor rely on a theory of continuous functions. Our aim is moreover to
-provide a constructive formalization of the theory of Bernstein
-polynomials, and to be as independent as possible from the choice of
-implementation for real numbers. For this purpose, we even eliminate
-real points from the
-formalization and formulate and prove all the results in the first
-order theory of rational numbers. The drawback of this choice is that
-we consider only polynomials with rational (and not real)
-coefficients, and that we need to adjust the definition of {\em root of
-a polynomial} since we do not have access to real points, even algebraic
-ones. Restricting the study to rational coefficients is however a
-necessary milestone on the way to constructive real coefficients. And we
-will show that a criterium for the existence of a single real root in
-an interval, expressed in the first order language of rational
-numbers, is sufficient in our setting.
-
-\subsection{Rational numbers}
-% The work we describe in this article was intentionally not based on any
-% implementation of real numbers, but expressed solely in terms of natural
-% numbers and rational numbers.  Our intention is to provide a description
-% of Bernstein polynomials and their characteristics that will be usable
-% for any choice of real numbers, without assuming an effective
-% intermediate value theorem.
-
-% We proved a minimal set of properties of polynomial functions by expressing
-% these properties in the first-order theory of rational numbers.  Thus, we
-% do not treat a general notion of Cauchy sequences, continuous functions, or
-% derivability.  As a result, we do not need to rely on ``book equality'' or
-% setoids and we express all equalities using the structural ``Leibniz equality''.
-
-% As a result, our work is versatile and can be embedded in any choice of
-% formalization: it is compatible with constructive mathematics, as for
-% instance implemented in \Coq{} in \cite{DBLP:conf/mkm/Cruz-FilipeGW04,
-% russellreals, russellcoqreals} as it
-% relies solely on intuitionistic mathematics and it is also readily usable
-% with the ``classical real numbers'' of the standard Coq library since
-% it relies on plain equality.
-
-% It was instrumental in our work that we could reason on rational numbers by
-% assuming that they are in a field with decidable Leibniz equality.
-% In our first experiments, started around 2005, we used a model of rational
-% numbers that only provided a setoid structure.  This approach turned out to be
-% too limiting and the development pace has improved drastically once we came
-% back to decidable equality on rational numbers.  The current formalization
-% {\tt Qcb} relies on reduced fractions, composed of a numerator, a denominator,
-% and a proof that they are relatively prime, expressed using a boolean
-% predicate to benefit from the unicity of equality proofs in the boolean type.
-% An alternative representation of rational numbers with
-% Leibniz equality can also be found in \cite{canonicalrationals03}.
+Since such a field has no reason
+to be algebraically closed, the roots of the polynomials are not
+necessarily elements of this type. We hence need to adjust the
+definition of {\em root of a polynomial}. In particular, we provide a
+weak version of the intermediate value theorem for polynomials, which
+results in a sufficient criterion for the existence of a single real root in
+an interval, expressed in the first order language of decidable, ordered
+archimedean fields. This field of coefficients cannot be directly
+instantiated by constructive reals since their comparison is not
+decidable, but this was not our purpose since our weak intermediate
+value theorem is only there to support the further study of Bernstein
+polynomials, which have rational coefficients. If coefficients are
+indeed instantiated by any implementation of
+rational numbers, for instance the one embedded in some implementation
+of constructive numbers, then the conclusion of the intermediate
+value theorem is sufficient to implement the modulus of convergence of
+a Cauchy sequence, which will be the constructive root of the
+polynomial. Of course, this work is readily usable  with the
+``classical real numbers'' of the standard Coq library, but it is also
+compatible with the constructive libraries also implemented in the Coq
+system like \cite{DBLP:conf/mkm/Cruz-FilipeGW04, russellreals,
+  russellcoqreals}.
 
 % The criteria we have chosen to describe the existence of roots are
 % not faithful to the usual notion of having a root.  For instance, they
@@ -249,16 +205,18 @@ numbers, is sufficient in our setting.
 % designed for polynomials with only simple roots and should probably not
 % be used in other settings.
 
-% On the other hand,  our ``constructive
-% intermediate value theorem'' is only specialized to work on polynomials
-% and could actually be easily generalized to any uniformly continuous
-% function over a bounded interval, as it is standard in constructive
-% real analysis \cite{bishop}.  Still, this theorem alone does not
-% give a simple way to construct a Cauchy sequence representing a root,
-% whereas a root isolation process does.
-% Thus, these three aspects of our formalization
-% ---characterization of roots and intermediate value theorem---
-% are designed especially for the purpose of this development.
+\subsection{Small scale reflection libraries}
+This work is based on the \ssr{} libraries \cite{ssrsite}
+developped with the \ssr{} extension
+\cite{GONTHIER:2008:INRIA-00258384:4} of the \Coq{} system.
+These libraries cover basic theories - like the ones of sequences, natural
+numbers, finite types, finite sets...-, infrastrcture for notations and
+theory sharing -like containers, iterated operators, algebraic
+hierarchies,...- and elementary algebra and arithmetics. We also rely
+on an extention of these libraries realized by Cyril Cohen.
+
+
+
 
 \subsection{Representation of polynomials}
 
@@ -300,14 +258,15 @@ amount to comparing component-wise two dependent pairs: the first
 components of
 the two pairs being the actual polynomials, and the second components
 of the pairs being their normalization proofs. The calculus of
-inductive construction (CIC) underlying the Coq system is not proof
+inductive constructions underlying the Coq system is not proof
 irrelevant: two proofs of the same statements are not equal in
 general. Hence a naive design of these polynomials as dependent pairs
 would lead to an uncomfortable situation where two equal lists of
 coefficients would not necessarily give two equal polynomials because
 they would be associated with two different proofs of normalization. Yet if
 proof irrelevance does not hold in general, two proofs of the same
-boolean equality are nonetheless provably equal in CIC without axiom.
+boolean equality are nonetheless provably equal in the calculus of
+inductive constructions without axiom.
 If the type \C{R} of coefficients is equipped with a decidable
 (boolean) equality test, the second component of polynomials becomes a
 proof that a certain boolean is equal to the boolean \C{true}, and
@@ -322,31 +281,14 @@ canonically inherit from the boolean comparison available on
 coefficients, lifted to the element-wise comparison of lists.
 
 
-% This work is devoted to the study of roots of univariate polynomials,
-% from an analytic point on view.  Therefore, a polynomial $P$ is here seen
-% as a function $P : \mathbb{Q} \rightarrow \mathbb{Q}$. For this
-% purpose we can simply represent a polynomial  This representation can be
-% simply interpreted as a function $ \mathbb{Q} \rightarrow \mathbb{Q}$
-% using the Horner evaluation scheme.
-
-
-% Note that polynomials require a ring structure on their coefficients,
-% which ensures that arithmetic operations on polynomials will be
-% properly defined and specified. Lists in {\tt ssreflect} are written
-% as
-% $[:: a_1, a_2, \ldots, a_n]$.  
-% Moreover, since the \ssr{} ring structure
-% embeds a type with boolean equality, polynomials inherit from a
-% canonical boolean equality test.
-
 
 \subsection{Criteria for the existence of a unique root}
 \label{sec:criteria}
 We concentrate on a sufficient criterion for the existence of a root
-inside an interval.  This criterion is strong enough to build a Cauchy
-sequence (and its modulus of convergence).  The limit of this
-Cauchy sequence in the real numbers
-would be the root. Our criterion is based on slopes.
+inside an interval.  % This criterion is strong enough to build a Cauchy
+% sequence (and its modulus of convergence) whose limit in the real numbers
+% would be the root.
+Our criterion is based on slopes.
 
 Ensuring that the slope is positive or negative in some interval helps
 making sure that there are not more than one root in this interval.  In our
@@ -410,7 +352,7 @@ thanks to the {\em intermediate value theorem}. For this work, we establish
 a simplified constructive, real point free, replacement of the intermediate value
 theorem specialized for polynomials.  The statement we prove has the following
 form:
-\begin{theorem}[Constructive IVT for polynomial functions]
+\begin{theorem}[Weak intermediate value theorem for polynomials]
 \[
 \begin{array}{l}
 {\forall p~x~y~\varepsilon,\quad x < y~~\wedge~~0 < \varepsilon~~\wedge~~p(x) < 0 \leq p(y)}\\
@@ -693,8 +635,10 @@ curve at its extreme points is governed by the $k+1$ nearest
 control points.
 
 Computer graphics algorithms usually use piecewise polynomial paths
-(called splines) of  low degree. Most modern vector graphics
-standards, like for instance SVG, feature support for B\'ezier splines.
+(called splines) of  low degree. B\'ezier curves are often used to
+build these splines, resulting in the so-called B\'ezier splines. Most
+modern vector graphics standards, like for instance SVG, feature
+support for B\'ezier splines.
 TrueType fonts use quadratic B\'ezier
 splines, whereas PostScript or MetaFont \cite{metafont} use cubic
 B\'ezier splines.
@@ -1061,22 +1005,34 @@ $n$, defined by $p = \sum_{i  = 0}^n a_iX^i \in
 \mathbb{Q}[X]$ it is actually  possible to bound the absolute values
 of its roots by a simple constant defined from the coefficients
 $a_i ({i = 0 \dots n})$, called the Cauchy bound \cite{bpr}:
+\begin{theorem}[Cauchy bounds]
 $$\forall x \in \mathbb{R}, p(x) = 0 \Rightarrow |x|
 \leq C(p) \quad \textrm{with} \quad C(p) = \sum_{i=0}^n \frac{|a_i|}{|a_n|}$$
-
-Indeed, let $x$ be a root of $p$. If $|x|\leq 1$, since $1 \leq C(p)$,
+\end{theorem}
+\begin{proof}
+Let $x$ be a root of $p$. If $|x|\leq 1$, since $1 \leq C(p)$,
 the inequality trivially holds. Then if $|x| > 1$, since $x$ is a root,
 and $a_n \neq 0$
 $$x^n = - \frac{1}{a_n}\sum_{i = 0}^{n-1}a_i x^i$$
 Hence:
 $$|x|^n \leq \frac{1}{|a_n|}\sum_{i = 0}^{n-1}|a_i| |x|^i \leq
 \frac{1}{|a_n|}\sum_{i = 0}^{n}|a_i| |x|^i$$
-first by triangular inequality, then by adding a non-negative constant
-on the right (otherwise the sum might be empty). Then:
-$$|x| \leq \frac{1}{|a_n|}\sum_{i = 0}^{n}|a_i| |x|^{i - n} \leq
-\frac{1}{|a_n|}\sum_{i = 0}^{n}|a_i| $$
-since $|x| > 1$ implies that forall $i = 0 \dots n$,
-$|x|^{i - n} \leq 1$.
+by triangular inequality. Then:
+$$|x| \leq \frac{1}{|a_n|}\sum_{i = 0}^{n-1}|a_i| |x|^{i - (n - 1)} \leq
+\frac{1}{|a_n|}\sum_{i = 0}^{n-1}|a_i| $$
+since $|x| > 1$ implies that forall $i = 0 \dots n-1$,
+$|x|^{i - (n - 1)} \leq 1$. Finally since:
+$$\frac{1}{|a_n|}\sum_{i = 0}^{n-1}|a_i| \leq \frac{1}{|a_n|}\sum_{i =
+  0}^{n}|a_i|$$
+we have $|x| \leq C(p)$.
+\end{proof}
+
+%  then by adding a non-negative constant
+% on the right (otherwise the sum might be empty). Then:
+% $$|x| \leq \frac{1}{|a_n|}\sum_{i = 0}^{n}|a_i| |x|^{i - n} \leq
+% \frac{1}{|a_n|}\sum_{i = 0}^{n}|a_i| $$
+% since $|x| > 1$ implies that forall $i = 0 \dots n$,
+% $|x|^{i - n} \leq 1$.
 
 This means that to start studying the roots of a polynomial $p$ we can
 restrict the infinite real line to a bounded interval
@@ -1207,7 +1163,7 @@ coefficients in the basis with parameters $l$ and $m$ output by
 \C{dicho'}. The list
 $b'' = b_0^{(p)} \dots b_j^{(p - j)} \dots b_p^{0}$
  is the list of coefficients in the basis with parameters $m$ and $r$
- output by \C{dicho}.  The green area on Figure~\ref{bern} shows which values
+ output by \C{dicho}.  The small triangle area on Figure~\ref{bern} shows which values
 the computation of an arbitrary given point in the triangle relies on.
 This structure is imposed by the fixpoint
  equation of the recursive definition of the de Casteljau algorithm:
@@ -1563,8 +1519,8 @@ application.
 
 In the long run, a good knowledge of Bernstein polynomials and
 coefficients opens the door to a wide variety of tools that are
-commonplace in computer aided design and possibly robotics. Splines
-and B\'ezier curves which are often used in drawing tools share a lot of
+commonplace in computer aided design and possibly robotics. B\'ezier
+curves which are often used in drawing tools share a lot of
 properties with Bernstein control points. Thus, we can envision that
 theorem provers equipped with a library on Bernstein coefficients
 could be useful to reason on designs, for instance to check that
