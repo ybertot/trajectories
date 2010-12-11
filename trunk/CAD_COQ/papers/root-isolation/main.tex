@@ -55,8 +55,8 @@ coefficients:
 
 We describe a formal proof of these three properties,
 concentrating on the first and third properties. These proofs will be
-done in the setting of polynomials with rational coefficients and
-rational values.
+done in the setting of polynomials with values in an abstract ordered
+archimedean field.
 
 In the following, we will assume that we are working with polynomials
 whose roots are all simple, called separable polynomials.
@@ -123,21 +123,24 @@ different basis from the usual monomials, called the {\em Bernstein basis}.
 All these results deal with polynomial functions over real numbers. In
 order to make this formal study as generic as possible, we abstract
 from the choice of the subset of real numbers of interest for the
-user and only rely on rational numbers arithmetics. Comparison of
-rational numbers being effective, the process we describe can
-effectively be used in a decision procedure.
+user and only rely on an abstract structure of archimedean field. We
+however require this field to be equipped with a decidable comparison:
+the process we describe can in turn effectively be used in a decision
+procedure.
 
-When considering only rational numbers, the existence of roots takes a
+When allowing only archimedeanity,  the existence of roots takes a
 different meaning: if a polynomial has a single simple real root in an
-interval, this root may not be rational.  However, we can use a
-corresponding property on rational numbers: there exists a
+interval, this root may not belong to the field of its coefficients. 
+However, we can use a corresponding property which can be expressed in
+the field of coefficients: there exists a
 sub-interval inside which the absolute value of the slope is bounded
 below, and such that the values of the polynomial at the sub-interval
 bounds have opposite signs.  In a similar vein, the intermediate value
-theorem  does not hold with rational numbers, but a corresponding
-statement, expressed as a bounded-value property, does.  Our proof
-development relies on this approach.  We describe the formal aspects
-of this approach to describing roots in section~\ref{sec:rational}.
+theorem  does not hold within the language we have chosen, but a
+corresponding statement, expressed as a bounded-value property, does.
+Our proof development relies on this approach.  We describe the formal
+aspects of this approach to describing roots in
+section~\ref{sec:rational}.
 
 The formal work described in this paper has been performed using
 the \Coq{} system\cite{coqart, coqsite}, with the \ssr{} extension
@@ -158,7 +161,11 @@ purpose, we eliminate real points from the formalization. Our choice
 is to consider polynomials with coefficients in an abstract ordered and
 archimedean field. The axioms of this structure are the ones of a
 field with decidable equality, with a decidable order relation which is
-compatible with the field operations. We do not provide
+compatible with the field operations. Such a field necessarily
+contains a copy of rational numbers, which be the support of the
+computations performed in our proofs.
+
+We do not provide
 nor rely on a general theory of continuous functions but rather prove
 that such polynomials are necessarily continuous (and even uniformly
 continuous on bounded intervals) using $\epsilon$-$\delta$ statements
@@ -170,7 +177,7 @@ necessarily elements of this type. We hence need to adjust the
 definition of {\em root of a polynomial}. In particular, we provide a
 weak version of the intermediate value theorem for polynomials, which
 results in a sufficient criterion for the existence of a single real root in
-an interval, expressed in the first order language of decidable, ordered
+an interval, expressed in the language of decidable, ordered
 archimedean fields. This field of coefficients cannot be directly
 instantiated by constructive reals since their comparison is not
 decidable, but this was not our purpose since our weak intermediate
@@ -1271,8 +1278,8 @@ infix \C{+}, \C{*} and \L+\+ operators are the generic notations
   respectively for addition, product and division in a field, here
   used for the ordered archimedean field parameterized the
   development. The \L+%:R+ annotation is a postfix notation for the
- injection of any
-integer in any ring structure (see section \ref{ssec:algstruct}).
+embedding of
+integers in any ring structure (see section \ref{ssec:algstruct}).
 Now the index of the first point in this sequence where the polynomial has a
 negative value is found by the following definition:
 \begin{lstlisting}
@@ -1397,15 +1404,17 @@ the expression developing the power of a sum is hence:
 Lemma |*exprn_addl*| : forall x y n,
   (x + y) ^+ n = \sum_(i < n.+1) (x ^+ (n - i) * y ^+ i) *+ 'C(n, i).
 \end{lstlisting}
-as available in the \ssr{} library. This injection allows to combine
+as available in the \ssr{} library. This allows to combine
 smoothly the binomial identities also available in \ssr{} with
 operations in a commutative ring, as necessary in the correctness
 proofs of the de Casteljau algorithm presented in section 
 \ref{ssec:split}.
 When the iterated element \C{x} is
 in fact \C{1} the unit element of the ring, this operation defines a
-generic injection of the semi-ring of natural numbers in the
-ring. This is so widely used that a new notation is defined: \L+n%:R+
+generic image of the semi-ring of natural numbers in the
+ring. Note that this operation need not be injective: this will only
+be the case if the characterictic is zero.
+This embedding is so widely used that a new notation is defined: \L+n%:R+
 denotes \C{1 *+ n} in any ring structure. Remark that this expression
 needs a context or an explicit cast to determine the ring in which the
 natural number should be injected, i.e. the ring \C{1} is the unit of.
@@ -1419,7 +1428,11 @@ Hypothesis |*Q_arch*| : forall x:Q, 0 <= x -> {n : nat | x <= n%:R}.
 where the \C{Variable Q} declares an ordered field structure
 parameter, and the \C{|*Q_arch*|} hypothesis gives access to the
 explicit value of an integer larger than a given element of the
-ordered field.
+ordered field. Again, the \ssr{} distribution lacking a library about
+integers and rational numbers, the manipulation of the
+embedding of rational numbers in this archimedean field is sometimes
+unnecessarily pedestrian, though again this was not really an issue in
+this development.
 
 \subsection{Automation issues}
 Sadly, a significant part of scripts is devoted to too
