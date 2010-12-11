@@ -54,9 +54,9 @@ coefficients:
 \end{enumerate}
 
 We describe a formal proof of these three properties,
-concentrating on the first and third properties. These proofs will be
-done in the setting of polynomials with values in an abstract ordered
-archimedean field.
+concentrating on the first and third property. These proofs will be
+done in the setting of polynomials with coefficient and values in an
+abstract ordered archimedean field.
 
 In the following, we will assume that we are working with polynomials
 whose roots are all simple, called separable polynomials.
@@ -154,24 +154,25 @@ The sources of this development are available from\\
 \label{sec:rational}
 
 \subsection{A constructive and abstract approach}
-Our aim is to provide a constructive formalization of the theory of
-Bernstein polynomials, and to be as independent as possible from the
-choice of implementation of rational numbers and real numbers. For this
+Our aim is to provide a constructive and effective formalization of
+the theory of Bernstein polynomials, and to be as independent as
+possible from the choice of implementation of rational numbers and
+real numbers. For this
 purpose, we eliminate real points from the formalization. Our choice
 is to consider polynomials with coefficients in an abstract ordered and
 archimedean field. The axioms of this structure are the ones of a
 field with decidable equality, with a decidable order relation which is
-compatible with the field operations. Such a field necessarily
-contains a copy of rational numbers, which be the support of the
-computations performed in our proofs.
-
-We do not provide
+compatible with the field operations. The decidability of the equality
+and order relations are crucial for the algorithms we describe to be
+truely effective. Such a field necessarily contains a copy of rational
+numbers, which are the carrier of the computations performed in our
+proofs. We do not provide
 nor rely on a general theory of continuous functions but rather prove
 that such polynomials are necessarily continuous (and even uniformly
 continuous on bounded intervals) using $\epsilon$-$\delta$ statements
 quantified on elements of the coefficient field.
 
-Since such a field has no reason
+Since such an archimedean field has no reason
 to be algebraically closed, the roots of the polynomials are not
 necessarily elements of this type. We hence need to adjust the
 definition of {\em root of a polynomial}. In particular, we provide a
@@ -328,19 +329,20 @@ A polynomial $p$ satisfies the positive slope requirement if:
 \end{definition}
 We also define the analogous requirement for negative slopes.
 
-Depending on the kind of interval that we will consider, we will have
-two different ways to express the existence of a single root in the
-interval.
+Depending on the kind of interval that we will consider, we will use
+two different sufficient conditions to express the existence of a
+single root in the interval.
 
 \begin{enumerate}
 \item If the interval is bounded, we express that the interval can be
-  decomposed into three parts, the first part where the polynomial's
-  value is always negative (\(I_1\) in Figure~\ref{bounded_decompose},
-  the second part where the polynomial's
-  value goes from negative to positive with a requirement on the
-  slope (\(I_2\) in Figure~\ref{bounded_decompose}), and the third
-  part where the polynomial's value is always
-  positive (\(I_3\) in Figure \ref{bounded_decompose}).
+  decomposed into three parts, the first part \(I_1\) where the polynomial's
+  value is always negative (resp. positive) in Figure~\ref{bounded_decompose},
+  the second part \(I_2\) where the polynomial's
+  value goes from negative to positive (resp. from positive to
+  negative) with a requirement on the
+  slope in Figure~\ref{bounded_decompose}), and the third
+  part \(I_3\) where the polynomial's value is always
+  positive (resp. negative) in Figure \ref{bounded_decompose}).
 \begin{figure}[h]
 \begin{center}
 \includegraphics[clip=true,trim= 2cm 7cm 0cm 9cm,scale=0.3]{bounded_decompose.pdf}
@@ -348,11 +350,11 @@ interval.
 \caption{\label{bounded_decompose} A sufficient criterion for the existence of a single root in a bounded interval}
 \end{figure}
 \item If the interval is unbounded, we express that the interval can
-  be decomposed into two parts, the first part where the polynomial's
-  value is always negative (\(I_1\) in
-  Figure~\ref{unbounded_decompose}), and the second part where there is
-  a requirement on the slope with a positive slope (\(I_2\) in
-  Figure~\ref{unbounded_decompose}).
+  be decomposed into two parts, the first part (\(I_1\) where the polynomial's
+  value is always negative (resp. positive) in
+  Figure~\ref{unbounded_decompose}), and the second part (\(I_2\)
+  where there is a requirement on the slope with a positive
+  (resp. negative) slope  in Figure~\ref{unbounded_decompose}).
 \begin{figure}[h]
 \begin{center}
 \includegraphics[clip=true,trim=2cm 3cm 2cm 9cm, scale=0.3]{unbounded_decompose.pdf}
@@ -389,13 +391,12 @@ x \leq x' < y' \leq y]
 \begin{proof}
 We again rely on reasoning about slopes. Without loss of generality,
 we can assume that the two values \(x\) and \(y\) are positive. Assuming
-that the polynomial has the shape \(a + X \times p'\), we construct
-another
-polynomial \(p''\) whose coefficients are the absolute values of the
-coefficients of \(p'\).  This polynomial is increasing so its maximum
+that the polynomial $p$ has the shape \(a + X \times p_1\), we construct
+another polynomial \(p_2\) whose coefficients are the absolute values of the
+coefficients of \(p_1\).  This polynomial $p_2$ is increasing so its maximum
 value in \([x,y]\) is reached in \(y\).   We prove that the slope
 of the polynomial between any two points inside \([x,y]\) is smaller than
-\(k  = p''(y)\).  Thus, we establish that the
+\(k  = p_2(y)\).  Thus, we establish that the
 slope of any polynomial is bounded in absolute value on any bounded
 interval.  In particular, for any \(z, t\in [x,y]\), we have
 \[|p(z)-p(t)| \leq |k \times (z - t)|.\]
@@ -439,13 +440,13 @@ polynomial functions between 0 and \(+\infty\), as shown in
 Figure~\ref{graph-desc}.
 \begin{figure}
 \begin{center}
-\includegraphics[width=0.5\textwidth]{alternated2.png}
+\includegraphics[width=0.3\textwidth]{alternated2.pdf}
 \end{center}
-{(a) non-negative coefficients, first one non-zero,\\
-(b) non-negative coefficients, first one zero,\\
-(c) first coefficient negative, all others non-negative,\\
-(d) one sign change, first coefficient zero,\\
-(e) one sign change, first coefficient negative}
+{(a) non-negative coefficients and a non-zero constant coefficient,\\
+(b) non-negative coefficients and a zero constant coefficient,\\
+(c) a negative constant coefficient and all others non-negative,\\
+(d) one sign change and a zero constant coefficient,\\
+(e) one sign change and a negative constant coefficient}
 
 \caption{\label{graph-desc}
 Classes of polynomials with or without
@@ -489,27 +490,17 @@ a polynomial at a given point is done recursively following Horner's scheme,
 and recognizing polynomials with only non-negative coefficients is also
 done using a simple recursive function, written in the following form:
 \begin{lstlisting}
-  Fixpoint |*all_pos_or_zero*| (l:seq Qcb) : bool :=
+  Fixpoint |*all_pos_or_zero*| (l : seq Q) : bool :=
   if l is a::tl then (0 <= a) && all_pos_or_zero tl else true.
 \end{lstlisting}
-As a reminder, the Coq syntax variant that we use, \ssr{},
-privilegies boolean predicates, so that {\tt (0 <= a)} stands for a boolean
-value computed by a recursive function instead of a proposition as in
-standard Coq litterature.  Also, the type {\tt Qcb} stands for a
-representation of
-rational number as fractions in canonical form (hence the letter {\tt c}), where
-the verification that the fraction is in canonical form is also expressed
-using a boolean function (hence the letter {\tt b}).  Since these numbers
-are in canonical form, the equality test between two fractions is simply based
-on syntactic equality, in other words Leibniz equality.  The type constructor
-{\tt seq} is a type for lists, with extra constraints on the types
-that can be
-stored in such lists: equality must be decidable, a feature that can then be
-exploited intensively by the \ssr{} package
-\cite{GONTHIER:2008:INRIA-00258384:4}.
+The type \C{Q} refers to the ordered field
+parameterizing the development and {\tt (0 <= a)} stands
+for a boolean value and the type constructor
+{\tt seq} is a type for lists of elements in a type equipped with a
+boolean equality.
 
 We should notice that polynomials satisfying the boolean predicate
-{\tt all\_pos\_or\_zero} may not contain any positive coefficients: for this
+{\tt all\_pos\_or\_zero} may contain no positive coefficients: for this
 reason, we cannot guarantee that they are increasing or strictly positive
 anywhere between 0 and \(+\infty\).
 
@@ -564,7 +555,7 @@ of non-positive coefficients (possibly 0), and followed by only non-negative
 coefficients, as checked by {\tt all\_pos\_or\_zero}.  This function is
 defined as follows:
 \begin{lstlisting}
-Fixpoint |*alternate_1*| (l:seq Qcb) : bool :=
+Fixpoint |*alternate_1*| (l:seq Q) : bool :=
   if l is a::tl then
      if 0 < a then all_pos_or_zero tl else alternate_1 tl
   else false.
@@ -644,7 +635,7 @@ the case of the quadratic B\'ezier curve, the middle control point $P_1$
 is the intersection of the tangents to the curve at $P_0$ and
 $P_2$. The general formula giving the B\'ezier curve with $n+1$ control
 points is:
-$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n \binom{n}{k}(1 -t)^{n - k}t^k P_i$$
+$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n \binom{n}{k}(1 - t)^{n - k}t^k P_i$$
 which satisfies the recursive relation:
 $$B_{(P_0,\dots, P_n)}(t) = (1 - t)B_{(P_0, \dots, P_{n-1})}(t) + tB_{(P_1, \dots, P_n)}(t)$$
 
@@ -670,7 +661,7 @@ B\'ezier splines.
 
 Bernstein polynomials are defined as the weight assigned to each
 control point: the $k$-th Bernstein polynomial $P_b(n, k)$ is defined by:
-$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n P_b(n, k)(t)\binom{n}{k}P_i$$
+$$B_{(P_0, \dots,P_n)}(t) = \sum_{k = 0}^n P_b(n, k)(t)P_k$$
 hence:
 $$P_b(n,  k)(t) = \binom{n}{k}(1 -t)^{n - k}t^k$$
 
@@ -687,7 +678,7 @@ For arbitrary numbers \(l\) and
 the {\em Bernstein polynomials for degree \(n\) and the interval
 \((l,r)\)} for \(0 \leq k \leq n\)
 \[P_b(n, l, r, k) = \binom{n}{k} \frac{(x-l)^{k}(r-x)^{n - k}}{(r-l)^n}\]
-These polynomials also constitute a basis of the vector space of polynomial
+These polynomials also constitute a basis of the vector space of polynomials
 of degree \(n\), and we will usually call it the {\em Bernstein basis} leaving
 the degree and the values \(l\) and \(r\) unspecified.
 Every polynomial \(p\) of degree \(n\) hence has a sequence of coefficients
@@ -973,7 +964,7 @@ When Bernstein coefficients exhibit more than one sign change, no
 conclusion can be drawn about the existence and unicity of roots in the
 interval.  For instance, in Figure~(\ref{control}.b), the Bernstein
 coefficients exhibit two sign changes, but there is no root inside the
-interval.  When facing this kind of unconclusive information, the solution
+interval.  When facing this kind of inconclusive information, the solution
 is to refine the approximation given by the control line.
 
 \subsection{Geometric intuition for dichotomy}
@@ -982,7 +973,8 @@ When cutting an interval in two halves, the number of control points is
 approximately doubled, because each of the new half-intervals receives a
 new sequence of \(n\) Bernstein coefficients.  As a result, the control points
 are closer to each other and to the polynomial's curve and they give a more
-accurate account of the curve's position with respect to the x-axis.  This is
+accurate account of the curve's position with respect to the real
+x-axis.  This is
 illustrated in Figure~\ref{dichotomy-curve}, where the initial Bernstein
 coefficients exhibit a sign change, which is needed to account for the bend
 in the first half of the interval (a positive local minimal, but expressed
@@ -1024,7 +1016,7 @@ guaranteed to contain all the roots of a polynomial (see section~\ref{ssec:cauch
 interval into smaller pieces until all roots have been isolated (see section~\ref{ssec:split}).
 
 \subsection{Initialization}\label{ssec:cauchy}
-Given an arbitrary non constant polynomial $p$ of degree
+Given asn arbitrary non constant polynomial $p$ of degree
 $n$, defined by $p = \sum_{i  = 0}^n a_iX^i \in
 \mathbb{Q}[X]$ it is actually  possible to bound the absolute values
 of its roots by a simple constant defined from the coefficients
@@ -1082,7 +1074,8 @@ distinct from $l$ and $r$. We pose
 $\alpha = \frac{m - l}{r - l}$ and $\beta = \frac{r - m}{r - l}$. The
 \C{|*de_casteljau*|} algorithm is defined recursively by:
 \begin{lstlisting}
-  Fixpoint |*de_casteljau*| (alpha beta : Qcb) (b : nat -> Qcb) (n : nat) :=
+  Variables (alpha beta : Q).
+  Fixpoint |*de_casteljau*| (b : nat -> Q) (n : nat) :=
     match n with
     | O => b
     | i.+1 => fun j =>
@@ -1152,15 +1145,15 @@ correct, i.e. that the \C{|*dicho*|} and \C{|*dicho'*|} function
 indeed computes the expected Bernstein coefficients. The correctness
 theorems as stated in \Coq{} are:
 \begin{lstlisting}
-Lemma |*dicho'_correct*| : forall (l r m : Qcb)(q : {poly Qcb})(p : nat)
-(c : nat -> Qcb)
+Lemma |*dicho'_correct*| : forall (l r m : Q)(q : {poly Q})(p : nat)
+(c : nat -> Q)
 (alpha := (r - m) * (r - l)^-1) (beta := (m - l) * (r - l)^-1),
   m != l ->
   q = \sum_(i < p.+1)(c i) * bernp l r p i ->
   q = \sum_(j < p.+1)(dicho' alpha beta c j) * bernp l m p j.
 
-Lemma |*dicho_correct*| : forall (l r m : Qcb)(q : {poly Qcb})(p : nat)
-(c : nat -> Qcb)
+Lemma |*dicho_correct*| : forall (l r m : Q)(q : {poly Q})(p : nat)
+(c : nat -> Q)
 (alpha := (r - m) * (r - l)^-1) (beta := ((m - l) * (r - l)^-1)),
   m != r ->
   q = \sum_(i < p.+1)(c i) * bernp l r p i ->
@@ -1212,7 +1205,7 @@ the same polynomial $p$ in the Bernstein basis of degree $n$ with
 parameters $r$ and $l$:
 
 \begin{lstlisting}
-Lemma |*bern_rev_coef*| : forall (n : nat)(l r : Qcb)(b : nat -> Qcb),
+Lemma |*bern_rev_coef*| : forall (n : nat)(l r : Q)(b : nat -> Q),
   \sum_(i < n.+1)(b i) * (bernp l r n i) =
   \sum_(i < n.+1)(b (n - i)) * (bernp r l n i).
 \end{lstlisting}
@@ -1354,7 +1347,7 @@ and Bernstein polynomials are two families of generators and not their
 linear independence. Unfortunately, the linear algebra part of the
 \ssr{} archive is not yet sufficiently well integrated to get this
 easily from an existing infrastructure. We hence only define these
-linear algebra operation at a low level: the list of coefficients
+linear algebra operations at a low level: the list of coefficients
 defining a polynomial is padded with zeroes when the list of
 coefficient in a monomial basis of a certain degree is needed, and
 conversely the list of coefficients in a monomial basis needs to be
