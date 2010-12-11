@@ -214,10 +214,10 @@ system like \cite{DBLP:conf/mkm/Cruz-FilipeGW04, russellreals,
 This work is based on the \ssr{} libraries \cite{ssrsite}
 developed with the \ssr{} extension
 \cite{GONTHIER:2008:INRIA-00258384:4} of the \Coq{} system.
-These libraries cover basic theories - like the ones of sequences, natural
-numbers, finite types, finite sets...-, infrastructure for notations and
-theory sharing -like containers, iterated operators, algebraic
-hierarchies,...- and elementary algebra and arithmetics. 
+These libraries cover basic theories ---sequences, natural
+numbers, finite types, finite sets---, infrastructure for notations and
+theory sharing ---containers, iterated operators, algebraic
+hierarchies--- and elementary algebra and arithmetics. 
 They are developed following the path leading to a complete formal
 proof of a historical result in finite group theory (namely the Odd Order
 Theorem), to demonstrate that a well
@@ -228,20 +228,20 @@ distributed libraries and demonstrate that they can indeed be reused
 and extended.
 
 One of the main characteristic of the methodology deployed in these
-libraries, is small scale reflection 
+libraries is small scale reflection 
 \cite{ssr-tutorial}, a proof methodology which is based on the
 pervasive use of computations with symbolic symbols. 
 As a consequence, predicates are formalized as often as possible as
-boolean functions. This approach is supported by a set of tactics
-designed for the user take benefit of these formalization
-choices. It provides for instance a powerful automation for propositional
+boolean functions and a set of specialized tactics
+allows the user to reason on how these functions compute.
+For instance, It provides powerful automation for propositional
 reasoning: in this framework, reasoning in the intutionistically
 classical fragment of the \Coq{} logic is almost as convenient as it
 could be in a fully classical system.
-The impact of boolean representations is deeper than the automation of
-propositional reasoning: it also affects the manipulation of dependant
-types, and specially of dependant pairs (also called
-$\Sigma$-types). The \ssr{} library on polynomials we rely on
+Boolean representations play a role that goes beyond automation.
+They also affect the manipulation of dependent
+types, especially dependent pairs (also called
+$\Sigma$-types). The \ssr{} library on polynomials
 illustrate this fact as described in section \ref{ssec:polys}.
 
 \subsection{Representation of polynomials}\label{ssec:polys}
@@ -1253,14 +1253,14 @@ coincide with the ones of $(*)$, which boils down to an induction on $i$.
 
 \subsection{Sequences, iterations, polynomials}\label{ssec:modularity}
 
-One of the key feature of \ssr{} libraries is that they devote a
+One of the key features of \ssr{} libraries is that they devote a
 substantial effort to infrastructure. For instance the library about
 sequences contains as many operators as one would expect from a
 functional language standard library: factories, access, filtering,
-surgery,... plus a comprehensive set of specifications of these
-operators. To construct the subdivision used in the proof of the
+surgery\dots plus a comprehensive set of specifications for these
+operators. For instance, to construct the subdivision used in the proof of the
 weak intermediate value theorem proposed in section \ref{ssec:civt},
-it is hence enough to use the following tactic line in the proof:
+it is enough to use the following tactic line in the proof:
 \begin{lstlisting}
 pose sl := map (fun k => x + (y - x) * (k%:R / (n.+1%:R))) (iota 0 n.+2).
 \end{lstlisting}
@@ -1282,7 +1282,7 @@ where again the \C{find} operator is a generic construction. The
 theory available on \C{find} is sufficient to prove all the results
 needed in the proof.
 
-In the \ssr{} distribution, the sequence library is extended by a
+In the \ssr{} distribution, the sequence library is extended with a
 library about iterated operations \cite{BGOBP:BIG08}. It
  provides a comprehensive infrastructure to work with the finite
 iteration of operators equipped with some known properties like
