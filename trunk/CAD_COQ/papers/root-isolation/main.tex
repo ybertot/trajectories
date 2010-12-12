@@ -32,7 +32,7 @@ or solving systems of inequations with polynomial members.  In
 computer aided design, they are also used intensively as they give an
 efficient tool to draw curves that are controlled by points that users
 can grab and drag, with instantaneous and intuitive feedback on the
-shape the curve will take as the control points move around.
+curve's shape.  
 Bernstein coefficients are closely related to B\'ezier curves
 and they have a very simple geometrical interpretation, which we illustrate
 in section \ref{sec:geometrybernstein}.
@@ -47,23 +47,13 @@ coefficients:
   then the polynomial is guaranteed to have exactly one root inside
   the interval.
 \item  if all coefficients have the same sign, then the
-  polynomial is guaranteed to have no root inside the interval
-  for which they have been computed.
+  polynomial is guaranteed to have no root inside the interval.
 \item there is an easy method to compute new Bernstein coefficients when
- splitting an interval in two.
+ splitting the interval in two.
 \end{enumerate}
 
 We describe a formal proof of these three properties,
-concentrating on the first and third property. These proofs will be
-done in the setting of polynomials with coefficient and values in an
-abstract ordered archimedean field.
-
-In the following, we will assume that we are working with polynomials
-whose roots are all simple, called separable polynomials.
-Starting from an arbitrary polynomial it is easy to produce a
-separable polynomial with the same roots by computing the greatest
-common divisor of this polynomial and its derivative.
-
+concentrating on the first and third property.
 
 The main plan of the proof of the first property is to describe a
 sequence of pairs \((I_0, p_0)\) to \((I_3, p_3)\), each pair
@@ -120,6 +110,12 @@ section~\ref{sec:bernsteindef} that Bernstein
 coefficients actually are the coefficients of the polynomial in a
 different basis from the usual monomials, called the {\em Bernstein basis}.
 
+In the following, we will assume that we are working with polynomials 
+whose roots are all simple, called {\em separable polynomials}.
+Starting from an arbitrary polynomial it is easy to produce a 
+separable polynomial with the same roots by computing the greatest 
+common divisor of this polynomial and its derivative.
+ 
 All these results deal with polynomial functions over real numbers. In
 order to make this formal study as generic as possible, we abstract
 from the choice of the subset of real numbers of interest for the
@@ -128,7 +124,8 @@ however require this field to be equipped with a decidable comparison:
 the process we describe can in turn effectively be used in a decision
 procedure.
 
-When allowing only archimedeanity,  the existence of roots takes a
+If the field we work in is only guaranteed to be ordered and archimedean,
+the existence of roots takes a
 different meaning: if a polynomial has a single simple real root in an
 interval, this root may not belong to the field of its coefficients. 
 However, we can use a corresponding property which can be expressed in
@@ -143,12 +140,12 @@ aspects of this approach to describing roots in
 section~\ref{sec:rational}.
 
 The formal work described in this paper has been performed using
-the \Coq{} system\cite{coqart, coqsite}, with the \ssr{} extension
+the \Coq{} system \cite{coqart, coqsite}, with the \ssr{} extension
 \cite{GONTHIER:2008:INRIA-00258384:4}.  We think some characteristics
 of the proof system played a key role in making this development
 possible.  We describe these key aspects in section~\ref{sec:formal}.
 The sources of this development are available from\\
-{\url{http://www.inria.fr/sophia/members/Yves.Bertot/proofs/bernstein.html}}
+{\url{http://hal.inria.fr/inria-00503017/}}
 
 \section{Formalization viewpoints}
 \label{sec:rational}
@@ -156,10 +153,10 @@ The sources of this development are available from\\
 \subsection{A constructive and abstract approach}
 Our aim is to provide a constructive and effective formalization of
 the theory of Bernstein polynomials, and to be as independent as
-possible from the choice of implementation of rational numbers and
+possible from the implementation choices of rational numbers and
 real numbers. For this
-purpose, we eliminate real points from the formalization. Our choice
-is to consider polynomials with coefficients in an abstract ordered and
+purpose, we eliminate real points from the formalization. 
+We consider polynomials with coefficients in an abstract ordered and
 archimedean field. The axioms of this structure are the ones of a
 field with decidable equality, with a decidable order relation which is
 compatible with the field operations. The decidability of the equality
@@ -214,20 +211,20 @@ system like \cite{DBLP:conf/mkm/Cruz-FilipeGW04, russellreals,
 This work is based on the \ssr{} libraries \cite{ssrsite}
 developed with the \ssr{} extension
 \cite{GONTHIER:2008:INRIA-00258384:4} of the \Coq{} system.
-These libraries cover basic theories ---sequences, natural
-numbers, finite types, finite sets---, infrastructure for notations and
-theory sharing ---containers, iterated operators, algebraic
-hierarchies--- and elementary algebra and arithmetics. 
+These libraries cover basic theories (sequences, natural
+numbers, finite types, finite sets), infrastructure for notations and
+theory sharing (containers, iterated operators, algebraic
+hierarchies), and elementary algebra and arithmetics. 
 They are developed following the path leading to a complete formal
 proof of a historical result in finite group theory (namely the Odd Order
 Theorem), to demonstrate that a well
 understood art of formalization leads to modular, reusable formal
 libraries. This work addresses theories that
 are not on this path, it hence challenges the reusability of the
-distributed libraries and demonstrate that they can indeed be reused
+distributed libraries and demonstrates that they can indeed be reused
 and extended.
 
-One of the main characteristic of the methodology deployed in these
+One of the main characteristics of the methodology deployed in these
 libraries is small scale reflection 
 \cite{ssr-tutorial}, a proof methodology which is based on the
 pervasive use of computations with symbolic symbols. 
@@ -253,7 +250,7 @@ A bare list of coefficients would however not
 provide a canonical representation since the same
 polynomial can be represented by an infinite number of coefficient
 lists, only differing by the number of tail zeroes. The actual
-definition is in fact the following one:
+definition is the following one:
 \begin{lstlisting}
 Record |*polynomial*| R :=
   Polynomial {polyseq :> seq R; _ : last 1 polyseq != 0}.
@@ -261,7 +258,8 @@ Record |*polynomial*| R :=
 A polynomial is hence
 represented by a dependent pair consisting of a list \C{polyseq} of
 type \C{(seq R)} and a
-proof that the last element of this list is non zero. The type
+proof that the last element of this list is non zero (this proof is
+not given a name, hence the use of the character {\tt \_}). The type
 \C{(polynomial R)} is used with the notation \L+{poly R}+. The
 parameter \C{R} is the type of the coefficients. It should in fact
 be equipped with a ring structure, which provides the zero element
@@ -271,18 +269,18 @@ The constant zero polynomial is represented by the empty list. A
 constant non zero polynomial is represented by a list with a single
 element. The monomial $X$ is represented
 by the list $[0, 1]$, where $1$ and $0$ are the one and zero
-constant of the underlying coefficient ring.
+constants of the underlying coefficient ring.
 More generally, a non zero polynomial of degree $n+1$ is
 represented by a list with $n+1$ elements. The \C{:>} symbol indicates
 that the \C{polyseq} constructor is declared as a coercion: a
 polynomial can at any time be seen as a list of coefficients,
 forgetting about the proof that it is in normal form.
 
-In this representation, comparing two polynomials seems however to
+In this representation, comparing two polynomials seems to
 amount to comparing component-wise two dependent pairs: the first
 components of
 the two pairs being the actual polynomials, and the second components
-of the pairs being their normalization proofs.  The calculus of
+of the pairs being the proofs that they are in normal form.  The calculus of
 inductive constructions underlying the Coq system is not proof
 irrelevant: two proofs of the same statements are not equal in
 general. Hence a naive design of these polynomials as dependent pairs
@@ -291,15 +289,16 @@ coefficients would not necessarily give two equal polynomials because
 they would be associated with two different proofs of normalization. Yet if
 proof irrelevance does not hold in general, two proofs of the same
 boolean equality are nonetheless provably equal in the calculus of
-inductive constructions without axiom.
+inductive constructions without axiom.  This is known as {\em boolean
+  proof irrelevance}.
 
 If the type \C{R} of coefficients is equipped with a
 boolean equality test, the second component of polynomials becomes a
 proof that a certain boolean is equal to the boolean \C{true}, and
 hence a proof of a boolean equality. Comparing two polynomials now
-boils down to comparing their first component, since their equality
-will entail the equality of their last proof component. This
-kind of proof irrelevant dependent pairs is widely used in \ssr{}
+boils down to comparing only their first component, and the equality
+of the proof components is given by boolean proof irrelevance.
+This kind of proof irrelevant dependent pairs is widely used in \ssr{}
 libraries, which therefore provide a generic infrastructure to
 manipulate comparisons of their inhabitants. Moreover, again thanks
 to the infrastructure of \ssr{} libraries, polynomials
@@ -336,13 +335,13 @@ single root in the interval.
 \begin{enumerate}
 \item If the interval is bounded, we express that the interval can be
   decomposed into three parts, the first part \(I_1\) where the polynomial's
-  value is always negative (resp. positive) in Figure~\ref{bounded_decompose},
+  value is always negative (resp. positive),
   the second part \(I_2\) where the polynomial's
   value goes from negative to positive (resp. from positive to
   negative) with a requirement on the
-  slope in Figure~\ref{bounded_decompose}), and the third
+  slope, and the third
   part \(I_3\) where the polynomial's value is always
-  positive (resp. negative) in Figure \ref{bounded_decompose}).
+  positive (resp. negative).  This is illustrated in Figure~\ref{bounded_decompose}).
 \begin{figure}[h]
 \begin{center}
 \includegraphics[clip=true,trim= 2cm 7cm 0cm 9cm,scale=0.3]{bounded_decompose.pdf}
@@ -350,11 +349,10 @@ single root in the interval.
 \caption{\label{bounded_decompose} A sufficient criterion for the existence of a single root in a bounded interval}
 \end{figure}
 \item If the interval is unbounded, we express that the interval can
-  be decomposed into two parts, the first part (\(I_1\) where the polynomial's
-  value is always negative (resp. positive) in
-  Figure~\ref{unbounded_decompose}), and the second part (\(I_2\)
+  be decomposed into two parts, the first part \(I_1\) where the polynomial's
+  value is always negative (resp. positive), and the second part \(I_2\)
   where there is a requirement on the slope with a positive
-  (resp. negative) slope  in Figure~\ref{unbounded_decompose}).
+  (resp. negative) slope.  This is illustrated in Figure~\ref{unbounded_decompose}.
 \begin{figure}[h]
 \begin{center}
 \includegraphics[clip=true,trim=2cm 3cm 2cm 9cm, scale=0.3]{unbounded_decompose.pdf}
@@ -367,16 +365,17 @@ single root in the interval.
 \subsection{Finding locations where a polynomial's value is
   arbitrarily small}
 \label{ssec:civt}
-While we can't be sure to produce a rational value on which the
-polynomial of interest evaluates to zero, we at least need to be
-able to produce an input for which the polynomial's absolute value is
-arbitrarily small. In classical mathematics dealing with real closed
+In classical mathematics dealing with real closed
 fields, once we know that the
 polynomial takes values of opposite sign at the bounds of an interval,
 we know that there is a root for this polynomial in this interval,
 thanks to the {\em intermediate value theorem}. For this work, we establish
 a simplified constructive, real point free, replacement of the intermediate value
-theorem specialized for polynomials.  The statement we prove has the following
+theorem specialized for polynomials.  In our setting with a field that is only guaranteed to be ordered and archimedean,
+we can't be sure to produce a value on which the
+polynomial of interest evaluates to zero, but we are
+able to produce an input for which the polynomial's absolute value is
+arbitrarily close to zero. The statement we prove has the following
 form:
 \begin{theorem}[Weak intermediate value theorem for polynomials]
 \[
@@ -401,14 +400,15 @@ slope of any polynomial is bounded in absolute value on any bounded
 interval.  In particular, for any \(z, t\in [x,y]\), we have
 \[|p(z)-p(t)| \leq |k \times (z - t)|.\]
 
-For a given \(\varepsilon\), and assuming \(p(x) < 0 < p(y)\) we can
+For a given \(\varepsilon\), because we work in an archimedean field, we can
 choose an \(n\) such that \(\frac{k(y-x)}{n} < \varepsilon\)
  We then consider the
-\(n+1\) values \(a_i = x + \frac{i\times (y-x)}{n}\) and we solve a
+\(n+1\) values \(a_i = x + \frac{i\times (y-x)}{n}\) for \(i = 0 \dots
+n\) and we solve a
 discrete problem over the values \(a_i\).  We simply need to find the
-largest prefix \(a_0, \ldots, a_{j-1}\) such that all values \(p(a_k)\) in this
+largcmpest prefix \(a_0, \ldots, a_{j-1}\) such that all values \(p(a_k)\) in this
 prefix are negative.  We can set \(x' =a_{j-1}\), because the next
-value \(a_j\) is necessarily non-negative and
+value \(p(a_j)\) is necessarily non-negative and
 \(p(a_j) - p(x') < \varepsilon\), thus \(-\varepsilon < p(x') < 0\).
 In a similar way, we can set \(y'= a_j\) because \(0 \leq p(y') < \varepsilon\).
 \end{proof}
@@ -431,7 +431,7 @@ interval \((l,r)\) ensures that there is only one root of \(p\) inside
 \((l,r)\).  The proof of this result relies on a similar property for
 the standard coefficients of another polynomial \(q\): if there is
 only one sign change in the coefficients of \(q\) then \(q\) has
-only one root inside the interval \((l,r)\).  In this section, we
+only one root inside the interval \((0,+\infty)\).  In this section, we
 discuss how this property is proved formally.
 
 \subsection{A Geometrical explanation of the proof}
@@ -452,7 +452,8 @@ Figure~\ref{graph-desc}.
 Classes of polynomials with or without
 sign change}
 \end{figure}
-To describe our proof, we assume that new polynomials are built from
+To describe our proof, we rely on an inductive view of polynomials
+where new polynomials are built from
 existing ones by multiplying them by the polynomial \(X\) and adding a
 constant; this operation is known as ``Horner's scheme''.
 Polynomials with one sign change and a positive leading coefficient
@@ -494,10 +495,10 @@ done using a simple recursive function, written in the following form:
   if l is a::tl then (0 <= a) && all_pos_or_zero tl else true.
 \end{lstlisting}
 The type \C{Q} refers to the ordered field
-parameterizing the development and {\tt (0 <= a)} stands
-for a boolean value and the type constructor
+parameterizing the development, {\tt (0 <= a)} is
+a boolean value, and the type constructor
 {\tt seq} is a type for lists of elements in a type equipped with a
-boolean equality.
+boolean equality test.
 
 We should notice that polynomials satisfying the boolean predicate
 {\tt all\_pos\_or\_zero} may contain no positive coefficients: for this
@@ -505,9 +506,9 @@ reason, we cannot guarantee that they are increasing or strictly positive
 anywhere between 0 and \(+\infty\).
 
 We prove easily by induction on lists that if they contain only non-negative
-coefficients, then the corresponding polynomial always has a positive value
-in \((0,+\infty)\) and from then, we also prove by induction that
-any polynomial with only non-negative coefficients is increasing.
+coefficients, then the corresponding polynomial always has a non negative value
+for inputs in \((0,+\infty)\) and from then, we also prove by induction that
+any polynomial with only non-negative coefficients is constant or increasing.
 
 We then prove that for every polynomial \(p\)  with non-negative coefficients,
 the product \(x \times p(x)\) can be made arbitrarily close to 0 while
@@ -613,7 +614,7 @@ section~\ref{ssec:civt} to
 build a new value \(x_1\) such that \(-\frac{k v_1}{2} \leq p_l(x_1)
 \leq 0\) and \(x_1 < v_1\).
 Now \(p_l\) is still guaranteed to be negative between \(x\) and \(x_1\),
-because of the slope condition and the slope on the right of \(x_1\) is
+because of the slope condition, and the slope on the right of \(x_1\) is
 guaranteed to be larger than \(\frac{k v_1}{2}\), which is positive.
 
 
@@ -683,7 +684,7 @@ of degree \(n\), and we will usually call it the {\em Bernstein basis} leaving
 the degree and the values \(l\) and \(r\) unspecified.
 Every polynomial \(p\) of degree \(n\) hence has a sequence of coefficients
 \((b_i)_{0\leq i \leq n}\), such that \(p(x) = \sum_{i=0}^n b_i P_b(n,l,r,i)(x)\).  The coefficients
-\(b_i\) are the Bernstein coefficients of $p$.
+\(b_i\) are the {\em Bernstein coefficients} of $p$.
 
 When \(l < r\), the Bernstein polynomials are positive on $(l, r)$ and
 each polynomial
@@ -828,7 +829,7 @@ in an \(n+1\) dimensional space, whose basis is made of the monomials
 space, \(\rho\) is an involutive automorphism.  But
 polynomials of degree less than \(n\) are also elements of this vector
 space and the reverse operation must be understood as reversing the
-list of coefficients of length \(n+1\) obtained by completing the
+list of coefficients of length \(n+1\) obtained by padding the
 polynomials description with enough 0 coefficients.
 
 
@@ -852,7 +853,8 @@ and its reverse \(-x^2 + \frac{3}{2} x + 1\) (dashed)}
 
 As a conclusion, we can establish a correspondence between unique
 roots in \((1,+\infty)\) of a polynomial \(p\) and unique roots in
-\((0,1)\) of the polynomial \(\rho(p)\).  When working on rational numbers, this
+\((0,1)\) of the polynomial \(\rho(p)\).  When working in a field that
+is only guaranteed to be ordered and archimedean, this
 correspondence works by linking the criterion for unbounded intervals
 with the criterion for bounded intervals.  The proof of this
 correspondence
@@ -976,10 +978,10 @@ are closer to each other and to the polynomial's curve and they give a more
 accurate account of the curve's position with respect to the real
 x-axis.  This is
 illustrated in Figure~\ref{dichotomy-curve}, where the initial Bernstein
-coefficients exhibit a sign change, which is needed to account for the bend
+coefficients exhibit two sign changes, which are needed to account for the bend
 in the first half of the interval (a positive local minimal, but expressed
 by a negative Bernstein coefficient).  In the halved interval two more points
-are added in the vicinity of the bend, and none of the control points needs
+are added in the vicinity of the bend, and none of the control points have
 to be negative anymore.
 \begin{figure}
 \begin{center}
@@ -1016,9 +1018,8 @@ guaranteed to contain all the roots of a polynomial (see section~\ref{ssec:cauch
 interval into smaller pieces until all roots have been isolated (see section~\ref{ssec:split}).
 
 \subsection{Initialization}\label{ssec:cauchy}
-Given asn arbitrary non constant polynomial $p$ of degree
-$n$, defined by $p = \sum_{i  = 0}^n a_iX^i \in
-\mathbb{Q}[X]$ it is actually  possible to bound the absolute values
+Given an arbitrary non constant polynomial $p$ of degree
+$n$, defined by $p = \sum_{i  = 0}^n a_iX^i$ it is actually  possible to bound the absolute values
 of its roots by a simple constant defined from the coefficients
 $a_i ({i = 0 \dots n})$, called the Cauchy bound \cite{bpr}:
 \begin{theorem}[Cauchy bounds]
@@ -1067,9 +1068,9 @@ of Bernstein coefficients of a polynomial $p$ on intervals $(l, m)$
 and $(m, r)$ from the list of Bernstein coefficients of $p$ on
 interval $(l, r)$.
 
-Let \C{b} be the sequence of Bernstein coefficients of a polynomial $p$
-for an interval \((l,r)\) with \(l, r\in \mathbb{Q}\) and degree \(n\).
-Let $m\in \mathbb{Q}$ be a rational number
+Let \C{b} be the sequence of Bernstein coefficients of a polynomial
+$p$ of degree \(n\) for an interval \((l,r)\).
+Let $m$ be a number
 distinct from $l$ and $r$. We pose
 $\alpha = \frac{m - l}{r - l}$ and $\beta = \frac{r - m}{r - l}$. The
 \C{|*de_casteljau*|} algorithm is defined recursively by:
@@ -1122,13 +1123,13 @@ positions of \(l\), \(m\), and \(r\), as long as they are pairwise distinct.
 
 The different points computed by the de Casteljau algorithm are
 represented on Figure~\ref{dichobern}. The innermost points are the
-control points in the two new bases, computed from the originial control
+control points in the two new bases, computed from the original control
 points $\{B0, \dots, B5\}$.
 The middle innermost control point, on the curve, belongs to the two
 new lists of control points. Points $\{C0, \dots, C5\}$ are the
 control points in the left half, $\{D0, \dots, D5\}$ are the control
 points on the right half.
-De Casteljau algorithm is extensively used in computer  graphics for
+De Casteljau's algorithm is extensively used in computer  graphics for
 rasterizing B{\'e}zier curves.
 
 \begin{figure}[h]
@@ -1269,7 +1270,7 @@ The \C{(iota 0 n.+2)} operator constructs the sequence of integers between
 sequence to the desired subdivision of the interval $[x, y]$. The
 infix \C{+}, \C{*} and \L+\+ operators are the generic notations
   respectively for addition, product and division in a field, here
-  used for the ordered archimedean field parameterized the
+  used for the ordered archimedean field that is a parameter to the
   development. The \L+%:R+ annotation is a postfix notation for the
 embedding of
 integers in any ring structure (see section \ref{ssec:algstruct}).
@@ -1294,12 +1295,12 @@ section \ref{ssec:split}, both for the initialization with Cauchy
 bounds and for proving the correctness of the computation, that is
 that the output coefficients indeed provide a correct decomposition of
 the initial polynomial on the Bernstein basis. The \L+\sum+ 
-operator indeed carries implicitly the properties that this iterated
-operation is commutative, associative, and that it is associated to a
+operator implicitly carries the properties that the iterated
+operation is commutative, associative, and that there is a
 product law which distributes over the sum. The \L+\sum_(i < n)+ notation
 indicates that the iteration is performed on the sequence of integers
 from \C{0} to {n.-1} (meaning the sum might be empty).
-Manipulations of these expressions are obtained from the generic
+Manipulations of these expressions are treated in the generic
 theory of iterated operators.
 
 Sequences are also the core of the definition of polynomials. The
@@ -1321,10 +1322,10 @@ the obtained sequence. Hence the size of the (sequence contained in
 the) polynomial \L{\poly_(i < n) E} is only smaller or equal to \C{n},
 but is only equal to \C{n} if \C{E n.-1} is known to be non zero.
 This construction is used to define the expansion and translation
-introduced in section \ref{ssec:ops}, for instance:
+introduced in section \ref{sec:Bernstein}, for instance:
 \begin{lstlisting}
-Definition |*expand*| (p : {poly Q})(r : Q) := 
-   \poly_(i < size p)(p`_i * r ^+i).
+Definition |*expand*| (p : {poly Q})(k : Q) := 
+   \poly_(i < size p)(p`_i * k ^+i).
 \end{lstlisting}
 where \C{Q} is the ordered archimedean field parameterizing the
 development and \C{^+} is the exponentiation operation (see section
@@ -1332,9 +1333,9 @@ development and \C{^+} is the exponentiation operation (see section
 definitions are accompanied by correctness lemmas in term of
 evaluation, like:
 \begin{lstlisting}
-Lemma |*eval_expand*| : forall p r x, (expand p r).[x] = p.[r * x].
+Lemma |*eval_expand*| : forall p k x, (expand p k).[x] = p.[k * x].
 \end{lstlisting}
-where \C{p.[x]} denotes the Horner evaluation of the polynomial \C{p}
+where \C{p.[x]} denotes the evaluation of the polynomial \C{p}
 at the point \C{x}.
 
 The list of coefficients defining a polynomial is of course the
@@ -1357,7 +1358,7 @@ rely on this ad-hoc solution.
 
 \subsection{Algebraic structures}\label{ssec:algstruct}
 
-This formalization is structured by the algebraic hierarchy proposed
+This formalization is structured along the algebraic hierarchy proposed
 by the \ssr{} libraries \cite{hieralg}. This hierarchy builds a graph
 of algebraic structures based on types with decidable equalities and
 implement inheritance and sharing or theories and notations through
@@ -1368,14 +1369,14 @@ allowed to consider ordered unit rings and fields, which are unit
 rings and fields equipped with a decidable (total) boolean order
 relation which is compatible with addition and product. In the proofs
 we describe here, the main algebraic structures involved are the field
-of coefficients and the structure of commutative ring it implies on
-polynomials. This implication is completely automatized by the
+of coefficients and the commutative ring structure that polynomials
+inherit. This inheritance is completely automated by the
 infrastructure already present in the \ssr{} libraries. However
 natural numbers are not equipped with any such algebraic structure in
 the \ssr{} library and their theory and notations are defined
 separately. We can still use the same symbols for their algebraic
 operations and ordering thanks to the scoping mechanism of the \Coq{}
-system \cite{coqart}, even if this sometimes require an explicit
+system \cite{coqsite}, even if this sometimes require an explicit
 scoping annotation in theorem statements.
 
 Natural numbers are used to define the (discrete) exponentiation as
@@ -1411,9 +1412,9 @@ This embedding is so widely used that a new notation is defined: \L+n%:R+
 denotes \C{1 *+ n} in any ring structure. Remark that this expression
 needs a context or an explicit cast to determine the ring in which the
 natural number should be injected, i.e. the ring \C{1} is the unit of.
-This injection appears in particular in the extra archimedeanity
-hypothesis we assume to prove the weak intermediate value theorem,
-which is stated as:
+This injection appears in particular in the
+hypothesis that the field is archimedean, which is necessary for the weak intermediate value theorem.
+This hypothesis is stated as follows:
 \begin{lstlisting}
 Variable Q : oFieldType.
 Hypothesis |*Q_arch*| : forall x:Q, 0 <= x -> {n : nat | x <= n%:R}.
@@ -1421,10 +1422,10 @@ Hypothesis |*Q_arch*| : forall x:Q, 0 <= x -> {n : nat | x <= n%:R}.
 where the \C{Variable Q} declares an ordered field structure
 parameter, and the \C{|*Q_arch*|} hypothesis gives access to the
 explicit value of an integer larger than a given element of the
-ordered field. Again, the \ssr{} distribution lacking a library about
+ordered field. Again, the \ssr{} distribution lacks a library about
 integers and rational numbers, the manipulation of the
 embedding of rational numbers in this archimedean field is sometimes
-unnecessarily pedestrian, though again this was not really an issue in
+unnecessarily tedious, though again this was not really an issue in
 this development.
 
 \subsection{Automation issues}
@@ -1451,7 +1452,7 @@ procedure. This is in fact part of the long term objectives of this
 work, namely to
 certify a complete decision procedure for the full first order theory
 of real closed fields. Yet incomplete but lightweight tools could
-probably be crafted to relieve the user from pedestrian steps when
+probably be crafted to relieve the user from tedious steps when
 possible.
 
 
@@ -1501,7 +1502,7 @@ ones of \cite{mourrainetal}.
 
 \section{Conclusion}
 
-Real root isolation methods by sign changes based methods is a
+Real root isolation methods by sign-change-based methods is a
 classical topic, extensively studied (see \cite{rouillieretal} for a
 review of the related litterature) after the pioneering work of
 Uspensky \cite{uspensky}. Bernstein polynomials are used to provide
@@ -1513,7 +1514,7 @@ to ours is probably the study of global optimization methods in Coq
 lead by Roland Zumkeller \cite{zumkellerphd}. Indeed, Bernstein
 polynomial bases are also used to approximate continuous functions on a
 closed domain. This last work results in an implementation in the
-\Coq{} system of a tool to find optima of multivariate continuous real
+\Coq{} system of a tool to bound optima of multivariate continuous real
 functions. Yet we could not find mention of a formalization of the
 correctness proofs of this tool.
 
@@ -1526,7 +1527,7 @@ works by looking at functions and bounds on their values in various
 intervals. On the other hand, the definition of Bernstein coefficients
 relies on concepts that come from linear algebra: vector spaces,
 bases, or morphisms. Last, de Casteljau's algorithm relies on geometry
-with midpoints, or segments. It is particularly exciting that we can
+with midpoints or segments. It is particularly exciting that we can
 now study formally mathematical algorithms that use all these aspects
 of mathematics.
 
@@ -1546,32 +1547,17 @@ described in \cite{bpr} under the name ``theorem of three
 circles". However, this theorem uses arguments based on complex
 numbers and we wish to find a more elementary proof, as we still want
 to express our result using mainly rational numbers.  Our proof of the
-law of signs already is a more elementary one than the ones found in
-the literature. This point is debatable. The concept that we use to
-describe the existence of roots are contrived, because we restrict
-ourselves to manipulating rational numbers. This is reasonable if we
-consider that our development is a stepping stone in the path towards
-defining algebraic numbers.
-
-Having Bernstein polynomials also makes it possible to consider adding
-plotting facilities to the theorem proving tool. Thus we could develop
-a tool to study mathematics where users could easily visualize the
-curves or surfaces associated to the objects they define, define new
-objects by direct graphical manipulation, and prove properties in the
-same environment. The idea is tempting, but it is not obvious that the
-high quality brought by formal verification is needed for such an
-application.
+law of signs already is more elementary than the ones found in
+the literature.
 
 In the long run, a good knowledge of Bernstein polynomials and
 coefficients opens the door to a wide variety of tools that are
-commonplace in computer aided design and robotics. B\'ezier
-curves which are often used in drawing tools share a lot of
-properties with Bernstein control points. Thus, we can envision that
-theorem provers equipped with a library on Bernstein coefficients
-could be useful to reason on designs, for instance to check that
-several parts do not collide or that some surface has the right
-topological properties. % Concerning robotics, splines and B\'ezier curves
-% can also be used to describe the trajectory of moving vehicles.
+commonplace in computer aided design and robotics. B\'ezier curves
+which are often used in drawing tools share a lot of properties with
+Bernstein control points. Concerning robotics, splines and B\'ezier
+curves can also be used to describe the trajectory of moving
+vehicles.  Thus, this work may eventually be useful for the formal
+verification of critical software in robotics.
 
 \section{Acknowledgments} The authors whish to gratefully thank the
 anonymous referees who have suggested numerous improvements both for
