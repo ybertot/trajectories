@@ -281,7 +281,7 @@ amount to comparing component-wise two dependent pairs: the first
 components of
 the two pairs being the actual polynomials, and the second components
 of the pairs being the proofs that they are in normal form.  The calculus of
-inductive constructions underlying the Coq system is not proof
+inductive constructions underlying the \Coq{} system is not proof
 irrelevant: two proofs of the same statements are not equal in
 general. Hence a naive design of these polynomials as dependent pairs
 would lead to an uncomfortable situation where two equal lists of
@@ -423,6 +423,15 @@ point where the polynomial takes a positive value.
 \caption{\label{ivt} Bounding a polynomial's value}
 \end{center}
 \end{figure}
+This theorem provides a similar result to theorem 6.1.4 from
+\cite{TroelstraVDalen1}, but the proof in that book relies on a more complete
+description of abstract topology than we performed of our development,
+where opens and their properties with respect to continuous functions
+are not mentioned.  The next theorem 6.1.5 from \cite{TroelstraVDalen1} makes it
+possible to construct a Cauchy sequence to a root of the continuous
+function being considered.  A variant of our theorem would also make
+this possible, but this was not needed for our purposes.
+
 \section{A simple form of Descartes' law of signs}\label{sec:descartes}
 One of the main results studied in this paper
 is that having only one sign change in the
@@ -1510,13 +1519,25 @@ efficient implementations of these methods
 \cite{mourrainetal, rouillieretal}.  To our knowledge, this work is
 the first mechanized proof of de Casteljau's algorithm, and of the
 building blocks of a real root isolation procedure. The closest work
-to ours is probably the study of global optimization methods in Coq
+to ours is probably the study of global optimization methods in \Coq{}
 lead by Roland Zumkeller \cite{zumkellerphd}. Indeed, Bernstein
 polynomial bases are also used to approximate continuous functions on a
 closed domain. This last work results in an implementation in the
 \Coq{} system of a tool to bound optima of multivariate continuous real
 functions. Yet we could not find mention of a formalization of the
 correctness proofs of this tool.
+
+Other work concerned with roots of continuous functions often relies on
+Newton's method.  This method has also be described formally using \Coq{}
+and \ssr{}, although in a less constructive setting
+\cite{Pasca}.  However, the applicability of the work is quite
+different: the work in \cite{Pasca} applies to a wide variety of
+functions of class C2 and it guarantees the unicity of a root in an
+interval using strong constraints on the first and second derivative
+of the function inside the interval.  It does not provide any tool for
+the case when the chosen interval does not satisfy the conditions,
+while our work provides a study of a dichotomy approach, but is
+concerned solely with polynomials.
 
 This work on Bernstein polynomials combines techniques coming from
 analysis, algebra, and geometry. For instance, the properties of
