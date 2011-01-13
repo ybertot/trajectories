@@ -218,6 +218,25 @@ Lemma pol_eval_translate_pol : forall (p : {poly Q}) (a x : Q),
   p.[x] = (translate_pol p a).[x - a].
 Proof. by move=> p a xl; rewrite eval_translate_pol addrNK. Qed.
 
+Lemma translate_polC : forall (a b : Q), translate_pol a%:P b = a%:P.
+Proof.
+move=> a b; rewrite /translate_pol size_polyC.
+case a0 : (a == 0); first by rewrite (eqP a0).
+rewrite /= big_ord_recl big_ord0 coefC eqxx subnn bin0 expr0.
+by rewrite mulr1n mulr1 addr0 poly_cons_def mul0r add0r.
+Qed.
+
+Lemma translate_pol_scal : forall (p : {poly Q})(a b : Q),
+  translate_pol (a%:P * p) b = a%:P * (translate_pol p b).
+Proof.
+move=> p a b; case a0 : (a == 0).
+  by rewrite (eqP a0) !mul0r translate_polC.
+rewrite /translate_pol size_polyC_mul; last by rewrite a0.
+rewrite !poly_def big_distrr /=; apply: congr_big => //[]  [i hi] _ /=.
+rewrite [a%:P * (_ *: _)]mul_polyC scalerA; congr (_ *: _); rewrite big_distrr /=.
+by apply: congr_big => //[]  [j hj] _ /=; rewrite coef_Cmul !mulrnAr mulrA.
+Qed.
+
 Lemma pol_ucont : forall (p : {poly Q}) a b, a < b -> 
   {c : Q | 
     forall x y : Q, 
@@ -225,6 +244,7 @@ Lemma pol_ucont : forall (p : {poly Q}) a b, a < b ->
 Proof.
 move=> p a b.
 wlog : p b / 0 < b.
+
   move=> hwlog hab; case: (ltrP 0 b) => hb0; first by exact: hwlog.
   have ha1 : a < 1.
     apply: ltr_trans hab _ => /=; apply: ler_lt_trans hb0 _ => /=.

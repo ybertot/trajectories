@@ -597,13 +597,11 @@ suff h : translate_pol (( (b - a)%:P - 'X) ^+ i) (- a) = (b%:P - 'X)^+ i.
     by rewrite   oppr_eq0 oner_eq0.
   - rewrite -size_poly_eq0 addrC -(mul1r 'X) -mulNr mulrC -polyC_opp size_amul_expr //.
     by rewrite   oppr_eq0 oner_eq0.
-
-(* rewrite -{1}polyC1 -[-1%:P]polyC_opp -polyC_exp -mulrA. *)
-(* rewrite trans_mulC ?expf_eq0 ?oppr_eq0 ?oner_eq0 ?andbF //. *)
-(* rewrite -polyC_opp -translate_polXn translateXn_addr oppr_sub addrC addrA addNr. *)
-(* by rewrite add0r translate_polXn polyC_opp. *)
-(* Qed. *)
-Admitted.
+rewrite -[_ - 'X]opprK -[b%:P - _]opprK oppr_sub exprN oppr_sub [(-(_ - _))^+ _]exprN.
+rewrite -[-1]/(-1%:P) -polyC_opp -polyC_exp translate_pol_scal; congr (_ * _).
+rewrite -polyC_opp -translate_polXn translateXn_addr oppr_sub addrC addrA addNr.
+by rewrite add0r translate_polXn polyC_opp.
+Qed.
 
 End BernsteinPols.
 
