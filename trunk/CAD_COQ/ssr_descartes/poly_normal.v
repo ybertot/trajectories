@@ -697,6 +697,10 @@ Qed.
 
 End normal_polynomial.
 
+Implicit Arguments normal_seq [R].
+Implicit Arguments normal [R].
+Implicit Arguments all_pos [R].
+
 Section more_on_sequences.
 
 Variable R : rcfType.
@@ -1204,8 +1208,7 @@ apply/idP/idP.
      [IH Hsize Hincr Hneq0 Hchanges | c l IHcl Habclsize Habclincr Habclneq0 Hchanges] //.
     rewrite /=.
     rewrite H in Hchanges.
-    rewrite add0n /= addn0 mulr0 ltrr /= in Hchanges.
-    admit. (**********)
+    by rewrite add0n /= addn0 mulr0 ltrr eqb1 in Hchanges.
   rewrite /= in Habclincr.
   move/andP : Habclincr => Habclincr.
   rewrite /= in Habclneq0.
@@ -1250,7 +1253,7 @@ rewrite ltr_def; apply/andP; split.
   move/andP : (proj2 Habclneq0) => [] Hbneq0 Hclneq0.
   by rewrite eq_sym.
 by rewrite -(@nmulr_rge0 _ a).
-Qed. (**********)
+Qed.
 
 Lemma changes_seq_incr : forall (s : seq R), (increasing s) -> (all_neq0 s) ->
   (changes s == 1%N) || (changes s == 0%N).
@@ -1523,13 +1526,18 @@ Qed.
 
 End more_on_sequences.
 
+Implicit Arguments mid [R].
+Implicit Arguments seqn0 [R].
+Implicit Arguments all_neq0 [R].
+Implicit Arguments increasing [R].
+
 (*****************************)
 
 Section Proof_Prop_2_44.
 
 Variables (R : rcfType) (a : R) (p : {poly R}).
 
-Variables (Ha : 0 < a) (Hpnormal : p \is (normal R)) (Hp0noroot : ~~(root p 0)).
+Variables (Ha : 0 < a) (Hpnormal : p \is normal) (Hp0noroot : ~~(root p 0)).
 
 Local Notation q := (p * ('X - a%:P)).
 
@@ -1757,8 +1765,10 @@ rewrite mid_seqn0_C.
 exact: q_n_neq0.
 Qed.
 
-Lemma size_seqn0spseq_maskdropp : size (seqn0 (R:=R) spseq) =
- size (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p)).
+Print allP.
+
+Lemma size_seqn0spseq_maskdropp : size (seqn0 spseq) =
+   size (mask [seq x != 0 | x <- mid q] (drop 1 p)).
 Proof.
 rewrite -mid_seqn0q_size mid_seqn0_C.
     rewrite seqn0_as_mask !size_mask.
@@ -1805,50 +1815,46 @@ Lemma seqn0q_n :  (0 < (size (seqn0 (R:=R) q)).-2)%N ->
       (seqn0 q)`_(size (seqn0 q)).-2 =
       (mid (seqn0 q))`_((size (mid (seqn0 q))).-1)%N.
 Proof.
-move=> Hk.
-rewrite mid_coef_2.
-    by rewrite mid_size.
-  by rewrite mid_size.
-rewrite mid_size -(ltn_add2r 2%N) !addn2 !prednK //.
-apply: (@leq_ltn_trans (size (seqn0 q)).-1) => //.
-     
-Admitted. (**********)
+move=> Hsize_2.
+have Hsize_1 : (0 < (size (seqn0 q)).-1)%N.
+  rewrite -subn1 ltn_subRL addn0 in Hsize_2.
+  by apply: (@ltn_trans 1%N).
+have Hsize : (0 < size (seqn0 q))%N.
+  rewrite -subn1 ltn_subRL addn0 in Hsize_1.
+  by apply: (@ltn_trans 1%N).
+rewrite mid_coef_2; rewrite mid_size //.
+by rewrite -(subn1 (size (seqn0 q))) ltn_subRL addnC addn1 subn1 prednK //
+   {2}(pred_Sn (size (seqn0 q))) -(subn1 (size (seqn0 q)).+1) ltn_subRL addnC addn1
+   prednK.
+Qed.
 
 (* Proposition 2.44 *)
 Lemma normal_changes : changes (seqn0 q) = 1%N.
 Proof.
 (* 3 < size (seqn0 q) *)
 case Hsizeseqn0q : (3 < size (seqn0 q))%N.
-  have Hincreasing1 := spseq_increasing.
-  have Hincreasing2 := subspseq_increasing.
-  have Hallpos := (subp_all_pos).
-  have Hseqn0q := (seqn0_all_neq0 q).
-  have Hseqn0sseq := (seqn0_all_neq0 spseq).
-  have Hqsize := q_size.
-  have Hqsize2 := p_size.
-  have Hsizemidq := mid_seqn0q_size.
-  have Hsizespseq := size_seqn0spseq_maskdropp.
-  have Hqn1 := q_n_gt0. 
-  have Hqn2 := q_n_neq0.
-  have Hq01 := q_0_lt0. 
+  have Hincreasing1 := spseq_increasing;
+  have Hincreasing2 := subspseq_increasing;
+  have Hallpos := (subp_all_pos);
+  have Hseqn0q := (seqn0_all_neq0 q);
+  have Hseqn0spseq := (seqn0_all_neq0 spseq);
+  have Hqsize := q_size;
+  have Hqsize2 := p_size;
+  have Hsizemidq := mid_seqn0q_size;
+  have Hsizespseq := size_seqn0spseq_maskdropp;
+  have Hqn1 := q_n_gt0;
+  have Hqn2 := q_n_neq0;
+  have Hq01 := q_0_lt0;
   have Hq02 := q_0_neq0.
   have H_1 : (0%N < (size (seqn0 q)).-1)%N.
     rewrite -(ltn_add2r 1%N) !addn1 prednK; by apply: (@ltn_trans 3).
   have H_2 : (0%N < (size (seqn0 q)).-2)%N.
-    rewrite -(ltn_add2r 2) !addn2 prednK //.
-    rewrite prednK; by apply: (@ltn_trans 3).
-        
+    rewrite -(ltn_add2r 2) !addn2 prednK // prednK; by apply: (@ltn_trans 3).
+  
   rewrite changes_decomp_sizegt2 //.
-    rewrite mid_seqn0q_decomp //.    
-    rewrite changes_mult //.
-    rewrite seqn0_0 //.
-    rewrite seqn0q_1 //.
-      rewrite {1}mid_seqn0q_decomp //.
-      rewrite seqmul_coef.
-        rewrite seqn0_n //.
-        rewrite seqn0q_n //.
-        rewrite {1}mid_seqn0q_decomp //.
-          rewrite seqmul_coef //.
+    rewrite mid_seqn0q_decomp changes_mult // seqn0_0 // seqn0q_1 //.
+      rewrite {1}mid_seqn0q_decomp seqmul_coef.
+        rewrite seqn0_n // seqn0q_n // {1}mid_seqn0q_decomp seqmul_coef.
 
           (* case *)
           case Hchanges : (changes (seqn0 spseq) == 1%N).
@@ -1859,21 +1865,32 @@ case Hsizeseqn0q : (3 < size (seqn0 q))%N.
             rewrite changes_seq_incr_1 // in Hchanges.
               move/andP : Hchanges => [] H0 H1.
               have H2: (q`_0 *
-                  ((seqn0 (R:=R) spseq)`_0 *
-                  (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p))`_0) < 0) = false.       
-                admit.
-              rewrite H2.
-              rewrite mid_seqn0q_size.
-              have H3 : ((seqn0 (R:=R) spseq)`_(size (seqn0 (R:=R) spseq)).-1 *
-                 (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p))`_
-                 (size (seqn0 (R:=R) spseq)).-1 * q`_(size q).-1 < 0) = false.
-                admit.
+                  ((seqn0 spseq)`_0 *
+                  (mask [seq x != 0 | x <- mid q] (drop 1 p))`_0) < 0) = false.
+                apply: negbTE.
+                rewrite -lerNgt nmulr_rge0 // nmulr_rle0 //.
+                apply: ltrW.
+                apply: (@all_pos_gt0 _ _ Hallpos 0%N).
+                by rewrite -Hsizespseq -Hsizemidq mid_size.
+              rewrite H2 mid_seqn0q_size.
+              have H3 : ((seqn0 spseq)`_(size (seqn0 spseq)).-1 *
+                 (mask [seq x != 0 | x <- mid q] (drop 1 p))`_
+                 (size (seqn0 spseq)).-1 * q`_(size q).-1 < 0) = false.
+                apply: negbTE.
+                rewrite -lerNgt mulrC pmulr_lge0.
+                  by apply: ltrW.
+                rewrite pmulr_lgt0 //.
+                apply: (@all_pos_gt0 _ _ Hallpos (size (seqn0 spseq)).-1).
+                rewrite -Hsizespseq -Hsizemidq mid_size -{2}(subn2 (size (seqn0 q))) ltn_subRL
+                    addnC addn2 prednK // prednK //.
+                rewrite {2}(pred_Sn (size (seqn0 q))) -(subn1 (size (seqn0 q)).+1) ltn_subRL 
+                  addnC addn1 prednK //.
+                by apply: (@ltn_trans 3).
               by rewrite H3.
-            rewrite -mid_seqn0q_size mid_size.
-            admit.
+            by rewrite -mid_seqn0q_size mid_size -subn2 ltn_subRL addn1.
           (* no change in mid q *)
           have Hchanges2 : (changes (seqn0 spseq)) == 0%N.
-            rewrite -(Bool.orb_false_l ((changes (R:=R) (seqn0 (R:=R) spseq)) == 0%N)).
+            rewrite -(Bool.orb_false_l ((changes (seqn0 spseq)) == 0%N)).
             rewrite -Hchanges.
             exact: changes_seq_incr.
           clear Hchanges.
@@ -1881,41 +1898,69 @@ case Hsizeseqn0q : (3 < size (seqn0 q))%N.
           rewrite Hchanges.
           move/eqP : Hchanges => Hchanges.
           rewrite changes_seq_incr_0 // in Hchanges.
-          (* case *)
-          case Hspseq0_pos : (0 < (seqn0 (R:=R) spseq)`_0).
+            (* case *)
+            case Hspseq0_pos : (0 < (seqn0 spseq)`_0).
+            (* first of spseq pos *)
+              have H1 : ((q`_0 *
+                 ((seqn0 spseq)`_0 *
+                 (mask [seq x != 0 | x <- mid q] (drop 1 p))`_0) < 0) = true).
+                apply/eqP; rewrite eqb_id.
+                rewrite nmulr_rlt0 // mulrC pmulr_lgt0 //.
+                apply: (@all_pos_gt0 _ _ Hallpos 0%N).
+                by rewrite -Hsizespseq -Hsizemidq mid_size.
+              rewrite H1 mid_seqn0q_size.
+              have H2 : (0 < (seqn0 spseq)`_(size (seqn0 spseq)).-1).
+                by rewrite -(@pmulr_lgt0 _ (seqn0 spseq)`_0) // mulrC.
+              have H3 : ((seqn0 spseq)`_(size (seqn0 spseq)).-1 *
+                 (mask [seq x != 0 | x <- mid q] (drop 1 p))`_
+                 (size (seqn0 spseq)).-1 * q`_(size q).-1 < 0) = false.
+                apply: negbTE. rewrite -lerNgt mulrC pmulr_lge0.
+                  by apply: ltrW.
+                rewrite pmulr_lgt0 //.
+                apply: (@all_pos_gt0 _ _ Hallpos (size (seqn0 spseq)).-1).
+                rewrite -Hsizespseq -Hsizemidq mid_size -{2}(subn2 (size (seqn0 q))) ltn_subRL
+                   addnC addn2 prednK // prednK //.
+                rewrite {2}(pred_Sn (size (seqn0 q))) -(subn1 (size (seqn0 q)).+1) ltn_subRL 
+                   addnC addn1 prednK //.
+                by apply: (@ltn_trans 3).
+              by rewrite H3.
+            (* first of spseq neg *)
             have H1 : ((q`_0 *
-              ((seqn0 (R:=R) spseq)`_0 *
-                (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p))`_0) < 0) = true).
-              admit.
+               ((seqn0 spseq)`_0 *
+               (mask [seq x != 0 | x <- mid q] (drop 1 p))`_0) < 0) = false).
+              apply: negbTE. rewrite -lerNgt nmulr_lge0.
+                by apply: ltrW.
+              rewrite nmulr_rlt0.
+                apply: (@all_pos_gt0 _ _ Hallpos 0%N).
+                by rewrite -Hsizespseq -Hsizemidq mid_size.
+              rewrite ltr_def. apply/andP; split.
+                rewrite eq_sym. apply: (@all_neq0_neq0_1 _ _ Hseqn0spseq 0%N) => //.
+                by rewrite -Hsizemidq mid_size.
+              rewrite lerNgt. by apply: negbT.
             rewrite H1.
-            rewrite mid_seqn0q_size.
-            have H2 : (0 < (seqn0 (R:=R) spseq)`_(size (seqn0 (R:=R) spseq)).-1).
-              admit.
-            have H3 : ((seqn0 (R:=R) spseq)`_(size (seqn0 (R:=R) spseq)).-1 *
-              (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p))`_
-              (size (seqn0 (R:=R) spseq)).-1 * q`_(size q).-1 < 0) = false.
-              admit.
+            have H2 : ((seqn0 spseq)`_(size (mid (seqn0 q))).-1 < 0).
+              rewrite Hsizemidq -(@nmulr_rgt0 _ (seqn0 spseq)`_0) // ltr_def.
+              apply/andP; split.
+                rewrite eq_sym. apply: (all_neq0_neq0_1) => //.
+                by rewrite -Hsizemidq mid_size.
+              rewrite lerNgt. by apply: negbT.
+            have H3 : (((seqn0 spseq)`_(size (mid (seqn0 q))).-1 *
+              (mask [seq x != 0 | x <- mid q] (drop 1 p))`_
+              (size (mid (seqn0 q))).-1 * q`_(size q).-1 < 0) = true).
+              apply/eqP; rewrite eqb_id.
+              rewrite nmulr_rlt0 // nmulr_rlt0 //.
+              apply: (@all_pos_gt0 _ _ Hallpos (size (mid (seqn0 q))).-1).
+              rewrite -Hsizespseq -Hsizemidq mid_size -{2}(subn2 (size (seqn0 q))) ltn_subRL
+                    addnC addn2 prednK // prednK //.
+              rewrite {2}(pred_Sn (size (seqn0 q))) -(subn1 (size (seqn0 q)).+1) ltn_subRL 
+                  addnC addn1 prednK //.
+              by apply: (@ltn_trans 3).
             by rewrite H3.
-          have H1 : ((q`_0 *
-             ((seqn0 (R:=R) spseq)`_0 *
-             (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p))`_0) < 0) = false).
-            admit.
-          rewrite H1.
-        have H2 : ((seqn0 (R:=R) spseq)`_(size (mid (R:=R) (seqn0 (R:=R) q))).-1 < 0).
-        admit.
-      have H3 : (((seqn0 (R:=R) spseq)`_(size (mid (R:=R) (seqn0 (R:=R) q))).-1 *
-        (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p))`_
-        (size (mid (R:=R) (seqn0 (R:=R) q))).-1 * q`_(size q).-1 < 0) = true).
-        admit.
-      by rewrite H3.
           by rewrite -Hsizemidq mid_size.
-        rewrite -Hsizespseq -Hsizemidq mid_size minnE.
-        rewrite subKn //.
-        by rewrite -(ltn_add2r 3) !addn3 prednK.    
-    by rewrite -Hsizespseq -Hsizemidq minnE subKn // mid_size //.
-  rewrite -(ltn_add2r 1%N) !addn1 prednK //;
+        by rewrite -Hsizespseq -Hsizemidq mid_size minnE subKn // -(ltn_add2r 3) !addn3 prednK.    
+      by rewrite -Hsizespseq -Hsizemidq minnE subKn // mid_size //.
+    rewrite -(ltn_add2r 1%N) !addn1 prednK //; by apply: (@ltn_trans 3).
   by apply: (@ltn_trans 3).
-by apply: (@ltn_trans 3).
 (* size (seqn0 q) <= 3 *)
 case H : (2 < size (seqn0 q))%N. 
 (* 2 < size (seqn0 q) *)
@@ -1947,28 +1992,6 @@ rewrite changes_decomp_size2 //.
     exact: q_n_neq0.
   exact: q_0_neq0.
 by apply: seqn0_all_neq0.
-Qed. (**********)
-
-
-(* size p <= 1 *)
-
-(* 1 < size p *)
- 
- (* p`_1 <= p`_0 < 0 *)
-  (* 0 < p`_n <= p`_n.-1 *)
-  (* 0 < p`_n.1 < p`_n *)
-  (* p`_n.-1 < 0 < p`_n *)
- (* p`_0 <= p`_1 < 0 *)
-  (* 0 < p`_n <= p`_n.-1 *)
-  (* 0 < p`_n.1 < p`_n *)
-  (* p`_n.-1 < 0 < p`_n *)
- (* p`_0 < 0 <= p`_1 *)
-  (* 0 < p`_n <= p`_n.-1 *)
-  (* 0 < p`_n.1 < p`_n *)
-  
-
-(*size = 3
-have Hsize : (size ('X^2 + (- 2%:R) * Re(z) *: 'X + (Re(z) ^+2 + Im(z) ^+2)%:P) = 3).
-  by rewrite -(mulr1 'X^2) mulrC mul_polyC polyseq_deg2 /=.*)
+Qed.
 
 End Proof_Prop_2_44.
