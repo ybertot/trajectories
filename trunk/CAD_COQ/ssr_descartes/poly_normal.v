@@ -363,6 +363,32 @@ rewrite -(conjcK z).
   by rewrite conjc0.
 Qed.
 
+Lemma factor_complex_roots : forall (z : complex R),
+   map_poly (real_complex R) ('X^2 + (1 *- 2 * Re z) *: 'X +
+   (Re z ^+ 2 + Im z ^+ 2)%:P) = ('X - z%:P) * ('X - (z^*)%:P).
+Proof.
+move=> z.
+rewrite mulrBr !mulrBl opprB (addrC (z%:P * (z^*)%:P) _) addrA (mulrC _ (z^*)%:P)
+     -(addrA ('X * 'X) _) -expr2 -(opprD (z%:P * 'X) ((z^*)%:P * 'X))
+     -(mulrDl z%:P _ 'X) -(polyC_add z z^*) -(polyC_mul z z^*) -sqr_normc
+     -re_conj normc_re_im mul_polyC.
+rewrite -(opprK (Re z ^+ 2 + Im z ^+ 2)%:P) map_poly_is_additive.
+rewrite -polyC_opp -mul_polyC map_polyC.
+  (***)
+rewrite -(opprK ((1 *- 2 * Re z)%:P * 'X)) map_poly_is_additive map_polyXn.
+rewrite -(opprK (Re z ^+ 2 + Im z ^+ 2)%:C%:P).
+rewrite -(polyC_opp (Re z ^+ 2 + Im z ^+ 2)%:C).
+have H : (- (Re z ^+ 2 + Im z ^+ 2)%:C) = (- (Re z ^+ 2 + Im z ^+ 2))%:C.
+  by rewrite !real_complexE -{2}oppr0.
+rewrite H {H}.
+  (***)
+rewrite -mulNr -(@polyC_opp _ (1 *- 2 * Re z)) .
+rewrite mul_polyC map_polyZ map_polyX mulNr opprK.
+have H : 2%:R * (Re z)%:C = (2%:R * (Re z))%:C.
+  rewrite !real_complexE. by simpc.
+by rewrite H {H}.
+Qed.
+
 Lemma complex_root_div_poly_deg2 : forall (p : {poly R}) (z : complex R),
    (Im(z) != 0) -> root (map_poly (real_complex R) p) z ->
    ('X^2 + (- 2%:R * (Re z)) *: 'X + ((Re z) ^+2 + (Im z)^+2)%:P) %| p.
@@ -370,28 +396,7 @@ Proof.
 move=> p z Hz Hrootz.
 have Hrootzbar : root (map_poly (aR:=R) (rR:=complex_Ring R) (real_complex R) p) z^*.
   by rewrite -complex_root_conj_polyR.
-have Hp : map_poly (real_complex R) ('X^2 + (1 *- 2 * Re z) *: 'X +
-   (Re z ^+ 2 + Im z ^+ 2)%:P) = ('X - z%:P) * ('X - (z^*)%:P).
-  rewrite mulrBr !mulrBl opprB (addrC (z%:P * (z^*)%:P) _) addrA (mulrC _ (z^*)%:P)
-     -(addrA ('X * 'X) _) -expr2 -(opprD (z%:P * 'X) ((z^*)%:P * 'X))
-     -(mulrDl z%:P _ 'X) -(polyC_add z z^*) -(polyC_mul z z^*) -sqr_normc
-     -re_conj normc_re_im mul_polyC.
-  rewrite -(opprK (Re z ^+ 2 + Im z ^+ 2)%:P) map_poly_is_additive.
-  rewrite -polyC_opp -mul_polyC map_polyC.
-  (***)
-  rewrite -(opprK ((1 *- 2 * Re z)%:P * 'X)) map_poly_is_additive map_polyXn.
-  rewrite -(opprK (Re z ^+ 2 + Im z ^+ 2)%:C%:P).
-  rewrite -(polyC_opp (Re z ^+ 2 + Im z ^+ 2)%:C).
-  have H : (- (Re z ^+ 2 + Im z ^+ 2)%:C) = (- (Re z ^+ 2 + Im z ^+ 2))%:C.
-    by rewrite !real_complexE -{2}oppr0.
-  rewrite H {H}.
-  (***)
-  rewrite -mulNr -(@polyC_opp _ (1 *- 2 * Re z)) .
-  rewrite mul_polyC map_polyZ map_polyX mulNr opprK.
-  have H : 2%:R * (Re z)%:C = (2%:R * (Re z))%:C.
-    rewrite !real_complexE. by simpc.
-  rewrite H {H}.
-by done.
+have Hp := (factor_complex_roots z).
 rewrite -(dvdp_map ((ComplexField.real_complex_rmorphism R))) /= Hp.
 rewrite Gauss_dvdp.
   apply/andP; split; by rewrite -root_factor_theorem.
@@ -1319,6 +1324,16 @@ Definition mid := fun (s : seq R) => (drop 1 (take (size s).-1 s)).
 Lemma midE : forall (s : seq R), mid s = (drop 1 (take (size s).-1 s)).
 Proof. by done. Qed.
 
+Lemma mid_2 : forall (s : seq R), mid s = (take (size s).-2 (drop 1 s)).
+Proof.
+elim=> [ |a l IHl ] //=.
+case: l IHl => [ |b l IHbl ] //.
+rewrite drop0 midE.
+have Hsize : ((size [::a, b & l]).-1 = (size (b :: l)).-1.+1).
+  by rewrite prednK.
+by rewrite Hsize /= drop0.
+Qed.
+
 Lemma mid_size : forall (s : seq R), size (mid s) = (size s).-2.
 Proof.
 elim => [|a l IHl] => //=.
@@ -1339,6 +1354,13 @@ apply/idP/idP.
 move/orP => H; case: H.
   move/orP => H; case: H; by move/eqP => Hs; rewrite Hs midE.
 by move/eqP => Hs; rewrite Hs midE.
+Qed.
+
+Lemma mid_cons : forall (s : seq R) (a : R),
+   mid (a :: s) = take (size s).-1 s.
+Proof.
+move=> s a.
+by rewrite mid_2 /= drop0.
 Qed.
 
 Lemma mid_coef_1 : forall (s : seq R) k, (k < size (mid s))%N ->
@@ -1400,13 +1422,35 @@ have H : ((size (a :: (if b != 0 then b :: seqn0 l else seqn0 l))).-1 =
 by rewrite H take_cons /= drop0 Ha H take_cons /= drop0.
 Qed.
 
+Lemma changes_take : forall (s : seq R) (a b : R), (s != [::]) -> (all_neq0 [::a, b & s]) ->
+   (changes (take (size (b :: s)) ([::a, b & s])) =
+   ((a * b < 0)%R + changes (take (size s) (b :: s)))%N).   
+Proof. by elim. Qed.
+
 Lemma changes_decomp_sizegt2 : forall (s : seq R), (all_neq0 s) -> (2 < size s)%N ->
    changes s =
       ((s`_0 * s`_1 < 0)%R +
           (changes (mid s))%R + 
             (s`_((size s).-2) * s`_((size s).-1) < 0)%R)%N.
 Proof.
-Admitted. (**********)
+case=> [|a ] //.
+case=> [ | b l] //. 
+elim: l a b => [ |c l] //.
+case: l c => [c IHempty a b Habcneq0 Habcsize| d l c IHdl a b Habcdlneq0 Habcdlsize ].
+  by rewrite /= !mulr0 !ltrr !addn0.
+move/andP : Habcdlneq0 => Habcdlneq0.
+have H1 : (changes [:: a, b, c, d & l] = ((a * b < 0)%R + changes [:: b, c, d & l])%N).
+ by done.
+rewrite H1 (IHdl b c) //.
+  rewrite -addnA -addnA addnC (@addnC (a * b < 0)%R).
+  apply/eqP.
+  rewrite eqn_add2r addnA eqn_add2r (@mid_cons _ a).
+  have H2 : (size [:: b, c, d & l]).-1 = size [::c, d & l].
+    by done.
+  rewrite H2 (@changes_take _ b c) //.
+  exact : (proj2 Habcdlneq0).
+exact: (proj2 Habcdlneq0).  
+Qed.
 
 Lemma changes_decomp_size2 : forall (s : seq R), (all_neq0 s) -> (size s == 2)%N ->
    changes s = (s`_0 * s`_1 < 0)%R.
@@ -1414,7 +1458,6 @@ Proof.
 case => [ |a] //. case => [ |b] //. case => [Hneq0 Hsize | ] //.
 by rewrite /= mulr0 ltrr !addn0.
 Qed.
-
 
 (* pointwise multiplication of two lists *)
 Definition seqmul := (fun s1 s2 : seq R => map (fun x : R * R => x.1 * x.2) (zip s1 s2)).
@@ -1764,8 +1807,6 @@ rewrite mid_seqn0_C.
   exact: q_0_neq0.
 exact: q_n_neq0.
 Qed.
-
-Print allP.
 
 Lemma size_seqn0spseq_maskdropp : size (seqn0 spseq) =
    size (mask [seq x != 0 | x <- mid q] (drop 1 p)).
