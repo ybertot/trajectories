@@ -302,6 +302,14 @@ Qed.
 Lemma normal_mulr : forall p q : {poly R},
    p \is normal -> q \is normal -> (p * q) \is normal.
 Proof.
+case=> p Hsp.
+case: p Hsp => [Hsp q |a].
+  by rewrite !normalE /=.
+case=> [Hsp q | ].
+  rewrite !normalE /= => Ha Hq.
+  rewrite mul_polyC.
+
+
 Admitted. (***********)
 
 (*Lemma real_complex_conjc : forall (x : R),
@@ -442,12 +450,27 @@ elim: n p Hpmonic.
   by rewrite Hpnull normalE polyseq0 /= -(oner_eq0 R) eq_sym.
 (* size p <= n.+1 *)
 move=> n IH p Hpmonic Hpsize Hproots.
-have HpCsize : size (map_poly (real_complex R) p) != 1%N.
-  rewrite size_map_poly_id0.
-    admit. (***********)
+case Hpsize2 : (size (map_poly (real_complex R) p) == 1%N).
+  (* size p == 1 *)
+  move/eqP : Hpsize2 => Hpsize2.
+  rewrite size_map_poly_id0 in Hpsize2.  
+  have Hpsize3 := (eq_leq Hpsize2).
+    have Hp := (size1_polyC Hpsize3).
+    rewrite Hp in Hpsize2.
+    rewrite Hp monicE lead_coefE Hpsize2 -pred_Sn polyseqC in Hpmonic.
+    rewrite size_polyC in Hpsize2.
+    rewrite Hpsize2 /= in Hpmonic.
+    move/eqP : Hpmonic => Hpmonic.
+    rewrite Hp /= Hpmonic. 
+    rewrite normalE polyseqC oner_neq0 /=.
+    by apply: ltr01.
+  rewrite eq_sym; apply: negbT; apply: ltr_eqF.
   rewrite monicE in Hpmonic.
-  move/eqP : Hpmonic => Hpmonic. rewrite Hpmonic.
-  by apply: oner_neq0.    
+  move/eqP : Hpmonic => Hpmonic.
+  rewrite ltcR Hpmonic.
+  by apply: ltr01.
+(* size p != 1 *)
+have HpCsize := (negbT Hpsize2).
 move/closed_rootP : HpCsize.
 case=> x Hrootx.
 case: (altP (Im x =P 0)) => Himx. 
@@ -474,38 +497,23 @@ case: (altP (Im x =P 0)) => Himx.
   by apply: (proj1 H').
 (* pair of complex roots *)
 have H : 'X^2 + (1 *- 2 * Re x) *: 'X + (Re x ^+ 2 + Im x ^+ 2)%:P \is monic.
-  rewrite -addrA monicE lead_coefDl.
-    by rewrite lead_coefXn.
-  rewrite size_polyXn -mul_polyC size_MXaddC size_polyC /=.
-  case H : (((1 *- 2 * Re x)%:P == 0) && ((Re x ^+ 2 + Im x ^+ 2)%R == 0)).
-    by apply: ltn0Sn.
-  case H' : ((1 *- 2 * Re x)%R != 0).  
-    by apply: ltnSn.
-  by rewrite !ltnS leqnSn.
+  rewrite -(mul1r 'X^2) mul_polyC monicE lead_coefE polyseq_deg2 //=.
+  by apply: oner_neq0.
 have H2 : size ('X^2 + (1 *- 2 * Re x) *: 'X + (Re x ^+ 2 + Im x ^+ 2)%:P) = 3.
-  rewrite -mul_polyC expr2 -mulrDl size_MXaddC.
-  have Help : (('X + (1 *- 2 * Re x)%:P == 0) && (Re x ^+ 2 + Im x ^+ 2 == 0) = false).
-    apply: Bool.andb_false_intro2. apply/eqP/eqP.
-    apply: (@proj1 _ (0 <= Re x ^+ 2 + Im x ^+ 2)).
-    apply/andP. rewrite -lt0r. apply: ltr_spaddr.
-      rewrite lt0r. apply/andP. split.
-        by rewrite sqrf_eq0.
-      by apply: sqr_ge0.
-    by apply: sqr_ge0.
-  by rewrite Help {Help} size_XaddC.
+  rewrite -(mul1r 'X^2) mul_polyC polyseq_deg2 //=.
+  by apply: oner_neq0.
 have Hp := complex_root_div_poly_deg2 Himx Hrootx.
 rewrite Pdiv.IdomainMonic.dvdp_eq // in Hp.
 move/eqP : Hp => Hp. rewrite Hp.
 apply: normal_mulr.  
   apply: IH.
-       rewrite monicE -(@lead_coef_Mmonic _ (p %/ ('X^2 + (1 *- 2 * Re x) *: 'X + (Re x ^+ 2 + Im x ^+ 2)%:P)) ('X^2 + (1 *- 2 * Re x) *: 'X + (Re x ^+ 2 + Im x ^+ 2)%:P)) //. 
+       rewrite monicE -(@lead_coef_Mmonic _ (p %/ ('X^2 + (1 *- 2 * Re x) *: 'X +
+         (Re x ^+ 2 + Im x ^+ 2)%:P)) ('X^2 + (1 *- 2 * Re x) *: 'X +
+           (Re x ^+ 2 + Im x ^+ 2)%:P)) //. 
         by rewrite -Hp -monicE.
      rewrite size_divp.
-       rewrite H2.
-       rewrite leq_subLR addnC addn2. 
-       apply: (@leq_trans n.+1).
-         by done.
-       by apply: leqnSn.
+       rewrite H2 leq_subLR addnC addn2. 
+       apply: (@leq_trans n.+1) => //.
      by apply: monic_neq0.
     move=> z Hz.
     apply: Hproots.
@@ -513,7 +521,7 @@ apply: normal_mulr.
     apply/orP. by left.
   rewrite quad_monic_normal.
   by apply: (Hproots x Hrootx).
-Qed. (**********)
+Qed.
 
 Lemma normal_neq0 : forall (p : {poly R}), p \is normal -> p != 0.
 Proof.
@@ -978,7 +986,7 @@ case=> [ | a] => // => l.
 elim : l a => [ | b l IHs a] //.
 move=> Hk.
 apply/andP; split.
-  apply: (Hk 0%N). by done.
+  apply: (Hk 0%N) => //.
 apply: (IHs b) => k Hkk.
 apply: (Hk k.+1).  
 by rewrite -(addn1 k) addnC -ltn_subRL subn1.
@@ -990,23 +998,17 @@ Proof.
 case=> [ | a ] // => l.
 elim : l a => [a Hs k | b tl IHl a Habtl k] //.
 case => [_ _ Hk | n Hn] //=.
-  rewrite leqn0 in Hk; move/eqP : Hk => ->. by done.
+  rewrite leqn0 in Hk; move/eqP : Hk => -> //.
 case => [_ _ Hk | l] //=.
-  rewrite leqn0 in Hk; move/eqP : Hk => ->. by done. 
+  rewrite leqn0 in Hk; move/eqP : Hk => -> //. 
 move/andP : Habtl => Habtl.
 case : k => [Hk Hl Hkl| k Hk Hl Hkl] //=.
   case : l Hl Hkl => [Hl Hkl |l Hl Hkl].
     exact: (proj1 Habtl).  
   apply: (@ler_trans _ b).
     exact: (proj1 Habtl).
-  apply: (IHl b (proj2 Habtl) 0%N l.+1).
-      by done.
-    by rewrite -(ltn_add2r 1%N) !addn1.
-  by apply: ltn0Sn.
-apply: (IHl b (proj2 Habtl)).
-    rewrite -(ltn_add2r 1%N) !addn1; by done.
-  rewrite -(ltn_add2r 1%N) !addn1; by done.
-by done.
+  apply: (IHl b (proj2 Habtl) 0%N l.+1) => //.
+by apply: (IHl b (proj2 Habtl)).
 Qed.
 
 Local Notation is1 := (fun x : bool => x == true). 
