@@ -1,5 +1,6 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime div.
-Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex poly_normal.
+Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex
+   poly_normal pol.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -233,18 +234,19 @@ End about_changes_0.
 
 Section le_thm_des_3_cercles.
 
-Variable R : rcfType.
+Variables (R : rcfType) (l, r : R).
 
-Definition inC (l r : R) (z : complex R) :=
+Definition inC (z : complex R) :=
    (Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + r * l == 0.
 
-Lemma inCE : forall (l r : R) (z : complex R),
+Lemma inCE : forall (z : complex R),
    inC l r z = ((Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + r * l == 0).
 Proof. by []. Qed.
 
 (* Theorem 10.47 i. *)
-(* Theorem three_circles_1 : forall (p : {poly R}) (l r : R) (z : complex R),
-   (root (map_poly (real_complex R) p) z -> (inC l r z) = false) ->
+(* Theorem three_circles_1 : forall (p : {poly R}), (forall (z : complex R),
+   (root (map_poly (real_complex R) p) z -> ~~(inC z))) ->
+      changes (Bernstein_coeffs l r p) = 0.
       .
 *)
 
