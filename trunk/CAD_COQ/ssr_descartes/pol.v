@@ -1,10 +1,11 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq  choice fintype.
 Require Import binomial  bigop ssralg poly ssrnum ssrint rat.
+
 (** * Descartes. 
    polynomials link with the ssr library *)
 (*
 Copyright INRIA (20112012) Marelle Team (Jose Grimm;  Yves Bertot; Assia Mahboubi).
-$Id: pol.v,v 1.34 2012/11/14 16:22:19 grimm Exp $
+$Id: pol.v,v 1.35 2012/12/14 11:59:35 grimm Exp $
 *)
 
 

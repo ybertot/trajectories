@@ -1,7 +1,8 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq  choice fintype.
 Require Import binomial  bigop ssralg poly ssrnum ssrint rat.
 
-Require Import pol.
+Require Import pol polyrcf.
+
 
 (** Defining function over lists of rationals that find lists containing
   exactly one alternation, from negative to positive values. *)
@@ -602,6 +603,7 @@ have rhsp: 0 < p`_k * (p`_k * x).
 rewrite /q mulrBr coefB coefMC mulrBr subr_lt0 coefMX (ler_lt_trans _ rhsp) //.
 by move: eq2; case k. 
 Qed.
+
 
 
 End SignChange.
