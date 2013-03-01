@@ -307,7 +307,6 @@ case: p Hsp => [Hsp q |a].
   by rewrite !normalE /=.
 case=> [Hsp q | ].
   rewrite !normalE /= => Ha Hq.
-  rewrite mul_polyC.
 
 
 Admitted. (***********)

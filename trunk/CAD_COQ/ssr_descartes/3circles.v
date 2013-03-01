@@ -232,22 +232,234 @@ Qed.
 
 End about_changes_0.
 
-Section le_thm_des_3_cercles.
-
-Variables (R : rcfType) (l, r : R).
-
-Definition inC (z : complex R) :=
-   (Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + r * l == 0.
-
-Lemma inCE : forall (z : complex R),
-   inC l r z = ((Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + r * l == 0).
+Lemma Bernstein_coeffsE : forall (G : ringType) (p : {poly G}) (a b : G),
+   Bernstein_coeffs p a b = reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
 Proof. by []. Qed.
 
+Section about_roots_and_transformations.
+
+Variable (R : fieldType).
+
+Lemma root_shift_1 : forall (p : {poly R}) (a x : R), (root p x) = root (p \shift a) (x-a).
+Proof.
+move=> p a x.
+by rewrite !rootE -horner_shift_poly1.
+Qed.
+
+Lemma root_shift_2 : forall (p : {poly R}) (a x : R), root p (x + a) = root (p \shift a) x.
+Proof.
+move=> p a x.
+by rewrite !rootE -{2}(@addrK _ a x) -horner_shift_poly1.
+Qed.
+
+Lemma root_scale_1 : forall (p : {poly R}) (a x : R), (a != 0) ->
+   root p x = root (p \scale a) (x / a).
+Proof.
+move=> p a x Ha.
+rewrite !rootE horner_scaleX_poly mulrC (@mulrVK _ a _ x) //. 
+by rewrite unitfE.
+Qed.
+
+Lemma root_scale_2 : forall (p : {poly R}) (a x : R),
+   root p (a * x) = root (p \scale a) x.
+Proof.
+move=> p a x.
+by rewrite !rootE horner_scaleX_poly.
+Qed.
+
+Lemma root_reciprocal_1 : forall (p : {poly R}) (x : R), (x != 0) ->
+   root p x = root (reciprocal_pol p) (x^-1).
+Proof.
+move=> p x Hx.
+rewrite !rootE horner_reciprocal1.
+  rewrite GRing.mulrI_eq0 //.
+  apply: GRing.lregX; by apply/lregP.
+by rewrite unitfE.
+Qed.
+
+Lemma root_reciprocal_2 : forall (p : {poly R}) (x : R), (x != 0) ->
+   root p (x^-1) = root (reciprocal_pol p) x.
+Proof.
+move=> p x Hx.
+rewrite !rootE horner_reciprocal.
+  rewrite GRing.mulrI_eq0 //.
+  apply: GRing.lregX; by apply/lregP.
+by rewrite unitfE.
+Qed.
+
+Lemma root_Bernstein_coeffs_1 : forall (p : {poly R}) (x : R) (l r : R), (l != r) ->
+   (x != l) -> (x != r) ->
+   root p x = root (Bernstein_coeffs p l r) ((r - x) / (x - l)).
+Proof.
+move=> p x l r Hlr Hxl Hxr.
+rewrite Bernstein_coeffsE.
+rewrite -root_shift_2 -(@mulrK _ (x - l) _ 1). 
+  rewrite mul1r -mulrDl addrA.
+  rewrite -(@addrA _ _ (-x) x) (@addrC _ (-x) x) addrA addrK. 
+  rewrite -root_reciprocal_2. 
+    rewrite invrM.
+        rewrite invrK.
+        rewrite -root_scale_2 mulrC divrK.
+          by rewrite -root_shift_2 -addrA (@addrC _ _ l) addrA addrK. 
+        by rewrite unitfE subr_eq0 eq_sym.
+      by rewrite unitfE subr_eq0 eq_sym.
+    by rewrite unitfE invr_eq0 subr_eq0.
+  apply: GRing.mulf_neq0.
+    by rewrite subr_eq0 eq_sym.
+  by rewrite invr_eq0 subr_eq0.
+by rewrite unitfE subr_eq0.
+Qed.
+
+Lemma root_Bernstein_coeffs_2 : forall (p : {poly R}) (x : R) (l r : R), (x + 1 != 0) ->
+   root p ((r + l * x) / (x + 1)) = root (Bernstein_coeffs p l r) x.
+Proof.
+move=> p x l r Hx.
+rewrite Bernstein_coeffsE.
+rewrite -root_shift_2 -root_reciprocal_2 //. 
+rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (x + 1) _ l).
+  by rewrite -mulrDl {2}(@addrC _ x 1) mulrDr mulr1 addrA -(addrA r (- l) l)
+       (addrC (-l) l) addrA addrK.
+by rewrite unitfE.
+Qed.
+
+End about_roots_and_transformations.
+
+Section transformations_in_C.
+Variable (R : rcfType).
+Local Notation C:= (complex R).
+
+Local Notation toC := (fun (p : {poly R}) => @map_poly R _ (real_complex R) p).
+
+Lemma shift_toC : forall (p : {poly R}) (a : R),
+   toC (p \shift a) = (toC p) \shift a%:C.
+Proof.
+move=> p a.
+by rewrite /shift_poly (map_comp_poly _ p ('X + a%:P)) rmorphD /= map_polyX map_polyC.
+Qed.
+
+Lemma scale_toC : forall (p : {poly R}) (a : R),
+   toC (p \scale a) = (toC p) \scale a%:C.
+Proof.
+Admitted.
+
+Lemma reciprocal_toC : forall (p : {poly R}),
+   toC (reciprocal_pol p) = reciprocal_pol (toC p).
+Proof.
+Admitted.
+
+Lemma Bernstein_toC : forall (p : {poly R}) (l r : R),
+   toC (Bernstein_coeffs p l r) = Bernstein_coeffs (toC p) l%:C r%:C.
+Proof.
+Admitted.
+
+Lemma root_Bernstein_coeffs_C_1 :  forall (p : {poly R}) (z : C) (l r : R), (l != r) ->
+   (z != l%:C) -> (z != r%:C) ->
+      root (toC p) z =
+      root (toC (Bernstein_coeffs p l r)) ((r%:C - z) / (z - l%:C)).
+Proof.
+move=> p z l r Hlr Hzl Hzr.
+rewrite !rootE Bernstein_toC Bernstein_coeffsE -!rootE.
+rewrite -@root_shift_2 -(@mulrK _ (z - l%:C) _ 1). 
+  rewrite mul1r -mulrDl addrA.
+  rewrite -(@addrA _ _ (-z) z) (@addrC _ (-z) z) addrA addrK. 
+  rewrite -root_reciprocal_2. 
+    rewrite invrM.
+        rewrite invrK.
+        rewrite -root_scale_2 mulrC divrK.
+          by rewrite -root_shift_2 -addrA (@addrC _ _ l%:C) addrA addrK.
+        rewrite unitfE (*-rmorphB*). rewrite subr_eq0 eq_sym. admit.
+      rewrite unitfE subr_eq0 eq_sym. admit.
+    by rewrite unitfE invr_eq0 subr_eq0.
+  apply: GRing.mulf_neq0.
+    rewrite subr_eq0 eq_sym. admit.
+  by rewrite invr_eq0 subr_eq0.
+by rewrite unitfE subr_eq0.
+Qed. (**********)
+
+Lemma root_Bernstein_coeffs_C_2 : forall (p : {poly R}) (z : C) (l r : R),
+   (z + 1 != 0) ->
+      root (toC p) ((r%:C + l%:C * z) / (z + 1)) = 
+      root (toC (Bernstein_coeffs p l r)) z.
+Proof.
+move=> p z l r Hz.
+rewrite !rootE Bernstein_toC Bernstein_coeffsE -!rootE.
+rewrite -root_shift_2 -root_reciprocal_2 //. 
+rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (z + 1) _ l%:C).
+  by rewrite -mulrDl {2}(@addrC _ z 1) mulrDr mulr1 addrA -(addrA r%:C (- l%:C) l%:C)
+       (addrC (-l%:C) l%:C) addrA addrK.
+by rewrite unitfE.
+Qed.
+
+End transformations_in_C.
+
+Section le_thm_des_3_cercles.
+
+Variables (R : rcfType) (l r : R).
+
+Local Notation C := (complex R).
+
+Definition notinC (z : C) :=
+   0 <= (Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + r * l.
+
+Lemma notinCE : forall (z : C),
+   notinC z = (0 <= (Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + r * l).
+Proof. by []. Qed.
+
+Lemma notinC_Re_lt0_1 : forall (z : C),
+   (notinC z) = (Re ((r%:C - z) / (z - l%:C)) <= 0).
+Proof.
+case => a b.
+rewrite notinCE /=.
+simpc.
+rewrite !mulrA.
+(*Unset Printing Notations.*)
+Search _ (- _ * _).
+rewrite -(mulNr (b * b) _).
+(*rewrite -(mulrDl ((r - a) * (a - l)) (- (b * b)) ((a - l) ^+2 + b ^+2)^-1).*)
+(*rewrite -(mulrDl _ (- (b * b)) _).*)
+rewrite -mulrDl.
+rewrite -expr2.
+rewrite (mulrDl r (-a) _).
+rewrite (mulrC r (a - l)) (mulrC (-a) _).
+rewrite (mulrDl _ _ r).
+rewrite (mulrDl _ _ (-a)).
+Search _ (- _ * - _).
+rewrite mulrNN.
+Admitted.
+(**********)
+
+Lemma norinC_Re_lt0_2 : forall (z : C),
+   (notinC ((r%:C + l%:C * z) / (z + 1))) = (Re z <= 0).
+Proof.
+move=> z. 
+rewrite (notinC_Re_lt0_1 ((r%:C + l%:C * z) / (z + 1))) /=.
+rewrite -{1}(@mulrK _ (z+1) _ r%:C).
+rewrite -(mulNr (r%:C + l%:C * z) _ ).
+rewrite -(mulrDl _ _ (z+1)^-1).
+rewrite mulrDr mulr1.
+Search _ "oppr".
+rewrite opprD.
+rewrite !addrA.
+rewrite addrK.
+rewrite -{3}(@mulrK _ (z+1) _ l%:C).
+rewrite -(mulNr (l%:C * (z+1)) _ ).
+rewrite -(mulrDl _ _ (z+1)^-1).
+rewrite mulrDr mulr1.
+rewrite opprD.
+rewrite !addrA.
+rewrite addrK.
+
+rewrite mulf_div.
+
+
+case: z => a b.
+simpc.
+
 (* Theorem 10.47 i. *)
-(* Theorem three_circles_1 : forall (p : {poly R}), (forall (z : complex R),
-   (root (map_poly (real_complex R) p) z -> ~~(inC z))) ->
-      changes (Bernstein_coeffs l r p) = 0.
-      .
-*)
+Theorem three_circles_1 : forall (p : {poly R}), (forall (z : C),
+   (root (map_poly (real_complex R) p) z -> (notinC z))) ->
+      changes (Bernstein_coeffs p l r) = 0%N.
+
+
 
 End le_thm_des_3_cercles.
