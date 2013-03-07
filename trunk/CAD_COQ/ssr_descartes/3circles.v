@@ -324,6 +324,90 @@ Qed.
 
 End about_roots_and_transformations.
 
+Section about_transformations_and_equality.
+
+Variable (R : idomainType).
+
+Lemma shift_poly_eq : forall (p q : {poly R}) (a : R),
+   (p == q) = (p \shift a == q \shift a).
+Proof.
+move=> p q a.
+apply/idP/idP => Hpq.
+  by move/eqP : Hpq => ->.
+rewrite /shift_poly in Hpq.
+rewrite -subr_eq0 -(@comp_poly2_eq0 _ (p-q) ('X + a%:P)) ?size_XaddC //.
+by rewrite rmorphB subr_eq add0r.
+Qed.
+
+Lemma scale_poly_eq : forall (p q : {poly R}) (a : R), (a != 0) ->
+   (p == q) = (p \scale a == q \scale a).
+Proof.
+move=> p q a Ha.
+apply/idP/idP => Hpq.
+  by move/eqP : Hpq => ->.
+rewrite /scaleX_poly in Hpq.
+rewrite -subr_eq0 -(@comp_poly2_eq0 _ (p-q) ('X * a%:P)) ?size_XmulC //.
+by rewrite rmorphB subr_eq add0r.
+Qed.
+
+(*Lemma reciprocalD : forall (p q : {poly R}),
+   reciprocal_pol (p + q) = (reciprocal_pol p) + (reciprocal_pol q).
+Proof.
+Admitted.
+
+Lemma reciprocalB : forall (p q : {poly R}),
+   reciprocal_pol (p - q) = (reciprocal_pol p) - (reciprocal_pol q).
+Proof.
+Admitted.*)
+
+Lemma reciprocal_nth : forall (p : {poly R}) k, (k < size p)%N ->
+   (reciprocal_pol p)`_k = p`_((size p) - k.+1).
+Proof.
+move=> p k Hk.
+by rewrite /reciprocal_pol coef_poly Hk.
+Qed.
+
+Lemma reciprocal_nth_2 : forall (p : {poly R}) k, (k < size p)%N ->
+   (reciprocal_pol p)`_(size p - k.+1) = p`_k.
+Proof.
+move=> p k Hk.
+rewrite /reciprocal_pol coef_poly. 
+have Hk2 : (size p - k.+1 < size p)%N.
+  admit.
+rewrite Hk2.
+rewrite !subnS -!subn1 !subnBA.
+    by rewrite addn1 -subnDA addn1 addnC addnK.
+  by apply: ltnW.
+by rewrite subn_gt0.
+Qed. (**********)
+
+Lemma reciprocal_pol_eq : forall (p q : {poly R}), (p`_0 != 0) -> (q`_0 != 0) ->
+   (p == q) = (reciprocal_pol p == reciprocal_pol q).
+Proof.
+move=> p q Hp0 Hq0.
+apply/idP/idP => Hpq.
+  by move/eqP : Hpq => ->.
+move/eqP : Hpq => Hpq.
+apply/eqP.
+apply: poly_inj.
+have Hsize : (size p = size q).
+  by rewrite -reciprocal_size // -(@reciprocal_size _ q) // Hpq.
+apply: eq_from_nth => // i Hi.
+rewrite -reciprocal_nth_2 // -(@reciprocal_nth_2 q) //. 
+  by rewrite Hpq Hsize.
+by rewrite -Hsize.
+Grab Existential Variables.
+exact: 0.
+Qed.
+
+Search _ "reciprocal".
+(*apply/eqP.
+apply: poly_inj.
+apply: eq_from_nth.
+*)
+
+End about_transformations_and_equality.
+
 Section transformations_in_C.
 Variable (R : rcfType).
 Local Notation C:= (complex R).
@@ -347,7 +431,7 @@ by rewrite /scaleX_poly (map_comp_poly _ p ('X * a%:P)) rmorphM /=
 Qed.
 
 Lemma reciprocal_toC : forall (p : {poly R}),
-   toC (reciprocal_pol p) = reciprocal_pol (toC p).
+   toC (@reciprocal_pol _ p) = reciprocal_pol (toC p).
 Proof.
 move=> p.
 Admitted. (**********)
@@ -404,19 +488,46 @@ Qed.
 
 End transformations_in_C.
 
+(*Search _ cons_poly.
+polyseq_cons
+cons_poly_def*)
+
+
+
 Lemma mul_polyC_seqmul : forall (R : rcfType) (p : {poly R}) (a : R), (a != 0) ->
    polyseq (a *: p) = seqmul (nseq (size p) a) p.
 Proof.
 move=> R p a Ha.
-case: p => s Hs.
-rewrite /=.
-elim: s Hs => [Hs | b l IHbl Hs].
-rewrite /= seqmul0.
-Check (mulr0 a%:P).
-have H0: Polynomial (R:=R) (polyseq:=[::]) Hs = 0%:P.
-  admit.
-rewrite H0 -mul_polyC mulr0 /=.
-Admitted.
+elim/poly_ind : p => [ | p c IHp].
+  by rewrite size_poly0 /= seqmul0 -mul_polyC mulr0 -polyC0 polyseq0.
+rewrite -{2}(cons_poly_def) -mul_polyC mulrDr mulrA mul_polyC -polyC_mul.
+rewrite -!cons_poly_def !polyseq_cons.
+case Hp : (~~ (nilp p)).
+  have Hp2 : (~~ (nilp (a *: p))).
+    rewrite nil_poly -mul_polyC.
+    rewrite nil_poly in Hp.
+    apply: mulf_neq0.
+      by rewrite polyC_eq0.
+    by rewrite Hp.
+  rewrite Hp2.
+  by rewrite seqmul_cons IHp.
+have Hp2 : (nilp (a *: p)).
+  rewrite nil_poly -mul_polyC mulf_eq0.
+  rewrite nil_poly in Hp.
+  apply/orP; right.
+  by apply: negbFE.
+rewrite Hp2 /= size_polyC.
+case Hc : (c != 0).
+  have Hac : (a * c != 0).
+    by apply: mulf_neq0.
+  by rewrite !polyseqC Hc /= Hac.
+have Hac : ((a * c != 0) = false).
+  apply: negbTE.
+  rewrite mulf_eq0 negb_or negb_and.
+  apply/orP; right.
+  by rewrite Hc.
+by rewrite !polyseqC Hc Hac /=.
+Qed.
 
 Lemma changes_mulC : forall (R : rcfType) (p : {poly R}) (a : R), (a != 0) ->
    changes p = changes (a *: p).
@@ -439,26 +550,55 @@ rewrite ltr_def; apply/andP; split.
 by apply: sqr_ge0.
 Qed.
 
-Lemma Bernstein_coeffs_0 : forall (R : idomainType) (p : {poly R}) (a b : R),
+Lemma Bernstein_coeffs_0 : forall (R : idomainType) (p : {poly R}) (a b : R), (a != b) ->
    (p == 0) = ((Bernstein_coeffs p a b) == 0).
 Proof.
-move=> R p a b.
+move=> R p a b Hab.
 apply/idP/idP => Hp; move/eqP : Hp => Hp.
   by rewrite /Bernstein_coeffs Hp /shift_poly /scaleX_poly !comp_polyC
      reciprocalC comp_polyC.
+rewrite /Bernstein_coeffs in Hp.
+move/eqP : Hp => Hp.
+rewrite (shift_poly_eq _ _ (- 1)) shift_polyDK in Hp.
+
+
+rewrite (shift_poly_eq p 0 a).
+rewrite (@scale_poly_eq R _ _  (b - a)).
+rewrite (@reciprocal_pol_eq R).
+rewrite (shift_poly_eq _ _ 1).
+rewrite /Bernstein_coeffs in Hp.
+rewrite Hp.
+      by rewrite /shift_poly /scaleX_poly !comp_polyC
+         reciprocalC comp_polyC polyC0.
+    admit.
+  rewrite /shift_poly /scaleX_poly !comp_polyC.
+  admit.
+
+rewrite !comp_polyC
+     reciprocalC comp_polyC.
+Search _ "polyseq".
+
 Admitted. (**********)
   
 Section le_thm_des_3_cercles.
 
-Variables (R : rcfType) (l r : R) (Hlr : l != r).
+Variables (R : rcfType) (l r : R) (Hlr_le : l < r).
 
 Local Notation C := (complex R).
+
+Lemma Hlr : l != r.
+Proof.
+rewrite eq_sym.
+apply: (@proj1 (r != l) (l <= r)).
+apply/andP.
+by rewrite -ltr_def.
+Qed.
 
 Lemma HlrC : (l%:C != r%:C).
 Proof.
 rewrite -!complexr0 eq_complex /= negb_and.
-apply/orP.
-by left.
+apply/orP; left.
+exact: Hlr.
 Qed.
 
 Definition notinC (z : C) :=
