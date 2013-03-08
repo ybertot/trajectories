@@ -1087,7 +1087,8 @@ rewrite Hs1_as_mask.
 apply/subseqP; by exists btl.
 Qed.
 
-Lemma changes_seq_incr_0 : forall (s : seq R), (0 < size s)%N -> (increasing s) -> (all_neq0 s) ->
+Lemma changes_seq_incr_0 : forall (s : seq R), (0 < size s)%N ->
+   (increasing s) -> (all_neq0 s) ->
    ((changes s == 0%N) = (0 < s`_0 * s`_((size s).-1))).
 Proof.
 move=> s Hssize Hsincr Hsneq0.

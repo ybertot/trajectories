@@ -1,4 +1,4 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime div.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime div bigop.
 Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex
    poly_normal pol.
 
@@ -232,9 +232,9 @@ Qed.
 
 End about_changes_0.
 
-Lemma Bernstein_coeffsE : forall (G : ringType) (p : {poly G}) (a b : G),
+(*Lemma Bernstein_coeffsE : forall (G : ringType) (p : {poly G}) (a b : G),
    Bernstein_coeffs p a b = reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
-Proof. by []. Qed.
+Proof. by []. Qed.*)
 
 Section about_roots_and_transformations.
 
@@ -292,7 +292,7 @@ Lemma root_Bernstein_coeffs_1 : forall (p : {poly R}) (x : R) (l r : R), (l != r
    root p x = root (Bernstein_coeffs p l r) ((r - x) / (x - l)).
 Proof.
 move=> p x l r Hlr Hxl Hxr.
-rewrite Bernstein_coeffsE.
+rewrite /Bernstein_coeffs.
 rewrite -root_shift_2 -(@mulrK _ (x - l) _ 1). 
   rewrite mul1r -mulrDl addrA.
   rewrite -(@addrA _ _ (-x) x) (@addrC _ (-x) x) addrA addrK. 
@@ -314,7 +314,7 @@ Lemma root_Bernstein_coeffs_2 : forall (p : {poly R}) (x : R) (l r : R), (x + 1 
    root p ((r + l * x) / (x + 1)) = root (Bernstein_coeffs p l r) x.
 Proof.
 move=> p x l r Hx.
-rewrite Bernstein_coeffsE.
+rewrite /Bernstein_coeffs.
 rewrite -root_shift_2 -root_reciprocal_2 //. 
 rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (x + 1) _ l).
   by rewrite -mulrDl {2}(@addrC _ x 1) mulrDr mulr1 addrA -(addrA r (- l) l)
@@ -360,6 +360,92 @@ Lemma reciprocalB : forall (p q : {poly R}),
 Proof.
 Admitted.*)
 
+
+Lemma reciprocal_Xn : forall n,
+   reciprocal_pol ('X^n) = (GRing.one R)%:P.
+Proof.
+move=> n.
+rewrite /reciprocal_pol size_polyXn poly_def big_ord_recl.
+rewrite subSS subn0 coefXn expr0 eqxx scale1r big1 ?addr0 // => i _.
+rewrite lift0 subSS coefXn /=.
+have H : (((n - i.+1)%N == n) = false).
+  apply: negbTE.
+  rewrite neq_ltn.
+  apply/orP; left.
+  rewrite -(ltn_add2r i.+1) subnK.
+    rewrite -addSnnS. apply: ltn_addr. by apply: ltnSn.
+  by case: i.
+by rewrite H /= -mul_polyC mul0r.
+Qed.
+
+Lemma reciprocal_Xn_root0 : forall p : {poly R},
+   reciprocal_pol p = reciprocal_pol (p %/ 'X^(\mu_0 p)).
+Proof.
+move=> p.
+rewrite -(addr0 'X) -oppr0.
+have Hmu0 := (root_mu p 0).
+rewrite Pdiv.IdomainMonic.dvdp_eq in Hmu0.
+  move/eqP : Hmu0 => Hmu0.
+  by rewrite {1}Hmu0 reciprocalM {2}oppr0 addr0 reciprocal_Xn polyC1 mulr1 polyC0.
+rewrite polyC0 oppr0 addr0. by apply: monicXn.
+Qed.
+
+Lemma pdivmu0_0th_neq0 : forall p : {poly R}, (p != 0) ->
+   (p %/ 'X^(\mu_0 p))`_0 != 0.
+Proof.
+move=> p Hp.
+have H0noroot : ~~(root (p %/ 'X^(\mu_0 p)) 0).
+  rewrite -mu_gt0 //.  
+    rewrite -eqn0Ngt -(addr0 'X) -(@oppr0 (poly_zmodType R)) -polyC0 mu_div.
+      rewrite subn_eq0. by apply: leqnn.
+    by apply: leqnn.
+  rewrite Pdiv.CommonIdomain.divp_eq0.
+  rewrite negb_or. apply/andP; split.
+    by done.
+  rewrite negb_or. apply/andP; split.
+    rewrite -size_poly_gt0 size_polyXn. by apply: ltn0Sn.
+  rewrite -leqNgt. apply: dvdp_leq =>//.
+  rewrite -(addr0 'X) -oppr0 -polyC0.
+  by apply: root_mu.
+rewrite -horner_coef0. apply: negbT.
+by move/rootPf : H0noroot.
+Qed.
+
+Lemma reciprocal_reciprocal : forall p : {poly R},
+   reciprocal_pol (reciprocal_pol p) = p %/ ('X^(\mu_0 p)).
+Proof.
+move=> p.
+case Hp0 : (p == 0).
+  move/eqP : Hp0 => ->.
+  by rewrite !reciprocalC div0p polyC0.
+rewrite (@reciprocal_Xn_root0 p) reciprocal_idempotent //.
+apply: pdivmu0_0th_neq0.
+by apply: negbT.
+Qed.
+
+Lemma reciprocal0 : forall p : {poly R},
+   (reciprocal_pol p == 0) = (p == 0).
+Proof.
+move=> p.
+apply/idP/idP => Hp.
+  have H : (p %/ ('X^(\mu_0 p)) == 0).
+    rewrite -reciprocal_reciprocal.
+    rewrite -polyC0 -reciprocalC.
+    by move/eqP : Hp => ->.
+  rewrite Pdiv.CommonIdomain.divp_eq0 in H.
+  move/orP : H; case => [| H]//.
+  move/orP : H; case => H.
+    rewrite -size_poly_eq0 size_polyXn in H.
+    by rewrite -(Bool.negb_involutive (_.+1 == 0%N)) -lt0n /= in H.
+  have H2 := (root_mu p 0).
+  case Hp0 : (p == 0) => //.
+  rewrite gtNdvdp // in H2.  
+    by apply: negbT.
+  by rewrite oppr0 addr0.  
+move/eqP : Hp => ->.
+by rewrite -polyC0 reciprocalC.
+Qed.
+
 Lemma reciprocal_nth : forall (p : {poly R}) k, (k < size p)%N ->
    (reciprocal_pol p)`_k = p`_((size p) - k.+1).
 Proof.
@@ -373,15 +459,16 @@ Proof.
 move=> p k Hk.
 rewrite /reciprocal_pol coef_poly. 
 have Hk2 : (size p - k.+1 < size p)%N.
-  admit.
+  rewrite -(ltn_add2r k.+1) subnK // -addSnnS.
+  apply: ltn_addr. by apply: ltnSn.
 rewrite Hk2.
 rewrite !subnS -!subn1 !subnBA.
     by rewrite addn1 -subnDA addn1 addnC addnK.
   by apply: ltnW.
 by rewrite subn_gt0.
-Qed. (**********)
+Qed. 
 
-Lemma reciprocal_pol_eq : forall (p q : {poly R}), (p`_0 != 0) -> (q`_0 != 0) ->
+Lemma reciprocal_eq : forall (p q : {poly R}), (p`_0 != 0) -> (q`_0 != 0) ->
    (p == q) = (reciprocal_pol p == reciprocal_pol q).
 Proof.
 move=> p q Hp0 Hq0.
@@ -399,12 +486,6 @@ by rewrite -Hsize.
 Grab Existential Variables.
 exact: 0.
 Qed.
-
-Search _ "reciprocal".
-(*apply/eqP.
-apply: poly_inj.
-apply: eq_from_nth.
-*)
 
 End about_transformations_and_equality.
 
@@ -434,7 +515,14 @@ Lemma reciprocal_toC : forall (p : {poly R}),
    toC (@reciprocal_pol _ p) = reciprocal_pol (toC p).
 Proof.
 move=> p.
-Admitted. (**********)
+rewrite /reciprocal_pol poly_def rmorph_sum /= poly_def size_map_inj_poly.
+    apply: eq_bigr => i _.
+    rewrite -mul_polyC.
+    rewrite rmorphM /= map_polyXn /=.
+    by rewrite !coef_map /= map_polyC /= mul_polyC.
+  by apply: complexI.
+by rewrite -complexr0.
+Qed.
 
 Lemma Bernstein_toC : forall (p : {poly R}) (l r : R),
    toC (Bernstein_coeffs p l r) = Bernstein_coeffs (toC p) l%:C r%:C.
@@ -454,7 +542,7 @@ have HlrC : (l%:C != r%:C).
   rewrite -!complexr0 eq_complex /= negb_and.
   apply/orP.
   by left.
-rewrite !rootE Bernstein_toC Bernstein_coeffsE -!rootE.
+rewrite !rootE Bernstein_toC /Bernstein_coeffs -!rootE.
 rewrite -@root_shift_2 -(@mulrK _ (z - l%:C) _ 1). 
   rewrite mul1r -mulrDl addrA.
   rewrite -(@addrA _ _ (-z) z) (@addrC _ (-z) z) addrA addrK. 
@@ -478,7 +566,7 @@ Lemma root_Bernstein_coeffs_C_2 : forall (p : {poly R}) (z : C) (l r : R),
       root (toC (Bernstein_coeffs p l r)) z.
 Proof.
 move=> p z l r Hz.
-rewrite !rootE Bernstein_toC Bernstein_coeffsE -!rootE.
+rewrite !rootE Bernstein_toC /Bernstein_coeffs -!rootE.
 rewrite -root_shift_2 -root_reciprocal_2 //. 
 rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (z + 1) _ l%:C).
   by rewrite -mulrDl {2}(@addrC _ z 1) mulrDr mulr1 addrA -(addrA r%:C (- l%:C) l%:C)
@@ -558,27 +646,13 @@ apply/idP/idP => Hp; move/eqP : Hp => Hp.
   by rewrite /Bernstein_coeffs Hp /shift_poly /scaleX_poly !comp_polyC
      reciprocalC comp_polyC.
 rewrite /Bernstein_coeffs in Hp.
-move/eqP : Hp => Hp.
-rewrite (shift_poly_eq _ _ (- 1)) shift_polyDK in Hp.
-
-
-rewrite (shift_poly_eq p 0 a).
-rewrite (@scale_poly_eq R _ _  (b - a)).
-rewrite (@reciprocal_pol_eq R).
-rewrite (shift_poly_eq _ _ 1).
-rewrite /Bernstein_coeffs in Hp.
-rewrite Hp.
-      by rewrite /shift_poly /scaleX_poly !comp_polyC
-         reciprocalC comp_polyC polyC0.
-    admit.
-  rewrite /shift_poly /scaleX_poly !comp_polyC.
-  admit.
-
-rewrite !comp_polyC
-     reciprocalC comp_polyC.
-Search _ "polyseq".
-
-Admitted. (**********)
+rewrite (shift_poly_eq p 0 a) shift_polyC (@scale_poly_eq R _ _  (b - a)).
+  rewrite /scaleX_poly comp_polyC -(@reciprocal0 R) (shift_poly_eq _ _ 1)
+     shift_polyC.
+  rewrite /Bernstein_coeffs in Hp.
+  by rewrite Hp.
+by rewrite subr_eq0 eq_sym.
+Qed.
   
 Section le_thm_des_3_cercles.
 
@@ -697,18 +771,19 @@ Qed.
 
 (* Theorem 10.47 i. *)
 Theorem three_circles_1 : forall (p : {poly R}), (forall (z : C),
-   (root (map_poly (real_complex R) p) z -> (notinC z))) ->
+   root (map_poly (real_complex R) p) z -> (notinC z)) ->
       changes (Bernstein_coeffs p l r) = 0%N.
 Proof.
 move=> p H.
+have Hlr := Hlr.
 case Hp0 : (p == 0).
-  rewrite (Bernstein_coeffs_0 p l r) in Hp0.
+  rewrite (Bernstein_coeffs_0 p Hlr) in Hp0.
   move/eqP : Hp0 => ->.
   by rewrite polyseq0.
 rewrite (@changes_mulC R (Bernstein_coeffs p l r) (lead_coef (Bernstein_coeffs p l r))^-1).
   apply: monic_roots_changes_eq0.
     rewrite monicE lead_coefZ mulrC -unitrE unitfE lead_coef_eq0
-       -Bernstein_coeffs_0.
+       -Bernstein_coeffs_0 //.
     apply/eqP.
     by move/eqP : Hp0.
   move=> z Hz.
@@ -716,16 +791,14 @@ rewrite (@changes_mulC R (Bernstein_coeffs p l r) (lead_coef (Bernstein_coeffs p
   rewrite -root_Bernstein_coeffs_C_2 in Hz.
     rewrite -notinC_Re_lt0_2.
       apply: H => //.
-      admit.
-    admit. 
+      admit. (********** z+1 != 0 *)
+    admit.  (********** z+1 != 0 *)
   rewrite -complexr0 eq_complex /= negb_and.
   apply/orP; left.
-  rewrite invr_eq0 lead_coef_eq0 -Bernstein_coeffs_0.  
-  move/eqP : Hp0 => Hp0.
-  by apply/eqP.
-rewrite invr_eq0 lead_coef_eq0 -Bernstein_coeffs_0.  
-move/eqP : Hp0 => Hp0.
-by apply/eqP.
-Qed.
+  rewrite invr_eq0 lead_coef_eq0 -Bernstein_coeffs_0 //. 
+  by apply: negbT. 
+rewrite invr_eq0 lead_coef_eq0 -Bernstein_coeffs_0 //.  
+by apply: negbT.
+Qed. (**********)
 
 End le_thm_des_3_cercles.
