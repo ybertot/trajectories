@@ -1,6 +1,6 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime div bigop.
-Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex
-   poly_normal pol.
+Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex.
+Require Import poly_normal pol.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -236,7 +236,28 @@ End about_changes_0.
    Bernstein_coeffs p a b = reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
 Proof. by []. Qed.*)
 
-Section about_roots_and_transformations.
+Section about_scaleX_poly.
+
+Variable (R : comRingType).
+
+Lemma scaleX_poly_is_linear (c : R) : linear (scaleX_poly c).
+Proof. by move=> a u v; rewrite /scaleX_poly comp_polyD comp_polyZ. Qed.
+
+Lemma scaleX_poly_multiplicative (c : R) : multiplicative (scaleX_poly c).
+Proof.   
+split. move=> x y; exact: comp_polyM. by rewrite /scaleX_poly comp_polyC.
+Qed.
+
+Canonical scaleX_poly_additive (c : R) := Additive (scaleX_poly_is_linear c).
+Canonical scaleX_poly_linear c := Linear (scaleX_poly_is_linear c).
+Canonical scaleX_poly_rmorphism c := AddRMorphism (scaleX_poly_multiplicative c).
+
+Lemma scaleX_polyC (c a : R) : a%:P \scale c = a%:P.
+Proof. by rewrite /scaleX_poly comp_polyC. Qed.
+
+End about_scaleX_poly.
+
+Section about_transformations.
 
 Variable (R : fieldType).
 
@@ -322,7 +343,51 @@ rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (x + 1) _ l).
 by rewrite unitfE.
 Qed.
 
-End about_roots_and_transformations.
+Lemma Bernstein_coeffsM : forall (p q : {poly R}) (l r : R),
+   Bernstein_coeffs (p * q) l r = (Bernstein_coeffs p l r) * (Bernstein_coeffs q l r).
+Proof.
+move=> p q l r.
+by rewrite /Bernstein_coeffs !rmorphM /= reciprocalM rmorphM.
+Qed.
+
+Lemma Bernstein_coeffs_Xsubc : forall (c l r : R), (l != r) ->
+   Bernstein_coeffs ('X - c%:P) l r = (l - c) *: 'X + (r - c)%:P.
+Proof.
+move=> c l r Hlr.
+rewrite /Bernstein_coeffs rmorphB /= shift_polyC rmorphB /= scaleX_polyC.
+rewrite /shift_poly comp_polyX rmorphD /= scaleX_polyC /scaleX_poly comp_polyX
+   -addrA -(rmorphB _ l c) /=. 
+rewrite reciprocal_monom.
+rewrite rmorphD rmorphM /= comp_polyX !comp_polyC.
+rewrite mulrDl polyC1 mul1r mulrC mul_polyC -addrA (addrC (l - c)%:P _)
+    -rmorphD /= addrA addrNK //.
+by rewrite subr_eq0 eq_sym.
+Qed.
+
+Lemma Bernstein_coeffs_Xsubc_monic : forall (c l r : R), (l != r) -> (l != c) ->
+   (lead_coef (Bernstein_coeffs ('X - c%:P) l r))^-1 *:
+      (Bernstein_coeffs ('X - c%:P) l r) 
+         = 'X + ((r - c) / (l - c))%:P.
+Proof.
+move=> c l r Hlr Hlc.
+rewrite Bernstein_coeffs_Xsubc //  lead_coefE.
+have Hlc2 : ((l - c) != 0).
+  by rewrite subr_eq0.
+have HlcP : ((l - c)%:P == 0) = false.
+  apply/eqP/eqP.
+  by rewrite polyC_eq0 subr_eq0.
+have Hsize : size ((l - c) *: 'X + (r - c)%:P) = 2.  
+  rewrite -(mul_polyC (l - c) 'X).
+  rewrite size_MXaddC HlcP /= size_polyC.
+  by rewrite Hlc2.
+have Hcoef1 : ((l - c) *: 'X + (r - c)%:P)`_1 = (l - c).
+  by rewrite coefD coefC addr0 -mul_polyC coefMX coefC /=.
+by rewrite Hsize -mul_polyC Hcoef1 mulrDr mul_polyC -rmorphM
+   mulrC -!mul_polyC mulrA (mulrC _ 'X) -rmorphM (mulrC _ (l - c))
+   mulfV //= polyC1 mulr1.
+Qed.
+
+End about_transformations.
 
 Section about_transformations_and_equality.
 
@@ -490,6 +555,7 @@ Qed.
 End about_transformations_and_equality.
 
 Section transformations_in_C.
+
 Variable (R : rcfType).
 Local Notation C:= (complex R).
 
@@ -576,12 +642,6 @@ Qed.
 
 End transformations_in_C.
 
-(*Search _ cons_poly.
-polyseq_cons
-cons_poly_def*)
-
-
-
 Lemma mul_polyC_seqmul : forall (R : rcfType) (p : {poly R}) (a : R), (a != 0) ->
    polyseq (a *: p) = seqmul (nseq (size p) a) p.
 Proof.
@@ -654,7 +714,7 @@ rewrite (shift_poly_eq p 0 a) shift_polyC (@scale_poly_eq R _ _  (b - a)).
 by rewrite subr_eq0 eq_sym.
 Qed.
   
-Section le_thm_des_3_cercles.
+Section thm_3_cercles_partie1.
 
 Variables (R : rcfType) (l r : R) (Hlr_le : l < r).
 
@@ -768,7 +828,6 @@ rewrite -subr_eq0 -{2}(@mulrK _ (z + 1) _ l%:C).
 by rewrite unitfE.
 Qed.
 
-
 (* Theorem 10.47 i. *)
 Theorem three_circles_1 : forall (p : {poly R}), (forall (z : C),
    root (map_poly (real_complex R) p) z -> (notinC z)) ->
@@ -787,18 +846,91 @@ rewrite (@changes_mulC R (Bernstein_coeffs p l r) (lead_coef (Bernstein_coeffs p
     apply/eqP.
     by move/eqP : Hp0.
   move=> z Hz.
+  case Hz2 : (z + 1 == 0).
+    rewrite addr_eq0 eq_complex in Hz2.
+    move/andP : Hz2; case => Hrez _.
+    move/eqP : Hrez => ->.
+    rewrite raddfN.
+    by apply: lerN10.
   rewrite map_polyZ rootZ /= in Hz.
-  rewrite -root_Bernstein_coeffs_C_2 in Hz.
-    rewrite -notinC_Re_lt0_2.
-      apply: H => //.
-      admit. (********** z+1 != 0 *)
-    admit.  (********** z+1 != 0 *)
+    move/eqP/eqP : Hz2 => Hz2.
+    rewrite -root_Bernstein_coeffs_C_2 // in Hz.
+    rewrite -notinC_Re_lt0_2 //.
+    apply: H => //.
   rewrite -complexr0 eq_complex /= negb_and.
   apply/orP; left.
   rewrite invr_eq0 lead_coef_eq0 -Bernstein_coeffs_0 //. 
   by apply: negbT. 
 rewrite invr_eq0 lead_coef_eq0 -Bernstein_coeffs_0 //.  
 by apply: negbT.
-Qed. (**********)
+Qed.
 
-End le_thm_des_3_cercles.
+End thm_3_cercles_partie1.
+
+Section thm_3_cercles_partie2.
+
+Variable (R : rcfType).
+
+Local Notation C := (complex R).
+
+(* Definition inC1 := fun (l r : R) (z : C) =>
+   ((Re z) - ((l + r) / (2%:R))) ^+2 +
+   ((Im z) - ((r - l) / (2%:R * (Num.sqrt 3%:R)))) ^+2 <
+   ((r - l)^+2 / 3%:R). *)
+
+Definition inC1 := fun (l r : R) (z : C) =>
+   (Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 - 
+   (r - l) * (Im z) / (Num.sqrt 3%:R) + l * r < 0.
+
+(* Definition inC2 := fun (l r : R) (z : C) =>
+   ((Re z) - ((l + r) / (2%:R))) ^+2 +
+   ((Im z) + ((r - l) / (2%:R * (Num.sqrt 3%:R)))) ^+2 <
+   ((r - l)^+2 / 3%:R). *)
+
+Definition inC2 := fun (l r : R) (z : C) =>
+   (Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + 
+   (r - l) * (Im z) / (Num.sqrt 3%:R) + l * r < 0.
+
+(* Definition inC12 := fun (l r : R) (z : C) =>
+   (((Re z) - ((l + r) / (2%:R))) ^+2 +
+   ((Im z) - ((r - l) / (2%:R * (Num.sqrt 3%:R)))) ^+2 <
+   ((r - l)^+2 / 3%:R)) ||
+   (((Re z) - ((l + r) / (2%:R))) ^+2 +
+   ((Im z) + ((r - l) / (2%:R * (Num.sqrt 3%:R)))) ^+2 <
+   ((r - l)^+2 / 3%:R)). *)
+
+Definition inC12 := fun (l r : R) (z : C) =>
+   ((Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 - 
+   (r - l) * (Im z) / (Num.sqrt 3%:R) + l * r < 0) ||
+   ((Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + 
+   (r - l) * (Im z) / (Num.sqrt 3%:R) + l * r < 0).
+
+Lemma inC1_or_inC2 : forall (l r : R) (z : C),
+   (inC1 l r z) || (inC2 l r z) = (inC12 l r z).
+Proof. by done. Qed.
+
+Definition inB1 := fun (z : C) =>
+   ((Re z) - 1 <= 0) && ((Im z)^+2 <= 3%:R * (Re z) ^+2).
+
+Lemma inB_inB1 : forall (z : C), (inB z) = (inB1 (z + 1)).
+Admitted.
+
+Lemma inB1_notinC1201 : forall (z : C), (z != 0) ->
+   (inB1 z) = ~~(inC12 0 1 (1/z)).
+Admitted.
+
+Lemma notinC1201_lr : forall (l r : R) (z : C),
+   ~~(inC12 0 1 z) = ~~(inC12 l r ((r - l)%:C * z -l%:C)).
+Admitted.
+
+Lemma inB_notinC12 : forall (l r : R) (z : C), (z != 0) ->
+   (inB z) = ~~(inC12 l r ((r%:C + l%:C * z) / (z + 1))).
+Admitted.
+
+ (l r : R) (Hlr_le : l < r).
+
+
+Print inB.
+
+
+End thm_3_cercles_partie2.
