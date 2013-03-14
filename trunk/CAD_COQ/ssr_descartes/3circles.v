@@ -905,32 +905,200 @@ Definition inC12 := fun (l r : R) (z : C) =>
    ((Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + 
    (r - l) * (Im z) / (Num.sqrt 3%:R) + l * r < 0).
 
+Lemma inC12E : forall (l r : R) (z : C),
+   inC12 l r z =  ((Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 - 
+   (r - l) * (Im z) / (Num.sqrt 3%:R) + l * r < 0) ||
+   ((Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 + 
+   (r - l) * (Im z) / (Num.sqrt 3%:R) + l * r < 0).
+Proof. by done. Qed.
+
 Lemma inC1_or_inC2 : forall (l r : R) (z : C),
    (inC1 l r z) || (inC2 l r z) = (inC12 l r z).
 Proof. by done. Qed.
 
 Definition inB1 := fun (z : C) =>
-   ((Re z) - 1 <= 0) && ((Im z)^+2 <= 3%:R * (Re z) ^+2).
+   ((Re z) - 1 <= 0) && ((Im z)^+2 <= 3%:R * ((Re z) - 1) ^+2).
 
 Lemma inB_inB1 : forall (z : C), (inB z) = (inB1 (z + 1)).
-Admitted.
+Proof.
+case => a b.
+rewrite /inB1 /= addrK addr0.
+by rewrite inBE.
+Qed.
 
 Lemma inB1_notinC1201 : forall (z : C), (z != 0) ->
-   (inB1 z) = ~~(inC12 0 1 (1/z)).
+   (inB1 z) = ~~(inC12 0 1 (z ^-1)).
 Admitted.
 
-Lemma notinC1201_lr : forall (l r : R) (z : C),
-   ~~(inC12 0 1 z) = ~~(inC12 l r ((r - l)%:C * z -l%:C)).
-Admitted.
+Lemma notinC1201_lr_scale : forall (l r : R) (z : C), (l != r) ->
+   ~~(inC12 0 1 z) = ~~(inC12 0 (r - l) ((r - l)%:C * z)).
+Proof.
+move=> l r. case=> a b Hlr.
+rewrite !inC12E. simpc. rewrite /=.
+rewrite !ComplexField.exprM !(mulrA (r - l) _ a) !(mulrA (r - l) _ b)
+   -expr2 -(mulrN _ a) -mulrA -(mulrN _ (b / Num.sqrt 3%:R))
+    -!(mulrDr ((r - l)^+2)).
+apply/idP/idP => H; rewrite negb_or -!lerNgt in H; 
+   move/andP : H => H; rewrite negb_or; apply/andP;
+   rewrite -!lerNgt; split.
+      apply: mulr_ge0.
+        by apply: sqr_ge0.
+      exact: (proj1 H).
+    apply: mulr_ge0.
+      by apply: sqr_ge0.
+    exact: (proj2 H).
+  rewrite -(pmulr_rge0 (x := ((r - l)^+2))).
+    exact: (proj1 H).
+  rewrite ltr_def; apply/andP; split.
+    by rewrite sqrf_eq0 subr_eq0 eq_sym.  
+  by apply: sqr_ge0.
+rewrite -(pmulr_rge0 (x := ((r - l)^+2))).
+  exact: (proj2 H).
+rewrite ltr_def; apply/andP; split.
+  by rewrite sqrf_eq0 subr_eq0 eq_sym.  
+by apply: sqr_ge0.
+Qed.
 
-Lemma inB_notinC12 : forall (l r : R) (z : C), (z != 0) ->
+Lemma notinC12lr_shift : forall (l r : R) (z : C), (l != r) ->
+   ~~(inC12 0 (r - l) z) = ~~(inC12 l r (z + l%:C)).
+Proof.
+move=> l r. case=> a b Hlr.
+rewrite !inC12E. simpc. rewrite /=.
+Admitted. (**********)
+
+Lemma inB_notinC12 : forall (l r : R) (z : C), (l != r) -> (z + 1 != 0) ->
    (inB z) = ~~(inC12 l r ((r%:C + l%:C * z) / (z + 1))).
+Proof.
+move=> l r z Hlr Hz.
+have H : ((r%:C + l%:C * z) / (z + 1) = ((r - l)%:C / (z + 1) + l%:C)).
+  rewrite -{2}[l%:C](@mulrK _ (z + 1)). 
+    by rewrite -mulrDl {2}[z+1]addrC mulrDr mulr1 rmorphB /= !addrA addrNK.
+  by rewrite unitfE.
+by rewrite H -notinC12lr_shift // -notinC1201_lr_scale //
+   -inB1_notinC1201 // -inB_inB1.
+Qed.
+
+Local Notation toC := (fun (p : {poly R}) =>
+   @map_poly R _ (real_complex R) p).
+
+Lemma changes_nseq : forall (s : seq R) (a : R), (a != 0) ->
+   changes (seqmul (nseq (size s) a) s) = changes s.
+elim => [ | c l IHl a Ha] //.
+case : l IHl => [IH |b l IHbl ] //.
+  by rewrite /= !mulr0 addn0.
+have Helpme : ((changes [::c, b & l]) = ((c * b < 0)%R + changes [:: b & l])%N).
+  by done.
+rewrite Helpme. rewrite -(IHbl a) //.
+have Helpme2 : (((a * c) * (a * b) < 0) == (c * b < 0)).
+  rewrite (mulrC a b) -mulrA (mulrC a) -!mulrA -expr2 mulrA.
+  rewrite pmulr_llt0 // ltr_def. apply/andP; split.
+    by rewrite sqrf_eq0.
+  by apply: sqr_ge0.
+by move/eqP : Helpme2 => <-.
+Qed.
+
+Lemma seqn0_nseq : forall (s : seq R) (a : R), (a != 0) ->
+   seqmul (nseq (size (seqn0 s)) a) (seqn0 s) = seqn0 (seqmul (nseq (size s) a) s).
+Proof.
+elim => [ | c l IHl a Ha] //.
+case : l IHl => [IH |b l IHbl ] //.
+  rewrite /=. 
+  case Hc : (c != 0).
+    have Hac : (a * c != 0).
+      by apply: mulf_neq0.
+    by rewrite Hac.
+  have Hac : ((a * c != 0) = false).
+    apply: negbF; rewrite mulf_eq0; apply/orP; right.
+    by apply: negbFE.
+  by rewrite Hac /=.
+
 Admitted.
 
- (l r : R) (Hlr_le : l < r).
+Lemma inBneg1 : (@inB R (-1)).
+Proof.
+rewrite inBE.
+apply/andP; split.
+  rewrite raddfN. by apply: lerN10.
+rewrite !raddfN /= oppr0 sqrrN !expr2 mulr0 !mulr1.
+by apply: ler0n.
+Qed.
 
-
-Print inB.
+(* ~~ root p r *)
+Theorem three_circles_2 : forall  (l r : R) (p : {poly R})
+   (a : R), (~~ root p r) -> (l < a < r) -> (~~ root p a) ->
+   (forall z : C, root (toC p) z -> ~~ (inC12 l r z) ) ->
+   (changes (seqn0 (Bernstein_coeffs (p * ('X - a%:P)) l r)) = 1%N).
+Proof.
+move=> l r p a Hpnorootr Hlar Hpnoroota H.
+have Hlr : l != r.
+  apply: negbT.
+  apply: ltr_eqF.
+  move/andP : Hlar => Hlar.
+  apply: (@ltr_trans _ a).
+    exact: (proj1 Hlar).
+  exact: (proj2 Hlar).
+have Hal : l != a.
+  move/andP : Hlar => Hlar.
+  apply: negbT.
+  apply: ltr_eqF.
+  exact: (proj1 Hlar).  
+case Hp : (p == 0).
+  move/eqP : Hp => Hp.
+  have : false.
+    rewrite  -(andbN (root p a)).
+    apply/andP. split => //.
+    rewrite Hp; by apply: root0.
+  by done.
+move/eqP/eqP : Hp => Hp.
+have Hlc1 : (lead_coef (Bernstein_coeffs (R:=R) (p * ('X - a%:P)) l r))^-1 != 0.
+  apply: invr_neq0.
+  rewrite Bernstein_coeffsM lead_coefM.
+  apply: mulf_neq0; rewrite lead_coef_eq0.
+    by rewrite -Bernstein_coeffs_0.
+  rewrite -Bernstein_coeffs_0 //.
+  apply: negbT.
+  by apply: polyXsubC_eq0.
+have Hlc2 : (lead_coef (Bernstein_coeffs p l r) != 0).
+  by rewrite lead_coef_eq0 -Bernstein_coeffs_0.
+rewrite -(@changes_nseq _
+   (lead_coef (Bernstein_coeffs (p * ('X - a%:P)) l r)) ^-1) //
+    seqn0_nseq // -mul_polyC_seqmul //.
+rewrite Bernstein_coeffsM lead_coefM -mul_polyC invrM.
+    rewrite rmorphM /= mulrA mulrC !mulrA
+       (mulrC (Bernstein_coeffs ('X - a%:P) _ _) _)
+       mul_polyC -mulrA mul_polyC mulrC.
+    rewrite [in X in (changes (R:=R) (seqn0 (polyseq (_ * X))))]
+      (@Bernstein_coeffs_Xsubc_monic R a l r Hlr Hal).
+    rewrite -(opprK ((r - a) / (l - a))%:P) -polyC_opp.
+    apply: normal_changes.
+        move/andP : Hlar => Hlar.
+        rewrite oppr_gt0 pmulr_rlt0.
+          rewrite invr_lt0 subr_lt0; exact: (proj1 Hlar).
+        rewrite subr_gt0; exact: (proj2 Hlar).
+      apply: normal_root_inB.
+        rewrite monicE lead_coef_lreg.
+          by rewrite mulrC -unitrE unitfE.
+        apply/lregP. by apply: invr_neq0.
+      move=> z Hz.
+      case Hz2 : (z + 1 != 0).
+        rewrite (inB_notinC12 Hlr) //.
+        rewrite -mul_polyC rmorphM /= map_polyC mul_polyC rootZ in Hz.
+          apply: H.
+          by rewrite root_Bernstein_coeffs_C_2.
+        rewrite /= eq_complex negb_and.
+        apply/orP; left. by apply: invr_neq0.
+      rewrite addr_eq0 in Hz2.
+      move/eqP : Hz2 => ->.
+      exact: inBneg1.
+    rewrite rootZ. 
+      rewrite -root_Bernstein_coeffs_2.
+        by rewrite mulr0 addr0 add0r invr1 mulr1.
+      rewrite add0r. by apply: oner_neq0.
+    by apply: invr_neq0.
+  by rewrite unitfE.
+rewrite unitfE lead_coef_eq0 -Bernstein_coeffs_0 //.
+apply: negbT. by apply polyXsubC_eq0.
+Qed. (**********)
 
 
 End thm_3_cercles_partie2.
