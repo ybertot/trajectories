@@ -261,15 +261,13 @@ Section about_transformations.
 
 Variable (R : fieldType).
 
-Lemma root_shift_1 : forall (p : {poly R}) (a x : R), (root p x) = root (p \shift a) (x-a).
-Proof.
-move=> p a x.
-by rewrite !rootE -horner_shift_poly1.
-Qed.
+Lemma root_shift_1 : forall (p : {poly R}) (a x : R),
+   (root p x) = root (p \shift a) (x-a).
+Proof. move=> p a x. by rewrite !rootE -horner_shift_poly1. Qed.
 
-Lemma root_shift_2 : forall (p : {poly R}) (a x : R), root p (x + a) = root (p \shift a) x.
-Proof.
-move=> p a x.
+Lemma root_shift_2 : forall (p : {poly R}) (a x : R),
+   root p (x + a) = root (p \shift a) x.
+Proof. move=> p a x.
 by rewrite !rootE -{2}(@addrK _ a x) -horner_shift_poly1.
 Qed.
 
@@ -308,8 +306,8 @@ rewrite !rootE horner_reciprocal.
 by rewrite unitfE.
 Qed.
 
-Lemma root_Bernstein_coeffs_1 : forall (p : {poly R}) (x : R) (l r : R), (l != r) ->
-   (x != l) -> (x != r) ->
+Lemma root_Bernstein_coeffs_1 : forall (p : {poly R}) (x : R) (l r : R),
+   (l != r) -> (x != l) -> (x != r) ->
    root p x = root (Bernstein_coeffs p l r) ((r - x) / (x - l)).
 Proof.
 move=> p x l r Hlr Hxl Hxr.
@@ -331,20 +329,22 @@ rewrite -root_shift_2 -(@mulrK _ (x - l) _ 1).
 by rewrite unitfE subr_eq0.
 Qed.
 
-Lemma root_Bernstein_coeffs_2 : forall (p : {poly R}) (x : R) (l r : R), (x + 1 != 0) ->
+Lemma root_Bernstein_coeffs_2 : forall (p : {poly R}) (x : R) (l r : R),
+   (x + 1 != 0) ->
    root p ((r + l * x) / (x + 1)) = root (Bernstein_coeffs p l r) x.
 Proof.
 move=> p x l r Hx.
 rewrite /Bernstein_coeffs.
 rewrite -root_shift_2 -root_reciprocal_2 //. 
 rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (x + 1) _ l).
-  by rewrite -mulrDl {2}(@addrC _ x 1) mulrDr mulr1 addrA -(addrA r (- l) l)
-       (addrC (-l) l) addrA addrK.
+  by rewrite -mulrDl {2}(@addrC _ x 1) mulrDr mulr1 addrA
+       -(addrA r (- l) l) (addrC (-l) l) addrA addrK.
 by rewrite unitfE.
 Qed.
 
 Lemma Bernstein_coeffsM : forall (p q : {poly R}) (l r : R),
-   Bernstein_coeffs (p * q) l r = (Bernstein_coeffs p l r) * (Bernstein_coeffs q l r).
+   Bernstein_coeffs (p * q) l r =
+   (Bernstein_coeffs p l r) * (Bernstein_coeffs q l r).
 Proof.
 move=> p q l r.
 by rewrite /Bernstein_coeffs !rmorphM /= reciprocalM rmorphM.
@@ -355,8 +355,8 @@ Lemma Bernstein_coeffs_Xsubc : forall (c l r : R), (l != r) ->
 Proof.
 move=> c l r Hlr.
 rewrite /Bernstein_coeffs rmorphB /= shift_polyC rmorphB /= scaleX_polyC.
-rewrite /shift_poly comp_polyX rmorphD /= scaleX_polyC /scaleX_poly comp_polyX
-   -addrA -(rmorphB _ l c) /=. 
+rewrite /shift_poly comp_polyX rmorphD /= scaleX_polyC /scaleX_poly
+   comp_polyX -addrA -(rmorphB _ l c) /=. 
 rewrite reciprocal_monom.
 rewrite rmorphD rmorphM /= comp_polyX !comp_polyC.
 rewrite mulrDl polyC1 mul1r mulrC mul_polyC -addrA (addrC (l - c)%:P _)
@@ -364,7 +364,8 @@ rewrite mulrDl polyC1 mul1r mulrC mul_polyC -addrA (addrC (l - c)%:P _)
 by rewrite subr_eq0 eq_sym.
 Qed.
 
-Lemma Bernstein_coeffs_Xsubc_monic : forall (c l r : R), (l != r) -> (l != c) ->
+Lemma Bernstein_coeffs_Xsubc_monic : forall (c l r : R),
+   (l != r) -> (l != c) ->
    (lead_coef (Bernstein_coeffs ('X - c%:P) l r))^-1 *:
       (Bernstein_coeffs ('X - c%:P) l r) 
          = 'X + ((r - c) / (l - c))%:P.
@@ -559,7 +560,8 @@ Section transformations_in_C.
 Variable (R : rcfType).
 Local Notation C:= (complex R).
 
-Local Notation toC := (fun (p : {poly R}) => @map_poly R _ (real_complex R) p).
+Local Notation toC := (fun (p : {poly R}) =>
+   @map_poly R _ (real_complex R) p).
 
 Lemma shift_toC : forall (p : {poly R}) (a : R),
    toC (p \shift a) = (toC p) \shift a%:C.
@@ -598,8 +600,8 @@ by rewrite {2}/Bernstein_coeffs -shift_toC /= -rmorphB -scale_toC
    -reciprocal_toC -shift_toC /Bernstein_coeffs.
 Qed.
 
-Lemma root_Bernstein_coeffs_C_1 :  forall (p : {poly R}) (z : C) (l r : R), (l != r) ->
-   (z != l%:C) -> (z != r%:C) ->
+Lemma root_Bernstein_coeffs_C_1 :  forall (p : {poly R}) (z : C) (l r : R),
+   (l != r) -> (z != l%:C) -> (z != r%:C) ->
       root (toC p) z =
       root (toC (Bernstein_coeffs p l r)) ((r%:C - z) / (z - l%:C)).
 Proof.
@@ -642,7 +644,8 @@ Qed.
 
 End transformations_in_C.
 
-Lemma mul_polyC_seqmul : forall (R : rcfType) (p : {poly R}) (a : R), (a != 0) ->
+Lemma mul_polyC_seqmul : forall (R : rcfType) (p : {poly R}) (a : R),
+   (a != 0) ->
    polyseq (a *: p) = seqmul (nseq (size p) a) p.
 Proof.
 move=> R p a Ha.
@@ -698,7 +701,8 @@ rewrite ltr_def; apply/andP; split.
 by apply: sqr_ge0.
 Qed.
 
-Lemma Bernstein_coeffs_0 : forall (R : idomainType) (p : {poly R}) (a b : R), (a != b) ->
+Lemma Bernstein_coeffs_0 : forall (R : idomainType) (p : {poly R}) (a b : R),
+   (a != b) ->
    (p == 0) = ((Bernstein_coeffs p a b) == 0).
 Proof.
 move=> R p a b Hab.
@@ -839,7 +843,8 @@ case Hp0 : (p == 0).
   rewrite (Bernstein_coeffs_0 p Hlr) in Hp0.
   move/eqP : Hp0 => ->.
   by rewrite polyseq0.
-rewrite (@changes_mulC R (Bernstein_coeffs p l r) (lead_coef (Bernstein_coeffs p l r))^-1).
+rewrite (@changes_mulC R (Bernstein_coeffs p l r)
+   (lead_coef (Bernstein_coeffs p l r))^-1).
   apply: monic_roots_changes_eq0.
     rewrite monicE lead_coefZ mulrC -unitrE unitfE lead_coef_eq0
        -Bernstein_coeffs_0 //.
@@ -964,7 +969,38 @@ Lemma notinC12lr_shift : forall (l r : R) (z : C), (l != r) ->
 Proof.
 move=> l r. case=> a b Hlr.
 rewrite !inC12E. simpc. rewrite /=.
-Admitted. (**********)
+apply/idP/idP => H; rewrite negb_or; apply/andP; split;
+   rewrite negb_or in H; move/andP : H => H.
+      rewrite expr2 mulrDl !mulrDr mulrDl mulrDl -expr2 !opprD
+        [l * a + _]addrC !addrA addrK -(addrA _ (- (r * a)) _)
+        (addrC (- (r * a)) _) !addrA addrK -(addrA _ (a * l) _)
+        (addrC (a * l)) (mulrC a l) -{1}(opprK l) mulNr -opprD
+        -mulrDl addrC !addrA (addrC (l * r)) -(addrA _ (l * r) _)
+        (addrC (l * r)) (mulrC l r) !addrA addrK.
+      exact: (proj1 H).
+    rewrite expr2 mulrDl !mulrDr mulrDl mulrDl -expr2 !opprD
+      [l * a + _]addrC !addrA addrK -(addrA _ (- (r * a)) _)
+      (addrC (- (r * a)) _) !addrA addrK -(addrA _ (a * l) _)
+      (addrC (a * l)) (mulrC a l) -{1}(opprK l) mulNr -opprD
+      -mulrDl addrC !addrA (addrC (l * r)) -(addrA _ (l * r) _)
+      (addrC (l * r)) (mulrC l r) !addrA addrK.
+    exact: (proj2 H).
+  rewrite expr2 mulrDl !mulrDr mulrDl mulrDl -expr2 !opprD
+    [l * a + _]addrC !addrA addrK -(addrA _ (- (r * a)) _)
+    (addrC (- (r * a)) _) !addrA addrK -(addrA _ (a * l) _)
+    (addrC (a * l)) (mulrC a l) -{1}(opprK l) mulNr -opprD
+    -mulrDl addrC !addrA (addrC (l * r)) -(addrA _ (l * r) _)
+    (addrC (l * r)) (mulrC l r) !addrA addrK in H.
+  exact: (proj1 H).
+case: H => H1 H2.
+rewrite expr2 mulrDl !mulrDr mulrDl mulrDl -expr2 !opprD
+  [l * a + _]addrC !addrA addrK -(addrA _ (- (r * a)) _)
+  (addrC (- (r * a)) _) !addrA addrK -(addrA _ (a * l) _)
+  (addrC (a * l)) (mulrC a l) -{1}(opprK l) mulNr -opprD
+  -mulrDl addrC !addrA (addrC (l * r)) -(addrA _ (l * r) _)
+  (addrC (l * r)) (mulrC l r) !addrA addrK in H2.
+exact: H2.
+Qed.
 
 Lemma inB_notinC12 : forall (l r : R) (z : C), (l != r) -> (z + 1 != 0) ->
    (inB z) = ~~(inC12 l r ((r%:C + l%:C * z) / (z + 1))).
@@ -1001,18 +1037,15 @@ Lemma seqn0_nseq : forall (s : seq R) (a : R), (a != 0) ->
    seqmul (nseq (size (seqn0 s)) a) (seqn0 s) = seqn0 (seqmul (nseq (size s) a) s).
 Proof.
 elim => [ | c l IHl a Ha] //.
-case : l IHl => [IH |b l IHbl ] //.
-  rewrite /=. 
-  case Hc : (c != 0).
-    have Hac : (a * c != 0).
-      by apply: mulf_neq0.
-    by rewrite Hac.
-  have Hac : ((a * c != 0) = false).
-    apply: negbF; rewrite mulf_eq0; apply/orP; right.
-    by apply: negbFE.
-  by rewrite Hac /=.
-
-Admitted.
+case Hc : (c != 0).
+  have Hac : (a * c != 0).
+    by apply: mulf_neq0.
+  by rewrite seqmul_cons /= Hac /= Hc /= seqmul_cons /= -IHl.
+have Hac : ((a * c != 0) = false).
+  apply: negbF; rewrite mulf_eq0; apply/orP; right.
+  by apply: negbFE.
+by rewrite seqmul_cons /= Hc /= Hac /= IHl.
+Qed. 
 
 Lemma inBneg1 : (@inB R (-1)).
 Proof.
