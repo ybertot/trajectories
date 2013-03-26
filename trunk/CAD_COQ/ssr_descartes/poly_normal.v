@@ -1,4 +1,4 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime div.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime div bigop.
 Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex.
 
 Set Implicit Arguments.
@@ -302,13 +302,66 @@ Qed.
 Lemma normal_mulr : forall p q : {poly R},
    p \is normal -> q \is normal -> (p * q) \is normal.
 Proof.
-case=> p Hsp.
-case: p Hsp => [Hsp q |a].
-  by rewrite !normalE /=.
-case=> [Hsp q | ].
-  rewrite !normalE /= => Ha Hq.
+move=> p q Hpnormal Hqnormal.
+apply: prop_normal.
+split.
+  move=> k.
+  rewrite coefM.
+  apply: sumr_ge0 => [i _] /=.
+  apply: mulr_ge0.
+    exact: (@normal_coef_geq0 _ Hpnormal i).
+  exact: (@normal_coef_geq0 _ Hqnormal (k - i)).
+split.
+  rewrite lead_coefM pmulr_lgt0.
+    exact: (normal_lead_coef_gt0 Hpnormal).
+  exact: (normal_lead_coef_gt0 Hqnormal).
+split.
+  move=> k Hk.  
+  admit. (**********)
+move=> i.
+rewrite {1}coefM {1}ltr_neqAle eq_sym psumr_eq0 =>
+   [ /andP [] /allPn /= [n Hn HPn] |].
+  move=> H j Hij Hj.
+  rewrite coefM.
+  have Hinj : (i <= j +n)%N.
+     apply: (@leq_trans j).
+      by apply: ltnW.
+    by apply: leq_addr.
+  have Hnij : (n + j - i < j.+1)%N.
+    rewrite addnC -(ltn_add2r i) addSnnS subnK // ltn_add2l.
+    by case n.
+  case Hcase : (n + j - i < (size p).-1)%N.
+    rewrite (bigD1 ((Ordinal Hnij))) //=.
+    apply: (ltr_le_trans (y := (p`_(n + j - i) * q`_(j - (n + j - i))))).
+      rewrite mulf_eq0 negb_or in HPn.
+      move/andP : HPn => HPn.        
+      rewrite pmulr_rgt0.
+        rewrite addnC subnBA // addnC subnDA addnK ltr_def.
+        apply/andP; split.
+          exact: (proj2 HPn).
+        by apply: (normal_coef_geq0 Hqnormal).
+      apply: (normal_some_coef_gt0 Hpnormal (i:=n)) => //.
+        rewrite ltr_def; apply/andP; split.
+          exact: (proj1 HPn).
+        by apply: (normal_coef_geq0 Hpnormal).
+      rewrite -{1}(addn0 n) -addnBA ?ltn_add2l ?subn_gt0 //.
+      by apply: ltnW.
+    rewrite ler_addl.
+    apply: sumr_ge0. case=> k Hk1 Hk2 /=.
+    apply: mulr_ge0.
+      by apply: (normal_coef_geq0 Hpnormal).
+    by apply: (normal_coef_geq0 Hqnormal).
 
 
+Search _ "sumr".
+Search _ negb all.
+Search _ "Ale".
+Search _ "allPn".
+Search _ "sumr" eq.
+rewrite {1}ltr_neqAle psumr_eq0 => /andP [] /allPn [n Hn HPn].
+ltr_neq_Ale in Hi
+psumr_eq0
+allPn
 Admitted. (***********)
 
 (*Lemma real_complex_conjc : forall (x : R),
@@ -978,7 +1031,8 @@ apply: (IHl b (proj2 Habtl)).
 by rewrite -(ltn_add2r 1%N) !addn1 prednK.
 Qed.
 
-Lemma increasing_is_increasing2 : forall (s : seq R), (forall (k : nat), (k < (size s).-1)%N ->
+Lemma increasing_is_increasing2 : forall (s : seq R),
+   (forall (k : nat), (k < (size s).-1)%N ->
    (s`_k <= s`_k.+1)) -> increasing s.
 Proof.
 case=> [ | a] => // => l.
@@ -992,7 +1046,8 @@ by rewrite -(addn1 k) addnC -ltn_subRL subn1.
 Qed.
 
 Lemma increasing_is_increasing3 : forall (s : seq R), (increasing s) -> 
-   (forall k l, (k < (size s))%N -> (l < (size s))%N -> (k <= l)%N -> s`_k <= s`_l). 
+   (forall k l, (k < (size s))%N -> 
+      (l < (size s))%N -> (k <= l)%N -> s`_k <= s`_l). 
 Proof.
 case=> [ | a ] // => l.
 elim : l a => [a Hs k | b tl IHl a Habtl k] //.
@@ -1012,8 +1067,10 @@ Qed.
 
 Local Notation is1 := (fun x : bool => x == true). 
 
-Lemma mask_find_1 : forall (s : seq R) (b : bitseq), (size s = size b) -> ((find is1 b) < size s)%N ->
-   mask b s = s`_(find is1 b) :: mask (drop (find is1 b).+1 b) (drop (find is1 b).+1 s).
+Lemma mask_find_1 : forall (s : seq R) (b : bitseq), (size s = size b) ->
+   ((find is1 b) < size s)%N ->
+      mask b s = 
+      s`_(find is1 b) :: mask (drop (find is1 b).+1 b) (drop (find is1 b).+1 s).
 Proof.
 elim => [ |a l IHl] //.
 case => [ |b0 btl Hsize Hfind] //.
@@ -1045,8 +1102,8 @@ Lemma increasing_cons : forall (a : R) (s : seq R),
    end.
 Proof. by rewrite /=. Qed.
 
-Lemma subseq_incr : forall (s1 s2 : seq R), (increasing s2) -> (subseq s1 s2) ->
-   (increasing s1).
+Lemma subseq_incr : forall (s1 s2 : seq R), (increasing s2) -> 
+   (subseq s1 s2) -> (increasing s1).
 Proof.
 move=> s s2.
 elim: s2 s => [s _ Hsubseq |a] //.
@@ -1056,8 +1113,10 @@ elim: s2 s => [s _ Hsubseq |a] //.
 case=> [_ |b l IHbl s1 Hablincr Hs1subseqabl] //.
   case => [ |b l Haincr Hblsubseqa] //.
   rewrite /= in Hblsubseqa.
-  case Hab : (b == a); rewrite Hab in Hblsubseqa; by move/eqP : Hblsubseqa => ->.
-have Hablsubseq2 : exists2 m : seq bool, size m = size [::a, b & l] & s1 = mask m [::a, b & l].
+  case Hab : (b == a); rewrite Hab in Hblsubseqa;
+  by move/eqP : Hblsubseqa => ->.
+have Hablsubseq2 : exists2 m : seq bool, size m = size [::a, b & l] & 
+   s1 = mask m [::a, b & l].
   by apply/subseqP. 
 case: Hablsubseq2.
 case => [ |b0 btl Hbsize Hs1_as_mask] //.
@@ -1175,8 +1234,9 @@ apply: (@ler_lt_trans _ ([::a, b & l]`_(size [:: a, b & l]).-1) ).
 by rewrite -(@nmulr_rgt0 _ a).
 Qed.
 
-Lemma changes_seq_incr_1 : forall (s : seq R), (1%N < size s)%N -> (increasing s) -> (all_neq0 s) ->
-   ((changes s) == 1%N) = (s`_0 < 0) && (0 < s`_((size s).-1)).
+Lemma changes_seq_incr_1 : forall (s : seq R), (1%N < size s)%N ->
+   (increasing s) -> (all_neq0 s) ->
+      ((changes s) == 1%N) = (s`_0 < 0) && (0 < s`_((size s).-1)).
 Proof.
 move=> s Hssize Hsincr Hsneq0.
 apply/idP/idP.
@@ -1400,7 +1460,8 @@ have H : (size [::a, b & l]).-1 = (size (b :: l)).-1.+1.
 rewrite H take_cons.
 case Ha : (a != 0).
   rewrite /= Ha -IHbl => //.
-  have H2 : (size (a :: (if b != 0 then b :: seqn0 l else seqn0 l))).-1 = (size (seqn0 (b ::l))).-1.+1.
+  have H2 : (size (a :: (if b != 0 then b :: seqn0 l else seqn0 l))).-1 =
+   (size (seqn0 (b ::l))).-1.+1.
     rewrite prednK /=.
       by done.
     by apply: (@seqn0_size (b :: l)).
@@ -1424,7 +1485,8 @@ have H : ((size (a :: (if b != 0 then b :: seqn0 l else seqn0 l))).-1 =
 by rewrite H take_cons /= drop0 Ha H take_cons /= drop0.
 Qed.
 
-Lemma changes_take : forall (s : seq R) (a b : R), (s != [::]) -> (all_neq0 [::a, b & s]) ->
+Lemma changes_take : forall (s : seq R) (a b : R), (s != [::]) ->
+   (all_neq0 [::a, b & s]) ->
    (changes (take (size (b :: s)) ([::a, b & s])) =
    ((a * b < 0)%R + changes (take (size s) (b :: s)))%N).   
 Proof. by elim. Qed.
@@ -1462,7 +1524,8 @@ by rewrite /= mulr0 ltrr !addn0.
 Qed.
 
 (* pointwise multiplication of two lists *)
-Definition seqmul := (fun s1 s2 : seq R => map (fun x : R * R => x.1 * x.2) (zip s1 s2)).
+Definition seqmul :=
+   (fun s1 s2 : seq R => map (fun x : R * R => x.1 * x.2) (zip s1 s2)).
 
 Lemma seqmulE : forall (s1 s2 : seq R),
    seqmul s1 s2 = map (fun x : R * R => x.1 * x.2) (zip s1 s2).
