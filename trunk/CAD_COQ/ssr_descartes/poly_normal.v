@@ -298,13 +298,202 @@ rewrite normalE  -(mulr1 'X^2) mulrC mul_polyC polyseq_deg2 /=.
 by apply: oner_neq0.
 Qed.
 
-(* Lemma 2.43 *)
-Lemma normal_mulr : forall p q : {poly R},
+Lemma normal_MX : forall (p : {poly R}),
+   (p != 0) -> p \is normal -> p * 'X \is normal.
+Proof.
+case=> s Hs.
+rewrite !normalE /= => Hp Hsnormal.
+rewrite polyseqMX //=.
+case : s Hs Hp Hsnormal => // a.
+case => [Hs Hp Ha| b l].
+  rewrite /= in Ha.
+  apply/andP; split; by done.
+elim: l a b => [b c Hs Hp Hab | c l Hcl a b Hs Hp Habcl].
+  apply/andP; split.
+    by done.
+  apply/orP; by left.
+apply/andP; split.
+  by done.
+apply/orP; by left.
+Qed.
+
+Lemma normal_MXn : forall (p : {poly R}) (n : nat),
+   (p != 0) -> p \is normal -> p * 'X^n \is normal.
+Proof.
+move=> p.
+elim => [Hp Hpnormal | n Hn Hp Hpnormal].
+  by rewrite expr0 mulr1.
+rewrite exprSr mulrA.
+apply: normal_MX.
+  apply: mulf_neq0 => //.
+  by rewrite -size_poly_gt0 size_polyXn.
+apply: Hn => //.
+Qed.
+
+Lemma normal_neq0 : forall (p : {poly R}), p \is normal -> p != 0.
+Proof.
+move=> p Hpnormal.
+rewrite -lead_coef_eq0.
+apply: (@negbT (lead_coef p == 0)); apply: gtr_eqF.
+by apply: normal_lead_coef_gt0.
+Qed.
+
+Lemma normal_size_le1 : forall (p : {poly R}), (p \is normal) ->
+   (size p <= 1%N)%N = (size p == 1%N)%N.
+Proof.
+move=> p Hpnormal.
+apply/idP/idP.
+  move=> Hpsize.
+  rewrite eqn_leq.
+  apply/andP; split => //.
+  rewrite ltnNge leqn0 size_poly_eq0.
+  by apply: normal_neq0.
+move=> Hpsize.
+rewrite leq_eqVlt.
+by apply/orP; left.
+Qed.
+
+(* 0 is a root with multiplicity k iff the first k coefs are =0 *)
+Lemma normal_root0 : forall (p : {poly R}),
+   (root p 0) -> (forall k, (k < (\mu_0 p))%N -> p`_k = 0).
+Proof.
+move=> p Hproot k Hkmu.
+have H := (root_mu p 0).
+rewrite subr0 Pdiv.IdomainMonic.dvdp_eq in H.
+  move/eqP : H => H.
+  by rewrite H coefMXn Hkmu.
+by apply: monicXn.
+Qed. 
+
+(* for p normal : 0 is not a root iff all coefs are >0 *)
+Lemma normal_0notroot_b : forall (p : {poly R}), p \is normal ->
+   (~~(root p 0) = [forall k : 'I_((size p).-1), 0 < p`_k]).
+Proof.
+move=> p Hpnormal.
+apply/idP/idP.
+(* => *)
+  move/rootPf=> H.
+  rewrite horner_coef0 in H.
+  move/eqP/eqP : H => H.
+  have Hp0 : 0 < p`_0.
+    rewrite ltr_def. apply/andP; split.
+      by done.
+    exact: (normal_coef_geq0 Hpnormal 0).
+  apply/forallP.
+  case. case=> [ | n Hn] //. 
+  by apply: (normal_some_coef_gt0 Hpnormal Hp0 (ltn0Sn n)).
+(* <= *)
+apply: contraL.
+move=> Hproot0.
+rewrite negb_forall; apply/existsP.
+have H0 : (0 < (size p).-1)%N.
+  rewrite -subn1 -(ltn_add2r 1) !addn1 subn1 prednK.
+    apply: (@root_size_gt1 _ 0 p).
+      apply: normal_neq0.
+      by done.
+    by done.
+  apply: (@ltn_trans 1).
+    by [].
+  apply: (@root_size_gt1 _ 0 p).
+    by apply: normal_neq0.
+  by [].
+exists (Ordinal H0).
+rewrite -lerNgt ler_eqVlt.
+apply/orP; left.
+move/rootPt : Hproot0=> Hproot0.
+by rewrite horner_coef0 in Hproot0.
+Qed.
+
+Lemma normal_0notroot : forall (p : {poly R}), p \is normal ->
+   ~~(root p 0) -> (forall k, (k < (size p).-1)%N -> 0 < p`_k).
+Proof.
+move=> p Hpnormal H.
+rewrite normal_0notroot_b // in H.
+move/forallP : H => H k Hk.
+apply: (H (Ordinal Hk)).
+Qed. 
+
+(* product of 2 polynomials with coefs >0  has coefs >0 *)
+Lemma prod_all_ge0 : forall (p : {poly R}) (q : {poly R}),
+   (p != 0) -> (q != 0) ->
+   (forall i, (i <= (size p).-1)%N -> 0 < p`_i) ->
+   (forall j, (j <= (size q).-1)%N -> 0 < q`_j) ->
+   forall k, (k <= (size (p * q)%R).-1)%N -> 0 < (p * q)`_k.
+Proof.
+move=> p q.
+wlog: p q / ((size p).-1 <= (size q).-1)%N => H Hp Hq Hpcoef Hqcoef k Hk. 
+  case/orP : (leq_total (size p).-1 (size q).-1) => H2.
+    by apply: H. 
+ rewrite mulrC; rewrite mulrC in Hk.
+  by apply: (H q p H2).
+case Hk2 : (k <= (size p).-1)%N.
+  rewrite coefM.
+  rewrite (bigD1 ord0) //= subn0.
+  apply: (ltr_le_trans (y := (p`_0 * q`_k))).
+    rewrite pmulr_lgt0.
+      apply: Hpcoef.
+      by rewrite polySpred.
+    apply: Hqcoef.
+    by apply: (@leq_trans ((size p).-1)).
+  rewrite ler_addl sumr_ge0 //.
+  case => /= i Hi Hi2.
+  rewrite pmulr_rge0.
+    case Hki : (k - i <= (size q).-1)%N.
+      apply: ltrW. by apply: Hqcoef.
+    rewrite le0r; apply/orP; left.
+    rewrite -(coefK q) coef_poly /=.
+    have Hki2 : ((k - i < (size q))%N = false).
+      rewrite -[(size q)]prednK.
+        by rewrite ltnS.
+      by rewrite size_poly_gt0.
+    by rewrite Hki2.
+  apply: Hpcoef.
+  by apply: (leq_trans (n:=k)). 
+have Hk3 := (negbT Hk2).
+rewrite -ltnNge in Hk3.
+rewrite coefM.
+have Hk4 : ((size p).-1 < k.+1)%N.
+  by apply: (ltn_trans (n:=k)).
+rewrite (bigD1 (Ordinal Hk4)) //=.
+apply: (ltr_le_trans (y := (p`_(size p).-1 * q`_(k - (size p).-1)))).
+  have Helpme: (k - (size p).-1 <= (size q).-1)%N.
+    rewrite leq_subLR.
+    by rewrite size_mul // -[size p]prednK ?size_poly_gt0 //
+      -[size q]prednK ?size_poly_gt0 // addSn addnS -!pred_Sn in Hk.
+  rewrite pmulr_rgt0.
+    by apply: Hqcoef.
+  by apply: Hpcoef.
+rewrite ler_addl sumr_ge0 //.
+case => /= i Hi Hi2.
+apply: mulr_ge0.
+  case Hi3 : (i <= (size p).-1)%N.
+    apply: ltrW. by apply: Hpcoef.
+  rewrite le0r; apply/orP; left.
+  rewrite -(coefK p) coef_poly /=.
+  have Hi4 : (i < size p)%N = false. 
+    rewrite -[(size p)]prednK.
+      by rewrite ltnS.
+    by rewrite size_poly_gt0.
+  by rewrite Hi4.
+case Hki : (k - i <= (size q).-1)%N.
+    apply: ltrW. by apply: Hqcoef.
+  rewrite le0r; apply/orP; left.
+  rewrite -(coefK q) coef_poly /=.
+  have Hki2 : (k - i < size q)%N = false. 
+    rewrite -[(size q)]prednK.
+    by rewrite ltnS.
+  by rewrite size_poly_gt0.
+by rewrite Hki2. 
+Qed.
+
+(* Lemma 2.43, restricted version *)
+Lemma normal_mulr : forall p q : {poly R}, ~~(root p 0) -> ~~(root q 0) ->
    p \is normal -> q \is normal -> (p * q) \is normal.
 Proof.
-move=> p q Hpnormal Hqnormal.
+move=> p q Hpzero Hqzero Hpnormal Hqnormal.
 apply: prop_normal.
 split.
+(* first property *)
   move=> k.
   rewrite coefM.
   apply: sumr_ge0 => [i _] /=.
@@ -312,57 +501,44 @@ split.
     exact: (@normal_coef_geq0 _ Hpnormal i).
   exact: (@normal_coef_geq0 _ Hqnormal (k - i)).
 split.
+(* second property *)
   rewrite lead_coefM pmulr_lgt0.
     exact: (normal_lead_coef_gt0 Hpnormal).
   exact: (normal_lead_coef_gt0 Hqnormal).
 split.
-  move=> k Hk.  
+(* third property *)
+  move=> k Hk. 
+  rewrite -subr_ge0 !coefM prednK // expr2.
+  rewrite !big_distrlr /=. 
+  (*Check (@bigID _ _ _ _ _ ((fun j=> j <= i)) ((fun j => j < k.+1))).*)
   admit. (**********)
-move=> i.
-rewrite {1}coefM {1}ltr_neqAle eq_sym psumr_eq0 =>
-   [ /andP [] /allPn /= [n Hn HPn] |].
-  move=> H j Hij Hj.
-  rewrite coefM.
-  have Hinj : (i <= j +n)%N.
-     apply: (@leq_trans j).
-      by apply: ltnW.
-    by apply: leq_addr.
-  have Hnij : (n + j - i < j.+1)%N.
-    rewrite addnC -(ltn_add2r i) addSnnS subnK // ltn_add2l.
-    by case n.
-  case Hcase : (n + j - i < (size p).-1)%N.
-    rewrite (bigD1 ((Ordinal Hnij))) //=.
-    apply: (ltr_le_trans (y := (p`_(n + j - i) * q`_(j - (n + j - i))))).
-      rewrite mulf_eq0 negb_or in HPn.
-      move/andP : HPn => HPn.        
-      rewrite pmulr_rgt0.
-        rewrite addnC subnBA // addnC subnDA addnK ltr_def.
-        apply/andP; split.
-          exact: (proj2 HPn).
-        by apply: (normal_coef_geq0 Hqnormal).
-      apply: (normal_some_coef_gt0 Hpnormal (i:=n)) => //.
-        rewrite ltr_def; apply/andP; split.
-          exact: (proj1 HPn).
-        by apply: (normal_coef_geq0 Hpnormal).
-      rewrite -{1}(addn0 n) -addnBA ?ltn_add2l ?subn_gt0 //.
-      by apply: ltnW.
-    rewrite ler_addl.
-    apply: sumr_ge0. case=> k Hk1 Hk2 /=.
-    apply: mulr_ge0.
-      by apply: (normal_coef_geq0 Hpnormal).
-    by apply: (normal_coef_geq0 Hqnormal).
-
-
-Search _ "sumr".
-Search _ negb all.
-Search _ "Ale".
-Search _ "allPn".
-Search _ "sumr" eq.
-rewrite {1}ltr_neqAle psumr_eq0 => /andP [] /allPn [n Hn HPn].
-ltr_neq_Ale in Hi
-psumr_eq0
-allPn
-Admitted. (***********)
+(* fourth property *)
+move=> i Hpqi j Hij Hj.
+apply: prod_all_ge0 => //.
+        by apply: normal_neq0.
+      by apply: normal_neq0.
+    move=> k.
+    case Hk2 : ((size p).-1 <= k)%N => Hk1.
+      have Hk : (k == (size p).-1).
+        rewrite eqn_leq; apply/andP; by split.
+      move/eqP : Hk => ->.
+      rewrite -lead_coefE.
+      exact: (normal_lead_coef_gt0 Hpnormal).
+    have Hk3 := (negbT Hk2).
+    rewrite -ltnNge in Hk3.
+    by apply: normal_0notroot.
+  move=> k.
+  case Hk2 : ((size q).-1 <= k)%N => Hk1.
+    have Hk : (k == (size q).-1).
+      rewrite eqn_leq; apply/andP; by split.
+    move/eqP : Hk => ->.
+    rewrite -lead_coefE.
+    exact: (normal_lead_coef_gt0 Hqnormal).
+  have Hk3 := (negbT Hk2).
+  rewrite -ltnNge in Hk3.
+  by apply: normal_0notroot. 
+by apply: ltnW.
+Qed. (**********)
 
 (*Lemma real_complex_conjc : forall (x : R),
    (x%:C)^* = x%:C.
