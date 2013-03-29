@@ -509,7 +509,20 @@ split.
 (* third property *)
   move=> k Hk. 
   rewrite -subr_ge0 !coefM prednK // expr2.
-  rewrite !big_distrlr /=. 
+  rewrite !big_distrlr /=.
+  pose S n m (F : 'I_n -> 'I_m -> R) := \sum_i \sum_j (F i j).
+  pose P1 n m (i : 'I_n) (j : 'I_m) := (j < i)%N && (j == i.-1 :> nat).  
+  pose P2 n m (i : 'I_n) (j : 'I_m) := (j < i)%N && (j != i.-1 :> nat).  
+  pose S1 n m (F : 'I_n -> 'I_m -> R) := \sum_i \sum_(j < m | P1 n m i j) (F i j).
+  pose S2 n m (F : 'I_n -> 'I_m -> R) := \sum_i \sum_(j < m | P2 n m i j) (F i j).
+  pose S3 n m (F : 'I_n -> 'I_m -> R) := \sum_(i < n) \sum_(j < m | (i <= j)%N) (F i j).
+  have H (n m : nat) (F : 'I_n -> 'I_m -> R) :
+     (S1 n m F) + (S2 n m F) + (S3 n m F) = S n m F.
+    rewrite -!big_split /=.
+    apply: eq_bigr => i _.
+
+/S1 /S2 /S3 - big_distrlr.
+
   (*Check (@bigID _ _ _ _ _ ((fun j=> j <= i)) ((fun j => j < k.+1))).*)
   admit. (**********)
 (* fourth property *)
