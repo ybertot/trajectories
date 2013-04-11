@@ -508,8 +508,37 @@ split.
 split.
 (* third property *)
   move=> k Hk. 
-  rewrite -subr_ge0 !coefM prednK // expr2.
+  rewrite mulrC -subr_ge0 !coefM prednK // expr2.
   rewrite !big_distrlr /=.
+  have H (n m : nat) (F : nat -> nat -> R) :
+      \sum_(0 <= h < m) \sum_(0 <= j < n) (F h j) =
+         \sum_(2 <= h < m) \sum_(0 <= j < h.-1) (F h j) +
+         \sum_(1 <= h < m) (F h (h.-1)) + 
+         \sum_(0 <= h < m) \sum_(h <= j < n) (F h j).
+  admit.
+  rewrite -(big_mkord (fun i : nat => true)
+    (fun i : nat => \sum_(j < k.+1) (p`_i * q`_(k - i) * (p`_j * q`_(k - j))))).
+  rewrite -(big_mkord (fun i : nat => true)
+    (fun i : nat => \sum_(j < k) (p`_i * q`_(k.+1 - i) * (p`_j * q`_(k.-1 - j))))).
+  rewrite (eq_bigr
+   (fun i => \sum_(0 <= j < k.+1) p`_i * q`_(k - i) * (p`_j * q`_(k - j))));
+  last by move => ? _ ; rewrite big_mkord.
+  rewrite [x in _ - x](eq_bigr
+   (fun i => \sum_(0 <= j < k) p`_i * q`_(k.+1 - i) * (p`_j * q`_(k.-1 - j))));
+  last by move => ? _ ; rewrite big_mkord.
+  rewrite !H.
+  rewrite big_add1.
+  rewrite (@big_add1 _ _ _ 1 k.+2).
+  rewrite -!pred_Sn.
+
+
+
+
+  About eq_big_nat.
+
+  Print index_enum.
+
+(*
   pose S n m (F : 'I_n -> 'I_m -> R) := \sum_i \sum_j (F i j).
   pose P1 n m (i : 'I_n) (j : 'I_m) := (j < i)%N && (j == i.-1 :> nat).  
   pose P2 n m (i : 'I_n) (j : 'I_m) := (j < i)%N && (j != i.-1 :> nat).  
@@ -520,10 +549,19 @@ split.
      (S1 n m F) + (S2 n m F) + (S3 n m F) = S n m F.
     rewrite -!big_split /=.
     apply: eq_bigr => i _.
+    rewrite -bigID /=.
+    rewrite (eq_bigl (P1 := (fun (j : 'I_m) => (i <= j)%N)) (fun (j : 'I_m) => ~~(j < i)%N)).
+      by rewrite -(bigID  (fun (j : 'I_m) => (j < i)%N) (fun (j : 'I_m) => true)).
+    move=> j /=.
+    by rewrite leqNgt.
+  rewrite /S in H.
+  rewrite -!H /=.
+*)
 
-/S1 /S2 /S3 - big_distrlr.
 
-  (*Check (@bigID _ _ _ _ _ ((fun j=> j <= i)) ((fun j => j < k.+1))).*)
+
+  
+
   admit. (**********)
 (* fourth property *)
 move=> i Hpqi j Hij Hj.
