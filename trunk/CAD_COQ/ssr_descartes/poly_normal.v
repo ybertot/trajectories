@@ -486,8 +486,15 @@ case Hki : (k - i <= (size q).-1)%N.
 by rewrite Hki2. 
 Qed.
 
+Lemma xchange : forall (T : Type) (idx : T) (op : Monoid.com_law idx) 
+  (m n : nat) (F : nat -> nat -> T),
+   \big[op/idx]_(m <= i < n) (\big[op/idx]_(m <= j < i.+1) F i j) =
+      \big[op/idx]_(m <= j < n) \big[op/idx]_(j <= i < n) (F i j).
+Proof.
+Admitted.
+
 (* Lemma 2.43, restricted version *)
-Lemma normal_mulr : forall p q : {poly R}, ~~(root p 0) -> ~~(root q 0) ->
+Lemma normal_mulr_r : forall p q : {poly R}, ~~(root p 0) -> ~~(root q 0) ->
    p \is normal -> q \is normal -> (p * q) \is normal.
 Proof.
 move=> p q Hpzero Hqzero Hpnormal Hqnormal.
@@ -530,13 +537,33 @@ split.
   rewrite big_add1.
   rewrite (@big_add1 _ _ _ 1 k.+2).
   rewrite -!pred_Sn.
+  rewrite (eq_big 
+    (F1 := fun i =>  \sum_(0 <= j < i.+1.-1) p`_i.+1 * q`_(k - i.+1)
+           * (p`_j * q`_(k - j)))
+    (P1 := fun i => true)
+    (fun i => true)
+    (fun i => \sum_(1 <= l < i.+1) p`_i.+1 * q`_(k - i.+1) 
+         * (p`_(l.-1) * q`_(k - (l.-1))))) //.
+    rewrite (eq_big 
+      (F1 := fun i =>  \sum_(0 <= j < i.+1.-1) p`_i.+1 * q`_(k.+1 - i.+1) 
+             * (p`_j * q`_(k.-1 - j)))
+      (P1 := fun i => true)
+      (fun i => true)
+      (fun i => \sum_(1 <= l < i.+1) p`_i.+1 * q`_(k.+1 - i.+1) 
+           * (p`_(l.-1) * q`_(k.-1 - (l.-1))))) //.
+      
 
 
-
-
-  About eq_big_nat.
-
-  Print index_enum.
+(*      move=> i _.
+      rewrite big_add1 -!pred_Sn.
+      apply: eq_big_nat => l Hl.
+      by rewrite -!pred_Sn.
+    move=> i _.
+    rewrite big_add1 -!pred_Sn.
+    apply: eq_big_nat => l Hl.
+    by rewrite -!pred_Sn.
+*)
+  (*Print index_enum.*)
 
 (*
   pose S n m (F : 'I_n -> 'I_m -> R) := \sum_i \sum_j (F i j).
@@ -562,7 +589,7 @@ split.
 
   
 
-  admit. (**********)
+ admit. admit. admit. (**********)
 (* fourth property *)
 move=> i Hpqi j Hij Hj.
 apply: prod_all_ge0 => //.
@@ -590,6 +617,12 @@ apply: prod_all_ge0 => //.
   by apply: normal_0notroot. 
 by apply: ltnW.
 Qed. (**********)
+
+(* Lemma 2.43 *)
+Lemma normal_mulr : forall p q : {poly R},
+   p \is normal -> q \is normal -> (p * q) \is normal.
+Proof.
+Admitted.
 
 (*Lemma real_complex_conjc : forall (x : R),
    (x%:C)^* = x%:C.
@@ -802,6 +835,7 @@ apply: normal_mulr.
   by apply: (Hproots x Hrootx).
 Qed.
 
+(*
 Lemma normal_neq0 : forall (p : {poly R}), p \is normal -> p != 0.
 Proof.
 move=> p Hpnormal.
@@ -882,7 +916,7 @@ rewrite normal_0notroot_b // in H.
 move/forallP : H => H k Hk.
 apply: (H (Ordinal Hk)).
 Qed. 
-
+*)
 Lemma normal_red_0noroot : forall (p : {poly R}), p \is normal ->
    root p 0 -> (~~(root (p %/ 'X^(\mu_0 p)) 0) && ((p %/ 'X^(\mu_0 p)) \is normal)).  
 Proof.
