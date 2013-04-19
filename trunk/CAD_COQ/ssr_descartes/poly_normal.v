@@ -484,6 +484,7 @@ case Hki : (k - i <= (size q).-1)%N.
 by rewrite Hki2. 
 Qed.
 
+(* exchange two sums *)
 Lemma xchange : forall (T : Type) (idx : T) (op : Monoid.com_law idx) 
   (m n : nat) (F : nat -> nat -> T),
    \big[op/idx]_(m <= i < n) (\big[op/idx]_(m <= j < i.+1) F i j) =
@@ -579,28 +580,109 @@ split.
 split.
 (* third property *)
   move=> k Hk. 
-  rewrite mulrC -subr_ge0 !coefM prednK // expr2.
+  rewrite -subr_ge0 !coefM prednK // expr2.
   rewrite !big_distrlr /=.
-  have H (n m : nat) (F : nat -> nat -> R) :
+  (* separate double sums into 3 parts *)
+  
+  (*have H (n m : nat) (F : nat -> nat -> R) :
       \sum_(0 <= h < m) \sum_(0 <= j < n) (F h j) =
          \sum_(2 <= h < m) \sum_(0 <= j < h.-1) (F h j) +
          \sum_(1 <= h < m) (F h (h.-1)) + 
          \sum_(0 <= h < m) \sum_(h <= j < n) (F h j).
-  admit.
+  admit.*)
   rewrite -(big_mkord (fun i : nat => true)
     (fun i : nat => \sum_(j < k.+1) (p`_i * q`_(k - i) * (p`_j * q`_(k - j))))).
   rewrite -(big_mkord (fun i : nat => true)
-    (fun i : nat => \sum_(j < k) (p`_i * q`_(k.+1 - i) * (p`_j * q`_(k.-1 - j))))).
+    (fun i : nat => \sum_(j < k.+2) (p`_i * q`_(k.-1 - i) * (p`_j * q`_(k.+1 - j))))).
   rewrite (eq_bigr
    (fun i => \sum_(0 <= j < k.+1) p`_i * q`_(k - i) * (p`_j * q`_(k - j))));
   last by move => ? _ ; rewrite big_mkord.
   rewrite [x in _ - x](eq_bigr
-   (fun i => \sum_(0 <= j < k) p`_i * q`_(k.+1 - i) * (p`_j * q`_(k.-1 - j))));
+   (fun i => \sum_(0 <= j < k.+2) p`_i * q`_(k.-1 - i) * (p`_j * q`_(k.+1 - j))));
   last by move => ? _ ; rewrite big_mkord.
+  have H : \sum_(0 <= i < k.+1)
+      \sum_(0 <= j < k.+1) p`_i * q`_(k - i) * (p`_j * q`_(k - j)) =
+      \sum_(2 <= h < k.+1)
+      \sum_(0 <= j < h.-1) p`_h * q`_(k - h) * (p`_j * q`_(k - j)) +
+      \sum_(1 <= h < k.+1)
+        p`_h * q`_(k - h) * (p`_(h.-1) * q`_(k - h.-1)) +
+      \sum_(0 <= h < k.+1)
+      \sum_(h <= j < k.+1) p`_h * q`_(k - h) * (p`_j * q`_(k - j)).
+    admit.
+  rewrite H {H}.
+  have H :  \sum_(0 <= i < k)
+      \sum_(0 <= j < k.+2) p`_i * q`_(k.-1 - i) * (p`_j * q`_(k.+1 - j)) =
+       \sum_(0 <= h < k)
+      \sum_(0 <= j < h.+1) p`_h * q`_(k.-1 - h) * (p`_j * q`_(k.+1 - j)) +
+      \sum_(1 <= i < k.+1) p`_(i.-1) * q`_(k - i) * (p`_i * q`_(k.-1 - i)) +
+      \sum_(0 <= h < k)
+      \sum_(h.+2 <= j < k.+2) p`_h * q`_(k - h.+1) * (p`_j * q`_(k.+1 - j)).
+    admit.
+  rewrite H {H}.
+  rewrite [x in ((x + _) - _)]addrC -[x in (_ - x)]addrA [x in (_ - (_ + x))]addrC.
+  rewrite !opprD !addrA addrC -sumrN !addrA -big_split.
+  have H : \big[GRing.add_comoid R/0]_(1 <= i < k.+1)
+      (GRing.add_comoid R)
+        (- (p`_i.-1 * q`_(k - i) * (p`_i * q`_(k.-1 - i))))
+        (p`_i * q`_(k - i) * (p`_i.-1 * q`_(k - i.-1))) = 0.
+    admit.
+  rewrite H {H} add0r.
+  rewrite big_add1 -pred_Sn.
+  rewrite (eq_big 
+    (F1 := fun i =>  \sum_(0 <= j < i.+1.-1) p`_i.+1 * q`_(k - i.+1)
+           * (p`_j * q`_(k - j)))
+    (P1 := fun i => true)
+    (fun i => true)
+    (fun i => \sum_(1 <= l < i.+1) p`_i.+1 * q`_(k - i.+1) 
+         * (p`_(l.-1) * q`_(k - (l.-1))))) //.
+    have H :  \sum_(0 <= h < k)
+      \sum_(h.+2 <= j < k.+2) p`_h * q`_(k - h.+1) * (p`_j * q`_(k.+1 - j)) =
+       \sum_(1 <= i < k.+1)
+      \sum_(i <= l < k.+1) p`_i.-1 * q`_(k - i) * (p`_l.+1 * q`_(k - l)).
+      rewrite big_add1 -pred_Sn.
+      apply: eq_big_nat => i Hi.
+      rewrite big_add1 -pred_Sn.
+      apply: eq_big_nat => l Hl.
+      by rewrite -pred_Sn subSS.
+    rewrite H {H}.
+    rewrite xchange.
+    rewrite big_nat_recl.
+    have H : \sum_(0 <= i < k)
+       \sum_(i.+1 <= j < k.+1) p`_i.+1 * q`_(k - i.+1) * (p`_j * q`_(k - j)) =
+       \sum_(1 <= h < k.+1)
+       \sum_(h <= j < k.+1) p`_h * q`_(k - h) * (p`_j * q`_(k - j)).
+      admit.
+    rewrite H {H}.
+    rewrite [x in (_ + (_ + _) - x - _)]xchange.
+    rewrite -{12}(prednK Hk).
+    rewrite [x in (_ + (_ + _) - x - _)]big_nat_recl.
+    have H :(\big[GRing.add_comoid R/0]_(0 <= i < k.-1)
+         \big[GRing.add_comoid R/0]_(i.+1 <= j < k)
+            (p`_j * q`_(k.-1 - j) * (p`_i.+1 * q`_(k.+1 - i.+1))) =
+         \sum_(1 <= h < k)
+      \sum_(h <= j < k) p`_h * q`_(k.+1 - h) * (p`_j * q`_(k.-1 - j))).
+      admit.
+    rewrite H {H}. 
+
+
+
+About big_cat_nat.
+    rewrite [x in (_ + (_ + x) - (_ + _) - _)](big_cat_nat _ (n:= k) (m:=1)).
+    rewrite big_nat1.
+    rewrite [x in (_ + (_ + (_ + _)) - (_ + _) - x)](big_cat_nat _ (n:= k) (m:=1)).
+    rewrite big_nat1.
+
+
+
+  rewrite {11}(pred_Sn k).
+  rewrite -{13}(prednK Hk).
+  rewrite -big_add1.
+
   rewrite !H.
   rewrite big_add1.
   rewrite (@big_add1 _ _ _ 1 k.+2).
   rewrite -!pred_Sn.
+  (* reindexing the inner sum *)
   rewrite (eq_big 
     (F1 := fun i =>  \sum_(0 <= j < i.+1.-1) p`_i.+1 * q`_(k - i.+1)
            * (p`_j * q`_(k - j)))
@@ -615,40 +697,174 @@ split.
       (fun i => true)
       (fun i => \sum_(1 <= l < i.+1) p`_i.+1 * q`_(k.+1 - i.+1) 
            * (p`_(l.-1) * q`_(k.-1 - (l.-1))))) //.
+  (* exchanging the two sums *)
       rewrite xchange.
       rewrite xchange.
+      (* changing the bounds *)
+      (* getting rid of simple sum *)
       have H2 : \sum_(1 <= h < k.+2) p`_h * q`_(k.+1 - h) * (p`_h.-1 * q`_(k.-1 - h.-1))
         = \sum_(1 <= h < k.+1) p`_h * q`_(k.+1 - h) * (p`_h.-1 * q`_(k.-1 - h.-1)).
+        
         admit.
       rewrite H2.
+      rewrite [x in ((x + _) - _)]addrC.
+      rewrite [x in (_ - x)]addrC.
+      rewrite !opprD !addrA addrC.
+      rewrite -sumrN.
+      rewrite !addrA.
+      rewrite -big_split.
+      have H6 :  \big[GRing.add_comoid R/0]_(1 <= i < k.+1)
+      (GRing.add_comoid R)
+        (- (p`_i * q`_(k.+1 - i) * (p`_i.-1 * q`_(k.-1 - i.-1))))
+        (p`_i * q`_(k - i) * (p`_i.-1 * q`_(k - i.-1))) = 0.
+        admit.
+      rewrite H6 add0r.
+      clear H H2 H6.
+      (* reindexing the other four double sums *)
+
       have H3 : \sum_(0 <= h < k.+2)
          \sum_(h <= j < k) p`_h * q`_(k.+1 - h) * (p`_j * q`_(k.-1 - j)) =
-         \sum_(0 <= h < k.+1)
-          \sum_(h <= j < k.+1) p`_h * q`_(k.+1 - h) * (p`_j * q`_(k.-1 - j)).
+         \sum_(0 <= j < k) p`_0 * q`_k.+1 * (p`_j * q`_(k.-1 - j))
+         +
+         \sum_(1 <= h < k)
+          \sum_(h <= j < k) p`_h * q`_(k.+1 - h) * (p`_j * q`_(k.-1 - j)).
         admit.
-      rewrite H3.
-      have H4 : \big[GRing.add_comoid R/0]_(1 <= h < k)
+      rewrite H3 {H3}.
+      (*have H4 : \big[GRing.add_comoid R/0]_(1 <= h < k)
       \big[GRing.add_comoid R/0]_(h <= j < k)
          (p`_j.+1 * q`_(k - j.+1) * (p`_h.-1 * q`_(k - h.-1))) =
-         \sum_(0 <= h < k.+1) \sum_(h <= j < k.+1)
+         \sum_(1 <= h < k.+1) \sum_(h <= j < k.+1)
          (p`_j.+1 * q`_(k - j.+1) * (p`_h.-1 * q`_(k - h.-1))).
       admit.
-      rewrite H4.
-      have H5 : \big[GRing.add_comoid R/0]_(1 <= h < k.+1)
-       \big[GRing.add_comoid R/0]_(h <= j < k.+1)
-          (p`_j.+1 * q`_(k.+1 - j.+1) * (p`_h.-1 * q`_(k.-1 - h.-1))) =
-          \sum_(0 <= h < k.+1) \sum_(h <= j < k.+1)
-          (p`_j.+1 * q`_(k.+1 - j.+1) * (p`_h.-1 * q`_(k.-1 - h.-1))).
+      rewrite H4.*)
+      have H5 : \sum_(0 <= h < k.+1)
+        \sum_(h <= j < k.+1) p`_h * q`_(k - h) * (p`_j * q`_(k - j))
+        = \sum_(1 <= h < k)
+           \sum_(h <= j < k) p`_h * q`_(k - h) * (p`_j * q`_(k - j))
+           + \sum_(0 <= j < k) p`_k * q`_0 * (p`_j * q`_(k - j))
+           + p`_0 * q`_k * (p`_k * q`_0).
         admit.
-      rewrite H5.
-      clear H H2 H3 H4 H5.
-      rewrite [x in (x + _)]addrC.
+      rewrite H5 {H5}.
+      rewrite opprD.
+      have H4 : \big[GRing.add_comoid R/0]_(1 <= h < k.+1)
+      \big[GRing.add_comoid R/0]_(h <= j < k.+1)
+         (p`_j.+1 * q`_(k.+1 - j.+1) * (p`_h.-1 * q`_(k.-1 - h.-1))) =
+          \sum_(1 <= h < k) \sum_(h <= j < k)
+          (p`_j.+1 * q`_(k.+1 - j.+1) * (p`_h.-1 * q`_(k.-1 - h.-1)))
+          +  
+          (p`_k.+1 * q`_0 * (p`_k.-1 * q`_0)).
+        admit.
+      rewrite H4 {H4}.
+
+      have H8 : \big[GRing.add_comoid R/0]_(1 <= h < k)
+      \big[GRing.add_comoid R/0]_(h <= j < k)
+         (p`_j.+1 * q`_(k - j.+1) * (p`_h.-1 * q`_(k - h.-1))) +
+   (\sum_(1 <= h < k)
+       \sum_(h <= j < k) p`_h * q`_(k - h) * (p`_j * q`_(k - j)) +
+    \sum_(0 <= j < k) p`_k * q`_0 * (p`_j * q`_(k - j)) +
+    p`_0 * q`_k * (p`_k * q`_0)) +
+   (- (\sum_(0 <= j < k) p`_0 * q`_k.+1 * (p`_j * q`_(k.-1 - j))) -
+    \sum_(1 <= h < k)
+       \sum_(h <= j < k) p`_h * q`_(k.+1 - h) * (p`_j * q`_(k.-1 - j))) -
+   (\sum_(1 <= h < k)
+       \sum_(h <= j < k)
+          p`_j.+1 * q`_(k.+1 - j.+1) * (p`_h.-1 * q`_(k.-1 - h.-1)) +
+    p`_k.+1 * q`_0 * (p`_k.-1 * q`_0)) =
+       \sum_(1 <= i < k) \sum_(i <= j < k)
+          (p`_i * p`_j - p`_i.-1 * p`_j.+1) * 
+               (q`_(k - i) * q`_(k - j) - q`_(k.+1 - i) * q`_(k.-1 - j))
+       + \sum_(0 <= j < k) p`_0 * p`_j * (q`_k * q`_(k - j) - q`_k.+1 * q`_(k.-1 - j))
+       + (p`_0 * q`_k * (p`_k * q`_0) - p`_k.+1 * q`_0 * (p`_k.-1 * q`_0)).
+        admit.
+      rewrite H8 {H8}.
+      apply: addr_ge0.
+      apply: addr_ge0.
+      rewrite big_nat_cond.
+      apply: sumr_ge0 => i Hi.
+      rewrite Bool.andb_true_r in Hi.
+      move/andP: Hi; case => Hi1 Hi2.      
+      rewrite big_nat_cond.
+      apply: sumr_ge0 => j Hj. 
+      rewrite Bool.andb_true_r in Hj.
+      move/andP: Hj; case => Hj1 Hj2.      
+      apply: mulr_ge0.
+         have H8 := (normal_coef_chain_2 Hpzero Hpnormal Hi1 Hj1).
+         by rewrite subr_ge0 [x in (_ <= x)]mulrC.
+       have H8 : (k - j <= k - i)%N /\ (0 < k - j)%N.
+         admit.
+       have H9 := (normal_coef_chain_2 Hqzero Hqnormal (proj2 H8) (proj1 H8)).
+         rewrite subr_ge0 [x in (x <= _)]mulrC subSn;
+           last by apply: ltnW.
+         by rewrite -subn1 -subnDA addnC addn1 subnS.
+      rewrite big_nat_cond.
+      apply: sumr_ge0 => j Hj. 
+      rewrite Bool.andb_true_r in Hj.
+      move/andP: Hj; case => Hj1 Hj2.      
+admit.
+admit.
+
+(*        rewrite lt0n in Hi2.
+
+
+
+      rewrite [x in (x + (_ + _))]addrC.
       rewrite !addrA.
+      rewrite -[x in (x + _ - _)]addrA.
       rewrite -big_split.
-      rewrite [x in (_ - x)]addrC.
+      rewrite [x in (_ - (x + _))]addrC.
       rewrite !addrA.
+      rewrite -[x in (_ - ((x + _) + _))]big_split.
+      rewrite -[x in (_ - x)]addrA.
+      rewrite [x in (_ - (_ + x))]addrC.
+      rewrite !opprD !addrA.
+      rewrite addrC !addrA.
+      rewrite [x in ((((x + _) + _) + _) + _)]addrC.
+      rewrite -sumrB.
+      have H6 :  \sum_(1 <= i < k.+1)
+      (p`_i * q`_(k - i) * (p`_i.-1 * q`_(k - i.-1)) -
+       p`_i * q`_(k.+1 - i) * (p`_i.-1 * q`_(k.-1 - i.-1))) = 0.
+        admit.
+      rewrite H6 add0r {H6}.
+      rewrite -[x in (x + _)]addrA.
+      rewrite [x in ((_ + x) + _)]addrC.
+      rewrite -sumrN !addrA.
       rewrite -big_split.
-      rewrite opprD !addrA.
+      rewrite -addrA.
+      rewrite -sumrB.
+
+Search _ (0 <= _ + _).
+apply: addr_ge0.
+
+
+      have H7 :  \big[GRing.add_comoid R/0]_(1 <= i < k.+1)
+      (GRing.add_comoid R)
+        ((GRing.add_comoid R)
+           (\sum_(i <= j < k.+1)
+               p`_j.+1 * q`_(k - j.+1) * (p`_i.-1 * q`_(k - i.-1)))
+           (\sum_(i <= j < k.+1) p`_i * q`_(k - i) * (p`_j * q`_(k - j))))
+        (-
+         (GRing.add_comoid R)
+           (\sum_(i <= j < k.+1)
+               p`_i * q`_(k.+1 - i) * (p`_j * q`_(k.-1 - j)))
+           (\big[GRing.add_comoid R/0]_(i <= j < k.+1)
+               (p`_j.+1 * q`_(k.+1 - j.+1) * (p`_i.-1 * q`_(k.-1 - i.-1))))) =
+         \sum_(1 <= i < k.+1) \sum_(i <= j < k.+1)
+            (p`_i * p`_j - p`_i.-1 * p`_j.+1) * 
+               (q`_(k - i) * q`_(k - j) - q`_(k.+1 - i) * q`_(k.-1 - j)).
+        admit.
+      rewrite H7 {H7}.
+      rewrite big_nat_cond.
+      apply: sumr_ge0 => i Hi.
+      rewrite Bool.andb_true_r in Hi.
+      move/andP: Hi; case => Hi1 Hi2.      
+      rewrite big_nat_cond.
+      apply: sumr_ge0 => j Hj. 
+      rewrite Bool.andb_true_r in Hj.
+
+
+      rewrite -[x in (((x + _) + _) + _)]addrA.
+      rewrite [x in ((((_ + x) + _) + _) + _)]addrC.
+      rewrite -sumrB.
       rewrite -[x in (x - _)]addrA.
       rewrite [x in (_ + x - _)]addrC -!addrA.
       rewrite -sumrB !addrA -sumrB.
@@ -686,9 +902,9 @@ split.
         rewrite lt0n in Hi2.
         have Hi3 := (negbFE Hi2).
         move/eqP : Hi3 => ->.
-        admit. (**********)
+        admit. *)
       
-(*      move=> i _.
+      move=> i _.
       rewrite big_add1 -!pred_Sn.
       apply: eq_big_nat => l Hl.
       by rewrite -!pred_Sn.
@@ -696,7 +912,7 @@ split.
     rewrite big_add1 -!pred_Sn.
     apply: eq_big_nat => l Hl.
     by rewrite -!pred_Sn.
-*)
+
   (*Print index_enum.*)
 
 (*
@@ -719,11 +935,6 @@ split.
   rewrite -!H /=.
 *)
 
-
-
-  
-
- admit. admit. admit. (**********)
 (* fourth property *)
 move=> i Hpqi j Hij Hj.
 apply: prod_all_ge0 => //.
