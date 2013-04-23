@@ -459,6 +459,25 @@ move/forallP : H => H k Hk.
 apply: (H (Ordinal Hk)).
 Qed. 
 
+Lemma normal_0notroot_2 : forall (p : {poly R}), p \is normal ->
+   ~~(root p 0) -> (forall k, (k < (size p))%N -> 0 < p`_k).
+Proof.
+move=> p Hpnormal H k Hk.
+case Hk2 : (k < (size p).-1)%N.
+  by apply: normal_0notroot.
+have Hk4 : (k == (size p).-1).
+  rewrite eqn_leq.
+  apply/andP; split.
+    Search _ (_.+1 <= _.+1)%N. 
+    rewrite -ltnS prednK // size_poly_gt0.
+    by apply: normal_neq0.
+  rewrite leqNgt.
+  by  apply: negbT. 
+move/eqP : Hk4 => ->.
+rewrite -lead_coefE.
+by apply: normal_lead_coef_gt0.
+Qed.
+
 (* product of 2 polynomials with coefs >0  has coefs >0 *)
 Lemma prod_all_ge0 : forall (p : {poly R}) (q : {poly R}),
    (p != 0) -> (q != 0) ->
@@ -2359,10 +2378,10 @@ rewrite spseqE size_map size_zip size_drop subn1 -p_size minnE subKn //.
 by apply: leq_pred.
 Qed.
 
-Lemma spseq_coef : forall k, (*(1%N < size p)%N ->*) (k < d.-2)%N ->
+Lemma spseq_coef : forall k, (k < d.-2)%N ->
    spseq`_k = p`_k / p`_k.+1 - a. 
 Proof.
-move=> k (*Hpsize*) Hk.
+move=> k Hk.
 have H : minn (size p) ((size p) - 1%N) = ((size p) - 1%N)%N.
   rewrite minnE subKn // subn1 -{2}(@prednK (size p)).
   apply: leqnSn.
@@ -2376,37 +2395,28 @@ rewrite (@nth_map _ 0).
 by rewrite size_zip !size_drop H subn1 p_size. 
 Qed.
 
-(* probably a distinction of case needed for k.+2: if it is head_coef or not *)
 Lemma spseq_increasing : increasing spseq.
 Proof.
-(*case Hpsize : (1 < size p)%N.*)
-  apply: increasing_is_increasing2 => k Hk.
-  rewrite spseq_size in Hk.
-  rewrite (@spseq_coef k) //.
-    rewrite (@spseq_coef k.+1) //.
-      apply: ler_sub => //.
-      rewrite ler_pdivr_mulr.
-        rewrite mulrC mulrA ler_pdivl_mulr.
-          rewrite -expr2.
-          by apply: (@normal_squares _ _ Hpnormal k.+1).
-        apply: (@normal_0notroot _ _ Hpnormal Hp0noroot k.+2).
-        rewrite -(@addn2 k). rewrite addnC -ltn_subRL.
-        rewrite p_size.
-        admit. (**********)
-      apply: (@normal_0notroot _ _ Hpnormal Hp0noroot k.+1).
-      rewrite -(@addn1 k). rewrite addnC -ltn_subRL p_size -subn2.
-      by rewrite -subnDA addnC subnDA subn2 subn1.
-    rewrite -(@addn1 k). rewrite addnC -ltn_subRL -subn2.
-    by rewrite -subnDA addnC subnDA subn2 subn1.
-  apply: (@leq_trans (size q).-1.-2) => //.
-  by rewrite -(@subn2 (size q)) -subn1 (leq_subLR) addnC addn1.
-(*have Hpsize2 := (negbT Hpsize).
-rewrite -leqNgt normal_size_le1 // in Hpsize2.
-move/eqP : Hpsize2 => Hpsize2.
 apply: increasing_is_increasing2 => k Hk.
-by rewrite spseq_size -p_size Hpsize2 ltn0 in Hk.*)
-Qed. (**********)
-
+rewrite spseq_size in Hk.
+rewrite (@spseq_coef k) //.
+  rewrite (@spseq_coef k.+1) //.
+    apply: ler_sub => //.
+    rewrite ler_pdivr_mulr.
+      rewrite mulrC mulrA ler_pdivl_mulr.
+        rewrite -expr2.
+        by apply: (@normal_squares _ _ Hpnormal k.+1).
+      apply: (@normal_0notroot_2 _ _ Hpnormal Hp0noroot k.+2).
+      rewrite -(@addn2 k) addnC -ltn_subRL.
+      by rewrite p_size subn2.
+    apply: (@normal_0notroot _ _ Hpnormal Hp0noroot k.+1).
+    rewrite -(@addn1 k) addnC -ltn_subRL p_size -subn2.
+    by rewrite -subnDA addnC subnDA subn2 subn1.
+  rewrite -(@addn1 k) addnC -ltn_subRL -subn2.
+  by rewrite -subnDA addnC subnDA subn2 subn1.
+apply: (@leq_trans (size q).-1.-2) => //.
+by rewrite -(@subn2 (size q)) -subn1 (leq_subLR) addnC addn1.
+Qed.
 
 (* the middle coefficients of q as a product *) 
 Lemma seqmul_spseq_dropp : mid q = seqmul spseq (drop 1 p).
