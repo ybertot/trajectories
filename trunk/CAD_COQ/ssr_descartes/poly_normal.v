@@ -298,10 +298,19 @@ rewrite normalE  -(mulr1 'X^2) mulrC mul_polyC polyseq_deg2 /=.
 by apply: oner_neq0.
 Qed.
 
-Lemma normal_MX : forall (p : {poly R}),
-   (p != 0) -> p \is normal -> p * 'X \is normal.
+Lemma normal_neq0 : forall (p : {poly R}), p \is normal -> p != 0.
 Proof.
-case=> s Hs.
+move=> p Hpnormal; rewrite -lead_coef_eq0.
+by case: ltrgtP (normal_lead_coef_gt0 Hpnormal).
+Qed.
+
+Lemma normal_MX : forall (p : {poly R}),
+   (*(p != 0) ->*) p \is normal -> p * 'X \is normal.
+Proof.
+move=> p Hpnormal.
+have Hpneq0 := (normal_neq0 Hpnormal).
+case : p Hpneq0 Hpnormal => s Hs.
+(*case=> s Hs.*)
 rewrite !normalE /= => Hp Hsnormal.
 rewrite polyseqMX //=.
 case : s Hs Hp Hsnormal => // a.
@@ -318,22 +327,61 @@ apply/orP; by left.
 Qed.
 
 Lemma normal_MXn : forall (p : {poly R}) (n : nat),
-   (p != 0) -> p \is normal -> p * 'X^n \is normal.
+   (*(p != 0) ->*) p \is normal -> p * 'X^n \is normal.
 Proof.
-move=> p.
-elim => [Hp Hpnormal | n Hn Hp Hpnormal].
+move=> p n Hpnormal.
+have Hpneq0 := (normal_neq0 Hpnormal).
+elim : n => [ | n Hn].
   by rewrite expr0 mulr1.
 rewrite exprSr mulrA.
 apply: normal_MX.
-  apply: mulf_neq0 => //.
-  by rewrite -size_poly_gt0 size_polyXn.
+(*  apply: mulf_neq0 => //.
+  by rewrite -size_poly_gt0 size_polyXn.*)
 apply: Hn => //.
 Qed.
 
-Lemma normal_neq0 : forall (p : {poly R}), p \is normal -> p != 0.
+Lemma normal_MX_2 : forall (p : {poly R}),
+   p * 'X \is normal -> p \is normal.
 Proof.
-move=> p Hpnormal; rewrite -lead_coef_eq0.
-by case: ltrgtP (normal_lead_coef_gt0 Hpnormal).
+move=> p HpXnormal.
+have HpXneq0 := (normal_neq0 HpXnormal).
+have Hpneq0 : p != 0.
+  by rewrite -lead_coef_eq0 -lead_coefMX lead_coef_eq0.
+(* one coef *)
+case : p Hpneq0 HpXneq0 HpXnormal => s Hs.
+rewrite !normalE /= => Hp HpX Hsnormal.
+rewrite polyseqMX // in Hsnormal.
+case : s Hs Hp HpX Hsnormal => [Hs Hp HpX H | a].
+  rewrite /=.
+  by rewrite /= ltrr in H.
+(* two coeffs *)
+case => [Hs Hp HpX Ha| b l].
+  rewrite /= in Ha.
+  rewrite /=.
+  by move/andP : Ha; case =>_ ->.
+(* at least 3 coeffs *)
+elim: l a b => [b c Hs Hp HpX Hab | c l Hcl a b Hs Hp HpX Habcl].
+  rewrite /= in Hab.
+  rewrite /=.
+  move/andP : Hab; case=> Hab _.
+  move/andP : Hab; case=> Ha Hb.
+  apply/andP; by split.
+rewrite /= -/(normal_seq [::a, b, c & l]) in Habcl.
+by move/andP : Habcl; case => H1 H2.
+Qed.
+
+Lemma normal_MXn_2 : forall (p : {poly R}) (n : nat),
+   p * 'X^n \is normal -> p \is normal.
+Proof.
+move=> p n HpXnnormal.
+have HpXnneq0 := (normal_neq0 HpXnnormal).
+elim : n HpXnneq0 HpXnnormal => [H1 H2  | n Hn H1 H2].
+  by rewrite expr0 mulr1 in H2.
+rewrite exprSr mulrA in H2.
+rewrite exprSr mulrA in H1.
+apply: Hn.
+  by rewrite -lead_coef_eq0 -lead_coefMX lead_coef_eq0.
+by apply: normal_MX_2.
 Qed.
 
 Lemma normal_size_le1 : forall (p : {poly R}), (p \is normal) ->
@@ -771,9 +819,26 @@ split.
       move/andP: Hi; case => Hi1 Hi2.  
       rewrite -!sumrN -!big_split big_nat [x in (_ = x)]big_nat.
       apply: eq_bigr => j Hj.
-      move/andP: Hj; case => Hj1 Hj2.  
-
-      admit. (**********)
+      move/andP: Hj; case => Hj1 Hj2.
+      rewrite /= -/(nth 0 _ j.+1) !addrA addrC.
+      by rewrite -mulrN -!mulrA !addrA  -(mulrDr p`_i)
+        -mulrN !mulrA (mulrC _ p`_j) (mulrC _ p`_j) -!mulrA
+        -(mulrDr p`_j) mulrN mulrA
+        -[x in ((_ * _) + x + _ = _)]mulNr [x in (_ + (_ * x) + _ = _)]mulrA
+        [x in (_ + (_ * (x * _)) + _ = _)]mulrC !mulrA 
+        [x in (_ + ((x * _) * _) + _ = _)]mulNr
+        -[x in (_ + _ + (x * _) = _)]mulrA 
+        [x in (_ + _ + (_ * x * _) = _)]mulrC !mulrA 
+        [x in (_ + _ + (x * _ * _) = _)]mulrC 
+        -{2}(opprK (p`_i.-1 * p`_j.+1)) 
+        -[x in (_ + _ + x = _)]mulrA 
+        (mulNr (-(p`_i.-1 * p`_j.+1))) 
+        -[x in (_ + _ + x  = _)]mulrN -addrA 
+        -[x in (_ + (x + _) = _)]mulrA 
+        -(mulrDr (- (p`_i.-1 * p`_j.+1))) 
+        [x in (_ + _ * (_ - x) = _)]mulrC
+        -{2}(subn1 i) subnBA // addn1 -{2}(addn1 j) (addnC j 1%N) 
+        subnDA subn1 -mulrDl.
     rewrite H {H} -!addrA.
     apply: addr_ge0.
       rewrite big_nat; apply: sumr_ge0 => i Hi.
@@ -856,13 +921,45 @@ apply: prod_all_ge0 => //.
   rewrite -ltnNge in Hk3.
   by apply: normal_0notroot. 
 by apply: ltnW.
-Qed. (**********)
+Qed.
 
 (* Lemma 2.43 *)
 Lemma normal_mulr : forall p q : {poly R},
    p \is normal -> q \is normal -> (p * q) \is normal.
 Proof.
-Admitted.
+move=> p q Hpnormal Hqnormal.
+have Hp0 := (root_mu p 0).
+have Hq0 := (root_mu q 0).
+rewrite Pdiv.Field.dvdp_eq in Hp0.
+rewrite Pdiv.Field.dvdp_eq in Hq0.
+have Hp0notroot1 : (~~(root (p %/ ('X - 0%:P) ^+ \mu_0 p) 0) ).
+  rewrite -mu_gt0.
+    rewrite mu_div //.
+    by rewrite (addnK (\mu_0 p) 0%N) ltnn.
+  rewrite dvdp_div_eq0.
+    by apply: normal_neq0.
+  by apply: root_mu.
+have Hq0notroot1 : (~~(root (q %/ ('X - 0%:P) ^+ \mu_0 q) 0) ).
+  rewrite -mu_gt0.
+    rewrite mu_div //.
+    by rewrite (addnK (\mu_0 q) 0%N) ltnn.
+  rewrite dvdp_div_eq0.
+    by apply: normal_neq0.
+  by apply: root_mu.
+move/eqP : Hp0 => Hp0.
+move/eqP : Hq0 => Hq0.
+rewrite Hp0 Hq0.
+rewrite [x in (x * _)]mulrC.
+rewrite !mulrA. rewrite (mulrC _ (('X - 0%:P) ^+ \mu_0 q)) !mulrA.
+rewrite -exprD.
+rewrite {1}oppr0 addr0 -mulrA mulrC.
+apply: normal_MXn.
+apply: normal_mulr_r => //.
+  rewrite Hp0 {2}oppr0 addr0 in Hpnormal.
+  by apply: (normal_MXn_2 (n:=\mu_0 p)).  
+rewrite Hq0 {2}oppr0 addr0 in Hqnormal.
+by apply: (normal_MXn_2 (n:=\mu_0 q)).  
+Qed.
 
 (*Lemma real_complex_conjc : forall (x : R),
    (x%:C)^* = x%:C.
