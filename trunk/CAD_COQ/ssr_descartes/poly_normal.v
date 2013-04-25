@@ -557,7 +557,27 @@ Lemma xchange : forall (T : Type) (idx : T) (op : Monoid.com_law idx)
    \big[op/idx]_(m <= i < n) (\big[op/idx]_(m <= j < i.+1) F i j) =
       \big[op/idx]_(m <= h < n) \big[op/idx]_(h <= j < n) (F j h).
 Proof.
-Admitted. (**********)
+move=> T idx op m n F.
+elim : n => [ | n Hn ].
+  case  Hm0 : (0 <= m)%N.
+    rewrite !big_geq //.
+  have H := (negbT Hm0).
+  by rewrite -ltnNge ltn0 in H.
+case  Hmn : (n < m)%N.
+  rewrite !big_geq //.
+have H := (negbT Hmn).
+rewrite -leqNgt in H.
+rewrite (big_cat_nat op (n:=n)) // big_nat1 Hn
+  [x in (op _ x = _)](big_cat_nat op (n:=n)) // big_nat1
+  [x in (op _ _ = x)](big_cat_nat op (n:=n)) // big_nat1 big_nat1
+  (Monoid.mulmA op).
+congr (op _ _).
+rewrite -big_split big_nat [x in (_ = x)]big_nat.
+apply: eq_bigr => i Hi.
+rewrite [x in (_ = x)](big_cat_nat op (n:=n)) // ?big_nat1 //.
+apply: ltnW.
+move/andP: Hi; by case => _ ->.
+Qed.
 
 Lemma normal_coef_chain_1 : forall (p : {poly R}), ~~(root p 0) ->
    (p \is normal) -> forall k, (0 < k)%N -> forall i,
