@@ -927,13 +927,158 @@ Definition inB1 := fun (z : C) =>
 Lemma inB_inB1 : forall (z : C), (inB z) = (inB1 (z + 1)).
 Proof.
 case => a b.
-rewrite /inB1 /= addrK addr0.
-by rewrite inBE.
+by rewrite /inB1 /= addrK addr0 inBE.
 Qed.
+
+Lemma inB1_help : forall (z : C), (inB1 z) = 
+   (((Num.sqrt 3%:R) * ((Re z) - 1) - Im(z) <= 0) && 
+     (0 <= - (Num.sqrt 3%:R * ((Re z) - 1)) - Im(z))).
+Proof.
+case=> a b.
+rewrite /inB1 /=.
+apply/idP/idP; case/andP => H1 H2.
+  case Ha : (a - 1 == 0); move/eqP : Ha => Ha.
+    rewrite Ha mulr0 oppr0 add0r -eqr_le oppr_eq0 -sqrf_eq0 eqr_le.
+    apply/andP; split.
+      by rewrite Ha (expr2 0) !mulr0 in H2.
+    by apply: sqr_ge0.
+  have Ha2 : (0 < -(a - 1)).
+    rewrite oppr_gt0 ltr_def; apply/andP; split => //.
+    rewrite eq_sym; by apply/eqP.
+  rewrite -(sqr_sqrtr (a:=3%:R)) in H2.
+    rewrite -ComplexField.exprM in H2.
+    rewrite -ler_sqrt in H2.
+      rewrite !sqrtr_sqr normrM in H2.
+      rewrite (ger0_norm (x := Num.sqrt 3%:R)) in H2.
+        rewrite -(normrN (a-1)) (gtr0_norm (x:= - (a - 1))) // in H2.
+        rewrite ler_norml in H2.
+        case/andP : H2 => H2 H3.
+        rewrite mulrN opprK in H2.
+        apply/andP; split.
+          by rewrite subr_le0.
+        rewrite mulrN in H3.
+        by rewrite subr_ge0.
+      by apply: sqrtr_ge0.
+    rewrite ComplexField.exprM.
+    apply: mulr_gt0; rewrite ltr_def; apply/andP; split.
+          by rewrite sqrf_eq0 sqrtr_eq0 -ltrNge ltr0n.
+        by apply: sqr_ge0.
+      rewrite sqrf_eq0; by apply/eqP.
+    by apply: sqr_ge0.
+  by apply: ler0n.
+(* second direction *)
+have Hb : `|b| <= Num.sqrt 3%:R * -(a - 1).
+  rewrite ler_norml.
+  apply/andP; split.
+    by rewrite mulrN opprK -subr_le0.
+  by rewrite -subr_ge0 mulrN.
+have Ha2 : (0 <= - (a - 1)).
+  rewrite -(pmulr_lge0 (x:=Num.sqrt 3%:R)).
+    rewrite mulrC.
+    by apply: (ler_trans (y:=`|b|)).  
+  rewrite sqrtr_gt0; by apply: ltr0n.
+apply/andP; split.
+  by rewrite -oppr_ge0.
+case Ha : (a - 1 == 0).
+  move/eqP : Ha => Ha.
+  rewrite Ha (expr2 0) !mulr0.
+  rewrite Ha oppr0 mulr0 normr_le0 in Hb.
+  move/eqP : Hb => ->.
+  by rewrite expr2 mulr0.
+rewrite -(sqr_sqrtr (a:=3%:R)) -ler_sqrt.
+      rewrite -ComplexField.exprM !sqrtr_sqr normrM -(normrN (a-1))
+        (ger0_norm (x:=Num.sqrt 3%:R)).
+        by rewrite (ger0_norm (x:=- (a - 1))). 
+      by apply: sqrtr_ge0.
+    rewrite pmulr_lgt0; rewrite ltr_def; apply/andP; split.
+          by rewrite sqrf_eq0 sqrtr_eq0 -ltrNge ltr0n.
+        by apply: sqr_ge0.
+      rewrite sqrf_eq0; by apply: negbT.
+    by apply: sqr_ge0.
+  rewrite ler_sqrt.
+    by apply: ler0n.
+  by rewrite ltr0n.
+by rewrite ltr0n.
+Qed.  
+
+Lemma Re_invc : forall (z : C), Re z^-1 = Re z / ((Re z) ^+ 2 + (Im z) ^+2).
+Proof. by case. Qed.
+
+Lemma Im_invc : forall (z : C), Im z^-1 = (- Im z) / ((Re z) ^+ 2 + (Im z) ^+2).
+Proof. case => a b. by rewrite mulNr. Qed.
 
 Lemma inB1_notinC1201 : forall (z : C), (z != 0) ->
    (inB1 z) = ~~(inC12 0 1 (z ^-1)).
-Admitted.
+Proof.
+move=> z Hz.
+rewrite -inC1_or_inC2 negb_or.
+apply/idP/idP => H.
+(* first direction *)
+  rewrite inB1_help in H.
+  move/andP : H; case => H1 H2.
+  apply/andP; split.
+(* not in C1 *)
+    rewrite /inC1 -lerNgt add0r oppr0 mul0r !addr0 !mul1r.
+    case : z Hz H1 H2 => a b Hz H1 H2 /=.
+    have H : a ^+ 2 + b ^+ 2 \is a GRing.unit.
+      rewrite eq_complex /= negb_and in Hz.
+      move/orP:Hz; case=> H.
+        rewrite unitfE paddr_eq0 ?sqr_ge0 // negb_and.
+        apply/orP; left; by rewrite sqrf_eq0.
+      rewrite unitfE paddr_eq0 ?sqr_ge0 // negb_and.
+      apply/orP; right; by rewrite sqrf_eq0.
+    rewrite /= in H1. rewrite /= in H2.
+    rewrite [x in (0 <= ((x + _) + _))]addrC -[x in (0 <= (x + _))]addrA
+      ComplexField.exprM -(mulNr b) ComplexField.exprM sqrrN -mulrDl
+      (expr2 ((a^+2 + b^+2)^-1)) -{2}(mulr1 (a^+2 + b^+2)) -invrM //
+      -mulf_div [x in (0 <= _ + x + _)]mulrC !mulrA (mulrK (x:=(a^+2 + b^+2))) //
+      -mulNr -mulrDl -{1}(opprK 1) -opprD -mulrA -invrM //. 
+      rewrite -mulNr opprK -(mul1r ( - (a - 1) / (a ^+ 2 + b ^+ 2))) 
+        -{1}(@mulrK _ (Num.sqrt 3%:R) _ 1).
+        rewrite mul1r mulf_div -mulrDl.
+        apply: mulr_ge0.
+          by rewrite -oppr_le0 mulrN opprD opprK.
+        rewrite invr_ge0.
+        apply: mulr_ge0.
+          by apply: sqrtr_ge0.
+        apply: addr_ge0; by apply: sqr_ge0.
+      by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
+    by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
+(* not in C2 *)
+    rewrite /inC2 -lerNgt add0r oppr0 mul0r !addr0 !mul1r.
+    case : z Hz H1 H2 => a b Hz H1 H2 /=.
+    have H : a ^+ 2 + b ^+ 2 \is a GRing.unit.
+      rewrite eq_complex /= negb_and in Hz.
+      move/orP:Hz; case=> H.
+        rewrite unitfE paddr_eq0 ?sqr_ge0 // negb_and.
+        apply/orP; left; by rewrite sqrf_eq0.
+      rewrite unitfE paddr_eq0 ?sqr_ge0 // negb_and.
+      apply/orP; right; by rewrite sqrf_eq0.
+    rewrite /= in H1. rewrite /= in H2.
+    rewrite [x in (0 <= ((x + _) + _))]addrC -[x in (0 <= (x + _))]addrA
+      ComplexField.exprM -(mulNr b) ComplexField.exprM sqrrN -mulrDl
+      (expr2 ((a^+2 + b^+2)^-1)) -{2}(mulr1 (a^+2 + b^+2)) -invrM //
+      -mulf_div [x in (0 <= _ + x + _)]mulrC !mulrA (mulrK (x:=(a^+2 + b^+2))) //
+      -mulNr -mulrDl -{1}(opprK 1) -opprD -mulrA -invrM //. 
+      rewrite (*-mulNr opprK*) -(mul1r ( - (a - 1) / (a ^+ 2 + b ^+ 2))) 
+        -{1}(@mulrK _ (Num.sqrt 3%:R) _ 1).
+        rewrite mul1r mulf_div -mulrDl.
+        apply: mulr_ge0.
+          by rewrite mulrN.
+        rewrite invr_ge0.
+        apply: mulr_ge0.
+          by apply: sqrtr_ge0.
+        apply: addr_ge0; by apply: sqr_ge0.
+      by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
+    by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
+(* second direction *)
+
+
+    rewrite -normc_re_im.
+    rewrite /=.
+    rewrite Re_invc Im_invc.
+    
+Admitted. (**********)
 
 Lemma notinC1201_lr_scale : forall (l r : R) (z : C), (l != r) ->
    ~~(inC12 0 1 z) = ~~(inC12 0 (r - l) ((r - l)%:C * z)).
@@ -1131,7 +1276,7 @@ rewrite Bernstein_coeffsM lead_coefM -mul_polyC invrM.
   by rewrite unitfE.
 rewrite unitfE lead_coef_eq0 -Bernstein_coeffs_0 //.
 apply: negbT. by apply polyXsubC_eq0.
-Qed. (**********)
+Qed.
 
 
 End thm_3_cercles_partie2.
