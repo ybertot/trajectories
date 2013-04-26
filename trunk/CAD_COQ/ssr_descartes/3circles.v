@@ -1072,13 +1072,59 @@ apply/idP/idP => H.
       by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
     by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
 (* second direction *)
-
-
-    rewrite -normc_re_im.
-    rewrite /=.
-    rewrite Re_invc Im_invc.
-    
-Admitted. (**********)
+rewrite inB1_help.
+case/andP: H => H1 H2.
+case : z Hz H1 H2 => a b Hz H1 H2 /=.
+rewrite /inC1 -lerNgt add0r oppr0 mul0r !addr0 !mul1r /= in H1.
+rewrite /inC2 -lerNgt add0r oppr0 mul0r !addr0 !mul1r /= in H2.
+have H : a ^+ 2 + b ^+ 2 \is a GRing.unit.
+  rewrite eq_complex /= negb_and in Hz.
+  move/orP:Hz; case=> H.
+    rewrite unitfE paddr_eq0 ?sqr_ge0 // negb_and.
+    apply/orP; left; by rewrite sqrf_eq0.
+  rewrite unitfE paddr_eq0 ?sqr_ge0 // negb_and.
+  apply/orP; right; by rewrite sqrf_eq0.
+rewrite [x in (0 <= ((x + _) + _))]addrC -[x in (0 <= (x + _))]addrA
+  ComplexField.exprM -(mulNr b) ComplexField.exprM sqrrN -mulrDl
+  (expr2 ((a^+2 + b^+2)^-1)) -{2}(mulr1 (a^+2 + b^+2)) -invrM //
+  -mulf_div [x in (0 <= _ + x + _)]mulrC !mulrA (mulrK (x:=(a^+2 + b^+2))) //
+  -mulNr -mulrDl -{1}(opprK 1) -opprD -mulrA -invrM // in H1.
+  rewrite -mulNr opprK -(mul1r ( - (a - 1) / (a ^+ 2 + b ^+ 2))) 
+    -{1}(@mulrK _ (Num.sqrt 3%:R) _ 1) in H1.
+    rewrite mul1r mulf_div -mulrDl in H1.
+    rewrite [x in (0 <= ((x + _) + _))]addrC -[x in (0 <= (x + _))]addrA
+      ComplexField.exprM -(mulNr b) ComplexField.exprM sqrrN -mulrDl
+      (expr2 ((a^+2 + b^+2)^-1)) -{2}(mulr1 (a^+2 + b^+2)) -invrM //
+      -mulf_div [x in (0 <= _ + x + _)]mulrC !mulrA (mulrK (x:=(a^+2 + b^+2))) //
+      -mulNr -mulrDl -{1}(opprK 1) -opprD -mulrA -invrM // in H2. 
+      rewrite -(mul1r ( - (a - 1) / (a ^+ 2 + b ^+ 2))) 
+        -{1}(@mulrK _ (Num.sqrt 3%:R) _ 1) in H2.
+        rewrite mul1r mulf_div -mulrDl in H2.
+        apply/andP; split.
+          rewrite -oppr_ge0 opprD opprK -mulrN 
+            -(pmulr_lge0 (x:=(Num.sqrt 3%:R * (a^+2 + b^+2))^-1)) //
+            invr_gt0 ltr_def.
+          apply/andP; split.
+            apply: mulf_neq0 => //. 
+              by rewrite sqrtr_eq0 -ltrNge ltr0n.
+            by rewrite -?unitfE.
+          apply: mulr_ge0.
+            by apply: sqrtr_ge0.
+          apply: addr_ge0; by apply: sqr_ge0.
+        rewrite -mulrN -(pmulr_lge0 (x:=(Num.sqrt 3%:R * (a^+2 + b^+2))^-1)) //
+          invr_gt0 ltr_def.
+        apply/andP; split.
+          apply: mulf_neq0 => //. 
+            by rewrite sqrtr_eq0 -ltrNge ltr0n.
+          by rewrite -?unitfE.
+        apply: mulr_ge0.
+          by apply: sqrtr_ge0.
+        apply: addr_ge0; by apply: sqr_ge0.
+      by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
+    by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
+  by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
+by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
+Qed.
 
 Lemma notinC1201_lr_scale : forall (l r : R) (z : C), (l != r) ->
    ~~(inC12 0 1 z) = ~~(inC12 0 (r - l) ((r - l)%:C * z)).
