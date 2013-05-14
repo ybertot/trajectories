@@ -1,4 +1,4 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime div bigop.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path choice fintype prime div bigop.
 Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex.
 
 Set Implicit Arguments.
@@ -6,7 +6,11 @@ Unset Strict Implicit.
 
 Import GRing.Theory Num.Theory Num.Def.
 Import Pdiv.Idomain.
-
+(*
+Variable (R : rcfType) (s : seq R).
+About sorted.
+Check (sorted (fun x y : R => x <= y) s).
+*)
 Section normal_polynomial.
 
 Variable (R : rcfType).
@@ -1008,10 +1012,17 @@ by rewrite /= oppr0.
 Qed.*)
 
 Lemma normc_re_im : forall z : complex R,
+   (ComplexField.normc z) ^+2 = (Re z)^+2 + (Im z)^+2. 
+Proof.
+case=> a b.
+rewrite -[x in (_ = x)]sqr_sqrtr //.
+apply: addr_ge0; by apply: sqr_ge0.
+Qed.
+
+Lemma normC_re_im : forall z : complex R,
    (normr z) ^+2 = ((Re z)^+2 + (Im z)^+2)%:C. 
 Proof.
-case.
-move=> a b.
+case=> a b.
 rewrite sqr_normc /=. simpc.
 by rewrite -!expr2 mulrC -(addr0 (- (b * a) + b * a)) -addrA (@addKr R _ 0).
 Qed.
@@ -1067,7 +1078,7 @@ move=> z.
 rewrite mulrBr !mulrBl opprB (addrC (z%:P * (z^*)%:P) _) addrA (mulrC _ (z^*)%:P)
      -(addrA ('X * 'X) _) -expr2 -(opprD (z%:P * 'X) ((z^*)%:P * 'X))
      -(mulrDl z%:P _ 'X) -(polyC_add z z^*) -(polyC_mul z z^*) -sqr_normc
-     -re_conj normc_re_im mul_polyC.
+     -re_conj normC_re_im mul_polyC.
 rewrite -(opprK (Re z ^+ 2 + Im z ^+ 2)%:P) map_poly_is_additive.
 rewrite -polyC_opp -mul_polyC map_polyC.
   (***)
@@ -1211,88 +1222,6 @@ apply: normal_mulr.
   by apply: (Hproots x Hrootx).
 Qed.
 
-(*
-Lemma normal_neq0 : forall (p : {poly R}), p \is normal -> p != 0.
-Proof.
-move=> p Hpnormal.
-rewrite -lead_coef_eq0.
-apply: (@negbT (lead_coef p == 0)); apply: gtr_eqF.
-by apply: normal_lead_coef_gt0.
-Qed.
-
-Lemma normal_size_le1 : forall (p : {poly R}), (p \is normal) ->
-   (size p <= 1%N)%N = (size p == 1%N)%N.
-Proof.
-move=> p Hpnormal.
-apply/idP/idP.
-  move=> Hpsize.
-  rewrite eqn_leq.
-  apply/andP; split => //.
-  rewrite ltnNge leqn0 size_poly_eq0.
-  by apply: normal_neq0.
-move=> Hpsize.
-rewrite leq_eqVlt.
-by apply/orP; left.
-Qed.
-
-Lemma normal_root0 : forall (p : {poly R}), p \is normal ->
-   (root p 0) -> (forall k, (k < (\mu_0 p))%N -> p`_k = 0).
-Proof.
-move=> p Hpnormal Hproot k Hkmu.
-have H := (root_mu p 0).
-rewrite subr0 Pdiv.IdomainMonic.dvdp_eq in H.
-  move/eqP : H => H.
-  by rewrite H coefMXn Hkmu.
-by apply: monicXn.
-Qed. 
-
-Lemma normal_0notroot_b : forall (p : {poly R}), p \is normal ->
-   (~~(root p 0) = [forall k : 'I_((size p).-1), 0 < p`_k]).
-Proof.
-move=> p Hpnormal.
-apply/idP/idP.
-(* => *)
-  move/rootPf=> H.
-  rewrite horner_coef0 in H.
-  move/eqP/eqP : H => H.
-  have Hp0 : 0 < p`_0.
-    rewrite ltr_def. apply/andP; split.
-      by done.
-    exact: (normal_coef_geq0 Hpnormal 0).
-  apply/forallP.
-  case. case=> [ | n Hn] //. 
-  by apply: (normal_some_coef_gt0 Hpnormal Hp0 (ltn0Sn n)).
-(* <= *)
-apply: contraL.
-move=> Hproot0.
-rewrite negb_forall; apply/existsP.
-have H0 : (0 < (size p).-1)%N.
-  rewrite -subn1 -(ltn_add2r 1) !addn1 subn1 prednK.
-    apply: (@root_size_gt1 _ 0 p).
-      apply: normal_neq0.
-      by done.
-    by done.
-  apply: (@ltn_trans 1).
-    by [].
-  apply: (@root_size_gt1 _ 0 p).
-    by apply: normal_neq0.
-  by [].
-exists (Ordinal H0).
-rewrite -lerNgt ler_eqVlt.
-apply/orP; left.
-move/rootPt : Hproot0=> Hproot0.
-by rewrite horner_coef0 in Hproot0.
-Qed.
-
-Lemma normal_0notroot : forall (p : {poly R}), p \is normal ->
-   ~~(root p 0) -> (forall k, (k < (size p).-1)%N -> 0 < p`_k).
-Proof.
-move=> p Hpnormal H.
-rewrite normal_0notroot_b // in H.
-move/forallP : H => H k Hk.
-apply: (H (Ordinal Hk)).
-Qed. 
-*)
 Lemma normal_red_0noroot : forall (p : {poly R}), p \is normal ->
    root p 0 -> (~~(root (p %/ 'X^(\mu_0 p)) 0) && ((p %/ 'X^(\mu_0 p)) \is normal)).  
 Proof.
@@ -1365,8 +1294,7 @@ apply: (@normal_some_coef_gt0 p Hpnormal (i + (\mu_0 p)) Hi).
 by rewrite addnC -ltn_subRL -subn1 -subnDA addnC addn1 subnS.
 Qed.
 
-Fixpoint all_pos (s : seq R) : bool :=
-   if s is a ::tl then (0 < a) && (all_pos tl) else true.
+Definition all_pos := fun (s : seq R) => all (fun x => 0 < x) s.
 
 Lemma normal_all_pos : forall (p : {poly R}), p \is normal ->
    ~~(root p 0) -> all_pos p.
@@ -1410,58 +1338,17 @@ Variable R : rcfType.
 (* all_pos is all positive *)
 Lemma all_pos_gt0 : forall (s : seq R), (all_pos s) ->
    (forall k, (k < size s)%N -> 0 < s`_k).
-Proof.
-elim => [|a l IHl Halpos] //.
-rewrite /= in Halpos.
-move/andP : Halpos => Halpos.
-case => [H0 |n Hn ] //.
-  exact: (proj1 Halpos).
-apply: (IHl _ n).
-  exact: (proj2 Halpos).
-by rewrite -(ltn_add2r 1%N) !addn1.
-Qed.
+Proof. move=> s. by apply/all_nthP. Qed.
 
 Lemma gt0_all_pos : forall (s : seq R), (forall k, (k < size s)%N -> 0 < s`_k) ->
    (all_pos s).
-elim => [|a l IHl Hal] //.
-rewrite /=.
-apply/andP; split.
-  by apply: (Hal 0%N).
-apply: IHl=> k Hk.
-apply: (Hal k.+1).
-by rewrite -(@addn1 k) addnC -ltn_subRL subn1 -pred_Sn.
-Qed.
+Proof. move=> s H; by apply/(all_nthP (0)). Qed.
 
 Lemma all_pos_subseq : forall (s1 s2 : seq R), (all_pos s2) -> (subseq s1 s2) ->
    (all_pos s1).
 Proof.
-move=> s s2.
-elim: s2 s => [s _ Hsubseq |a l IHl s1 Halpos Hs1subseqal] //.
-  rewrite subseq0 in Hsubseq.
-  move/eqP: Hsubseq => Hsubseq.
-  by rewrite Hsubseq.
-have Halsubseq2 : exists2 m : seq bool, size m = size (a::l) & s1 = mask m (a::l).
-  by apply/subseqP. 
-case: Halsubseq2. 
-case => [ |b0 btl Hbsize Hs1_as_mask] //.  
-move/andP : Halpos => Halpos. 
-case Hb0 : b0. 
-  rewrite mask_cons Hb0 cat1s in Hs1_as_mask.
-  rewrite Hs1_as_mask.
-  apply/andP; split.
-    exact: (proj1 Halpos).
-  apply: IHl.
-    exact: (proj2 Halpos).  
-  apply/subseqP; exists btl.
-    by apply/eqP; rewrite -(eqn_add2r 1) !addn1; apply/eqP.
-  by done.
-rewrite mask_cons Hb0 cat0s in Hs1_as_mask.
-apply: IHl.
-  exact: (proj2 Halpos).
-rewrite Hs1_as_mask.
-apply/subseqP; exists btl.
-  by apply/eqP; rewrite -(eqn_add2r 1) !addn1; apply/eqP.
-by done.
+move=> s1 s2 /allP Hs2 /mem_subseq Hsubseq;
+by apply/allP=> y /Hsubseq /Hs2 Hy.
 Qed.
 
 (* sequence without 0's : filter (fun x => x != 0) s) *)
@@ -1469,21 +1356,14 @@ Definition seqn0 (s : seq R) := [seq x <- s | x != 0].
 
 Lemma seqn0E : forall s : seq R,
    seqn0 s = [seq x <- s | x != 0].
-Proof.
-move=> s. by done.
-Qed.
+Proof. move=> s; by done. Qed.
 
 Lemma seqn0_as_mask : forall s : seq R, seqn0 s = mask (map (fun x => x != 0) s) s.
-Proof.
-move=> s. by rewrite seqn0E filter_mask.
-Qed.
+Proof. move=> s; by rewrite seqn0E filter_mask. Qed.
 
 Lemma seqn0_cons : forall (s : seq R) (a : R), (a != 0) ->
    seqn0 (a :: s) = a :: (seqn0 s).
-Proof.
-move=> s a Ha.
-by rewrite /= Ha.
-Qed.
+Proof. move=> s a Ha; by rewrite /= Ha. Qed.
 
 Lemma seqn0_size : forall s: seq R, (s`_(size s).-1 != 0) ->
    (0 < size (seqn0 s))%N.
@@ -1526,32 +1406,15 @@ move/andP : Ha => Ha.
 exact: (proj1 Ha).
 Qed.
 
-Fixpoint all_neq0 (s : seq R) : bool :=
-  if s is a ::tl then (a != 0) && (all_neq0 tl) else true.
+Definition all_neq0 := fun (s : seq R) => all (fun x => x != 0) s.
 
 Lemma all_neq0_neq0_1 : forall s : seq R,
    (all_neq0 s) -> forall k, (k < size s)%N -> s`_k != 0.
-Proof.
-elim => [ | a tl IHtl Hatl] //=.
-rewrite /= in Hatl.
-move/andP : Hatl => Hatl.
-case => [ Hk0 | k Hk] //=.
-  exact : (proj1 Hatl).
-apply: (IHtl (proj2 Hatl) k).
-by rewrite -(ltn_add2r 1) !addn1.
-Qed.
+Proof. move=> s; apply/all_nthP. Qed.
 
 Lemma all_neq0_neq0_2 : forall s : seq R,
    (forall k, (k < size s)%N -> (s`_k != 0)) -> (all_neq0 s).
-Proof.
-elim => [ | a l IHl H] //=.
-apply/andP; split.
-  by apply: (H 0%N).
-apply: IHl.
-move=> k Hk.
-apply: (H k.+1).
-by rewrite /= -(addn1 k) -(addn1 (size l)) ltn_add2r. 
-Qed.
+Proof. move=> s H; by apply/(all_nthP 0). Qed.
 
 Lemma all_neq0_gt0F : forall (s : seq R) k, (k < (size s))%N -> (all_neq0 s) ->
    ((0 < s`_k) == false) = (s`_k < 0).
@@ -1613,13 +1476,7 @@ move/eqP => Hs. by apply: negbT.
 Qed.
 
 Lemma seqn0_all_neq0 : forall s : seq R, all_neq0 (seqn0 s).
-Proof.
-elim=> [ | a l H] //.
-case Ha : (a != 0).
-  rewrite /= Ha /=.
-  apply/andP; split => //.
-by rewrite /= Ha /=.
-Qed.
+Proof. move=> s; by apply: filter_all. Qed.
 
 Lemma seqn0_0 : forall (s : seq R), s`_0 != 0 -> (seqn0 s)`_0 = s`_0.
 Proof.
@@ -1650,10 +1507,8 @@ case Ha : (a != 0).
 by done.
 Qed.
 
-Fixpoint increasing (s : seq R) : bool :=
-   if s is a :: tl then
-      if tl is b :: l then (a <= b) && increasing tl else true
-   else true.
+Definition increasing := fun (s : seq R) =>
+   sorted (fun x y => x <= y) s.
 
 Lemma increasing_is_increasing1 : forall (s : seq R),
    (increasing s) -> (forall k, (k < (size s).-1)%N -> s`_k <= s`_k.+1). 
@@ -1702,85 +1557,14 @@ case : k => [Hk Hl Hkl| k Hk Hl Hkl] //=.
 by apply: (IHl b (proj2 Habtl)).
 Qed.
 
-Local Notation is1 := (fun x : bool => x == true). 
-
-Lemma mask_find_1 : forall (s : seq R) (b : bitseq), (size s = size b) ->
-   ((find is1 b) < size s)%N ->
-      mask b s = 
-      s`_(find is1 b) :: mask (drop (find is1 b).+1 b) (drop (find is1 b).+1 s).
-Proof.
-elim => [ |a l IHl] //.
-case => [ |b0 btl Hsize Hfind] //.
-case Hb0 : b0.
-  by rewrite mask_cons cat1s /= !drop0.
-rewrite mask_cons cat0s !drop_cons (IHl btl) //.      
-  by apply/eqP; rewrite -(eqn_add2r 1%N) !addn1; apply/eqP.
-rewrite -(ltn_add2r 1%N) !addn1.
-by rewrite Hb0 in Hfind.
-Qed.
-
-Lemma mask_find_0 : forall (s : seq R) (b : bitseq), (size s = size b) ->
-    (size s <= find is1 b)%N -> mask b s = [::].
-Proof.
-elim => [b _ _ |a l IHl] //.
-  by rewrite mask0.
-case => [ |b0 btl Hsize Hfind] //.
-case Hb0 : b0.
-  by rewrite Hb0 /= ltn0 in Hfind.
-rewrite mask_cons cat0s (IHl btl) //.      
-  by apply/eqP; rewrite -(eqn_add2r 1%N) !addn1; apply/eqP.
-by rewrite Hb0 /= in Hfind.
-Qed.
-
-Lemma increasing_cons : forall (a : R) (s : seq R),
-   increasing (a :: s) = match s with
-   | nil => true
-   | b :: _ => (a <= b) && increasing s
-   end.
-Proof. by rewrite /=. Qed.
-
 Lemma subseq_incr : forall (s1 s2 : seq R), (increasing s2) -> 
    (subseq s1 s2) -> (increasing s1).
 Proof.
-move=> s s2.
-elim: s2 s => [s _ Hsubseq |a] //.
-  rewrite subseq0 in Hsubseq.
-  move/eqP: Hsubseq => Hsubseq.
-  by rewrite Hsubseq.
-case=> [_ |b l IHbl s1 Hablincr Hs1subseqabl] //.
-  case => [ |b l Haincr Hblsubseqa] //.
-  rewrite /= in Hblsubseqa.
-  case Hab : (b == a); rewrite Hab in Hblsubseqa;
-  by move/eqP : Hblsubseqa => ->.
-have Hablsubseq2 : exists2 m : seq bool, size m = size [::a, b & l] & 
-   s1 = mask m [::a, b & l].
-  by apply/subseqP. 
-case: Hablsubseq2.
-case => [ |b0 btl Hbsize Hs1_as_mask] //.
-have Hbtl_size : size btl = size (b :: l).
-  by apply/eqP; rewrite -(eqn_add2r 1) !addn1; apply/eqP.
-case Hb0 : b0. 
-  rewrite mask_cons Hb0 cat1s in Hs1_as_mask.
-  case Hfind : ((find is1 btl) < size (b :: l))%N.
-    rewrite mask_find_1 // in Hs1_as_mask.
-    rewrite Hs1_as_mask.
-    apply/andP; split.
-      apply: (@increasing_is_increasing3 [::a, b & l] _ 0%N (find is1 btl).+1) => //.
-    move/andP : Hablincr => Hablincr.
-    rewrite -increasing_cons -mask_find_1 //.
-    apply: IHbl => //.
-      exact: (proj2 Hablincr).
-    apply/subseqP; by exists btl.
-  have Hfind2 := (negbT Hfind).
-  rewrite -leqNgt in Hfind2.
-  rewrite mask_find_0 // in Hs1_as_mask.
-  by rewrite Hs1_as_mask.
-move/andP : Hablincr => Hablincr.
-rewrite mask_cons Hb0 cat0s in Hs1_as_mask.
-apply: IHbl.
-  exact: (proj2 Hablincr).
-rewrite Hs1_as_mask.
-apply/subseqP; by exists btl.
+move=> s1 s2.
+rewrite /increasing => Hs2 Hsubseq.
+move: Hsubseq Hs2.
+apply: subseq_sorted => //=.
+exact: ler_trans.
 Qed.
 
 Lemma changes_seq_incr_0 : forall (s : seq R), (0 < size s)%N ->
@@ -2057,10 +1841,7 @@ Qed.
 
 Lemma mid_cons : forall (s : seq R) (a : R),
    mid (a :: s) = take (size s).-1 s.
-Proof.
-move=> s a.
-by rewrite mid_2 /= drop0.
-Qed.
+Proof. move=> s a; by rewrite mid_2 /= drop0. Qed.
 
 Lemma mid_coef_1 : forall (s : seq R) k, (k < size (mid s))%N ->
    (mid s)`_k = s`_k.+1.
@@ -2354,7 +2135,7 @@ Qed.
 
 Lemma q_n_neq0 : q`_d.-1 != 0.
 Proof.
-apply: negbT. apply: gtr_eqF. (*rewrite q_size -pred_Sn.*) exact: q_n_gt0.
+apply: negbT. apply: gtr_eqF. exact: q_n_gt0.
 Qed.
 
 Lemma q_k : forall k, (0%N < k)%N -> (k < d.-1)%N ->
@@ -2729,3 +2510,4 @@ by apply: seqn0_all_neq0.
 Qed.
 
 End Proof_Prop_2_44.
+
