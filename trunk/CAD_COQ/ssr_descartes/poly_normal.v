@@ -385,7 +385,6 @@ case Hk2 : (k < (size p).-1)%N.
 have Hk4 : (k == (size p).-1).
   rewrite eqn_leq.
   apply/andP; split.
-    Search _ (_.+1 <= _.+1)%N. 
     rewrite -ltnS prednK // size_poly_gt0.
     by apply: normal_neq0.
   rewrite leqNgt.

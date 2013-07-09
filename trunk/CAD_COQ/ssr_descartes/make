@@ -1,6 +1,6 @@
 poly_normal.v
 pol.v
-3circles.v
+three_circles.v
 
 COQC = /usr/local/bin/coqtop
 #COQFLAGS = "-q $(OPT) -dont-load-proofs $(COQLIBS) $(OTHERFLAGS) $(COQ_XML) -compile"
