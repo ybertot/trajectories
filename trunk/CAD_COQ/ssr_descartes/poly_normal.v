@@ -1067,7 +1067,7 @@ case: (altP (Im x =P 0)) => Himx.
     rewrite Hp rmorphM rootM.
     apply/orP. by left.
   rewrite monicXsubC_normal.
-  have H' := (Hproots x Hrootx). rewrite inBE in H'.
+  have H' := (Hproots x Hrootx). rewrite /inB in H'.
   move/andP : H'=>H'.
   by apply: (proj1 H').
 (* pair of complex roots *)

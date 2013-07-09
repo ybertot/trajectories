@@ -908,7 +908,7 @@ Definition inB1 := fun (z : C) =>
 Lemma inB_inB1 : forall (z : C), (inB z) = (inB1 (z + 1)).
 Proof.
 case => a b.
-by rewrite /inB1 /= addrK addr0 inBE.
+by rewrite /inB1 /= addrK addr0 /inB.
 Qed.
 
 (*
@@ -1166,7 +1166,7 @@ Qed.
 
 Lemma inBneg1 : (@inB R (-1)).
 Proof.
-rewrite inBE.
+rewrite /inB.
 apply/andP; split.
   rewrite raddfN. by apply: lerN10.
 rewrite !raddfN /= oppr0 sqrrN !expr2 mulr0 !mulr1.
