@@ -1217,9 +1217,9 @@ Qed.
 
 
 Lemma Bernstein_isolate a b l: a < b ->
-   alternate (R:=R) (Bernstein_coeffs l a b) -> one_root1 l a b.
+   alternate (R:=R) (Mobius l a b) -> one_root1 l a b.
 Proof.
-rewrite /Bernstein_coeffs =>  altb alt.
+rewrite /Mobius =>  altb alt.
 rewrite (_ : a = a + (a - a)); last by rewrite addrN addr0.
 rewrite (_ : b = a + (b - a)); last by rewrite (addrC b) addNKr.  
 apply: one_root1_shift.

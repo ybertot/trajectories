@@ -405,9 +405,9 @@ by rewrite /= /e divrK  ?lterr.
 Qed.
 
 Lemma Bernstein_isolate : forall a b l, a < b ->
-   alternate (Bernstein_coeffs l a b) -> one_root1 l a b.
+   alternate (Mobius l a b) -> one_root1 l a b.
 Proof.
-rewrite /Bernstein_coeffs => a b l altb alt.
+rewrite /Mobius => a b l altb alt.
 rewrite (_ : a = a + (a - a)); last by rewrite addrN addr0.
 rewrite (_ : b = a + (b - a)); last by rewrite (addrC b) addrA addrN add0r.
 apply one_root1_translate.

@@ -231,8 +231,8 @@ Qed.
 
 End about_changes_0.
 
-(*Lemma Bernstein_coeffsE : forall (G : ringType) (p : {poly G}) (a b : G),
-   Bernstein_coeffs p a b = reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
+(*Lemma MobiusE : forall (G : ringType) (p : {poly G}) (a b : G),
+   Mobius p a b = reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
 Proof. by []. Qed.*)
 
 Section about_scaleX_poly.
@@ -305,12 +305,12 @@ rewrite !rootE horner_reciprocal.
 by rewrite unitfE.
 Qed.
 
-Lemma root_Bernstein_coeffs_1 : forall (p : {poly R}) (x : R) (l r : R),
+Lemma root_Mobius_1 : forall (p : {poly R}) (x : R) (l r : R),
    (l != r) -> (x != l) -> (x != r) ->
-   root p x = root (Bernstein_coeffs p l r) ((r - x) / (x - l)).
+   root p x = root (Mobius p l r) ((r - x) / (x - l)).
 Proof.
 move=> p x l r Hlr Hxl Hxr.
-rewrite /Bernstein_coeffs.
+rewrite /Mobius.
 rewrite -root_shift_2 -(@mulrK _ (x - l) _ 1). 
   rewrite mul1r -mulrDl addrA.
   rewrite -(@addrA _ _ (-x) x) (@addrC _ (-x) x) addrA addrK. 
@@ -328,12 +328,12 @@ rewrite -root_shift_2 -(@mulrK _ (x - l) _ 1).
 by rewrite unitfE subr_eq0.
 Qed.
 
-Lemma root_Bernstein_coeffs_2 : forall (p : {poly R}) (x : R) (l r : R),
+Lemma root_Mobius_2 : forall (p : {poly R}) (x : R) (l r : R),
    (x + 1 != 0) ->
-   root p ((r + l * x) / (x + 1)) = root (Bernstein_coeffs p l r) x.
+   root p ((r + l * x) / (x + 1)) = root (Mobius p l r) x.
 Proof.
 move=> p x l r Hx.
-rewrite /Bernstein_coeffs.
+rewrite /Mobius.
 rewrite -root_shift_2 -root_reciprocal_2 //. 
 rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (x + 1) _ l).
   by rewrite -mulrDl {2}(@addrC _ x 1) mulrDr mulr1 addrA
@@ -341,19 +341,19 @@ rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (x + 1) _ l).
 by rewrite unitfE.
 Qed.
 
-Lemma Bernstein_coeffsM : forall (p q : {poly R}) (l r : R),
-   Bernstein_coeffs (p * q) l r =
-   (Bernstein_coeffs p l r) * (Bernstein_coeffs q l r).
+Lemma MobiusM : forall (p q : {poly R}) (l r : R),
+   Mobius (p * q) l r =
+   (Mobius p l r) * (Mobius q l r).
 Proof.
 move=> p q l r.
-by rewrite /Bernstein_coeffs !rmorphM /= reciprocalM rmorphM.
+by rewrite /Mobius !rmorphM /= reciprocalM rmorphM.
 Qed.
 
-Lemma Bernstein_coeffs_Xsubc : forall (c l r : R), (l != r) ->
-   Bernstein_coeffs ('X - c%:P) l r = (l - c) *: 'X + (r - c)%:P.
+Lemma Mobius_Xsubc : forall (c l r : R), (l != r) ->
+   Mobius ('X - c%:P) l r = (l - c) *: 'X + (r - c)%:P.
 Proof.
 move=> c l r Hlr.
-rewrite /Bernstein_coeffs rmorphB /= shift_polyC rmorphB /= scaleX_polyC.
+rewrite /Mobius rmorphB /= shift_polyC rmorphB /= scaleX_polyC.
 rewrite /shift_poly comp_polyX rmorphD /= scaleX_polyC /scaleX_poly
    comp_polyX -addrA -(rmorphB _ l c) /=. 
 rewrite reciprocal_monom.
@@ -363,14 +363,14 @@ rewrite mulrDl polyC1 mul1r mulrC mul_polyC -addrA (addrC (l - c)%:P _)
 by rewrite subr_eq0 eq_sym.
 Qed.
 
-Lemma Bernstein_coeffs_Xsubc_monic : forall (c l r : R),
+Lemma Mobius_Xsubc_monic : forall (c l r : R),
    (l != r) -> (l != c) ->
-   (lead_coef (Bernstein_coeffs ('X - c%:P) l r))^-1 *:
-      (Bernstein_coeffs ('X - c%:P) l r) 
+   (lead_coef (Mobius ('X - c%:P) l r))^-1 *:
+      (Mobius ('X - c%:P) l r) 
          = 'X + ((r - c) / (l - c))%:P.
 Proof.
 move=> c l r Hlr Hlc.
-rewrite Bernstein_coeffs_Xsubc //  lead_coefE.
+rewrite Mobius_Xsubc //  lead_coefE.
 have Hlc2 : ((l - c) != 0).
   by rewrite subr_eq0.
 have HlcP : ((l - c)%:P == 0) = false.
@@ -592,24 +592,24 @@ by rewrite -complexr0.
 Qed.
 
 Lemma Bernstein_toC : forall (p : {poly R}) (l r : R),
-   toC (Bernstein_coeffs p l r) = Bernstein_coeffs (toC p) l%:C r%:C.
+   toC (Mobius p l r) = Mobius (toC p) l%:C r%:C.
 Proof.
 move=> p l r.
-by rewrite {2}/Bernstein_coeffs -shift_toC /= -rmorphB -scale_toC
-   -reciprocal_toC -shift_toC /Bernstein_coeffs.
+by rewrite {2}/Mobius -shift_toC /= -rmorphB -scale_toC
+   -reciprocal_toC -shift_toC /Mobius.
 Qed.
 
-Lemma root_Bernstein_coeffs_C_1 :  forall (p : {poly R}) (z : C) (l r : R),
+Lemma root_Mobius_C_1 :  forall (p : {poly R}) (z : C) (l r : R),
    (l != r) -> (z != l%:C) -> (z != r%:C) ->
       root (toC p) z =
-      root (toC (Bernstein_coeffs p l r)) ((r%:C - z) / (z - l%:C)).
+      root (toC (Mobius p l r)) ((r%:C - z) / (z - l%:C)).
 Proof.
 move=> p z l r Hlr Hzl Hzr.
 have HlrC : (l%:C != r%:C).
   rewrite -!complexr0 eq_complex /= negb_and.
   apply/orP.
   by left.
-rewrite !rootE Bernstein_toC /Bernstein_coeffs -!rootE.
+rewrite !rootE Bernstein_toC /Mobius -!rootE.
 rewrite -@root_shift_2 -(@mulrK _ (z - l%:C) _ 1). 
   rewrite mul1r -mulrDl addrA.
   rewrite -(@addrA _ _ (-z) z) (@addrC _ (-z) z) addrA addrK. 
@@ -627,13 +627,13 @@ rewrite -@root_shift_2 -(@mulrK _ (z - l%:C) _ 1).
 by rewrite unitfE subr_eq0.
 Qed.
 
-Lemma root_Bernstein_coeffs_C_2 : forall (p : {poly R}) (z : C) (l r : R),
+Lemma root_Mobius_C_2 : forall (p : {poly R}) (z : C) (l r : R),
    (z + 1 != 0) ->
       root (toC p) ((r%:C + l%:C * z) / (z + 1)) = 
-      root (toC (Bernstein_coeffs p l r)) z.
+      root (toC (Mobius p l r)) z.
 Proof.
 move=> p z l r Hz.
-rewrite !rootE Bernstein_toC /Bernstein_coeffs -!rootE.
+rewrite !rootE Bernstein_toC /Mobius -!rootE.
 rewrite -root_shift_2 -root_reciprocal_2 //. 
 rewrite -root_scale_2 -root_shift_2 -{3}(@mulrK _ (z + 1) _ l%:C).
   by rewrite -mulrDl {2}(@addrC _ z 1) mulrDr mulr1 addrA -(addrA r%:C (- l%:C) l%:C)
@@ -700,19 +700,19 @@ rewrite ltr_def; apply/andP; split.
 by apply: sqr_ge0.
 Qed.
 
-Lemma Bernstein_coeffs_0 : forall (R : idomainType) (p : {poly R}) (a b : R),
+Lemma Mobius_0 : forall (R : idomainType) (p : {poly R}) (a b : R),
    (a != b) ->
-   (p == 0) = ((Bernstein_coeffs p a b) == 0).
+   (p == 0) = ((Mobius p a b) == 0).
 Proof.
 move=> R p a b Hab.
 apply/idP/idP => Hp; move/eqP : Hp => Hp.
-  by rewrite /Bernstein_coeffs Hp /shift_poly /scaleX_poly !comp_polyC
+  by rewrite /Mobius Hp /shift_poly /scaleX_poly !comp_polyC
      reciprocalC comp_polyC.
-rewrite /Bernstein_coeffs in Hp.
+rewrite /Mobius in Hp.
 rewrite (shift_poly_eq p 0 a) shift_polyC (@scale_poly_eq R _ _  (b - a)).
   rewrite /scaleX_poly comp_polyC -(@reciprocal0 R) (shift_poly_eq _ _ 1)
      shift_polyC.
-  rewrite /Bernstein_coeffs in Hp.
+  rewrite /Mobius in Hp.
   by rewrite Hp.
 by rewrite subr_eq0 eq_sym.
 Qed.
@@ -834,19 +834,19 @@ Qed.
 (* Theorem 10.47 i. *)
 Theorem three_circles_1 : forall (p : {poly R}), (forall (z : C),
    root (map_poly (real_complex R) p) z -> (notinC z)) ->
-      changes (Bernstein_coeffs p l r) = 0%N.
+      changes (Mobius p l r) = 0%N.
 Proof.
 move=> p H.
 have Hlr := Hlr.
 case Hp0 : (p == 0).
-  rewrite (Bernstein_coeffs_0 p Hlr) in Hp0.
+  rewrite (Mobius_0 p Hlr) in Hp0.
   move/eqP : Hp0 => ->.
   by rewrite polyseq0.
-rewrite (@changes_mulC R (Bernstein_coeffs p l r)
-   (lead_coef (Bernstein_coeffs p l r))^-1).
+rewrite (@changes_mulC R (Mobius p l r)
+   (lead_coef (Mobius p l r))^-1).
   apply: monic_roots_changes_eq0.
     rewrite monicE lead_coefZ mulrC -unitrE unitfE lead_coef_eq0
-       -Bernstein_coeffs_0 //.
+       -Mobius_0 //.
     apply/eqP.
     by move/eqP : Hp0.
   move=> z Hz.
@@ -858,14 +858,14 @@ rewrite (@changes_mulC R (Bernstein_coeffs p l r)
     by apply: lerN10.
   rewrite map_polyZ rootZ /= in Hz.
     move/eqP/eqP : Hz2 => Hz2.
-    rewrite -root_Bernstein_coeffs_C_2 // in Hz.
+    rewrite -root_Mobius_C_2 // in Hz.
     rewrite -notinC_Re_lt0_2 //.
     apply: H => //.
   rewrite -complexr0 eq_complex /= negb_and.
   apply/orP; left.
-  rewrite invr_eq0 lead_coef_eq0 -Bernstein_coeffs_0 //. 
+  rewrite invr_eq0 lead_coef_eq0 -Mobius_0 //. 
   by apply: negbT. 
-rewrite invr_eq0 lead_coef_eq0 -Bernstein_coeffs_0 //.  
+rewrite invr_eq0 lead_coef_eq0 -Mobius_0 //.  
 by apply: negbT.
 Qed.
 
@@ -1177,7 +1177,7 @@ Qed.
 Theorem three_circles_2 : forall  (l r : R) (p : {poly R})
    (a : R), (~~ root p r) -> (l < a < r) -> (~~ root p a) ->
    (forall z : C, root (toC p) z -> ~~ (inC12 l r z) ) ->
-   (changes (seqn0 (Bernstein_coeffs (p * ('X - a%:P)) l r)) = 1%N).
+   (changes (seqn0 (Mobius (p * ('X - a%:P)) l r)) = 1%N).
 Proof.
 move=> l r p a Hpnorootr Hlar Hpnoroota H.
 have Hlr : l != r.
@@ -1200,25 +1200,25 @@ case Hp : (p == 0).
     rewrite Hp; by apply: root0.
   by done.
 move/eqP/eqP : Hp => Hp.
-have Hlc1 : (lead_coef (Bernstein_coeffs (R:=R) (p * ('X - a%:P)) l r))^-1 != 0.
+have Hlc1 : (lead_coef (Mobius (R:=R) (p * ('X - a%:P)) l r))^-1 != 0.
   apply: invr_neq0.
-  rewrite Bernstein_coeffsM lead_coefM.
+  rewrite MobiusM lead_coefM.
   apply: mulf_neq0; rewrite lead_coef_eq0.
-    by rewrite -Bernstein_coeffs_0.
-  rewrite -Bernstein_coeffs_0 //.
+    by rewrite -Mobius_0.
+  rewrite -Mobius_0 //.
   apply: negbT.
   by apply: polyXsubC_eq0.
-have Hlc2 : (lead_coef (Bernstein_coeffs p l r) != 0).
-  by rewrite lead_coef_eq0 -Bernstein_coeffs_0.
+have Hlc2 : (lead_coef (Mobius p l r) != 0).
+  by rewrite lead_coef_eq0 -Mobius_0.
 rewrite -(@changes_nseq _
-   (lead_coef (Bernstein_coeffs (p * ('X - a%:P)) l r)) ^-1) //
+   (lead_coef (Mobius (p * ('X - a%:P)) l r)) ^-1) //
     seqn0_nseq // -mul_polyC_seqmul //.
-rewrite Bernstein_coeffsM lead_coefM -mul_polyC invrM.
+rewrite MobiusM lead_coefM -mul_polyC invrM.
     rewrite rmorphM /= mulrA mulrC !mulrA
-       (mulrC (Bernstein_coeffs ('X - a%:P) _ _) _)
+       (mulrC (Mobius ('X - a%:P) _ _) _)
        mul_polyC -mulrA mul_polyC mulrC.
     rewrite [in X in (changes (R:=R) (seqn0 (polyseq (_ * X))))]
-      (@Bernstein_coeffs_Xsubc_monic R a l r Hlr Hal).
+      (@Mobius_Xsubc_monic R a l r Hlr Hal).
     rewrite -(opprK ((r - a) / (l - a))%:P) -polyC_opp.
     apply: normal_changes.
         move/andP : Hlar => Hlar.
@@ -1234,19 +1234,19 @@ rewrite Bernstein_coeffsM lead_coefM -mul_polyC invrM.
         rewrite (inB_notinC12 Hlr) //.
         rewrite -mul_polyC rmorphM /= map_polyC mul_polyC rootZ in Hz.
           apply: H.
-          by rewrite root_Bernstein_coeffs_C_2.
+          by rewrite root_Mobius_C_2.
         rewrite /= eq_complex negb_and.
         apply/orP; left. by apply: invr_neq0.
       rewrite addr_eq0 in Hz2.
       move/eqP : Hz2 => ->.
       exact: inBneg1.
     rewrite rootZ. 
-      rewrite -root_Bernstein_coeffs_2.
+      rewrite -root_Mobius_2.
         by rewrite mulr0 addr0 add0r invr1 mulr1.
       rewrite add0r. by apply: oner_neq0.
     by apply: invr_neq0.
   by rewrite unitfE.
-rewrite unitfE lead_coef_eq0 -Bernstein_coeffs_0 //.
+rewrite unitfE lead_coef_eq0 -Mobius_0 //.
 apply: negbT. by apply polyXsubC_eq0.
 Qed.
 

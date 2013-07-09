@@ -644,7 +644,7 @@ Definition reciprocal_pol (R:ringType) (p: {poly R}):=
 
 (* The Bernstein coefficients of polynomial l for the interval (a, b) *)
 
-Definition Bernstein_coeffs (R:ringType) (p: {poly R})(a b : R) : {poly R} :=
+Definition Mobius (R:ringType) (p: {poly R})(a b : R) : {poly R} :=
   reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
 
 Section ReciprocalPoly.
