@@ -16,6 +16,7 @@ Unset Strict Implicit.
 
 Import GRing.Theory Num.Theory Num.Def.
 Import Pdiv.Idomain.
+Import ComplexField.
 
 Section normal_polynomial.
 
@@ -132,8 +133,26 @@ case/orP=> [-> //| Ha].
 by rewrite (Hgt0 0%N Ha 1%N) // (H2 1%N) // Ha orbT.
 Qed.
 
+Inductive normal_spec (p : {poly R}) :=
+  Normal_spec (_ : forall k, 0 <= p`_k) (_ : 0 < lead_coef p)
+   (_ : forall k, (1 <= k)%N -> p`_(k.-1) * p`_(k.+1) <= (p`_k) ^+2)
+   (_ : forall i, (0 < p`_i) ->
+     (forall j, (i < j)%N -> (j < (size p).-1)%N -> 0 < p`_j)).
+
+Lemma normalP (p : {poly R}) : reflect (normal_spec p) (p \is normal).
+Proof. 
+apply/(iffP idP) => [H | [] *].
+  split.
+  + exact: normal_coef_geq0.
+  - exact: normal_lead_coef_gt0.
+  + exact: normal_squares.
+  - exact: normal_some_coef_gt0.
+exact: prop_normal.
+Qed.
+
 (* Lemma 2.41 *)
 Lemma monicXsubC_normal (a : R) : ('X - a%:P) \is normal = (a <= 0).
+Proof.
 rewrite normalE polyseqXsubC /=.
 by case Ha: (a <= 0); rewrite oppr_ge0 Ha // ltr01.
 Qed.
@@ -143,82 +162,29 @@ Local Notation C := (complex R).
 Definition inB (z : C) :=
    ((Re z) <= 0) && (Im(z) ^+2 <= 3%:R * Re(z) ^+2).
 
-Lemma inBE : forall (z : C), (inB z) =
-   ((Re z) <= 0) && (Im(z) ^+2 <= 3%:R * Re(z) ^+2).
-Proof. by done. Qed.
-
 (* Lemma 2.42 *)
 Lemma quad_monic_normal (z : C) :
    (('X^2 + (- 2%:R * Re(z)) *: 'X + (Re(z) ^+2 + Im(z) ^+2)%:P) \is normal)
    = (inB z).
 Proof.
-apply/idP/idP.
-(*first direction*)
-  rewrite normalE  -(mulr1 'X^2) mulrC mul_polyC polyseq_deg2 /=;
-     last by apply: oner_neq0.
-  case/andP; case/andP=> H1 _ H3.
-  rewrite inBE.
-  apply/andP; split.
-    rewrite -(@nmulr_rge0 _ (- 2%:R)) // -oppr_gt0 opprK.
-    by apply: ltr0Sn.
-  case/orP: H3=> H3.
-    rewrite eq_sym addrC addr_eq0 in H3.
-    rewrite (eqP H3) -subr_ge0 opprK -{2}(mulr1 ((Re z)^+2)) (mulrC _ 1)
-       -(mulrDl _ 1 (Re(z)^+2)).
-    apply: mulr_ge0.
-      apply: addr_ge0. 
-        by apply: ler0n.
-      by apply: ler01.
-    by apply:  sqr_ge0.
-  case/andP : H3; case/andP => H3 _ _.
-  by rewrite mulr1 ComplexField.exprM sqrrN addrC -ler_subr_addr
-       -{2}(mulr1 ((Re z)^+2)) (mulrC _ 1) -mulrBl -natrX //
-       mulrSr -addrA subrr addr0 in H3.
-(*second direction*)
-rewrite inBE.
-case/andP => Hrez Himz.
-rewrite normalE -(mulr1 'X^2) mulrC mul_polyC polyseq_deg2 /=;
-   last by apply: oner_neq0.
-apply: andb_true_intro; split.
-  rewrite ltr01 Bool.andb_true_r.
-  apply: mulr_le0 => //; rewrite (oppr_le0 2%:R).
-  by apply: ler0n.
-rewrite eq_sym.
-case H : (Re z ^+2 + Im z ^+2 == 0) => //=.
-apply: andb_true_intro; split.
-  apply: andb_true_intro; split.
-    rewrite mulr1.
-    apply: (@ler_trans R (Re(z) ^+2 + (3%:R * Re(z)^+2))).
-      by apply: (@ler_add R (Re(z)^+2) (Re(z)^+2) (Im(z)^+2) _).
-    rewrite -{1}(mulr1 ((Re z)^+2)) (mulrC _ 1) -(mulrDl 1 _ (Re(z)^+2))
-        ComplexField.exprM.
-    by rewrite addrC sqrrN (expr2 2%:R) -natrM -(@natrD R 3 1).
-  rewrite ltr_def.  
-  apply: andb_true_intro; split.
-    by rewrite H.
-  apply: addr_ge0; by apply sqr_ge0.
-rewrite ltr_def.  
-apply: andb_true_intro; split.
-  rewrite GRing.mulrI_eq0.
-    case Himz2 : ((Im z) ^+2 == 0).
-      rewrite (eqP Himz2) addr0 in H.
-      rewrite -sqrf_eq0.
-      by rewrite H.
-    rewrite -sqrf_eq0 gtr_eqF //.
-    have Himz3 : (0 < (Im z)^+2).
-      rewrite ltr_def.
-      apply/andP; split.
-        by rewrite Himz2.
-      by apply: sqr_ge0.
-    rewrite -(@pmulr_rgt0 _ 3%:R).
-      by apply: (ltr_le_trans Himz3 Himz).
-    by apply: ltr0Sn.
-  apply: lregN.
-  apply/lregP.
-  by rewrite pnatr_eq0.
-apply: mulr_le0 => //.
-rewrite oppr_le0.
-by apply: ler0n.
+rewrite normalE -(mulr1 'X^2) mulrC mul_polyC polyseq_deg2 ?oner_neq0 //=.
+rewrite /inB -(@nmulr_rge0 _ (- 2%:R)) -?oppr_gt0 ?opprK ?ltr0Sn // ltr01 andbT.
+apply: andb_id2l => Hrez.
+rewrite mulr1 exprM sqrrN -natrX mulr_natl.
+rewrite [_ ^+2 *+ _]mulrS ler_add2l -mulr_natl -andbA /=.
+apply/idP/idP => [/orP [] | H].
+    rewrite eq_sym paddr_eq0 ?sqr_ge0 //.
+    case/andP => /eqP -> /eqP ->.
+    by rewrite mulr0.
+  by case/andP.
+rewrite ler_eqVlt in Hrez.
+case/orP : Hrez => [ | Hrez].
+  rewrite eq_sym mulf_eq0 oppr_eq0 pnatr_eq0 orFb =>/eqP Hrez.
+  rewrite Hrez expr0n mulr0 exprn_even_le0 //= in H.
+  by rewrite Hrez (eqP H) expr0n add0r eqxx.
+rewrite Hrez H ltr_spaddl ?orbT // ?ltr_def sqr_ge0 // sqrf_eq0.
+rewrite ltr_def mulf_eq0 oppr_eq0 pnatr_eq0 orFb in Hrez.
+by case/andP : Hrez => ->.
 Qed.
 
 Lemma normal_neq0 : forall (p : {poly R}), p \is normal -> p != 0.
