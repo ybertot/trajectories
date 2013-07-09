@@ -1,3 +1,13 @@
+(*
+This file consists of 3 sections:
+- introduction of normal polynomials, some lemmas on normal polynomials
+- constructions on sequences, such as all_neq0, all_pos, increasing, mid, seqmul, seqn0 
+- proof of Proposition 2.44 of [bpr], normal_changes
+
+Most proofs need cleaning, which is work in progress.
+*)
+
+
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path choice fintype prime div bigop.
 Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex.
 
@@ -1921,11 +1931,9 @@ rewrite !seqmul_cons -(@IHa2s (b2::l)).
       rewrite -(@mulrA _ a1 _ b1) (@mulrC _ (head 0 (a2::s)) b1) (@mulrA _ a1 b1 _)
          -(@pmulr_llt0 _ b2 (a1 * b1 * head 0 (a2 :: s ))).
         by rewrite -!mulrA (@mulrC _ _ b2).
-      by apply: (@all_pos_gt0 [::b1, b2 & l] Hb1b2lpos 1%N).
-    by apply: (@all_pos_gt0 [::b1, b2 & l] Hb1b2lpos 0%N).  
-  rewrite /= in Hb1b2lpos.
-  move/andP : Hb1b2lpos => Hb1b2lpos.
-  exact: (proj2 Hb1b2lpos).
+      by move /andP : Hb1b2lpos => [_ /andP []].
+    by move /andP : Hb1b2lpos => [].
+  by move /andP : Hb1b2lpos => [].
 by apply: eq_add_S.
 Qed.
 
@@ -2194,7 +2202,8 @@ exact: q_n_neq0.
 Qed.
 
 Lemma minn_seqn0spseq_maskdropp :  (minn (size (seqn0 (R:=R) spseq))
-    (size (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p)))) = (size (seqn0 spseq)).
+   (size (mask [seq x != 0 | x <- mid (R:=R) q] (drop 1 p)))) =
+   (size (seqn0 spseq)).
 Proof.
 by rewrite -size_seqn0spseq_maskdropp minnE subKn.
 Qed.

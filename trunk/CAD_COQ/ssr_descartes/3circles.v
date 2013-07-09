@@ -1,3 +1,17 @@
+(*
+This file consists of several sections:
+- nonnegative lists, polynomials with nonnegative coefs
+- proof of Proposition 2.39 of [bpr], monic_roots_changes_eq0
+- complements for scaleX_poly
+- complements for transformations in R and roots
+- complements for transformations and equality
+- complements for transformations in C and roots
+- proof of 3 circles i)
+- proof of 3 circles ii)
+
+Proofs need cleaning, which is work in progress.
+*)
+
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime div bigop.
 Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex.
 Require Import poly_normal pol.
