@@ -189,38 +189,33 @@ Qed.
 
 Lemma normal_neq0 : forall (p : {poly R}), p \is normal -> p != 0.
 Proof.
-move=> p Hpnormal; rewrite -lead_coef_eq0.
-by case: ltrgtP (normal_lead_coef_gt0 Hpnormal).
+move=> p /normalP [_ H _ _]; rewrite -lead_coef_eq0.
+by case: ltrgtP H.
 Qed.
 
-Lemma normal_MX : forall (p : {poly R}),
+Lemma normal_MX (p : {poly R}) :
    p \is normal -> p * 'X \is normal.
 Proof.
-move=> p Hpnormal.
+move=> Hpnormal.
 have Hpneq0 := (normal_neq0 Hpnormal).
 case : p Hpneq0 Hpnormal => s Hs.
 rewrite !normalE /= => Hp Hsnormal.
 rewrite polyseqMX //=.
 case : s Hs Hp Hsnormal => // a.
-case => [Hs Hp Ha| b l].
-  apply/andP; split; by done.
-elim: l a b => [b c Hs Hp Hab | c l Hcl a b Hs Hp Habcl].
-  apply/andP; split => //.
-  apply/orP; by left.
-apply/andP; split => //.
+case => [Hs Hp Ha | b l].
+  by apply/andP.
+elim: l a b => [b c Hs Hp Hab | c l Hcl a b Hs Hp Habcl];
+apply/andP; split => //;
 apply/orP; by left.
 Qed.
 
-Lemma normal_MXn : forall (p : {poly R}) (n : nat),
+Lemma normal_MXn (p : {poly R}) : forall (n : nat),
    p \is normal -> p * 'X^n \is normal.
 Proof.
-move=> p n Hpnormal.
-have Hpneq0 := (normal_neq0 Hpnormal).
+move=> n Hpnormal.
 elim : n => [ | n Hn].
   by rewrite expr0 mulr1.
-rewrite exprSr mulrA.
-apply: normal_MX.
-by apply: Hn.
+rewrite exprSr mulrA normal_MX //.
 Qed.
 
 Lemma normal_MX_2 : forall (p : {poly R}),
@@ -234,52 +229,36 @@ have Hpneq0 : p != 0.
 case : p Hpneq0 HpXneq0 HpXnormal => s Hs.
 rewrite !normalE /= => Hp HpX Hsnormal.
 rewrite polyseqMX // in Hsnormal.
-case : s Hs Hp HpX Hsnormal => [Hs Hp HpX H | a].
-  rewrite /=.
+case : s Hs Hp HpX Hsnormal => [Hs Hp HpX H /= | a].
   by rewrite /= ltrr in H.
 (* two coeffs *)
-case => [Hs Hp HpX Ha| b l].
-  rewrite /= in Ha.
-  rewrite /=.
-  by move/andP : Ha; case =>_ ->.
+case => [Hs Hp HpX Ha /=| b l].
+  by rewrite /= lerr /= in Ha.
 (* at least 3 coeffs *)
-elim: l a b => [b c Hs Hp HpX Hab | c l Hcl a b Hs Hp HpX Habcl].
-  rewrite /= in Hab.
-  rewrite /=.
-  move/andP : Hab; case=> Hab _.
-  move/andP : Hab; case=> Ha Hb.
-  apply/andP; by split.
-rewrite /= -/(normal_seq [::a, b, c & l]) in Habcl.
-by move/andP : Habcl; case => H1 H2.
+elim: l a b => [b c Hs Hp HpX /andP Hab /= | c l Hcl a b Hs Hp HpX /andP Habcl].
+  exact: (proj1 Hab).
+exact: (proj1 Habcl).
 Qed.
 
 Lemma normal_MXn_2 : forall (p : {poly R}) (n : nat),
    p * 'X^n \is normal -> p \is normal.
 Proof.
 move=> p n HpXnnormal.
-have HpXnneq0 := (normal_neq0 HpXnnormal).
-elim : n HpXnneq0 HpXnnormal => [H1 H2  | n Hn H1 H2].
-  by rewrite expr0 mulr1 in H2.
-rewrite exprSr mulrA in H2.
-rewrite exprSr mulrA in H1.
-apply: Hn.
-  by rewrite -lead_coef_eq0 -lead_coefMX lead_coef_eq0.
-by apply: normal_MX_2.
+elim : n HpXnnormal => [H | n Hn H].
+  by rewrite expr0 mulr1 in H.
+rewrite exprSr mulrA in H.
+by rewrite Hn // normal_MX_2.
 Qed.
 
 Lemma normal_size_le1 : forall (p : {poly R}), (p \is normal) ->
    (size p <= 1%N)%N = (size p == 1%N)%N.
 Proof.
 move=> p Hpnormal.
-apply/idP/idP.
-  move=> Hpsize.
-  rewrite eqn_leq.
+rewrite eqn_leq.
+apply/idP/idP => [Hpsize | /andP Hpsize].
   apply/andP; split => //.
-  rewrite ltnNge leqn0 size_poly_eq0.
-  by apply: normal_neq0.
-move=> Hpsize.
-rewrite leq_eqVlt.
-by apply/orP; left.
+  by rewrite ltnNge leqn0 size_poly_eq0 normal_neq0.
+exact: (proj1 Hpsize).
 Qed.
 
 (* 0 is a root with multiplicity k iff the first k coefs are = 0 *)
@@ -289,50 +268,40 @@ Proof.
 move=> p Hproot k Hkmu.
 have H := (root_mu p 0).
 rewrite subr0 Pdiv.IdomainMonic.dvdp_eq in H.
-  move/eqP : H => H.
-  by rewrite H coefMXn Hkmu.
+  by rewrite (eqP H) coefMXn Hkmu.
 by apply: monicXn.
 Qed. 
 
-(* for p normal : 0 is not a root iff all coefs are >0 *)
+(* for p normal : 0 is not a root iff all coefs are > 0 *)
 Lemma normal_0notroot_b : forall (p : {poly R}), p \is normal ->
    (~~(root p 0) = [forall k : 'I_((size p).-1), 0 < p`_k]).
 Proof.
 move=> p Hpnormal.
+have/normalP [H1 _ _ H4] := Hpnormal.
+have Hp := (normal_neq0 Hpnormal).
 apply/idP/idP.
 (* => *)
   move/rootPf=> H.
   rewrite horner_coef0 in H.
-  move/eqP/eqP : H => H.
   have Hp0 : 0 < p`_0.
-    rewrite ltr_def. apply/andP; split.
-      by done.
-    exact: (normal_coef_geq0 Hpnormal 0).
-  apply/forallP.
-  case. case=> [ | n Hn] //. 
-  by apply: (normal_some_coef_gt0 Hpnormal Hp0 (ltn0Sn n)).
+    by rewrite ltr_def H (H1 0%N). 
+  apply/forallP; case; case=> [ | n Hn] //. 
+  by apply: (H4 0%N Hp0 n.+1 (ltn0Sn n) Hn).
 (* <= *)
-apply: contraL.
-move=> Hproot0.
+apply: contraL => /rootPt Hproot0.
 rewrite negb_forall; apply/existsP.
 have H0 : (0 < (size p).-1)%N.
   rewrite -subn1 -(ltn_add2r 1) !addn1 subn1 prednK.
-    apply: (@root_size_gt1 _ 0 p).
-      apply: normal_neq0.
-      by done.
-    by done.
-  apply: (@ltn_trans 1).
-    by [].
-  apply: (@root_size_gt1 _ 0 p).
-    by apply: normal_neq0.
-  by [].
+    rewrite (root_size_gt1 (a:=0)) //.
+  rewrite (ltn_trans (n:= 1)) //.
+  rewrite (root_size_gt1 (a:=0)) //.
 exists (Ordinal H0).
 rewrite -lerNgt ler_eqVlt.
 apply/orP; left.
-move/rootPt : Hproot0=> Hproot0.
 by rewrite horner_coef0 in Hproot0.
 Qed.
 
+(* useful version of the previous lemma *)
 Lemma normal_0notroot : forall (p : {poly R}), p \is normal ->
    ~~(root p 0) -> (forall k, (k < (size p).-1)%N -> 0 < p`_k).
 Proof.
@@ -342,22 +311,21 @@ move/forallP : H => H k Hk.
 apply: (H (Ordinal Hk)).
 Qed. 
 
+(* this is true because of previous lemma and lead_coef > 0 *)
 Lemma normal_0notroot_2 : forall (p : {poly R}), p \is normal ->
    ~~(root p 0) -> (forall k, (k < (size p))%N -> 0 < p`_k).
 Proof.
 move=> p Hpnormal H k Hk.
+have/normalP [_ H2 _ _] := Hpnormal.
 case Hk2 : (k < (size p).-1)%N.
   by apply: normal_0notroot.
-have Hk4 : (k == (size p).-1).
+have Hk3 : (k == (size p).-1).
   rewrite eqn_leq.
   apply/andP; split.
     rewrite -ltnS prednK // size_poly_gt0.
     by apply: normal_neq0.
-  rewrite leqNgt.
-  by  apply: negbT. 
-move/eqP : Hk4 => ->.
-rewrite -lead_coefE.
-by apply: normal_lead_coef_gt0.
+  by rewrite leqNgt Hk2.
+by rewrite (eqP Hk3) -lead_coefE.
 Qed.
 
 (* product of 2 polynomials with coefs >0  has coefs >0 *)
@@ -466,9 +434,9 @@ Lemma normal_coef_chain_1 : forall (p : {poly R}), ~~(root p 0) ->
      p`_k.-1 * p`_(k.+1 +i) <= p`_(k + i) * p`_k .
 Proof.
 move=> p Hp0notroot Hpnormal k Hk.
+have/normalP [H1 _ H3 _] := Hpnormal.
 elim => [ |i Hi ] //.
-  rewrite !addn0 -expr2.
-  by apply: normal_squares.
+  rewrite !addn0 -expr2 H3 //.
 rewrite -subr_ge0.
 case Hik : (k + i.+1 < size p)%N.
   rewrite -(pmulr_lge0 (x:= p`_(k + i.+1))) //. 
@@ -477,45 +445,26 @@ case Hik : (k + i.+1 < size p)%N.
       rewrite -[x in (x <= _)]mulrA [x in (_ * x)]mulrC !mulrA -!addSnnS
         -subr_ge0 -mulNr -mulrDl.
       case H : (p`_(k.+2 + i) == 0).
-        move/eqP : H => ->.
-        by rewrite mulr0.
-      rewrite pmulr_lge0.
-        by rewrite subr_ge0.
-      rewrite ltr_def. apply/andP; split.
-        by apply:negbT.
-      by apply: normal_coef_geq0.
-    have H := (normal_squares Hpnormal (k := k + i.+1)).
-    rewrite addnS -pred_Sn in H.
+        by rewrite (eqP H) mulr0.
+      by rewrite pmulr_lge0 ?subr_ge0 // ltr_def H H1.
+    have H := (H3 (k + i).+1 (ltn0Sn (k + i))).
     rewrite !addnS !addSn [x in (x * _)]mulrC [x in (_ <= x * _)]mulrC 
       -subr_ge0 -!(mulrA p`_k) -mulrN -mulrDr mulrC pmulr_lge0.
-      rewrite subr_ge0 -expr2.
-      apply: H.
-      by apply: ltn0Sn.
+      by rewrite subr_ge0 -expr2 //.
     apply: normal_0notroot => //.
     apply: (leq_ltn_trans (n:=(k + i))).    
       by apply: leq_addr.
     by rewrite -subn1 ltn_subRL addnC addn1 -addnS.
-   
-  case Hik2 : (k + i.+1 == (size p).-1)%N.
-     move/eqP : Hik2 => ->.
-     rewrite -lead_coefE.
-     by exact: normal_lead_coef_gt0.
-   apply: normal_0notroot => //.
-   rewrite ltn_neqAle.
-   apply/andP; split.
-     by apply: negbT.
-   rewrite -ltnS prednK // size_poly_gt0.
-   by apply: normal_neq0.
-rewrite addSnnS.
-have Hik2 := (negbT Hik).
-rewrite -leqNgt in Hik2.
-have Hik3 : (size p <= k + i.+2)%N.
-  apply: (leq_trans (n := (k + i.+1))) => //.
-  rewrite !addnS.
-  by apply: leqnSn.
-rewrite -{4}(coefK p) coef_poly //=.
-rewrite leqNgt in Hik3.
-by rewrite (negbTE Hik3) mulr0 oppr0 addr0 -{1}(coefK p) coef_poly  Hik mul0r.
+  by apply normal_0notroot_2.
+have Hik2 : (k + i.+2 < size p)%N = false.
+  apply: negbTE.
+  rewrite -leqNgt.
+  apply: (leq_trans (n := (k + i.+1))).
+    rewrite leqNgt.  
+    by apply: negbT.
+  by rewrite !addnS leqnSn.
+by rewrite addSnnS -{4}(coefK p) coef_poly //= Hik2 mulr0 oppr0
+  addr0 -{1}(coefK p) coef_poly  Hik mul0r.
 Qed.
 
 Lemma normal_coef_chain_2 : forall (p : {poly R}), ~~(root p 0) ->
@@ -852,31 +801,20 @@ have Hq0 := (root_mu q 0).
 rewrite Pdiv.Field.dvdp_eq in Hp0.
 rewrite Pdiv.Field.dvdp_eq in Hq0.
 have Hp0notroot1 : (~~(root (p %/ ('X - 0%:P) ^+ \mu_0 p) 0) ).
-  rewrite -mu_gt0.
-    rewrite mu_div //.
+  rewrite -mu_gt0 ?mu_div //.
     by rewrite (addnK (\mu_0 p) 0%N) ltnn.
-  rewrite dvdp_div_eq0.
-    by apply: normal_neq0.
-  by apply: root_mu.
+  by rewrite dvdp_div_eq0 ?normal_neq0 // root_mu.
 have Hq0notroot1 : (~~(root (q %/ ('X - 0%:P) ^+ \mu_0 q) 0) ).
-  rewrite -mu_gt0.
-    rewrite mu_div //.
+  rewrite -mu_gt0 ?mu_div //.
     by rewrite (addnK (\mu_0 q) 0%N) ltnn.
-  rewrite dvdp_div_eq0.
-    by apply: normal_neq0.
-  by apply: root_mu.
-move/eqP : Hp0 => Hp0.
-move/eqP : Hq0 => Hq0.
-rewrite Hp0 Hq0.
-rewrite [x in (x * _)]mulrC.
-rewrite !mulrA. rewrite (mulrC _ (('X - 0%:P) ^+ \mu_0 q)) !mulrA.
-rewrite -exprD.
-rewrite {1}oppr0 addr0 -mulrA mulrC.
-apply: normal_MXn.
+  by rewrite dvdp_div_eq0 ?normal_neq0 // root_mu.
+rewrite (eqP Hp0) (eqP Hq0) [x in (x * _)]mulrC !mulrA
+   (mulrC _ (('X - 0%:P) ^+ \mu_0 q)) !mulrA -exprD
+   {1}oppr0 addr0 -mulrA mulrC normal_MXn //.
 apply: normal_mulr_r => //.
-  rewrite Hp0 {2}oppr0 addr0 in Hpnormal.
+  rewrite (eqP Hp0) {2}oppr0 addr0 in Hpnormal.
   by apply: (normal_MXn_2 (n:=\mu_0 p)).  
-rewrite Hq0 {2}oppr0 addr0 in Hqnormal.
+rewrite (eqP Hq0) {2}oppr0 addr0 in Hqnormal.
 by apply: (normal_MXn_2 (n:=\mu_0 q)).  
 Qed.
 
@@ -887,15 +825,17 @@ move=> x.
 by rewrite /= oppr0.
 Qed.*)
 
-Lemma normc_re_im : forall z : complex R,
+(* begin move
+   move to complex.v ? *)
+
+Lemma normc_re_im : forall z : C,
    (ComplexField.normc z) ^+2 = (Re z)^+2 + (Im z)^+2. 
 Proof.
 case=> a b.
-rewrite -[x in (_ = x)]sqr_sqrtr //.
-apply: addr_ge0; by apply: sqr_ge0.
+rewrite -[x in (_ = x)]sqr_sqrtr // addr_ge0 //; by apply: sqr_ge0.
 Qed.
 
-Lemma normC_re_im : forall z : complex R,
+Lemma normC_re_im : forall z : C,
    (normr z) ^+2 = ((Re z)^+2 + (Im z)^+2)%:C. 
 Proof.
 case=> a b.
@@ -903,52 +843,41 @@ rewrite sqr_normc /=. simpc.
 by rewrite -!expr2 mulrC -(addr0 (- (b * a) + b * a)) -addrA (@addKr R _ 0).
 Qed.
 
-Lemma re_conj : forall z : complex R,
+Lemma re_conj (z : C) :
    2%:R * (Re z)%:C = z + z^*.
 Proof.
-move=> z.
-rewrite ReJ_add mulrC. apply: mulfVK.
-by rewrite pnatr_eq0.
+by rewrite ReJ_add mulrC mulfVK // pnatr_eq0.
 Qed.
 
-Lemma im_conj : forall z : complex R,
+Lemma im_conj (z : C) :
    z - z^* = 2%:R * (Im z)%:C * 'i.
 Proof.
-move=> z.
-rewrite ImJ_sub -!mulrA -expr2 sqr_i (mulrC _ (-1)) (mulrA _ (-1) _)
-   mulrN1 opprB mulrC mulfVK.
-  by [].
-by rewrite pnatr_eq0.
+by rewrite ImJ_sub -!mulrA -expr2 sqr_i (mulrC _ (-1)) (mulrA _ (-1) _)
+   mulrN1 opprB mulrC mulfVK // pnatr_eq0.
 Qed.
+(* end move *)
+
+Local Notation toC := (fun (p : {poly R}) =>
+   @map_poly R _ (real_complex R) p).
 
 Lemma real_complex_conjc : forall p : {poly R},
    map_poly ((@conjc R) \o (real_complex R)) p  = 
    map_poly (real_complex R) p.
 Proof.
-elim/poly_ind.
+elim/poly_ind => [ | p c H].
   by rewrite !rmorph0.
-move=> p c H.
 by rewrite !rmorphD !rmorphM /= H !map_polyC !map_polyX /= -conjc_real.
 Qed.
 
-Lemma complex_root_conj_polyR : forall (p : {poly R}) (z : complex R),
-   root (map_poly (real_complex R) p) z =
-   root (map_poly (real_complex R) p) z^*.
+Lemma complex_root_conj_polyR (p : {poly R}) (z : C) :
+   root (toC p) z = root (toC p) z^*.
 Proof.
-move=> p z.
-apply/idP/idP => Hz.
-  rewrite -complex_root_conj /= -map_poly_comp_id0.
-    by rewrite real_complex_conjc.
-  by rewrite conjc0.
-rewrite -(conjcK z).
-  rewrite -complex_root_conj /= -map_poly_comp_id0.
-    by rewrite real_complex_conjc.
-  by rewrite conjc0.
+by rewrite -complex_root_conj /= -map_poly_comp_id0 ?real_complex_conjc ?conjc0.
 Qed.
 
-Lemma factor_complex_roots : forall (z : complex R),
-   map_poly (real_complex R) ('X^2 + (1 *- 2 * Re z) *: 'X +
-   (Re z ^+ 2 + Im z ^+ 2)%:P) = ('X - z%:P) * ('X - (z^*)%:P).
+Lemma factor_complex_roots : forall (z : C),
+   toC ('X^2 + (1 *- 2 * Re z) *: 'X + (Re z ^+ 2 + Im z ^+ 2)%:P) =
+   ('X - z%:P) * ('X - (z^*)%:P).
 Proof.
 move=> z.
 rewrite mulrBr !mulrBl opprB (addrC (z%:P * (z^*)%:P) _) addrA (mulrC _ (z^*)%:P)
@@ -972,12 +901,12 @@ have H : 2%:R * (Re z)%:C = (2%:R * (Re z))%:C.
 by rewrite H {H}.
 Qed.
 
-Lemma complex_root_div_poly_deg2 : forall (p : {poly R}) (z : complex R),
-   (Im(z) != 0) -> root (map_poly (real_complex R) p) z ->
+Lemma complex_root_div_poly_deg2 : forall (p : {poly R}) (z : C),
+   ((Im z) != 0) -> root (toC p) z ->
    ('X^2 + (- 2%:R * (Re z)) *: 'X + ((Re z) ^+2 + (Im z)^+2)%:P) %| p.
 Proof.
 move=> p z Hz Hrootz.
-have Hrootzbar : root (map_poly (aR:=R) (rR:=complex_Ring R) (real_complex R) p) z^*.
+have Hrootzbar : root (toC p) z^*.
   by rewrite -complex_root_conj_polyR.
 have Hp := (factor_complex_roots z).
 rewrite -(dvdp_map ((ComplexField.real_complex_rmorphism R))) /= Hp.
@@ -985,26 +914,21 @@ rewrite Gauss_dvdp.
   apply/andP; split; by rewrite -root_factor_theorem.
 apply: Pdiv.ClosedField.root_coprimep => x.
 rewrite root_XsubC =>/eqP ->. clear x.
-rewrite hornerXsubC im_conj.
-rewrite eq_complex ReiNIm ImiRe /= !addr0 !mulr0 subr0 add0r mul0r oppr0.
-rewrite negb_and; apply/orP; apply: or_intror.
-rewrite mulrI_eq0 //.
+rewrite hornerXsubC im_conj eq_complex ReiNIm ImiRe /= !addr0 !mulr0
+   subr0 add0r mul0r oppr0.
+rewrite eqxx mulrI_eq0 ?negb_and.
+  apply/orP; by right.
 apply/lregP.
-rewrite paddr_eq0. 
-    rewrite negb_and; apply/orP; apply :or_intror. by apply: oner_neq0.
-  by apply: ler01.   
-by apply: ler01.
+by rewrite paddr_eq0 ?ler01 // negb_and oner_neq0. 
 Qed.
 
-Lemma real_root_div_poly_deg1 : forall (p : {poly R}) (z : complex R),
-   (Im(z) = 0) -> root (map_poly (real_complex R) p) z ->
-   ('X - (Re z)%:P) %| p.
+Lemma real_root_div_poly_deg1 : forall (p : {poly R}) (z : C),
+   ((Im z) = 0) -> root (toC p) z -> ('X - (Re z)%:P) %| p.
 Proof.
 move=> p z Himz Hroot.
-rewrite root_factor_theorem in Hroot.
-rewrite (@complexE _ z) Himz mulr0 addr0 in Hroot.
+rewrite root_factor_theorem (@complexE _ z) Himz mulr0 addr0 in Hroot.
 rewrite -(dvdp_map ((ComplexField.real_complex_rmorphism R))) /=.
-have H : map_poly (aR:=R) (rR:=complex_iDomain R) (real_complex R) ('X - (Re z)%:P) = 'X - ((Re z)%:C)%:P.
+have H : toC ('X - (Re z)%:P) = 'X - ((Re z)%:C)%:P.
   by rewrite map_poly_is_additive map_polyC map_polyX.
 by rewrite H.
 Qed. 
