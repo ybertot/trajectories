@@ -935,26 +935,21 @@ Qed.
 
 (* Proposition 2.40 *)
 Lemma normal_root_inB : forall (p : {poly R}),
-   (p \is monic) -> (forall z : (complex R),
-      root (map_poly (real_complex R) p) z -> inB z) -> p \is normal.
+   p \is monic ->
+   (forall z : C, root (toC p) z -> inB z) -> p \is normal.
 Proof.
 move=> p Hpmonic.
 move: {2}(size p) (leqnn (size p))=> n.
-elim: n p Hpmonic.
+elim: n p Hpmonic => [p Hpmonic Hpsize Hproot | n IH p Hpmonic Hpsize Hproots].
 (* size p <= 0 *)
-  move=> p Hpmonic Hpsize Hproot. 
   rewrite size_poly_leq0 in Hpsize.
-  move/eqP : Hpsize => Hpnull.
-  rewrite Hpnull monicE lead_coef0 in Hpmonic.
-  by rewrite Hpnull normalE polyseq0 /= -(oner_eq0 R) eq_sym.
+  rewrite (eqP Hpsize) monicE lead_coef0 in Hpmonic.
+  by rewrite (eqP Hpsize) normalE polyseq0 /= -(oner_eq0 R) eq_sym.
 (* size p <= n.+1 *)
-move=> n IH p Hpmonic Hpsize Hproots.
-case Hpsize2 : (size (map_poly (real_complex R) p) == 1%N).
+case: (altP (size (toC p) =P 1%N)) => Hpsize2.
   (* size p == 1 *)
-  move/eqP : Hpsize2 => Hpsize2.
-  rewrite size_map_poly_id0 in Hpsize2.  
-  have Hpsize3 := (eq_leq Hpsize2).
-    have Hp := (size1_polyC Hpsize3).
+  rewrite /= size_map_poly_id0 in Hpsize2.  
+    have Hp := (size1_polyC (eq_leq (Hpsize2))).
     rewrite Hp in Hpsize2.
     rewrite Hp monicE lead_coefE Hpsize2 -pred_Sn polyseqC in Hpmonic.
     rewrite size_polyC in Hpsize2.
@@ -969,57 +964,40 @@ case Hpsize2 : (size (map_poly (real_complex R) p) == 1%N).
   rewrite ltcR Hpmonic.
   by apply: ltr01.
 (* size p != 1 *)
-have HpCsize := (negbT Hpsize2).
-move/closed_rootP : HpCsize.
+move/closed_rootP : Hpsize2.
 case=> x Hrootx.
 case: (altP (Im x =P 0)) => Himx. 
 (* real root *)
   have H := monicXsubC (Re x).
   have Hp := real_root_div_poly_deg1 Himx Hrootx.
   rewrite Pdiv.IdomainMonic.dvdp_eq // in Hp.
-  move/eqP : Hp => Hp. rewrite Hp.
-  apply: normal_mulr.
-    apply: IH.
-        rewrite monicE -(@lead_coef_Mmonic _ (p %/ ('X - (Re x)%:P)) ('X - (Re x)%:P)) //. 
-        by rewrite -Hp -monicE.
-      rewrite size_divp.
-        rewrite size_XsubC.
-        by rewrite leq_subLR addnC addn1.
-      by apply: monic_neq0.
-    move=> z Hz.
-    apply: Hproots.
-    rewrite Hp rmorphM rootM.
-    apply/orP. by left.
+  rewrite (eqP Hp) normal_mulr //.
+    apply: IH => [ | | z Hz].
+    + by rewrite monicE -(@lead_coef_Mmonic _ _ ('X - (Re x)%:P)) //
+      -(eqP Hp) -monicE.
+    - rewrite size_divp; last by apply: monic_neq0.
+      by rewrite size_XsubC leq_subLR addnC addn1.
+    + rewrite Hproots // (eqP Hp) rmorphM rootM.
+      apply/orP; by left.
   rewrite monicXsubC_normal.
-  have H' := (Hproots x Hrootx). rewrite /inB in H'.
-  move/andP : H'=>H'.
-  by apply: (proj1 H').
+  rewrite /inB in Hproots.
+  by have/andP := (Hproots x Hrootx); case => -> _.
 (* pair of complex roots *)
 have H : 'X^2 + (1 *- 2 * Re x) *: 'X + (Re x ^+ 2 + Im x ^+ 2)%:P \is monic.
-  rewrite -(mul1r 'X^2) mul_polyC monicE lead_coefE polyseq_deg2 //=.
-  by apply: oner_neq0.
+  by rewrite -(mul1r 'X^2) mul_polyC monicE lead_coefE polyseq_deg2 // oner_neq0.
 have H2 : size ('X^2 + (1 *- 2 * Re x) *: 'X + (Re x ^+ 2 + Im x ^+ 2)%:P) = 3.
-  rewrite -(mul1r 'X^2) mul_polyC polyseq_deg2 //=.
-  by apply: oner_neq0.
+  by rewrite -(mul1r 'X^2) mul_polyC polyseq_deg2 // oner_neq0.
 have Hp := complex_root_div_poly_deg2 Himx Hrootx.
 rewrite Pdiv.IdomainMonic.dvdp_eq // in Hp.
-move/eqP : Hp => Hp. rewrite Hp.
-apply: normal_mulr.  
-  apply: IH.
-       rewrite monicE -(@lead_coef_Mmonic _ (p %/ ('X^2 + (1 *- 2 * Re x) *: 'X +
-         (Re x ^+ 2 + Im x ^+ 2)%:P)) ('X^2 + (1 *- 2 * Re x) *: 'X +
-           (Re x ^+ 2 + Im x ^+ 2)%:P)) //. 
-        by rewrite -Hp -monicE.
-     rewrite size_divp.
-       rewrite H2 leq_subLR addnC addn2. 
-       apply: (@leq_trans n.+1) => //.
-     by apply: monic_neq0.
-    move=> z Hz.
-    apply: Hproots.
-    rewrite Hp rmorphM rootM.
-    apply/orP. by left.
-  rewrite quad_monic_normal.
-  by apply: (Hproots x Hrootx).
+rewrite (eqP Hp) normal_mulr //.  
+  apply: IH => [ | | z Hz].
+  + by rewrite monicE -(@lead_coef_Mmonic _ _ ('X^2 + (1 *- 2 * Re x) *: 'X +
+    (Re x ^+ 2 + Im x ^+ 2)%:P)) // -(eqP Hp) -monicE.
+  - rewrite size_divp; last by apply: monic_neq0.
+    by rewrite H2 leq_subLR addnC addn2 (@leq_trans n.+1). 
+  + rewrite Hproots // (eqP Hp) rmorphM rootM.
+    apply/orP; by left.
+by rewrite quad_monic_normal Hproots.
 Qed.
 
 Lemma normal_red_0noroot : forall (p : {poly R}), p \is normal ->
