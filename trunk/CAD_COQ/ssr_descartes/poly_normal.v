@@ -948,21 +948,15 @@ elim: n p Hpmonic => [p Hpmonic Hpsize Hproot | n IH p Hpmonic Hpsize Hproots].
 (* size p <= n.+1 *)
 case: (altP (size (toC p) =P 1%N)) => Hpsize2.
   (* size p == 1 *)
-  rewrite /= size_map_poly_id0 in Hpsize2.  
-    have Hp := (size1_polyC (eq_leq (Hpsize2))).
-    rewrite Hp in Hpsize2.
-    rewrite Hp monicE lead_coefE Hpsize2 -pred_Sn polyseqC in Hpmonic.
-    rewrite size_polyC in Hpsize2.
-    rewrite Hpsize2 /= in Hpmonic.
-    move/eqP : Hpmonic => Hpmonic.
-    rewrite Hp /= Hpmonic. 
-    rewrite normalE polyseqC oner_neq0 /=.
-    by apply: ltr01.
-  rewrite eq_sym; apply: negbT; apply: ltr_eqF.
   rewrite monicE in Hpmonic.
-  move/eqP : Hpmonic => Hpmonic.
-  rewrite ltcR Hpmonic.
-  by apply: ltr01.
+  rewrite /= size_map_poly_id0 in Hpsize2;
+    last by rewrite eq_sym negbT // ltr_eqF // ltcR (eqP Hpmonic) ltr01.
+  have Hp := (size1_polyC (eq_leq (Hpsize2))).
+  rewrite Hp in Hpsize2.
+  rewrite Hp lead_coefE Hpsize2 -pred_Sn polyseqC in Hpmonic.
+  rewrite size_polyC in Hpsize2.
+  rewrite Hpsize2 /= in Hpmonic.
+  by rewrite Hp /= (eqP Hpmonic) normalE polyseqC oner_neq0 /= ltr01.
 (* size p != 1 *)
 move/closed_rootP : Hpsize2.
 case=> x Hrootx.
@@ -1000,125 +994,77 @@ rewrite (eqP Hp) normal_mulr //.
 by rewrite quad_monic_normal Hproots.
 Qed.
 
+(* not sure if this lemma is really necessary *)
 Lemma normal_red_0noroot : forall (p : {poly R}), p \is normal ->
-   root p 0 -> (~~(root (p %/ 'X^(\mu_0 p)) 0) && ((p %/ 'X^(\mu_0 p)) \is normal)).  
+   root p 0 -> ~~(root (p %/ 'X^(\mu_0 p)) 0) && ((p %/ 'X^(\mu_0 p)) \is normal). 
 Proof.
 move=> p Hpnormal Hproot0.
+have Hpneq0 := (normal_neq0 Hpnormal).
 apply/andP; split.
 (* 0 is not root of p%/ 'X^(mu_0) *)
   rewrite -(@addr0 _ 'X) -oppr0 -mu_gt0.
-    rewrite -eqn0Ngt (@mu_div _ _ _ (\mu_0 p)) //=.
-    by rewrite (subnn).
+    by rewrite -eqn0Ngt (@mu_div _ _ _ (\mu_0 p)) //= subnn.
   rewrite divpN0.
-    apply: dvdp_leq.
-      by apply: normal_neq0.
-    by apply: root_mu.
-  rewrite -size_poly_gt0.
-  rewrite size_exp_XsubC.
-  rewrite -mu_gt0 in Hproot0.
-    apply: (@ltn_trans (\mu_0 p)).
-      by done.
-    by [].
-  by apply: normal_neq0.
+    by rewrite dvdp_leq // ?root_mu.
+  by rewrite -size_poly_gt0 size_exp_XsubC.
 (* p %/ 'X^mu_0 is normal *)
 have Hcoefs : forall k, ((p %/ 'X^(\mu_0 p))`_k = p`_(k + (\mu_0 p))).
   have H := (root_mu p 0).
   rewrite oppr0 addr0 Pdiv.IdomainMonic.dvdp_eq in H.
-    move/eqP : H => H.
-    rewrite {3}H.
-    move=> k {H}.
-    rewrite coefMXn /=.
+    rewrite {3}(eqP H) => k {H}; rewrite coefMXn /=.
     have H : ((k + \mu_0 p < \mu_0 p)%N = false).
       by rewrite -{2}(add0n (\mu_0 p)) (@ltn_add2r).
     by rewrite H addnK.
   by apply: monicXn.
 have Hsize : ((size (p %/ ('X^(\mu_0 p)))) = ((size p) - (\mu_0 p))%N).
   rewrite size_divp.
-    rewrite size_polyXn -pred_Sn.
-    by done.
-  rewrite -size_poly_gt0 size_polyXn.
-  by apply: ltn0Sn.
-apply: prop_normal.
-split.
-  +move=> k; rewrite Hcoefs. exact: normal_coef_geq0.
-  +rewrite lead_coefE Hcoefs Hsize -subnS addnC addnBA.
-    rewrite addnC subnS addnK.
-    exact: normal_lead_coef_gt0.
-  rewrite -(size_polyXn R (\mu_0 p)).
-  apply: dvdp_leq.
-    by apply: normal_neq0.
-  rewrite -(addr0 'X) -oppr0.
-  by apply: root_mu.
-  +move=> k Hk.
-  rewrite !Hcoefs (@addnC k.+1) addnS (@addnC k.-1) (@addnC k) -subn1 addnBA //.
-  rewrite subn1.
-  apply: normal_squares.
-    by done.
-  apply: (@ltn_trans k).
-    by done.
-  rewrite -{1}(add0n k) ltn_add2r mu_gt0.
-    by done.
-  by apply normal_neq0.
-move=> i.
-rewrite Hcoefs.
-move=> Hi j Hj1.
-rewrite Hsize. 
-move=> Hj2.
-rewrite Hcoefs.
-apply: (@normal_some_coef_gt0 p Hpnormal (i + (\mu_0 p)) Hi).
-  by rewrite ltn_add2r.
+    by rewrite size_polyXn -pred_Sn.
+  by rewrite -size_poly_gt0 size_polyXn ltn0Sn.
+have/normalP [Hp1 Hp2 Hp3 Hp4] := Hpnormal.
+apply/normalP; split => [k | |k Hk |i ].
+  + by rewrite Hcoefs Hp1.
+  + rewrite lead_coefE Hcoefs Hsize -subnS addnC addnBA.
+      by rewrite addnC subnS addnK Hp2.
+    by rewrite -(size_polyXn R (\mu_0 p)) dvdp_leq // -(addr0 'X) -oppr0 root_mu.
+  + by rewrite !Hcoefs (@addnC k.+1) addnS (@addnC k.-1) (@addnC k) -subn1
+       addnBA // subn1 Hp3 // (ltn_trans Hk) // -{1}(add0n k) ltn_add2r mu_gt0.
+rewrite Hcoefs => Hi j Hj1; rewrite Hsize => Hj2;
+rewrite Hcoefs (@Hp4 (i + (\mu_0 p))%N) // ?ltn_add2r //.
 by rewrite addnC -ltn_subRL -subn1 -subnDA addnC addn1 subnS.
-Qed.
-
-Definition all_pos := fun (s : seq R) => all (fun x => 0 < x) s.
-
-Lemma normal_all_pos : forall (p : {poly R}), p \is normal ->
-   ~~(root p 0) -> all_pos p.
-Proof.
-case=> s Hs.
-rewrite normalE=> //=.
-case: s Hs => // a [].
-  rewrite /=.
-  move=> _ Ha _.
-  by rewrite Ha.
-move=> b l.
-elim: l a b => [a b Hs/andP [Ha Hb] | c l IHl a b Hs].  
-  rewrite rootE horner_coef0 /= Hb => Ha2.
-  rewrite ltr_neqAle.
-  by rewrite Ha eq_sym Ha2.
-rewrite rootE horner_coef0.
-case/andP =>H1 H2 [] /= => Ha.
-rewrite eq_sym (negbTE Ha) Bool.orb_false_l in H2.
-move/andP : H2 => H2.
-have Hb := (proj2 H2).
-rewrite lt0r in Hb.
-move/andP : Hb => Hb.
-move/andP : (proj1 H2) => H3.
-rewrite (proj2 H3).
-rewrite /= in IHl. rewrite (IHl b c Hs H1).
-  by done.
-rewrite rootE horner_coef0 /=.
-by exact: (proj1 Hb).
 Qed.
 
 End normal_polynomial.
 
 Implicit Arguments normal_seq [R].
 Implicit Arguments normal [R].
-Implicit Arguments all_pos [R].
 
 Section more_on_sequences.
 
 Variable R : rcfType.
 
-(* all_pos is all positive *)
+Definition all_pos := fun (s : seq R) => all (fun x => 0 < x) s.
+
+Lemma all_posP (s : seq R) :
+   reflect (forall k, (k < size s)%N -> 0 < s`_k) (all_pos s).
+Proof.
+by apply/all_nthP.
+Qed.
+
+Lemma normal_all_pos : forall (p : {poly R}), p \is normal ->
+   ~~(root p 0) -> all_pos p.
+Proof.
+move=> p Hpnormal H0noroot; apply/all_posP.
+by apply: normal_0notroot_2.
+Qed.
+
+(* all_pos iff all items positive 
 Lemma all_pos_gt0 : forall (s : seq R), (all_pos s) ->
    (forall k, (k < size s)%N -> 0 < s`_k).
 Proof. move=> s. by apply/all_nthP. Qed.
 
 Lemma gt0_all_pos : forall (s : seq R), (forall k, (k < size s)%N -> 0 < s`_k) ->
    (all_pos s).
-Proof. move=> s H; by apply/(all_nthP (0)). Qed.
+Proof. move=> s H; by apply/(all_nthP (0)). Qed.*)
 
 Lemma all_pos_subseq : forall (s1 s2 : seq R), (all_pos s2) -> (subseq s1 s2) ->
    (all_pos s1).
@@ -1130,56 +1076,54 @@ Qed.
 (* sequence without 0's : filter (fun x => x != 0) s) *)
 Definition seqn0 (s : seq R) := [seq x <- s | x != 0].
 
+(*
 Lemma seqn0E : forall s : seq R,
    seqn0 s = [seq x <- s | x != 0].
-Proof. move=> s; by done. Qed.
+Proof. move=> s; by done. Qed.*)
 
-Lemma seqn0_as_mask : forall s : seq R, seqn0 s = mask (map (fun x => x != 0) s) s.
-Proof. move=> s; by rewrite seqn0E filter_mask. Qed.
+Lemma seqn0_as_mask (s : seq R) :
+   seqn0 s = mask (map (fun x => x != 0) s) s.
+Proof. by rewrite /seqn0 filter_mask. Qed.
 
-Lemma seqn0_cons : forall (s : seq R) (a : R), (a != 0) ->
+Lemma seqn0_cons (s : seq R) (a : R) : (a != 0) ->
    seqn0 (a :: s) = a :: (seqn0 s).
-Proof. move=> s a Ha; by rewrite /= Ha. Qed.
+Proof. move=> Ha; by rewrite /= Ha. Qed.
 
-Lemma seqn0_size : forall s: seq R, (s`_(size s).-1 != 0) ->
+Lemma seqn0_size (s: seq R) : (s`_(size s).-1 != 0) ->
    (0 < size (seqn0 s))%N.
 Proof.
-move=> s Hs.
+move=> Hs.
 have Hssize : (0 < size s)%N.
   case: s Hs => [ | ] //=.
   by rewrite eqxx.
 elim: s Hs Hssize => [|a] //=.
 case=> [_ Ha _|b l IHbl Hln Hablsize ] //=.
   by rewrite Ha.
-case Ha : (a != 0).
-  by done.
+case Ha : (a != 0) => //.
 by apply: IHbl.
 Qed.
 
-Lemma seqn0_size_2 : forall (s : seq R), (s`_0 < 0) -> (0 < s`_(size s).-1) ->
-   (1 < size (seqn0 s))%N.
+Lemma seqn0_size_2 (s : seq R) :
+   (s`_0 < 0) -> (0 < s`_(size s).-1) -> (1 < size (seqn0 s))%N.
 Proof.
-move=> s Hs1 Hs2.
+move=> Hs1 Hs2.
 have Hssize : (0 < size s)%N.
   case: s Hs1 Hs2 => [ | ] //=.
   by rewrite ltrr.
 case: s Hs1 Hs2 Hssize => [|a ] //.
 case => [ Ha1 Ha2 _|b l Ha Hln Hablsize] //.
-  have: false.
+  have: false => //.
   rewrite -(ltr_asym 0 a).
   by apply/andP.
-by done.
 rewrite seqn0_cons /=.
   rewrite -(addn1 0) -(addn1 (size (seqn0 (b ::l)))) ltn_add2r.
   apply: seqn0_size.
   have H : (size [:: a, b & l]).-1 = (size (b :: l)).-1.+1.
     by rewrite /=.
   rewrite H ltr_def in Hln.
-  move/andP : Hln => Hln.
-  exact: (proj1 Hln).
+  by move/andP : Hln; case => -> _.
 rewrite ltr_def eq_sym in Ha.
-move/andP : Ha => Ha.
-exact: (proj1 Ha).
+by move/andP : Ha; case => ->.
 Qed.
 
 Definition all_neq0 := fun (s : seq R) => all (fun x => x != 0) s.
@@ -1826,6 +1770,7 @@ Qed.
 
 End more_on_sequences.
 
+Implicit Arguments all_pos [R].
 Implicit Arguments mid [R].
 Implicit Arguments seqn0 [R].
 Implicit Arguments all_neq0 [R].
@@ -2009,9 +1954,9 @@ Qed.
 
 Lemma all_pos_dropp : all_pos (drop 1 p).
 Proof.
-apply : gt0_all_pos => k Hk.
+apply/all_posP => k Hk.
 rewrite nth_drop addnC addn1.
-apply: (@all_pos_gt0 _ p _ k.+1).
+apply/all_posP.
   by apply: normal_all_pos.
 rewrite size_drop in Hk.
 by rewrite -(@addn1 k) addnC -ltn_subRL.
@@ -2160,7 +2105,8 @@ case Hsizeseqn0q : (3 < size (seqn0 q))%N.
                 apply: negbTE.
                 rewrite -lerNgt nmulr_rge0 // nmulr_rle0 //.
                 apply: ltrW.
-                apply: (@all_pos_gt0 _ _ Hallpos 0%N).
+                apply/all_posP => //.
+(*                apply: (@all_pos_gt0 _ _ Hallpos 0%N).*)
                 by rewrite -Hsizespseq -Hsizemidq mid_size.
               rewrite H2 mid_seqn0q_size.
               have H3 : ((seqn0 spseq)`_(size (seqn0 spseq)).-1 *
@@ -2170,10 +2116,13 @@ case Hsizeseqn0q : (3 < size (seqn0 q))%N.
                 rewrite -lerNgt mulrC pmulr_lge0.
                   by apply: ltrW.
                 rewrite pmulr_lgt0 //.
-                apply: (@all_pos_gt0 _ _ Hallpos (size (seqn0 spseq)).-1).
-                rewrite -Hsizespseq -Hsizemidq mid_size -{2}(subn2 (size (seqn0 q))) ltn_subRL
+                apply/all_posP => //.
+(*                apply: (@all_pos_gt0 _ _ Hallpos (size (seqn0 spseq)).-1).*)
+                rewrite -Hsizespseq -Hsizemidq mid_size
+                    -{2}(subn2 (size (seqn0 q))) ltn_subRL
                     addnC addn2 prednK // prednK //.
-                rewrite {2}(pred_Sn (size (seqn0 q))) -(subn1 (size (seqn0 q)).+1) ltn_subRL 
+                rewrite {2}(pred_Sn (size (seqn0 q)))
+                  -(subn1 (size (seqn0 q)).+1) ltn_subRL 
                   addnC addn1 prednK //.
                 by apply: (@ltn_trans 3).
               by rewrite H3.
@@ -2196,7 +2145,8 @@ case Hsizeseqn0q : (3 < size (seqn0 q))%N.
                  (mask [seq x != 0 | x <- mid q] (drop 1 p))`_0) < 0) = true).
                 apply/eqP; rewrite eqb_id.
                 rewrite nmulr_rlt0 // mulrC pmulr_lgt0 //.
-                apply: (@all_pos_gt0 _ _ Hallpos 0%N).
+                apply/all_posP => //.
+(*                apply: (@all_pos_gt0 _ _ Hallpos 0%N).*)
                 by rewrite -Hsizespseq -Hsizemidq mid_size.
               rewrite H1 mid_seqn0q_size.
               have H2 : (0 < (seqn0 spseq)`_(size (seqn0 spseq)).-1).
@@ -2207,10 +2157,13 @@ case Hsizeseqn0q : (3 < size (seqn0 q))%N.
                 apply: negbTE. rewrite -lerNgt mulrC pmulr_lge0.
                   by apply: ltrW.
                 rewrite pmulr_lgt0 //.
-                apply: (@all_pos_gt0 _ _ Hallpos (size (seqn0 spseq)).-1).
-                rewrite -Hsizespseq -Hsizemidq mid_size -{2}(subn2 (size (seqn0 q))) ltn_subRL
+                apply/all_posP => //.
+(*                apply: (@all_pos_gt0 _ _ Hallpos (size (seqn0 spseq)).-1).*)
+                rewrite -Hsizespseq -Hsizemidq mid_size
+                  -{2}(subn2 (size (seqn0 q))) ltn_subRL
                    addnC addn2 prednK // prednK //.
-                rewrite {2}(pred_Sn (size (seqn0 q))) -(subn1 (size (seqn0 q)).+1) ltn_subRL 
+                rewrite {2}(pred_Sn (size (seqn0 q)))
+                  -(subn1 (size (seqn0 q)).+1) ltn_subRL 
                    addnC addn1 prednK //.
                 by apply: (@ltn_trans 3).
               by rewrite H3.
@@ -2221,7 +2174,8 @@ case Hsizeseqn0q : (3 < size (seqn0 q))%N.
               apply: negbTE. rewrite -lerNgt nmulr_lge0.
                 by apply: ltrW.
               rewrite nmulr_rlt0.
-                apply: (@all_pos_gt0 _ _ Hallpos 0%N).
+                apply/all_posP => //.
+(*                apply: (@all_pos_gt0 _ _ Hallpos 0%N).*)
                 by rewrite -Hsizespseq -Hsizemidq mid_size.
               rewrite ltr_def. apply/andP; split.
                 rewrite eq_sym. apply: (@all_neq0_neq0_1 _ _ Hseqn0spseq 0%N) => //.
@@ -2239,11 +2193,14 @@ case Hsizeseqn0q : (3 < size (seqn0 q))%N.
               (size (mid (seqn0 q))).-1 * q`_(size q).-1 < 0) = true).
               apply/eqP; rewrite eqb_id.
               rewrite nmulr_rlt0 // nmulr_rlt0 //.
-              apply: (@all_pos_gt0 _ _ Hallpos (size (mid (seqn0 q))).-1).
-              rewrite -Hsizespseq -Hsizemidq mid_size -{2}(subn2 (size (seqn0 q))) ltn_subRL
-                    addnC addn2 prednK // prednK //.
-              rewrite {2}(pred_Sn (size (seqn0 q))) -(subn1 (size (seqn0 q)).+1) ltn_subRL 
-                  addnC addn1 prednK //.
+              apply/all_posP => //.
+(*              apply: (@all_pos_gt0 _ _ Hallpos (size (mid (seqn0 q))).-1).*)
+              rewrite -Hsizespseq -Hsizemidq mid_size
+                  -{2}(subn2 (size (seqn0 q))) ltn_subRL
+                  addnC addn2 prednK // prednK //.
+              rewrite {2}(pred_Sn (size (seqn0 q)))
+                -(subn1 (size (seqn0 q)).+1) ltn_subRL 
+                addnC addn1 prednK //.
               by apply: (@ltn_trans 3).
             by rewrite H3.
           by rewrite -Hsizemidq mid_size.
