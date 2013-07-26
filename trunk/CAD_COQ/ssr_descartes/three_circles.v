@@ -1,15 +1,12 @@
 (*
 This file consists of several sections:
-- nonnegative lists, polynomials with nonnegative coefs
-- proof of Proposition 2.39 of [bpr], monic_roots_changes_eq0
+- nonnegative lists, polynomials with nonnegative coefs, proof of Proposition 2.39 of [bpr], monic_roots_changes_eq0
 - complements for scaleX_poly
 - complements for transformations in R and roots
 - complements for transformations and equality
 - complements for transformations in C and roots
 - proof of 3 circles i)
 - proof of 3 circles ii)
-
-Proofs need cleaning, which is work in progress.
 *)
 
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime.
@@ -562,25 +559,6 @@ apply/eqP.
 rewrite (@pmulr_rlt0 _ (a ^+2) (b * c)) //.
 by rewrite ltr_def // ?sqrf_eq0 // sqr_ge0 Ha.
 Qed.
-
-(*
-Lemma Mobius_0 : forall (R : idomainType) (p : {poly R}) (a b : R),
-   (a != b) ->
-   (p == 0) = ((Mobius p a b) == 0).
-Proof.
-move=> R p a b Hab.
-apply/idP/idP => Hp; move/eqP : Hp => Hp.
-  by rewrite /Mobius Hp /shift_poly /scaleX_poly !comp_polyC
-     reciprocalC comp_polyC.
-rewrite /Mobius in Hp.
-rewrite (shift_poly_eq p 0 a) shift_polyC (@scale_poly_eq R _ _  (b - a)).
-  rewrite /scaleX_poly comp_polyC -(@reciprocal0 R) (shift_poly_eq _ _ 1)
-     shift_polyC.
-  rewrite /Mobius in Hp.
-  by rewrite Hp.
-by rewrite subr_eq0 eq_sym.
-Qed.
- *)
  
 Section thm_3_cercles_partie1.
 
@@ -683,7 +661,6 @@ Variable (R : rcfType).
 
 Local Notation C := (complex R).
 
-
 Definition inC1 := fun (l r : R) (z : C) =>
    (Re z) ^+2 - (l + r) * (Re z) + (Im z) ^+2 - 
    (r - l) * (Im z) / (Num.sqrt 3%:R) + l * r < 0.
@@ -711,93 +688,34 @@ case => a b.
 by rewrite /inB1 /= addrK addr0 /inB.
 Qed.
 
-(*
 Lemma inB1_help : forall (z : C), (inB1 z) = 
    (((Num.sqrt 3%:R) * ((Re z) - 1) - Im(z) <= 0) && 
      (0 <= - (Num.sqrt 3%:R * ((Re z) - 1)) - Im(z))).
 Proof.
 case=> a b.
 rewrite /inB1 /=.
-case Ha : (a - 1 == 0); move/eqP : Ha => Ha.
+case/altP : (a - 1 =P 0) => Ha.
   rewrite Ha /= mulr0 oppr0 add0r lerr Bool.andb_true_l (expr2 0) !mulr0. 
-  rewrite -eqr_le oppr_eq0 -sqrf_eq0.
-  apply/idP/idP => H.
-    rewrite eqr_le; apply/andP; split.
-      by done.
-    by apply: sqr_ge0.
-  rewrite eqr_le in H; by case/andP : H => H1 H2.
-*)
-
-Lemma inB1_help : forall (z : C), (inB1 z) = 
-   (((Num.sqrt 3%:R) * ((Re z) - 1) - Im(z) <= 0) && 
-     (0 <= - (Num.sqrt 3%:R * ((Re z) - 1)) - Im(z))).
-Proof.
-case=> a b.
-rewrite /inB1 /=.
-apply/idP/idP; case/andP => H1 H2.
-  case Ha : (a - 1 == 0); move/eqP : Ha => Ha.
-    rewrite Ha mulr0 oppr0 add0r -eqr_le oppr_eq0 -sqrf_eq0 eqr_le.
-    apply/andP; split.
-      by rewrite Ha (expr2 0) !mulr0 in H2.
-    by apply: sqr_ge0.
-  have Ha2 : (0 < -(a - 1)).
-    rewrite oppr_gt0 ltr_def; apply/andP; split => //.
-    rewrite eq_sym; by apply/eqP.
-  rewrite -(sqr_sqrtr (a:=3%:R)) in H2.
-    rewrite -ComplexField.exprM in H2.
-    rewrite -ler_sqrt in H2.
-      rewrite !sqrtr_sqr normrM in H2.
-      rewrite (ger0_norm (x := Num.sqrt 3%:R)) in H2.
-        rewrite -(normrN (a-1)) (gtr0_norm (x:= - (a - 1))) // in H2.
-        rewrite ler_norml in H2.
-        case/andP : H2 => H2 H3.
-        rewrite mulrN opprK in H2.
-        apply/andP; split.
-          by rewrite subr_le0.
-        rewrite mulrN in H3.
-        by rewrite subr_ge0.
-      by apply: sqrtr_ge0.
-    rewrite ComplexField.exprM.
-    apply: mulr_gt0; rewrite ltr_def; apply/andP; split.
-          by rewrite sqrf_eq0 sqrtr_eq0 -ltrNge ltr0n.
-        by apply: sqr_ge0.
-      rewrite sqrf_eq0; by apply/eqP.
-    by apply: sqr_ge0.
-  by apply: ler0n.
-(* second direction *)
-have Hb : `|b| <= Num.sqrt 3%:R * -(a - 1).
-  rewrite ler_norml.
-  apply/andP; split.
-    by rewrite mulrN opprK -subr_le0.
-  by rewrite -subr_ge0 mulrN.
-have Ha2 : (0 <= - (a - 1)).
-  rewrite -(pmulr_lge0 (x:=Num.sqrt 3%:R)).
-    rewrite mulrC.
-    by apply: (ler_trans (y:=`|b|)).  
-  rewrite sqrtr_gt0; by apply: ltr0n.
-apply/andP; split.
-  by rewrite -oppr_ge0.
-case Ha : (a - 1 == 0).
-  move/eqP : Ha => Ha.
-  rewrite Ha (expr2 0) !mulr0.
-  rewrite Ha oppr0 mulr0 normr_le0 in Hb.
-  move/eqP : Hb => ->.
-  by rewrite expr2 mulr0.
-rewrite -(sqr_sqrtr (a:=3%:R)) -ler_sqrt.
-      rewrite -ComplexField.exprM !sqrtr_sqr normrM -(normrN (a-1))
-        (ger0_norm (x:=Num.sqrt 3%:R)).
-        by rewrite (ger0_norm (x:=- (a - 1))). 
-      by apply: sqrtr_ge0.
-    rewrite pmulr_lgt0; rewrite ltr_def; apply/andP; split.
-          by rewrite sqrf_eq0 sqrtr_eq0 -ltrNge ltr0n.
-        by apply: sqr_ge0.
-      rewrite sqrf_eq0; by apply: negbT.
-    by apply: sqr_ge0.
-  rewrite ler_sqrt.
-    by apply: ler0n.
-  by rewrite ltr0n.
-by rewrite ltr0n.
-Qed.  
+  by rewrite -eqr_le oppr_eq0 -sqrf_eq0 eqr_le sqr_ge0 andbT.
+rewrite -{1}(sqr_sqrtr (a:=3%:R)); last by apply: ler0n.
+rewrite -(ComplexField.exprM _ (a-1)) -(ler_sqrt (b^+2)).
+  rewrite !sqrtr_sqr normrM (ger0_norm (x := Num.sqrt 3%:R));
+    last by apply: sqrtr_ge0.
+  apply/idP/idP => /andP [] => H1 H2.
+    rewrite -(normrN (a-1)) (gtr0_norm (x:= - (a - 1))) in H2.
+      by rewrite ler_norml mulrN opprK -subr_le0 
+         -[X in (_ && X)]subr_ge0 in H2.
+    by rewrite oppr_gt0 ltr_def H1 eq_sym Ha.
+  have Hb : `|b| <= Num.sqrt 3%:R * -(a - 1).
+    by rewrite ler_norml mulrN opprK -subr_le0 -[X in (_ && X)]subr_ge0 H1 H2.
+  have Ha2 : (0 <= - (a - 1)).
+    rewrite -(pmulr_lge0 (x:=Num.sqrt 3%:R)); last by rewrite sqrtr_gt0 ltr0n.
+    by rewrite mulrC (ler_trans (y:=`|b|)).  
+  by rewrite -oppr_ge0 Ha2 /= -(normrN (a-1)) (ger0_norm (x:= -(a-1))).
+rewrite ComplexField.exprM mulr_gt0 // ltr_def sqr_ge0.
+  by rewrite sqrf_eq0 sqrtr_eq0 -ltrNge ltr0n.
+by rewrite sqrf_eq0 Ha.
+Qed.
 
 Lemma Re_invc : forall (z : C), Re z^-1 = Re z / ((Re z) ^+ 2 + (Im z) ^+2).
 Proof. by case. Qed.
