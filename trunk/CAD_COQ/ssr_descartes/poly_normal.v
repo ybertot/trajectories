@@ -3,13 +3,12 @@ This file consists of 3 sections:
 - introduction of normal polynomials, some lemmas on normal polynomials
 - constructions on sequences, such as all_neq0, all_pos, increasing, mid, seqmul, seqn0 
 - proof of Proposition 2.44 of [bpr], normal_changes
-
-Some proofs need cleaning, which is work in progress (prod_all_ge0, normal_mulr_r, factor_complex_roots)
 *)
 
 
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path choice fintype prime div bigop.
-Require Import ssralg poly polydiv polyorder ssrnum zmodp polyrcf qe_rcf_th complex.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path choice fintype.
+Require Import prime div bigop ssralg poly polydiv polyorder ssrnum zmodp.
+Require Import polyrcf qe_rcf_th complex.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -332,66 +331,48 @@ move=> p q.
 wlog: p q / ((size p).-1 <= (size q).-1)%N => H Hp Hq Hpcoef Hqcoef k Hk. 
   case/orP : (leq_total (size p).-1 (size q).-1) => H2.
     by apply: H. 
- rewrite mulrC; rewrite mulrC in Hk.
+  rewrite mulrC; rewrite mulrC in Hk.
   by apply: (H q p H2).
-case Hk2 : (k <= (size p).-1)%N.
-  rewrite coefM.
-  rewrite (bigD1 ord0) //= subn0.
-  apply: (ltr_le_trans (y := (p`_0 * q`_k))).
-    rewrite pmulr_lgt0.
-      apply: Hpcoef.
-      by rewrite polySpred.
-    apply: Hqcoef.
-    by apply: (@leq_trans ((size p).-1)).
+case : (leqP k (size p).-1) => Hk2.
+  rewrite coefM (bigD1 ord0) //= subn0 (ltr_le_trans (y := (p`_0 * q`_k))) //.
+    rewrite pmulr_lgt0; first by rewrite Hpcoef.
+    by rewrite Hqcoef // (@leq_trans ((size p).-1)).
   rewrite ler_addl sumr_ge0 //.
   case => /= i Hi Hi2.
   rewrite pmulr_rge0.
     case Hki : (k - i <= (size q).-1)%N.
-      apply: ltrW. by apply: Hqcoef.
-    rewrite le0r; apply/orP; left.
-    rewrite -(coefK q) coef_poly /=.
+      by rewrite ltrW // Hqcoef.
+    rewrite le0r -{1}(coefK q) coef_poly /=.
     have Hki2 : ((k - i < (size q))%N = false).
-      rewrite -[(size q)]prednK.
-        by rewrite ltnS.
-      by rewrite size_poly_gt0.
-    by rewrite Hki2.
-  apply: Hpcoef.
-  by apply: (leq_trans (n:=k)). 
-have Hk3 := (negbT Hk2).
-rewrite -ltnNge in Hk3.
+      by rewrite -[(size q)]prednK ?ltnS // size_poly_gt0.
+    by rewrite Hki2 eq_refl.
+  by rewrite Hpcoef // (leq_trans (n:=k)).
 rewrite coefM.
-have Hk4 : ((size p).-1 < k.+1)%N.
+have Hk3 : ((size p).-1 < k.+1)%N.
   by apply: (ltn_trans (n:=k)).
-rewrite (bigD1 (Ordinal Hk4)) //=.
-apply: (ltr_le_trans (y := (p`_(size p).-1 * q`_(k - (size p).-1)))).
-  have Helpme: (k - (size p).-1 <= (size q).-1)%N.
+rewrite (bigD1 (Ordinal Hk3)) //= 
+   (ltr_le_trans (y := (p`_(size p).-1 * q`_(k - (size p).-1)))) //.
+  have Hk4: (k - (size p).-1 <= (size q).-1)%N.
     rewrite leq_subLR.
     by rewrite size_mul // -[size p]prednK ?size_poly_gt0 //
       -[size q]prednK ?size_poly_gt0 // addSn addnS -!pred_Sn in Hk.
-  rewrite pmulr_rgt0.
-    by apply: Hqcoef.
+  rewrite pmulr_rgt0; first by rewrite Hqcoef.
   by apply: Hpcoef.
 rewrite ler_addl sumr_ge0 //.
 case => /= i Hi Hi2.
 apply: mulr_ge0.
   case Hi3 : (i <= (size p).-1)%N.
-    apply: ltrW. by apply: Hpcoef.
-  rewrite le0r; apply/orP; left.
-  rewrite -(coefK p) coef_poly /=.
+    by rewrite ltrW // Hpcoef.
+  rewrite le0r -{1}(coefK p) coef_poly /=.
   have Hi4 : (i < size p)%N = false. 
-    rewrite -[(size p)]prednK.
-      by rewrite ltnS.
-    by rewrite size_poly_gt0.
-  by rewrite Hi4.
+    by rewrite -[(size p)]prednK ?ltnS // size_poly_gt0.
+  by rewrite Hi4 eq_refl.
 case Hki : (k - i <= (size q).-1)%N.
-    apply: ltrW. by apply: Hqcoef.
-  rewrite le0r; apply/orP; left.
-  rewrite -(coefK q) coef_poly /=.
+  by rewrite ltrW // Hqcoef.
+rewrite le0r -{1}(coefK q) coef_poly /=.
   have Hki2 : (k - i < size q)%N = false. 
-    rewrite -[(size q)]prednK.
-    by rewrite ltnS.
-  by rewrite size_poly_gt0.
-by rewrite Hki2. 
+    by rewrite -[(size q)]prednK ?ltnS // size_poly_gt0.
+by rewrite Hki2 eq_refl. 
 Qed.
 
 (* exchange two sums *)
@@ -402,14 +383,10 @@ Lemma xchange : forall (T : Type) (idx : T) (op : Monoid.com_law idx)
 Proof.
 move=> T idx op m n F.
 elim : n => [ | n Hn ].
-  case  Hm0 : (0 <= m)%N.
-    rewrite !big_geq //.
-  have H := (negbT Hm0).
-  by rewrite -ltnNge ltn0 in H.
-case  Hmn : (n < m)%N.
-  rewrite !big_geq //.
-have H := (negbT Hmn).
-rewrite -leqNgt in H.
+  case : (leqP 0 m)=> Hm0 //.
+  by rewrite !big_geq.
+case : (ltnP n m) => Hmn.
+  by rewrite !big_geq.
 rewrite (big_cat_nat op (n:=n)) // big_nat1 Hn
   [x in (op _ x = _)](big_cat_nat op (n:=n)) // big_nat1
   [x in (op _ _ = x)](big_cat_nat op (n:=n)) // big_nat1 big_nat1
@@ -417,9 +394,8 @@ rewrite (big_cat_nat op (n:=n)) // big_nat1 Hn
 congr (op _ _).
 rewrite -big_split big_nat [x in (_ = x)]big_nat.
 apply: eq_bigr => i Hi.
-rewrite [x in (_ = x)](big_cat_nat op (n:=n)) // ?big_nat1 //.
-apply: ltnW.
-move/andP: Hi; by case => _ ->.
+rewrite [x in (_ = x)](big_cat_nat op (n:=n)) // ?big_nat1 // ltnW//.
+by case/andP: Hi=> _ ->.
 Qed.
 
 Lemma normal_coef_chain_1 : forall (p : {poly R}), ~~(root p 0) ->
@@ -474,33 +450,30 @@ Lemma normal_mulr_r : forall p q : {poly R}, ~~(root p 0) -> ~~(root q 0) ->
    p \is normal -> q \is normal -> (p * q) \is normal.
 Proof.
 move=> p q Hpzero Hqzero Hpnormal Hqnormal.
-apply: prop_normal.
-split.
+apply/normalP; split=> [k | |k Hk |i Hpqi j Hij Hj].
 (* first property *)
-  move=> k.
-  rewrite coefM.
-  apply: sumr_ge0 => [i _] /=.
-  apply: mulr_ge0.
-    exact: (@normal_coef_geq0 _ Hpnormal i).
-  exact: (@normal_coef_geq0 _ Hqnormal (k - i)).
+  have/normalP [Hp _ _ _] := Hpnormal.
+  have/normalP [Hq _ _ _] := Hqnormal.
+  rewrite coefM sumr_ge0 // => [i _] /=.
+  by apply: mulr_ge0.
 (* second property *)
-  rewrite lead_coefM pmulr_lgt0.
-    exact: (normal_lead_coef_gt0 Hpnormal).
-  exact: (normal_lead_coef_gt0 Hqnormal).
+  have/normalP [_ Hp _ _] := Hpnormal.
+  have/normalP [_ Hq _ _] := Hqnormal.
+  by rewrite lead_coefM pmulr_lgt0.
 (* third property *)
-  move=> k Hk. 
-  rewrite -subr_ge0 !coefM prednK // expr2.
-  rewrite !big_distrlr /=.
+  rewrite -subr_ge0 !coefM prednK // expr2 !big_distrlr /=.
   (* separate first double sum in 3 parts *)
   rewrite -(big_mkord (fun i : nat => true)
     (fun i : nat => \sum_(j < k.+1) (p`_i * q`_(k - i) * (p`_j * q`_(k - j))))).
   rewrite -(big_mkord (fun i : nat => true)
-    (fun i : nat => \sum_(j < k.+2) (p`_i * q`_(k.-1 - i) * (p`_j * q`_(k.+1 - j))))).
+    (fun i : nat => \sum_(j < k.+2) (p`_i * q`_(k.-1 - i) *
+    (p`_j * q`_(k.+1 - j))))).
   rewrite (eq_bigr
    (fun i => \sum_(0 <= j < k.+1) p`_i * q`_(k - i) * (p`_j * q`_(k - j))));
   last by move => ? _ ; rewrite big_mkord.
   rewrite [x in _ - x](eq_bigr
-   (fun i => \sum_(0 <= j < k.+2) p`_i * q`_(k.-1 - i) * (p`_j * q`_(k.+1 - j))));
+   (fun i => \sum_(0 <= j < k.+2) p`_i * q`_(k.-1 - i) *
+   (p`_j * q`_(k.+1 - j))));
   last by move => ? _ ; rewrite big_mkord.
   have H : \sum_(0 <= i < k.+1)
       \sum_(0 <= j < k.+1) p`_i * q`_(k - i) * (p`_j * q`_(k - j)) =
@@ -526,10 +499,8 @@ split.
       by apply: leq_pred.
     rewrite H2 {H2}.
     congr (_ + _).
-    rewrite big_nat_recl.
-    rewrite big_geq ?add0r; last by apply: leq_pred.
-    rewrite big_nat_recl.
-    rewrite (big_geq (m:=0.-1) (n:=0)) // ?add0r. 
+    rewrite big_nat_recl big_geq ?add0r; last by apply: leq_pred.
+    rewrite big_nat_recl (big_geq (m:=0.-1) (n:=0)) // ?add0r. 
     have H2 : \sum_(0 <= i < k) \sum_(i.+1.-1 <= j < i.+1)
        p`_i.+1 * q`_(k - i.+1) * (p`_j * q`_(k - j)) =
        \sum_(1 <= h < k.+1) p`_h * q`_(k - h) * (p`_h.-1 * q`_(k - h.-1)).
@@ -538,10 +509,8 @@ split.
       by rewrite -pred_Sn big_nat1.
     rewrite H2 {H2}.
     congr (_ + _).
-    rewrite -{1}(prednK Hk).
-    rewrite big_nat_recl.
-    rewrite big_geq // add0r.
-    by rewrite big_add1 big_add1 -pred_Sn.
+    by rewrite -{1}(prednK Hk) big_nat_recl big_geq // add0r
+       big_add1 big_add1 -pred_Sn.
   rewrite H {H}.
   (* separate second double sum in 3 parts *)
   have H :  \sum_(0 <= i < k)
@@ -554,18 +523,16 @@ split.
     rewrite big_add1 -pred_Sn -!big_split big_nat [x in (_ = x)]big_nat.
     apply: eq_bigr => h Hh.    
     rewrite (big_cat_nat (n:= h.+1) (GRing.add_comoid R) (fun j => true) 
-      (fun j => p`_h * q`_(k.-1 - h) * (p`_j * q`_(k.+1 - j))) ).
-        rewrite (big_cat_nat (n:= h.+2) (m:=h.+1) (GRing.add_comoid R) (fun j => true) 
-          (fun j => p`_h * q`_(k.-1 - h) * (p`_j * q`_(k.+1 - j))) ).
-            rewrite big_nat1 -pred_Sn /= -/(nth 0 _ (h.+1)) !addrA.
-            congr (_ + _); congr (_ + _).
-            by rewrite -(addn1 h) (addnC h 1%N) (subnDA 1 k h) subn1.
-          apply: (ltn_trans (n:=h.+1)); by apply: ltnSn.
-        move/andP: Hh; case => Hh1 Hh2.
-        apply: (ltn_trans (n:=h.+2)). by apply: ltnSn.
-        by rewrite -(addn2 h) -(addn2 k) ltn_add2r.
-      by done.
-    move/andP: Hh; case => Hh1 Hh2.
+      (fun j => p`_h * q`_(k.-1 - h) * (p`_j * q`_(k.+1 - j))) ) //.
+      rewrite (big_cat_nat (n:= h.+2) (m:=h.+1) (GRing.add_comoid R)
+        (fun j => true) 
+        (fun j => p`_h * q`_(k.-1 - h) * (p`_j * q`_(k.+1 - j))) ).
+          rewrite big_nat1 -pred_Sn /= -/(nth 0 _ (h.+1)) !addrA.
+          congr (_ + _); congr (_ + _).
+          by rewrite -(addn1 h) (addnC h 1%N) (subnDA 1 k h) subn1.
+        by rewrite (ltn_trans (n:=h.+1)) // ltnSn.
+      case/andP: Hh => Hh1 Hh2.
+      by rewrite (ltn_trans (n:=h.+2)) // ltnSn.
     by apply: (ltn_trans (n:=k)).
   (* canceling one of the three terms *)
   rewrite H {H}
@@ -583,7 +550,7 @@ split.
       [x in (_ * (x * _) = _)]mulrC !mulrA.
     congr (_ * _).
     rewrite -subn1 subnBA ?addn1 //.
-    move/andP : Hi; by case => ->.
+    by case/andP : Hi.
   (* rotating sums around and splitting off bits of them *)
   rewrite H {H} add0r big_add1 -pred_Sn.
   rewrite (eq_big 
@@ -592,7 +559,7 @@ split.
     (P1 := fun i => true)
     (fun i => true)
     (fun i => \sum_(1 <= l < i.+1) p`_i.+1 * q`_(k - i.+1) 
-         * (p`_(l.-1) * q`_(k - (l.-1))))) //.
+         * (p`_(l.-1) * q`_(k - (l.-1))))) // =>[ | i _].
     have H :  \sum_(0 <= h < k)
       \sum_(h.+2 <= j < k.+2) p`_h * q`_(k.-1 - h) * (p`_j * q`_(k.+1 - j)) =
        \sum_(1 <= i < k.+1)
@@ -637,7 +604,7 @@ split.
         rewrite big_nat1.
         by rewrite (addnK k 0%N).
       apply: ltnW.
-      by move/andP : Hi; case =>  _ ->.
+      by case/andP : Hi.
     rewrite H {H}.
     have H : \sum_(1 <= h < k.+1)
        \sum_(h <= j < k.+1) p`_h * q`_(k - h) * (p`_j * q`_(k - j)) =
@@ -652,10 +619,9 @@ split.
       rewrite -big_split big_nat [x in (_ = x)]big_nat.
       apply: eq_bigr => i Hi.
       rewrite  (big_cat_nat (GRing.add_comoid R) (n:= k)) //.
-        rewrite big_nat1.
-        by rewrite (addnK k 0%N).
+        by rewrite big_nat1 (addnK k 0%N).
       apply: ltnW.
-      by move/andP : Hi; case =>  _ ->.
+      by case/andP : Hi.
     rewrite H {H} !opprD -!sumrN !addrA
       -[x in (x + _)]addrA -big_split
       -[x in ((((x + _) + _) + _) + _)]addrA
@@ -677,10 +643,10 @@ split.
           (q`_(k - h) * q`_(k - j) - q`_(k.+1 - h) * q`_(k.-1 - j)).
       rewrite big_nat [x in (_ = x)]big_nat.
       apply: eq_bigr => i Hi.
-      move/andP: Hi; case => Hi1 Hi2.  
+      case/andP: Hi => Hi1 Hi2.  
       rewrite -!sumrN -!big_split big_nat [x in (_ = x)]big_nat.
       apply: eq_bigr => j Hj.
-      move/andP: Hj; case => Hj1 Hj2.
+      case/andP: Hj => Hj1 Hj2.
       rewrite /= -/(nth 0 _ j.+1) !addrA addrC.
       by rewrite -mulrN -!mulrA !addrA  -(mulrDr p`_i)
         -mulrN !mulrA (mulrC _ p`_j) (mulrC _ p`_j) -!mulrA
@@ -707,80 +673,57 @@ split.
       apply: mulr_ge0.
       rewrite subr_ge0 [x in (_ <= x)]mulrC.
       apply: (normal_coef_chain_2 Hpzero Hpnormal).
-        by move/andP : Hi; case => ->.
-      by move/andP : Hj; case => ->.
-    rewrite subr_ge0 [x in (x <= _)]mulrC.
-    rewrite -subn1 -subnDA addnC addn1 subnS subSn.
-      apply: (normal_coef_chain_2 Hqzero Hqnormal).
-          rewrite subn_gt0.
-          by move/andP : Hj; case => _ ->.
-        apply: leq_sub => //.
-        by move/andP : Hj; case => ->.
-      apply: ltnW.
-      by move/andP : Hi; case => _ ->.
-    rewrite addrA [x in (0 <= _ + x)]addrC.
-    rewrite -!addrA. rewrite [x in (0 <= _ + x)]addrA.
-    rewrite -big_split addrC -!addrA.
-    apply: addr_ge0.
+        by case/andP : Hi.
+      by case/andP : Hj.
+    rewrite subr_ge0 [x in (x <= _)]mulrC -subn1 -subnDA addnC addn1 subnS
+       subSn; last by rewrite ltnW; case/andP : Hi.
+    apply: (normal_coef_chain_2 Hqzero Hqnormal).
+        rewrite subn_gt0.
+        by case/andP : Hj.
+      rewrite leq_sub //.
+      by case/andP : Hj.
+    rewrite addrA [x in (0 <= _ + x)]addrC -!addrA [x in (0 <= _ + x)]addrA
+       -big_split addrC -!addrA addr_ge0 //.
       rewrite big_nat; apply: sumr_ge0 => i Hi.
       rewrite /= -/(nth 0 _ (k.+1)) -/(nth 0 _ 0)
         [x in (0 <= x * _ - _)]mulrC
         [x in (0 <= _ - x * _)]mulrC -!mulrA -mulrBr.
       apply: mulr_ge0.
-        by apply: normal_coef_geq0.
+        by have/normalP [H _ _ _] := Hqnormal.
       rewrite !mulrA -mulrBl.
       apply: mulr_ge0.
-        rewrite subr_ge0 [x in (_ <= x)]mulrC.
-        apply: (normal_coef_chain_2 Hpzero Hpnormal) => //.
-          by move/andP : Hi; case=> ->.
-        rewrite -ltnS; by move/andP : Hi; case=> _ ->.
-      by apply: normal_coef_geq0.
-    rewrite big_nat_recr addrA -big_split.
-    apply: addr_ge0.
+        rewrite subr_ge0 [x in (_ <= x)]mulrC
+          (normal_coef_chain_2 Hpzero Hpnormal) //.
+          by case/andP : Hi.
+        rewrite -ltnS; by case/andP : Hi.
+      by have/normalP [H _ _ _] := Hqnormal.
+    rewrite big_nat_recr addrA -big_split addr_ge0 //.
       rewrite big_nat; apply: sumr_ge0 => i Hi.
       rewrite /= -/(nth 0 _ (k.+1)) -/(nth 0 _ (i.+1)) -/(nth 0 _ 0)
-        mulrC addrC -!mulrA -mulrBr.
-      apply: mulr_ge0.
-        by apply: normal_coef_geq0.
-      rewrite mulrC mulrA [x in (0 <= x * _ - _)]mulrC -!mulrA -mulrBr.
-      apply: mulr_ge0.
-        by apply: normal_coef_geq0.
+        mulrC addrC -!mulrA -mulrBr mulr_ge0 //.
+        by have/normalP [H _ _ _] := Hpnormal.
+      rewrite mulrC mulrA [x in (0 <= x * _ - _)]mulrC -!mulrA -mulrBr
+        mulr_ge0 //.
+        by have/normalP [H _ _ _] := Hpnormal.
       rewrite subn0 subr_ge0 -subn1 -subnDA addnC subnDA subn1.
       apply: (normal_coef_chain_2 Hqzero Hqnormal).
-        rewrite subn_gt0; by move/andP : Hi; case => _ ->.
-      rewrite -{2}(subn0 k).
-      by apply: leq_sub.
+        rewrite subn_gt0; by case/andP : Hi.
+      by rewrite -{2}(subn0 k) leq_sub.
     rewrite subn0 (addnK k 0%N).
-    apply: mulr_ge0; apply: mulr_ge0; by apply: normal_coef_geq0.
-  move=> i _.
+    have/normalP [Hp _ _ _] := Hpnormal.
+    have/normalP [Hq _ _ _] := Hqnormal.
+    apply: mulr_ge0; apply: mulr_ge0; by rewrite ?Hp ?Hq.
   rewrite big_add1 -pred_Sn.
   apply: eq_bigr => j _.
   by rewrite -pred_Sn.
 (* fourth property *)
-move=> i Hpqi j Hij Hj.
-apply: prod_all_ge0 => //.
-        by apply: normal_neq0.
-      by apply: normal_neq0.
-    move=> k.
-    case Hk2 : ((size p).-1 <= k)%N => Hk1.
-      have Hk : (k == (size p).-1).
-        rewrite eqn_leq; apply/andP; by split.
-      move/eqP : Hk => ->.
-      rewrite -lead_coefE.
-      exact: (normal_lead_coef_gt0 Hpnormal).
-    have Hk3 := (negbT Hk2).
-    rewrite -ltnNge in Hk3.
-    by apply: normal_0notroot.
-  move=> k.
-  case Hk2 : ((size q).-1 <= k)%N => Hk1.
-    have Hk : (k == (size q).-1).
-      rewrite eqn_leq; apply/andP; by split.
-    move/eqP : Hk => ->.
-    rewrite -lead_coefE.
-    exact: (normal_lead_coef_gt0 Hqnormal).
-  have Hk3 := (negbT Hk2).
-  rewrite -ltnNge in Hk3.
-  by apply: normal_0notroot. 
+rewrite prod_all_ge0 // ?normal_neq0 // ?normal_neq0// => [k Hk| k Hk| ].
+    rewrite normal_0notroot_2 //.
+    rewrite -ltnS prednK // in Hk.
+    by rewrite size_poly_gt0 normal_neq0.
+  rewrite normal_0notroot_2 //.
+  rewrite -ltnS prednK // in Hk.
+  by rewrite size_poly_gt0 normal_neq0.
 by apply: ltnW.
 Qed.
 
@@ -861,30 +804,27 @@ Proof.
 by rewrite -complex_root_conj /= -map_poly_comp_id0 ?real_complex_conjc ?conjc0.
 Qed.
 
-Lemma factor_complex_roots : forall (z : C),
+Lemma factor_complex_roots (z : C) :
    toC ('X^2 + (1 *- 2 * Re z) *: 'X + (Re z ^+ 2 + Im z ^+ 2)%:P) =
    ('X - z%:P) * ('X - (z^*)%:P).
 Proof.
-move=> z.
-rewrite mulrBr !mulrBl opprB (addrC (z%:P * (z^*)%:P) _) addrA (mulrC _ (z^*)%:P)
-     -(addrA ('X * 'X) _) -expr2 -(opprD (z%:P * 'X) ((z^*)%:P * 'X))
-     -(mulrDl z%:P _ 'X) -(polyC_add z z^*) -(polyC_mul z z^*) -sqr_normc
-     -re_conj normC_re_im mul_polyC.
-rewrite -(opprK (Re z ^+ 2 + Im z ^+ 2)%:P) map_poly_is_additive.
-rewrite -polyC_opp -mul_polyC map_polyC.
-  (***)
-rewrite -(opprK ((1 *- 2 * Re z)%:P * 'X)) map_poly_is_additive map_polyXn.
-rewrite -(opprK (Re z ^+ 2 + Im z ^+ 2)%:C%:P).
-rewrite -(polyC_opp (Re z ^+ 2 + Im z ^+ 2)%:C).
+rewrite mulrBr !mulrBl opprB (addrC (z%:P * (z^*)%:P) _) addrA
+   (mulrC _ (z^*)%:P) -(addrA ('X * 'X) _) -expr2 -(opprD (z%:P * 'X)
+   ((z^*)%:P * 'X)) -(mulrDl z%:P _ 'X) -(polyC_add z z^*) -(polyC_mul z z^*)
+   -sqr_normc -re_conj normC_re_im mul_polyC
+   -(opprK (Re z ^+ 2 + Im z ^+ 2)%:P) map_poly_is_additive
+   -polyC_opp -mul_polyC map_polyC.
+rewrite -(opprK ((1 *- 2 * Re z)%:P * 'X)) map_poly_is_additive map_polyXn
+   -(opprK (Re z ^+ 2 + Im z ^+ 2)%:C%:P)
+   -(polyC_opp (Re z ^+ 2 + Im z ^+ 2)%:C).
 have H : (- (Re z ^+ 2 + Im z ^+ 2)%:C) = (- (Re z ^+ 2 + Im z ^+ 2))%:C.
   by rewrite !real_complexE -{2}oppr0.
-rewrite H {H}.
-  (***)
-rewrite -mulNr -(@polyC_opp _ (1 *- 2 * Re z)) .
-rewrite mul_polyC map_polyZ map_polyX mulNr opprK.
+rewrite H {H} -mulNr -(@polyC_opp _ (1 *- 2 * Re z)) mul_polyC map_polyZ
+    map_polyX mulNr opprK.
 have H : 2%:R * (Re z)%:C = (2%:R * (Re z))%:C.
-  rewrite !real_complexE. by simpc.
-by rewrite H {H}.
+  rewrite !real_complexE.
+  by simpc.
+by rewrite H.
 Qed.
 
 Lemma complex_root_div_poly_deg2 : forall (p : {poly R}) (z : C),
@@ -926,7 +866,7 @@ Lemma normal_root_inB : forall (p : {poly R}),
 Proof.
 move=> p Hpmonic.
 move: {2}(size p) (leqnn (size p))=> n.
-elim: n p Hpmonic => [p Hpmonic Hpsize Hproot | n IH p Hpmonic Hpsize Hproots].
+elim: n p Hpmonic=> [p Hpmonic Hpsize Hproot | n IH p Hpmonic Hpsize Hproots].
 (* size p <= 0 *)
   rewrite size_poly_leq0 in Hpsize.
   rewrite (eqP Hpsize) monicE lead_coef0 in Hpmonic.
@@ -1748,9 +1688,8 @@ Qed.
 (* Proposition 2.44 *)
 Lemma normal_changes : changes (seqn0 q) = 1%N.
 Proof.
-(* 3 < size (seqn0 q) *)
 case : (ltngtP 3 (size (seqn0 q))) => Hsizeseqn0q.
-(*case Hsizeseqn0q : (3 < size (seqn0 q))%N.*)
+(* 3 < size (seqn0 q) *)
   have Hincreasing1 := spseq_increasing;
   have Hincreasing2 := subspseq_increasing;
   have Hallpos := (subp_all_pos);
