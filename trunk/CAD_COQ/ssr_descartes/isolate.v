@@ -124,7 +124,7 @@ Inductive root_info :=
 
 Fixpoint isol_rec n d a b l acc : seq root_info :=
   match n with
-    O => Unknown a b::nil
+    O => Unknown a b::acc
   | S p =>
     match changes l with
     | 0%nat => Zero_in a b::acc
@@ -133,8 +133,9 @@ Fixpoint isol_rec n d a b l acc : seq root_info :=
     let c := red ((a + b)/2) in
     let l2 := dicho_r d l in
     isol_rec p d a c (dicho_l d l)
-        if eq_bool (head 0%bigQ l2) 0 then Exact c::isol_rec p d c b l2
-        else isol_rec p d c b l2
+        (if eq_bool (head 0%bigQ l2) 0 then
+           Exact c::isol_rec p d c b l2 acc
+        else isol_rec p d c b l2 acc)
     end
   end.
     
