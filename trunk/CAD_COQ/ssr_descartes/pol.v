@@ -1,5 +1,5 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq  choice fintype.
-Require Import binomial  bigop ssralg poly ssrnum ssrint rat.
+Require Import binomial  bigop ssralg poly ssrnum ssrint rat polyrcf.
 
 (** * Descartes. 
    polynomials link with the ssr library *)
@@ -12,9 +12,6 @@ $Id: pol.v,v 1.35 2012/12/14 11:59:35 grimm Exp $
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-Check nat.
-
 
 (* A technical binomial identity for the proof of de Casteljau *)
 
@@ -521,108 +518,6 @@ have aux: forall k, (size p <= k < m)%N ->p`_k * c ^+ (k - i) *+ 'C(k, i) = 0.
 symmetry;apply: (shorten_sum _ ltpm aux).
 Qed.
 
-(* alteraret proofs 
-
-Lemma size_shift_poly_alt p a:
-  size (shift_poly a p)  = size p.
-Proof.
-rewrite shift_polyE.
-case sl: (size p) => [| s]; first by rewrite polyd0 size_poly0. 
-rewrite size_poly_eq //= big_ord_recr big1 /=.
-  rewrite add0r binn subnn mulr1 mulr1n -[s]/(s.+1.-1) -sl.
-  by rewrite -/(lead_coef p) lead_coef_eq0 -size_poly_eq0 sl.
-by move=> [i hi] /= _; rewrite bin_small.
-Qed.
-
-Lemma translate_sum_alt (p q: {poly R})  c:
-  (shift_poly c p) + (shift_poly c q) = shift_poly c (p+q) .
-Proof.
-apply /polyP => i; rewrite coefD.  
-move: (size_add p q) => sa; rewrite (shift_poly_nth1 c i sa).
-have pa: (size p <= maxn (size p) (size q))%N by  rewrite leq_max leqnn orTb.
-have pb: (size q <= maxn (size p) (size q))%N by  rewrite leq_max leqnn orbT.
-rewrite  (shift_poly_nth1 c i pa) (shift_poly_nth1 c i pb).
- rewrite - big_split;apply: eq_bigr => j _ /=; rewrite coefD.
-by rewrite mulrDl  mulrnDl. 
-Qed.
-
-Lemma translate_prod_alt (p q: {poly R})  c:
-  (shift_poly c p) * (shift_poly c q) = shift_poly c (p *q).
-Proof.
-case (poly0Vpos p); first by move => ->; rewrite mul0r shift_polyC mul0r.
-case (poly0Vpos q); first by move => -> _; rewrite mulr0 shift_polyC mulr0.
-set m:=  (size p + size q).-1; move=> pa pb.
-have mp: (size p + size q)%N = m .+1. 
-  by symmetry;rewrite  /m prednK // addn_gt0 pa pb.  
-have qa: (size p <= m)%N by rewrite /m - (prednK pa) addnS leq_addr. 
-have qb: (size q <= m)%N by rewrite /m addnC - (prednK pb) addnS leq_addr. 
-apply /polyP => i.
-rewrite coefM.
-transitivity (\sum_(j < i.+1)
-   \sum_(k < m) p`_k *((c^+(k - j) *+ 'C(k, j)) *(shift_poly c q)`_(i - j))).
-  apply: eq_bigr  => //[[j jm]] _ /=; rewrite (shift_poly_nth1 c j qa).
-  rewrite big_distrl /=; apply:  eq_bigr => //[[l lm]] _ /=. 
-  by rewrite mulrA mulrnAr.
-rewrite exchange_big /=.
-transitivity  (\sum_(j < m) \sum_(i0 < i.+1) \sum_(k < m)
-   p`_j * q`_k *( c^+(k +j - i)%N *+ ('C(j, i0)  * 'C(k, (i-i0)))%N)).
-  apply:  eq_bigr => //[[j jm]] _ /=;apply:  eq_bigr => //[[k km]] _ /=.
-  transitivity (\sum_(k0 < m) ((p`_j *(c ^+ (j - k) *+ 'C(j, k))) * 
-     (q`_k0 *  (c ^+ (k0 - (i - k)) *+ 'C(k0, i - k))))).
-    rewrite - big_distrr /= mulrA; congr (_ * _).
-    rewrite (shift_poly_nth1 _ _ qb). 
-    by apply:  eq_bigr => //[[l lm]] _ /=; rewrite mulrnAr.
-  apply: eq_bigr  => //[[l lm]] _ /=.
-  rewrite -(mulrA  p`_j  _ _)  -(mulrA  p`_j  _ _); congr (_ * _).
-  rewrite mulrnAl ! mulrnAr mulrnAC -mulrnA mulrCA  -exprD. 
-  case (leqP (i-k)%N l) => pc; last by rewrite (bin_small pc) muln0. 
-  case (leqP k j) => pd; last by rewrite (bin_small pd) mul0n. 
-  have -> //: (j - k + (l - (i - k)) = l+ j -i) %N.
-  rewrite - {2} (subnK pd) - {2} (subnK pc); rewrite ltnS in km.
-  by symmetry; rewrite addnCA - addnA (subnK  km) addnA addnK.
-transitivity (
-   \sum_(j < m)  \sum_(k < m)
-    (p`_j * q`_k * (c ^+ (k + j - i)) *+ 'C(k +j, i)%N)).
-   apply: eq_bigr  => //[[j jm]] _ /=; rewrite exchange_big.
-   apply: eq_bigr  => //[[k km]] _ /=; rewrite - big_distrr /=. 
-   by rewrite -mulrnAr sumrMnr Vandermonde addnC.
-symmetry.
-
-pose f k j := (p`_j * q`_(k - j)%N).
-pose g k := c ^+ (k - i) *+ 'C(k, i).
-transitivity (
-  \sum_(0<= k < m) \sum_(0 <= j < m%N | (j < k.+1)%N) (f k j * g k)).
-  rewrite big_mkord; rewrite (shift_poly_nth1 c i (size_mul_leq p q)) -/m.
-  apply: eq_big => // [[k km]] _; rewrite -mulrnAr -/(g k) - big_distrl //=.
-  congr (_  * _ ); rewrite coefM big_mkord - big_ord_widen //. 
-rewrite (exchange_big_dep_nat predT) //= big_mkord.
-transitivity (\sum_(i0 < m)  
-    \sum_(i1 <  (m- i0)%N ) (p`_i0 * q`_i1) * g (i1 + i0)%N).
-  apply: eq_big => // [[k km]] _ /=.
-  transitivity (\sum_(k <= i1 < m) f i1 k * g i1).
-   rewrite (big_cat_nat _ _ _ (leq0n k) (ltnW km)) /= big1_seq ?add0r.
-    by apply: congr_big_nat => // j; rewrite ltnS; case /andP.
-  by move => j; rewrite mem_index_iota ltnS leqNgt; case (j<k)%N. 
-  rewrite (big_addn 0 m k) big_mkord; apply: eq_bigr => //[[l lm]] _ /=.   
-  by rewrite /f addnK.
-symmetry.
-apply:  eq_bigr => //[[j jm]] _ /=.
-suff sha: forall k, (m -j <= k < m)%N ->
-   p`_j * q`_k * c ^+ (k + j - i) *+ 'C(k + j, i) = 0.
-  rewrite (shorten_sum _ (leq_subr j m) sha).
-  apply: eq_bigr => //[[l lm]] _ /=; rewrite /g mulrnAr addnC //.
-move=> k; case /andP => mjk km. 
-case (ltnP k (size q)); 
-   last by move => /(nth_default 0) ->; rewrite mulr0 mul0r  mul0rn.
-case (ltnP j (size p)); 
-   last by move => /(nth_default 0) ->; rewrite mul0r mul0r mul0rn.
-move=> lt1 lt2; move: (leq_add lt1 lt2) mjk.
-by rewrite mp addSn addnS ltnS leq_subLR ltnNge=> aux; rewrite (negbTE aux).  
-Qed.
-
-*)
-
-
 (* We give here the coefficients of scale and shift *)
 Lemma scaleX_polyE c p: 
  p \scale c = \poly_(i < size p)(p`_i * c ^+i).
@@ -644,13 +539,84 @@ Definition reciprocal_pol (R:ringType) (p: {poly R}):=
 
 (* The Bernstein coefficients of polynomial l for the interval (a, b) *)
 
-Definition Mobius (R:ringType) (p: {poly R})(a b : R) : {poly R} :=
-  reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
+Definition recip (R : ringType) (deg : nat) (q : {poly R}) : {poly R} :=
+  'X ^+ (deg.+1 - (size q)) * reciprocal_pol q.
+
+Definition Mobius (R:ringType) (a b : R) (p: {poly R}) : {poly R} :=
+  recip (size p).-1 ((p \shift a) \scale (b - a)) \shift 1.
 
 Section ReciprocalPoly.
 
-Variable (R: idomainType).
+Variable (R: fieldType).
 Implicit Type p: {poly R}.
+
+Lemma size_scaleX c p : c != 0 -> size (p \scale c) = size p.
+Proof. by move=> cu; rewrite size_comp_poly2 // size_XmulC. Qed.
+
+Lemma reciprocal_size p: p`_0 != 0 ->
+  size (reciprocal_pol p) = size p.
+Proof.
+rewrite /reciprocal_pol => td0.
+apply: size_poly_eq; rewrite prednK ?subnn // size_poly_gt0.
+by  apply /eqP => pz; case /eqP:td0; rewrite pz  coefC.
+Qed. 
+
+Lemma reciprocal_idempotent p: p`_0 != 0 ->
+  reciprocal_pol (reciprocal_pol p) = p.
+Proof.
+move=> h;rewrite - polyP {1}/reciprocal_pol (reciprocal_size h) => i.
+rewrite coef_poly /reciprocal_pol coef_poly.
+case: (ltnP i (size p)); last by move => /(nth_default 0).
+move => isp; rewrite - (subnKC isp).
+by rewrite  -subn_gt0 addSn addnC -addnS addnK addKn addnS addnC -addnS addnK.
+Qed.
+
+Lemma size_poly_coef_eq0 :
+  forall p q : {poly R}, (forall i, (p`_i == 0) = (q`_i == 0)) ->
+  size p = size q.
+Proof.
+by move=> p q c; apply/eqP; rewrite eqn_leq;apply/andP; split;
+  apply/leq_sizeP => j cj; apply/eqP; (rewrite c || rewrite -c);
+  apply/eqP; move: j cj; apply/leq_sizeP.
+Qed.
+
+(*
+Lemma reciprocal_pol_scale_swap :
+  forall p (c : R), c!= 0 -> p`_0 != 0 ->
+  reciprocal_pol (p \scale c) = (c ^ (size p).-1)%:P
+                * (reciprocal_pol p \scale c^-1).
+Proof.
+(* Without the condition on the first coefficient.
+move=> p c cu (* p0 *); rewrite [_ \scale c^-1]/scaleX_poly comp_polyE.
+rewrite [_ (_ \scale _)]/reciprocal_pol poly_def size_scaleX //.
+have t : (size (reciprocal_pol p) <= size p)%N by apply: size_poly.
+rewrite (big_ord_widen _
+           (fun i : nat => (reciprocal_pol p)`_i *: ('X * (c^-1)%:P) ^+ i) t).
+rewrite (big_mkcond (fun i : 'I_(size p) => (i < _)%N)) big_distrr /=.
+apply: eq_bigr; move => [i ci] _ /=.
+Search _ nth (_ \scale _).
+rewrite scaleX_polyE coef_poly.
+have -> : (size p - i.+1 < size p)%N.
+  move: ci; case h : (size p) => [ | n]; first by rewrite ltn0.
+  by move=> _; rewrite subSS (leq_ltn_trans _ (ltnSn _)) // leq_subr.
+case t' : (i < size (reciprocal_pol p))%N; last first.
+*)
+rewrite reciprocal_size /reciprocal_pol // size_scaleX // poly_def.
+rewrite big_distrr; apply eq_bigr => i _.
+rewrite exprMn_comm; last by apply: mulrC. 
+rewrite coef_poly ltn_ord scaleX_polyE coef_poly /=.
+have -> : (size p - i.+1 < size p)%N.
+  case h' : (size p) i => [ | n] i' //; first by case i'.
+  by rewrite (leq_ltn_trans _ (ltnSn n)) // subSS // leq_subr.
+rewrite -polyC_exp (mulrC 'X^i) !mul_polyC !scalerA; congr (_ *: _).
+rewrite mulrAC exprVn -exprnP mulrC; congr (_ * _).
+case: i => i ci /=.
+case h : (size p == i.+1).
+  by rewrite (eqP h) subnn expr0 /= mulfV // expf_eq0 (negbTE cu) andbF.
+case: (size p) ci h => //= n in1 dif; rewrite subSS expfB //.
+by move: in1; rewrite leq_eqVlt eq_sym dif orFb ltnS.
+Qed.
+*)
 
 Lemma horner_reciprocal p x: 
   x \is a GRing.unit  ->  (reciprocal_pol p).[x] = x ^+ (size p - 1) * p.[x^-1].
@@ -692,32 +658,12 @@ case; first by  rewrite mul1r mul0r add0r addr0.
 by move=> n /=; rewrite mul0r add0r.
 Qed.
 
-Lemma reciprocal_size p: p`_0 != 0 ->
-  size (reciprocal_pol p) = size p.
-Proof.
-rewrite /reciprocal_pol => td0.
-apply: size_poly_eq; rewrite prednK ?subnn // size_poly_gt0.
-by  apply /eqP => pz; case /eqP:td0; rewrite pz  coefC.
-Qed. 
-
-Lemma reciprocal_idempotent p: p`_0 != 0 ->
-  reciprocal_pol (reciprocal_pol p) = p.
-Proof.
-move=> h;rewrite - polyP {1}/reciprocal_pol (reciprocal_size h) => i.
-rewrite coef_poly /reciprocal_pol coef_poly.
-case: (ltnP i (size p)); last by move => /(nth_default 0).
-move => isp; rewrite - (subnKC isp).
-by rewrite  -subn_gt0 addSn addnC -addnS addnK addKn addnS addnC -addnS addnK.
-Qed.
-
-
 Lemma reciprocalC (c:R): reciprocal_pol c%:P = c%:P.
 Proof.
 rewrite /reciprocal_pol  - polyP => i; rewrite coef_poly.
 case cz: (c==0); first by move /eqP in cz; rewrite cz !coef0 if_same.
 rewrite size_polyC cz !coefC; case:i => [| i]//. 
 Qed.
-
 
 Lemma reciprocalM p q : 
   reciprocal_pol (p * q) = (reciprocal_pol p) *  (reciprocal_pol q).
@@ -734,8 +680,8 @@ have pnz: p != 0 by  rewrite - size_poly_eq0 - lt0n.
 have qnz: q != 0 by  rewrite - size_poly_eq0 - lt0n.
 rewrite /reciprocal_pol size_mul //.
 rewrite - polyP => i; rewrite coef_poly coefM coefM.
-case (ltnP i  (size p + size q).-1) => ipq; last first.
-  rewrite big1 // => [[j ji]] _ /=; rewrite ! coef_poly.
+case: (ltnP i  (size p + size q).-1) => ipq; last first.
+  rewrite big1 // => [] [] j ij _ /=; rewrite ! coef_poly.
   case lt1: (j < size p)%N; last by rewrite mul0r.
   case lt2: (i - j < size q)%N; last by rewrite mulr0.
   move: (leq_add lt1 lt2).
@@ -777,8 +723,7 @@ rewrite addnC -(ltn_predK pa) subSS - {1} (subnK Ha) (addnC  _ (size p)).
 by rewrite - addnA m1 subnKC // leq_subLR - m1.
 Qed.
 
-
-Lemma reciprocalX p  n: 
+Lemma reciprocalX p n: 
   reciprocal_pol (p ^+ n) = (reciprocal_pol p) ^+ n.
 Proof.
 elim: n=> [| n Hrec]; first rewrite !expr0 reciprocalC //.
@@ -821,7 +766,7 @@ rewrite normrN; move => <-;
 have ->:  \sum_(i < n) `|x ^+ i| =  (\sum_(i < n) `|x| ^+ i).
   by apply: eq_big => // i _; rewrite normrX.
 move: cp.
-case:n => [| m]; first by  rewrite  big_ord0 mul0r expr0 normr1 ler10.
+case:n => [| m]; first by  rewrite  big_ord0 mulr0 expr0 normr1 ler10.
 move: (sum_powers_of_x (m.+1) `|x|); set aux:= (\sum_(i < m.+1) _) => pa.
 set c := \max_(i < m.+1) `|E i / E m.+1| => cp r1.
 have a1p: 0 < `|x| - 1 by rewrite subr_gt0.

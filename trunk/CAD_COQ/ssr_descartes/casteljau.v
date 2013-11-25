@@ -575,28 +575,131 @@ Section BernsteinPols.
 
 Variable R : archiFieldType.
 Variables (a b : R).
-Variable p : nat.
+Variable deg : nat.
 
 Hypothesis neqab : a != b.
 
 (* elements of the Bernstein basis of degree p *)
 Definition bernp i : {poly R} := 
-  ((b - a)^-p)%:P * ('X - a%:P)^+i * (b%:P - 'X)^+(p - i) *+ 'C(p, i).
+  ((b - a)^-deg)%:P * ('X - a%:P)^+i * (b%:P - 'X)^+(deg - i) *+ 'C(deg, i).
 
 Definition relocate (q : {poly R}) : {poly R}:=
   let s := size q in
     (* 1st case : degree of q is too large for the current basis choice *)
-  if (p.+1 < s)%N then 0
+  if (deg.+1 < s)%N then 0
     else
-      ('X ^+ (p.+1 - s) * reciprocal_pol ((q \shift (- 1)) \scale (b - a)))
-      \shift - a.
+      (recip deg ((q \shift (- 1)) \scale (b - a))) \shift - a.
 
-Lemma bern_coeffs_mon : forall i, (i <= p)%N ->
-    relocate 'X^i = ('X - a%:P )^+(p - i) * (b%:P - 'X)^+i.
+Lemma recipE (q : {poly R}) : (size q <= deg.+1)%N ->
+  recip deg q = \poly_(i < deg.+1) q`_(deg - i).
+move=> sq.
+have t : forall n m (E : nat -> R), 'X ^+ n * \poly_(i < m) E i =
+          \poly_(i < m + n) (E (i - n)%N *+ (n <= i)%N).
+  elim=> [ | n IH] m E.
+    rewrite expr0 mul1r addn0; rewrite !poly_def; apply: eq_bigr => i _.
+    by rewrite subn0 leq0n mulr1n.
+  rewrite exprS -mulrA IH !poly_def.
+  rewrite addnS big_ord_recl.
+  rewrite [X in _ *+ (n < X)]/nat_of_ord /= mulr0n scale0r add0r big_distrr.
+  apply: eq_bigr; move=> [i ci] _ /=; rewrite /bump leq0n add1n ltnS subSS.
+  by rewrite mulrC -scalerAl exprS mulrC.
+rewrite /recip t subnKC // !poly_def; apply: eq_bigr.
+move=> [i ci] _ /=; congr (_ *: _).
+case h : (deg.+1 - size q <= i)%N.
+  rewrite mulr1n; congr (q`_ _); apply/eqP.
+  rewrite -(eqn_add2r (i - (deg.+1 - size q)).+1) subnK; last first.
+    by rewrite -(ltn_add2r (deg.+1 - size q)) subnK // addnC subnK.
+  rewrite -subSn // addnBA; last by apply/(leq_trans h)/leqnSn.
+  by rewrite addnS subnK // subKn.
+move/negP: h;move/negP; rewrite -ltnNge => h.
+rewrite mulr0n nth_default //.
+rewrite -(leq_add2r i.+1) -subSS subnK //. 
+by rewrite addnC -(subnK sq) leq_add2r.
+Qed.
+
+Lemma size_recip (q : {poly R}):
+   (size q <= deg.+1 -> size (recip deg q) <= deg.+1)%N.
+Proof. by move=> s; rewrite recipE // size_poly. Qed.
+
+(* TODO : to be added in poly.v *)
+Lemma poly_ext (n : nat) (E1 E2 : nat -> R) :
+  (forall i : nat, (i < n)%N -> E1 i = E2 i) ->
+  \poly_(i < n) E1 i = \poly_(i < n) E2 i.
+Proof.
+by move=> e; rewrite !poly_def; apply: eq_bigr; move=> [] i c _ /=; rewrite e.
+Qed.
+
+Lemma poly_extend (m n : nat) (E : nat -> R) :
+  (m <= n)%N -> (forall i : nat, (m <= i < n)%N -> E i = 0) ->
+  \poly_(i < m) E i = \poly_(i < n) E i.
+Proof.
+move=> c e; rewrite !poly_def. 
+rewrite (big_ord_widen n (fun i => E i *: 'X^i) c) big_mkcond /=.
+apply: eq_bigr; move=> [i ci] _ /=; case h: (i < m)%N => //.
+rewrite e; first by rewrite scale0r.
+by rewrite ci andbT leqNgt h.
+Qed.
+
+Lemma recipK (q : {poly R}) : (size q <= deg.+1)%N ->
+   recip deg (recip deg q) = q.
+Proof.
+move=> s; rewrite recipE; last by rewrite size_recip.
+rewrite -{2}[q]coefK (poly_extend s).
+  apply: poly_ext => i c; rewrite recipE // coef_poly.
+  rewrite subKn; last by rewrite -ltnS.
+  by rewrite (leq_ltn_trans _ (ltnSn deg)) // leq_subr.
+by move=> i c; rewrite nth_default //; case/andP: c.
+Qed.
+
+Lemma recipD : forall q1 q2 : {poly R}, (size q1 <= deg.+1)%N ->
+   (size q2 <= deg.+1)%N -> recip deg (q1 + q2) = recip deg q1 + recip deg q2.
+Proof.
+move=> q1 q2 s1 s2; rewrite !recipE // ?poly_def; last first.
+  by rewrite (leq_trans (size_add _ _)) // geq_max s1 s2.
+have t : forall i : 'I_deg.+1, true -> (q1 + q2)`_(deg.+1 - i.+1) *: 'X^i =
+                 q1`_(deg.+1 - i.+1) *: 'X^i + q2`_(deg.+1 - i.+1) *: 'X^i.
+  by move=> [i ci] _ /=; rewrite coef_add_poly scalerDl.
+by rewrite (eq_bigr _ t) big_split.
+Qed.
+
+Lemma recipZ (q : {poly R}) c :
+  (size q <= deg.+1)%N -> recip deg (c *: q) = c *: recip deg q.
+Proof.
+move=> s; rewrite !recipE // ?poly_def; last first.
+  case h : (c == 0); first by rewrite (eqP h) scale0r size_poly0.
+  by rewrite size_scale ?h.
+rewrite -[_ *: (\sum_(_ < _) _)]mul_polyC big_distrr; apply:eq_bigr.
+by move=> [i ci] _ /=; rewrite coefZ mul_polyC scalerA.
+Qed.
+
+Lemma recipP (q : {poly R}) : size q = deg.+1 ->
+     recip deg q = reciprocal_pol q.
+Proof. by move=> s; rewrite /recip s subnn expr0 mul1r. Qed.
+
+Lemma recip_scale_swap (q : {poly R}) c : c != 0 -> (size q <= deg.+1)%N ->
+    recip deg (q \scale c) = (c ^+ deg)%:P * recip deg q \scale c^-1.
+Proof.
+move=> c0 sz; rewrite !recipE //; last by rewrite size_scaleX.
+rewrite !poly_def big_distrr /=.
+rewrite [_ \scale c^-1]/scaleX_poly linear_sum; apply: eq_bigr.
+move=> [i ci] _ /=; rewrite scaleX_polyE coef_poly.
+case h: (deg - i < size q)%N; last first.
+  rewrite scale0r nth_default; last by rewrite leqNgt h.
+  by rewrite scale0r mulr0 comp_poly0.
+rewrite comp_polyM comp_polyC comp_polyZ poly_comp_exp comp_polyX.
+rewrite (mulrC 'X) exprMn scalerAl -!mul_polyC -!polyC_exp mulrA -!polyC_mul.
+rewrite mulrA mulrAC [q`_ _ * _]mulrC; congr (_ %:P * _); congr (_ * _).
+case h' : (i < deg)%N; first by rewrite exprVn expfB.
+have -> : i = deg by apply/eqP; move: ci; rewrite ltnS leq_eqVlt h' orbF.
+by rewrite subnn expr0 exprVn mulfV // expf_neq0.
+Qed.
+
+Lemma bern_coeffs_mon : forall i, (i <= deg)%N ->
+    relocate 'X^i = ('X - a%:P )^+(deg - i) * (b%:P - 'X)^+i.
 Proof.
 have nsba0 : ~~ (b - a == 0) by rewrite subr_eq0 eq_sym.
-move=> i leqip; rewrite /relocate size_polyXn.
-rewrite ltnNge ltnS leqip/=. rewrite shift_polyXn.
+move=> i leqip; rewrite /relocate /recip size_polyXn.
+rewrite ltnNge ltnS leqip/=; rewrite shift_polyXn.
 have -> // : forall c : R, c != 0 -> 
   (('X + (-1)%:P)^+ i) \scale c = ('X * c%:P + (-1)%:P)^+ i.
   move=> c hc; rewrite scaleX_polyE size_factor_expr.
@@ -612,9 +715,32 @@ have -> // : forall c:R, c != 0 ->
   reciprocal_pol (('X * c%:P + (-1)%:P) ^+ i) = (c%:P - 'X)^+i.
   move=> c hc; rewrite reciprocalX reciprocal_monom // addrC.
   by congr ((_ + _) ^+ _); rewrite mulrC mul_polyC scaleNr scale1r.
-rewrite subSS /shift_poly comp_polyM !poly_comp_exp comp_polyD linearN /=.
-rewrite !comp_polyX comp_polyC opprD -!polyC_opp opprK polyC_sub addrAC.
-by rewrite !addrA addrK.
+rewrite size_amul_expr // subSS /shift_poly comp_polyM !poly_comp_exp.
+rewrite comp_polyD linearN /= !comp_polyX comp_polyC opprD -!polyC_opp opprK.
+by rewrite polyC_sub addrAC !addrA addrK.
+Qed.
+
+(* TODO: change the condition on the size into a '<=', change the definition
+  of Mobius for that. *)
+Lemma relocateK (q : {poly R}) : (size q = deg.+1)%N ->
+  relocate (Mobius a b q) = (b-a) ^+deg *: q.
+Proof.
+move=> s; rewrite /relocate /Mobius.
+rewrite s succnK size_comp_poly2; last by rewrite size_XaddC.
+set sc := ((q \shift _) \scale _).
+set sz := size _.
+have dif : b - a != 0 by rewrite subr_eq0 eq_sym.
+have t : (size sc <= deg.+1)%N.
+  rewrite size_scaleX // size_comp_poly2; first by rewrite leq_eqVlt s eqxx.
+  by apply: size_XaddC.
+have t' : (sz <= deg.+1)%N by apply: size_recip.
+rewrite ltnNge t' /= -shift_polyD addNr.
+rewrite [_ \shift 0]/shift_poly addr0 comp_polyXr.
+(* TODO: we miss a scaleX_poly_linear canonical structure.
+  and lemma about composing scale operations. *)
+rewrite recip_scale_swap // recipK // /sc mul_polyC /scaleX_poly linearZ /=.
+rewrite -comp_polyA comp_polyM comp_polyX comp_polyC -mulrA -polyC_mul.
+by rewrite mulVf // mulr1 comp_polyXr linearZ /= shift_polyDK.
 Qed.
 
 End BernsteinPols.
@@ -797,3 +923,5 @@ rewrite -[-(m - a)]mulN1r invfM [(- 1)^-1]invrN invr1 -mulrA.
 rewrite [(b - m) * _]mulrC !mulrA mulNr mul1r opprK [-1 * _ ]mulrC 2!mulrN1.
 by rewrite opprK -/beta mulrC mul1r.
 Qed.
+
+End dicho_proofs.
