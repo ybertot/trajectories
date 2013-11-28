@@ -1243,26 +1243,17 @@ Lemma Bernstein_isolate deg a b (l : {poly R}): a < b -> (0 < size l)%N ->
    (size l <= deg.+1)%N -> alternate (Mobius deg a b l) -> one_root1 l a b.
 Proof.
 rewrite /Mobius /recip =>  altb s0 sz.
-rewrite size_scaleX; last first.
-  by move: altb; rewrite subr_eq0 ltr_def; case/andP.
-rewrite [X in (_ - size (polyseq X))%N]/shift_poly size_comp_poly2; last first.
-  by rewrite size_XaddC.
-case h : (size l) => [ | n].
-  move/eqP: h; rewrite size_poly_eq0; move/eqP => h; rewrite h /=.
-  rewrite /scaleX_poly /shift_poly !comp_poly0 /reciprocal_pol size_poly0.
-  by rewrite polyd0 mulr0 comp_poly0 polyseq0.
-move=> alt.
-have -> : a = a + (a - a) by rewrite addrN addr0.
-have -> : b = a + (b - a) by rewrite (addrC b) addNKr.
 have sss : size ((l \shift a) \scale (b - a)) = size l.
   rewrite size_scaleX; last by move: altb; rewrite -subr_gt0 lt0r; case/andP.
   by rewrite size_comp_poly2 // size_XaddC.
+rewrite sss => alt.
+have -> : a = a + (a - a) by rewrite addrN addr0.
+have -> : b = a + (b - a) by rewrite (addrC b) addNKr.
 apply: one_root1_shift.
 rewrite addrN -(mulr1 (b - a)) -(mulr0 (b - a)).
 apply: one_root1_scale; first by rewrite subr_gt0.
-move : (s0) (sz); rewrite -sss => t t'.
-apply: (one_root_reciprocal t t').
-by rewrite -[1]addr0; apply/one_root2_shift/desc; rewrite /recip sss h.
+move/desc: alt => alt'; move/one_root2_shift: alt'; rewrite addr0 -sss.
+by apply: one_root_reciprocal; rewrite sss.
 Qed.
 
 End DescOnArchiField.
