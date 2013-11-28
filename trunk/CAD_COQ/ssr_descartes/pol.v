@@ -542,8 +542,8 @@ Definition reciprocal_pol (R:ringType) (p: {poly R}):=
 Definition recip (R : ringType) (deg : nat) (q : {poly R}) : {poly R} :=
   'X ^+ (deg.+1 - (size q)) * reciprocal_pol q.
 
-Definition Mobius (R:ringType) (a b : R) (p: {poly R}) : {poly R} :=
-  recip (size p).-1 ((p \shift a) \scale (b - a)) \shift 1.
+Definition Mobius (R:ringType) (deg : nat) (a b : R) (p: {poly R}) : {poly R} :=
+  recip deg ((p \shift a) \scale (b - a)) \shift 1.
 
 Section ReciprocalPoly.
 

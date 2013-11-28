@@ -722,17 +722,16 @@ Qed.
 
 (* TODO: change the condition on the size into a '<=', change the definition
   of Mobius for that. *)
-Lemma relocateK (q : {poly R}) : (size q = deg.+1)%N ->
-  relocate (Mobius a b q) = (b-a) ^+deg *: q.
+Lemma relocateK (q : {poly R}) : (size q <= deg.+1)%N ->
+  relocate (Mobius deg a b q) = (b-a) ^+deg *: q.
 Proof.
 move=> s; rewrite /relocate /Mobius.
-rewrite s succnK size_comp_poly2; last by rewrite size_XaddC.
+rewrite size_comp_poly2; last by rewrite size_XaddC.
 set sc := ((q \shift _) \scale _).
 set sz := size _.
 have dif : b - a != 0 by rewrite subr_eq0 eq_sym.
 have t : (size sc <= deg.+1)%N.
-  rewrite size_scaleX // size_comp_poly2; first by rewrite leq_eqVlt s eqxx.
-  by apply: size_XaddC.
+  by rewrite size_scaleX // size_comp_poly2 //; apply: size_XaddC.
 have t' : (sz <= deg.+1)%N by apply: size_recip.
 rewrite ltnNge t' /= -shift_polyD addNr.
 rewrite [_ \shift 0]/shift_poly addr0 comp_polyXr.

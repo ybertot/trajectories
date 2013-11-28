@@ -635,20 +635,20 @@ Definition pos_in_interval (a b: R) (f: R -> R) :=
 Definition le_below_x (x: R) (f: R -> R) := 
   (forall y, 0 <= y -> y <= x -> f y <= f x).
 
-
+(* Here inv stands for "invariant" *)
 
 Definition inv (p: {poly  R}) :=
   forall epsilon, 0 < epsilon ->
     { x |
       [/\ (le_below_x x (horner p)),
-        {in >=%R x  &, pol_increasing p} &
+        {in <=%R x &, pol_increasing p} &
        (0 < x) && (x * p.[x] <= epsilon)] }.
 
 Definition inv2 (p : {poly R}) :=
   forall epsilon, 0 < epsilon ->  
      {x |
       [/\ (le_below_x x (horner p)),
-      {in >=%R x  &, pol_increasing p} &
+      {in <=%R x &, pol_increasing p} &
       [&& 0 < x, 0 < p.[x] & x * p.[x] <= epsilon]] }.
 
 
@@ -682,10 +682,7 @@ rewrite ler_add2r; apply: ler_trans (_ : z * (k * (z - y)) <= _).
 by rewrite ler_wpmul2l ? incf ?xy ? yz//;apply:(ler_trans x0). 
 Qed.
 
-
-
 (* Note that {poly R} is automatically converted into (seq R) *)
-
 
 Lemma all_pos_positive (p : {poly R}) x:
   all_ge0 p -> 0 <= x -> p.[x] >= 0.
@@ -697,7 +694,7 @@ Qed.
 
 
 Lemma all_pos_increasing (p : {poly R}):
-  all_ge0 p ->  {in >=%R 0  &, pol_increasing p}.
+  all_ge0 p ->  {in <=%R 0  &, pol_increasing p}.
 Proof.
 move=>  posp x y le0x le0y lexy; rewrite !horner_coef.
 apply: ler_sum => [] [i ihs] /= _.
@@ -706,7 +703,7 @@ by apply: ler_expn2r.
 Qed.
 
 Lemma one_root1_uniq p a b: one_root1 p a b ->
-     uniqueness (fun z => a <z <b /\ root p z).
+     uniqueness (fun z => a < z < b /\ root p z).
 Proof.
 move => [c [d [k [leqs pa nb dab]]]].
 move => z1 z2 [/andP [z1a z1b] /eqP rz1] [/andP [z2a z2b] /eqP rz2].
@@ -731,7 +728,7 @@ by rewrite rz1 rz2 addrN (pmulr_rle0 _ k0) subr_le0.
 Qed.
 
 Lemma one_root2_uniq p a: one_root2 p a ->
-     uniqueness (fun z => a <z /\ root p z).
+     uniqueness (fun z => a < z /\ root p z).
 Proof.
 move => [pp]; set c:=pp.1; set k := pp.2.
 move => [/andP [ac kp] nii slk].
@@ -766,7 +763,7 @@ have he := (half_gt0 ep).
 have hew:= (ltrW he).
 exists (half e); split.
     by move=> y y0 ye; apply: all_pos_increasing => //; apply: ler_trans ye.
-  by move=> y y1 hy hy1; apply: all_pos_increasing => //; apply:(ler_trans hew).
+  by move=> y y1 h h1; apply: all_pos_increasing => //; apply:(ler_trans hew).
 have -> :  half e* p.[half e] = ('X * p).[half e] - ('X * p).[0].
   by rewrite !hornerM !hornerX mul0r subr0.
 have le1: `|half e - 0| < e by rewrite subr0 ger0_norm // half_ltx.  
@@ -844,7 +841,7 @@ have desc_c: alternate_1 (a%:P) -> inv2 (a%:P).
   rewrite polyseqC;case (a==0) => //=; case ha: (0< a) => // _.
   move=> eps eps0; exists (eps / a); split.
       by move => y _ _; rewrite !hornerC.
-    by move => y1 y2 _ _ _; rewrite !hornerC.
+    by move => y1 y2 _ _ _ ; rewrite !hornerC.
   by rewrite hornerC ha divr_gt0 //= (divrK (unitf_gt0 ha)). 
 case sp : (nilp p).
   by move: sp; rewrite nil_poly; move /eqP => ->; rewrite mul0r add0r.
@@ -863,7 +860,7 @@ rewrite -oppr_gt0 in ha.
   set q := (p * 'X + a%:P).
   move=> il;move: (ih il _ ((half_gt0 ha)))=>  [x [H1 H2 /and3P [xp xpx xe]]].
   move: (ler_lt_trans xe (half_ltx ha)) => xe'.
-  have pxn : q.[x] < 0 by rewrite !hornerE mulrC -(opprK a) subr_lt0.
+  have qxn : q.[x] < 0 by rewrite !hornerE mulrC -(opprK a) subr_lt0.
   move: (maxS x (-a/p.[x])) => /andP []; set y := (_ + _) => yx val.
   have yx':= ltrW yx.
   have ppos: forall t, x <= t -> 0 < p.[t].
@@ -875,8 +872,8 @@ rewrite -oppr_gt0 in ha.
     have xtd:= (ler_trans xt aux).
     rewrite  mulrDr -addrAC addrC ltr_spaddl ?(mulr_gt0 (ppos _ xtd) dp)//. 
     rewrite !ler_add2r (ler_pmul2r (ltr_le_trans xp xt)).
-    apply:(H2 _ _ xt xtd aux). 
-  have qincr: forall t, x<=t -> {in >=%R t &, pol_increasing q}.
+    by apply:H2 => //.
+  have qincr: forall t, x<=t -> {in <=%R t &, pol_increasing q}.
     move => t xt u v ut vt; rewrite ler_eqVlt; case /orP => uv.
        by move /eqP:uv => ->.
     rewrite ltrW // - (addNKr  u v); apply: (qsincr _ _(ler_trans xt ut)).
@@ -935,8 +932,8 @@ move: (ih halt1 _ ltr01) =>  [x [plx pmonx /and3P [gx0 gpx0 lpx1]]].
 have e1px : 0 < eps / x by apply: mulr_gt0=> //=; rewrite invr_gt0.
 move: (ih halt1 _ e1px) => [v [plv pmonv /and3P [gv0 gpv0 lpve]]].
 rewrite -ha addr0.
-have aux: forall w, 0 <=w -> 0 <= p.[w] -> {in >=%R w &, pol_increasing p} ->
-   {in >=%R w &, pol_increasing ((p * 'X))}.
+have aux: forall w, 0 <=w -> 0 <= p.[w] -> {in <=%R w &, pol_increasing p} ->
+   {in <=%R w &, pol_increasing ((p * 'X))}.
   move => w wz pwz H s t sw tw st; rewrite !hornerE.
   move: (H _ _ sw tw st) (ler_trans pwz (H _ _ (lerr w) sw sw)) => pa pb.
     apply:(ler_pmul pb (ler_trans wz sw) pa st). 
@@ -1038,11 +1035,13 @@ by apply : ler_trans; apply: mulr_ge0 => //; rewrite ?(ltrW kpos) ?subr_ge0.
 Qed.
 
 
-Lemma one_root_reciprocal (p: {poly R}):
-  one_root2 (reciprocal_pol p) 1 -> one_root1 p 0 1.
+Lemma one_root_reciprocal (p: {poly R}) deg : 
+  (0 < size p)%N ->
+  (size p <= deg.+1)%N ->
+  one_root2 (recip deg p) 1 -> one_root1 p 0 1.
 Proof.
-move=> [x1k [/andP []]].
-set x1 := x1k.1; set k := x1k.2; set q := (reciprocal_pol p).
+move=> s0 sz [x1k [/andP []]].
+set x1 := x1k.1; set k := x1k.2; set q := (recip deg p).
 move => x1gt1 kp neg sl.
 have x10 : 0 < x1 by apply: ltr_trans x1gt1; exact: ltr01.
 set y' := x1 - q.[x1] / k.
@@ -1053,7 +1052,7 @@ have y'pos : 0 <= q.[y'].
   have aux: x1 <= x1 <= y' by rewrite (lerr x1) (ltrW y'1).
   rewrite - (ler_add2r (- q.[x1])) add0r; apply: ler_trans (sl _ _ aux).
   by rewrite /y' (addrC x1) addrK mulrN mulrC mulfVK.
-move: (@diff_xn_ub R (size p - 1)%N 1); set u := _ *+ _; move => up.
+move: (@diff_xn_ub R deg 1); set u := _ *+ _; move => up.
 set u':= Num.max 1 u.
 have uu': u <= u' by rewrite ler_maxr lerr orbT.
 have u1: 1 <= u' by rewrite ler_maxr lerr.
@@ -1069,7 +1068,7 @@ have ypos : 0 <  q.[y].
   rewrite (ler_lt_trans y'pos) // -subr_gte0.
   by apply: ltr_le_trans (sl _ _ aux); rewrite mulr_gt0 // subr_gt0.
 have y0: 0 < y by apply: ltr_trans y'y.
-pose k' := half ((k * x1 ^+ 2 * y ^- 1 ^+ (size p - 1))).
+pose k' := half ((k * x1 ^+ 2 * y ^- 1 ^+ deg)).
 have k'p : 0 < k'. 
   apply: half_gt0; rewrite mulr_gt0 //; first by rewrite mulr_gt0  // exprn_gt0.
   rewrite exprn_gt0 // invr_gt0 //.  
@@ -1104,8 +1103,11 @@ have b0 : 0 < b by apply: ltr_trans b'b.
 have ibp: 0 < b^-1 by rewrite invr_gt0.
 have inv_mono: forall x, 0 < x -> Num.sg (q.[x]) = Num.sg (p.[x^-1]).
   move => x xp.
-  rewrite (horner_reciprocal _ ( unitf_gt0 xp)).
-  rewrite sgrM {1} gtr0_sg? mul1r // exprn_gt0 //.
+  rewrite /q /recip.
+  rewrite hornerM (horner_reciprocal _ ( unitf_gt0 xp)) hornerXn.
+  rewrite !sgrM gtr0_sg ?mul1r //.
+    by rewrite gtr0_sg // ?mul1r // exprn_gt0.
+  by rewrite exprn_gt0.
 rewrite /one_root1 /pos_in_interval /neg_in_interval1.
 have res1:pos_in_interval 0 b^-1 (horner p).
   move => x /andP[x0 xb].
@@ -1135,17 +1137,30 @@ split => //.
 move => x z bvx xz zav. 
   rewrite ler_eqVlt in xz; move/orP: xz => [xz | xz].
   by rewrite (eqP xz) !addrN mulr0 lterr.  
-have x0: 0 < x by apply: (ltr_le_trans ibp bvx). 
+have x0: 0 < x by apply: (ltr_le_trans ibp bvx).
 have z0 : 0 < z by apply: (ltr_trans x0).
-have -> : p.[x] = x ^+ (size p - 1) * q.[x^-1].
-  by rewrite horner_reciprocal1 // unitf_gt0. 
-have -> : p.[z] = z ^+ (size p - 1) * q.[z^-1].
-  by rewrite horner_reciprocal1//  unitf_gt0.  
-set s :=  (size p - 1)%N.
+have lmrec : forall yy, 0 < yy -> p.[yy] = yy ^+ deg * q.[yy^-1].
+  move => yy yy0.
+  rewrite hornerM horner_reciprocal1 ?unitf_gt0 // hornerXn exprVn mulrA.
+  case h : (size p == 1)%N.
+    rewrite (eqP h) !subSS !subn0 mulfV // expf_neq0 //.
+    by move: yy0; rewrite lt0r; case/andP.
+  have h' : size p = (size p).-2.+2.
+    case h'': (size p) => [ | [ | sp]] //.
+      by move: s0; rewrite h'' ltn0.
+    by move: h; rewrite h'' eqxx.
+  rewrite -expfB; last first. 
+    rewrite h' subSS prednK; last by rewrite h'.
+    rewrite -{2}[deg]subn0 ltn_sub2l //.
+      by rewrite -ltnS (leq_trans _ sz) // h'.
+    by rewrite h'.
+  by rewrite h' !subSS subKn ?subn0 // -ltnS -h'.
+rewrite (lmrec x x0) (lmrec z z0).
+set s :=  deg.
 set t1 := (x ^+ s - z ^+ s) * q.[x^-1].
 set t3 := q.[x^-1] - q.[z^-1].
 rewrite (_ : _ * _ - _ = t1 + t3 *  z ^+ s); last first.
-  by rewrite /t1 !mulrDl !mulNr ![ _.[_] * _]mulrC !addrA addrNK.
+  by rewrite /t1 !mulrDl !mulNr ![_.[_] *_]mulrC !addrA addrNK.
 set t2 := t3 * _.
 pose k1 := -k'; pose k2 := k' + k'.
 have k2p : k2 = (k * x1 ^+ 2 * y ^-1 ^+ s) by apply: double_half.
@@ -1215,20 +1230,39 @@ rewrite mulrA ler_pmul2r; last by rewrite subr_gte0.
 rewrite /= /e  divfK ?lterr //. 
 Qed.
 
-
-Lemma Bernstein_isolate a b l: a < b ->
-   alternate (R:=R) (Mobius l a b) -> one_root1 l a b.
+Lemma alternate_MX (p : {poly R}) k:
+  alternate ('X ^+ k * p) -> alternate p.
 Proof.
-rewrite /Mobius =>  altb alt.
-rewrite (_ : a = a + (a - a)); last by rewrite addrN addr0.
-rewrite (_ : b = a + (b - a)); last by rewrite (addrC b) addNKr.  
+elim: k => [ | k IH]; first by rewrite expr0 mul1r.
+case h : (p == 0); first by rewrite (eqP h) mulr0.
+rewrite mulrC polyseqMXn //=; last by rewrite h.
+by rewrite ltrr eqxx -polyseqMXn ?h // mulrC.
+Qed.
+
+Lemma Bernstein_isolate deg a b (l : {poly R}): a < b -> (0 < size l)%N ->
+   (size l <= deg.+1)%N -> alternate (Mobius deg a b l) -> one_root1 l a b.
+Proof.
+rewrite /Mobius /recip =>  altb s0 sz.
+rewrite size_scaleX; last first.
+  by move: altb; rewrite subr_eq0 ltr_def; case/andP.
+rewrite [X in (_ - size (polyseq X))%N]/shift_poly size_comp_poly2; last first.
+  by rewrite size_XaddC.
+case h : (size l) => [ | n].
+  move/eqP: h; rewrite size_poly_eq0; move/eqP => h; rewrite h /=.
+  rewrite /scaleX_poly /shift_poly !comp_poly0 /reciprocal_pol size_poly0.
+  by rewrite polyd0 mulr0 comp_poly0 polyseq0.
+move=> alt.
+have -> : a = a + (a - a) by rewrite addrN addr0.
+have -> : b = a + (b - a) by rewrite (addrC b) addNKr.
+have sss : size ((l \shift a) \scale (b - a)) = size l.
+  rewrite size_scaleX; last by move: altb; rewrite -subr_gt0 lt0r; case/andP.
+  by rewrite size_comp_poly2 // size_XaddC.
 apply: one_root1_shift.
-rewrite addrN (_ : (b-a) = (b-a) * 1); last by rewrite mulr1.
-rewrite (_ : 0 =  (b-a) * 0); last by rewrite mulr0.
+rewrite addrN -(mulr1 (b - a)) -(mulr0 (b - a)).
 apply: one_root1_scale; first by rewrite subr_gt0.
-apply: one_root_reciprocal => //.
-rewrite -[1]addr0; apply: one_root2_shift.
-by apply: desc.
+move : (s0) (sz); rewrite -sss => t t'.
+apply: (one_root_reciprocal t t').
+by rewrite -[1]addr0; apply/one_root2_shift/desc; rewrite /recip sss h.
 Qed.
 
 End DescOnArchiField.
