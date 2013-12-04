@@ -1,6 +1,6 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat binomial seq choice.
 Require Import fintype bigop ssralg poly ssrnum ssrint rat.
-Require Import pol polyrcf.
+Require Import pol poly_normal polyrcf qe_rcf_th desc.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -9,6 +9,7 @@ Unset Printing Implicit Defensive.
 Import GRing.Theory.
 Import Num.Theory Num.Def.
 Local Open Scope ring_scope.
+
 
 
 (* A technical binomial identity for the proof of de Casteljau *)
@@ -409,7 +410,7 @@ invariant : l + r = b - a *)
 
 Section DeCasteljauAlgo.
 
-Variable R : archiFieldType.
+Variable R : rcfType.
 
 Variables l r : R.
 
@@ -480,7 +481,7 @@ End DeCasteljauAlgo.
 
 Section DeltaSeqs.
 
-Variable R : archiFieldType.
+Variable R : rcfType.
 
 Definition delta (i j : nat) : R := if (i == j) then 1 else 0.
 
@@ -573,7 +574,7 @@ End DeltaSeqs.
 
 Section BernsteinPols.
 
-Variable R : archiFieldType.
+Variable R : rcfType.
 Variables (a b : R).
 Variable deg : nat.
 
@@ -746,7 +747,7 @@ End BernsteinPols.
 
 Section dicho_proofs.
 
-Variable R : archiFieldType.
+Variable R : rcfType.
 
 Lemma dicho'_delta_bern (a b m : R) k p (alpha := (b - m) * (b - a)^-1)
   (beta := ((m - a) * (b - a)^-1)) :
@@ -924,3 +925,172 @@ by rewrite opprK -/beta mulrC mul1r.
 Qed.
 
 End dicho_proofs.
+
+Section isolation_tree.
+
+Variable A : Type.
+
+Inductive root_info : Type := 
+  | Exact (x : A)
+  | One_in (x y : A)
+  | Zero_in (x y : A)
+  | Unknown (x y : A).
+
+End isolation_tree.
+
+Section isolation_algorithm.
+
+Variable R : rcfType.
+
+Definition head_root (f : R -> R) (l : seq (root_info R)) : Prop :=
+  match l with
+    [::] => True
+  | Exact x::tl => True
+  | One_in x y::tl => f x != 0
+  | Zero_in x y::tl => f x != 0
+  | Unknown x y::tl => f x != 0
+  end.
+
+Definition unique_root_for (f : R -> R) (x y : R) : Prop :=
+  exists z, x < z < y /\ f z = 0 /\ (forall u, x < u < y -> f u = 0 -> u = z).
+
+Definition no_root_for (f : R -> R) (x y : R) : Prop :=
+  forall z, x < z < y -> f z != 0.
+
+Fixpoint read (f : R -> R) (l : seq (root_info R)) : Prop :=
+  match l with
+    [::] => True
+  | Exact x::tl => f x = 0 /\ read f tl
+  | One_in x y::tl => unique_root_for f x y /\ head_root f tl /\ read f tl
+  | Zero_in x y::tl => no_root_for f x y /\ head_root f tl /\ read f tl
+  | Unknown x y::tl => read f tl
+  end.
+
+Fixpoint isol_rec n d a b (l : seq R) acc : seq (root_info R) :=
+  match n with
+    O => Unknown a b::acc
+  | S p =>
+    match changes l with
+    | 0%nat => Zero_in a b::acc
+    | 1%nat => One_in a b::acc
+    | _ =>
+    let c := (a + b)/2%:R in
+    let l2 := mkseq (dicho (2%:R^-1) (2%:R^-1) d (fun i => l`_i)) d.+1 in
+    isol_rec p d a c (mkseq (dicho' (2%:R^-1) (2%:R^-1) (fun i => l`_i)) d.+1)
+        (if l2`_0 == 0 then
+           Exact c::isol_rec p d c b l2 acc
+        else isol_rec p d c b l2 acc)
+    end
+  end.
+
+Lemma ch1_correct : forall l d a b q,
+       q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+       changes l = 1%N -> unique_root_for (horner q) a b.
+Admitted.
+
+Lemma ch0_correct : forall l d a b q,
+       q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+       changes l = 0%N -> no_root_for (horner q) a b.
+Admitted.
+
+
+Lemma bern0_a : forall (a b : R) deg i, a != b -> (0 < deg)%N ->
+   (i <= deg)%N -> (bernp a b deg i).[a] == 0 = (i != 0)%N.
+Proof.
+move=> a b deg i anb dn0 id.
+rewrite /bernp hornerMn !hornerE !horner_exp !hornerE subrr.
+rewrite mulrn_eq0 !mulf_eq0 !expf_eq0 eqxx andbT invr_eq0 expf_eq0 dn0 andTb.
+rewrite subr_eq0 [b == a]eq_sym (negbTE anb) orFb lt0n andbF orbF.
+by rewrite eqn0Ngt bin_gt0 id.
+Qed.
+
+Lemma bernp_first_coeff0 :
+  forall l d (a b : R) q, 
+  a != b -> (0 < d)%N  ->
+  q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+  (l`_0 == 0) = (q.[a] == 0).
+Proof.
+move=> l d a b q anb dn0 qq.
+rewrite qq horner_sum big_ord_recl !hornerE.
+rewrite (_ : \sum_(i < d) _ = 0). 
+  by rewrite addr0 mulf_eq0 bern0_a // eqxx orbF.
+apply: big1; move=> [i ci] _ /=; apply/eqP.
+by rewrite hornerE mulf_eq0 bern0_a // [bump _ _ == _]eq_sym neq_bump orbT.
+Qed.
+
+Lemma isol_rec_head_root : forall c l d a b q acc,
+  q.[a] != 0 -> head_root (horner q) (isol_rec c d a b l acc).
+Proof.
+elim=> [// | c IH l d a b q acc qa0 /=].
+by case tst : (changes l) => [ | [ | cl]] //=; apply: IH.
+Qed.
+
+Lemma isol_rec_correct : forall c l d a b q acc,
+  a != b -> (0 < d)%N ->
+ q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+ read (horner q) acc -> head_root (horner q) acc ->
+ read (horner q) (isol_rec c d a b l acc).
+Proof.
+elim=> [// | c IH].
+move=> l d a b q acc anb dn0 qq ht hh /=.
+case tst : (changes l) => [/= | [/= | nc]].
+    by split=> //; apply (ch0_correct qq).
+  by split=> //; apply (ch1_correct qq).
+have help : 2%:R^-1 = ((a + b) / 2%:R - a)/(b - a).
+  rewrite -[X in _ / _ - X]double_half -/(half (a + b)) half_lin half_lin1.
+  rewrite opprD addrCA !addrA addNr add0r /half mulrAC mulfV ?mul1r //.
+  by rewrite subr_eq0 eq_sym.
+have help2 : 2%:R^-1 = (b - (a + b)/2%:R)/(b - a).
+  rewrite -[X in X - _ / _]double_half -/(half(a + b)) half_lin half_lin1.
+  rewrite opprD addrCA addrK [- _ + _]addrC /half mulrAC mulfV ?mul1r //.
+  by rewrite subr_eq0 eq_sym.
+have qh' : 
+  q = \sum_(i < d.+1)
+         ((mkseq (dicho' 2%:R^-1 2%:R^-1 [eta nth 0 l]) d.+1)`_i)%:P *
+         bernp a ((a + b) / 2%:R) d i.
+  have qt : forall i : 'I_d.+1, true ->
+                  ((mkseq (dicho' 2%:R^-1 2%:R^-1 [eta nth 0 l]) d.+1)`_i)%:P *
+                       bernp a ((a + b) / 2%:R) d i =
+                  (dicho' ((b - half (a + b))/(b - a))
+                          ((half (a + b) - a)/(b - a)) [eta nth 0 l] i)%:P *
+                  bernp a ((a + b) / 2%:R) d i.
+    by move => [i ci] _; rewrite -help -help2 /= nth_mkseq.
+  rewrite (eq_bigr _ qt); apply: dicho'_correct => //.
+  rewrite -[X in _ == X]double_half half_lin; apply/negP.
+  by move/eqP/half_inj/addrI/eqP; rewrite eq_sym; apply/negP.
+have qh : 
+  q = \sum_(i < d.+1)
+         ((mkseq (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l]) d.+1)`_i)%:P *
+         bernp ((a + b) / 2%:R) b d i.
+  have qt : forall i : 'I_d.+1, true ->
+                ((mkseq (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l]) d.+1)`_i)%:P *
+                     bernp ((a + b) / 2%:R) b d i =
+                (dicho ((b - half (a + b))/(b - a))
+                       ((half (a + b) - a)/(b - a)) d [eta nth 0 l] i)%:P *
+                  bernp ((a + b) / 2%:R) b d i.
+    by move => [i ci] _; rewrite -help -help2 /= nth_mkseq.
+  rewrite (eq_bigr _ qt); apply: dicho_correct => //.
+  rewrite -[X in _ == X]double_half half_lin; apply/negP.
+  by move/eqP/half_inj/addIr/eqP; apply/negP.
+apply: (IH) => //.
+    rewrite -[X in X == _]double_half -/(half (a + b)) half_lin.
+    by apply/negP;move/eqP/half_inj/addrI/eqP => abs;case/negP: anb.
+  case ts0: (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l] 0 == 0).
+    rewrite /=; split.
+      apply/eqP; rewrite -(bernp_first_coeff0 _ dn0 qh).
+        by rewrite nth_mkseq. 
+      rewrite -[X in _ == X]double_half half_lin; apply/negP.
+      by move/eqP/half_inj/addIr/eqP; apply/negP.
+    apply: IH => //.
+    rewrite -[X in _ == X]double_half half_lin; apply/negP.
+    by move/eqP/half_inj/addIr/eqP; apply/negP.
+  apply: IH => //.
+  rewrite -[X in _ == X]double_half half_lin; apply/negP.
+  by move/eqP/half_inj/addIr/eqP; apply/negP.
+case ts0: (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l] 0 == 0); first by [].
+apply: isol_rec_head_root.
+rewrite -(bernp_first_coeff0 _ dn0 qh); last first.
+  rewrite -[X in _ == X]double_half half_lin; apply/negP.
+  by move/eqP/half_inj/addIr/eqP; apply/negP.
+by rewrite nth_mkseq; move/negbT: ts0.
+Qed.
