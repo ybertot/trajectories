@@ -1,6 +1,6 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat binomial seq choice.
 Require Import fintype bigop ssralg poly ssrnum ssrint rat.
-Require Import pol poly_normal polyrcf qe_rcf_th desc.
+Require Import pol poly_normal polyrcf qe_rcf_th desc realalg.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -572,6 +572,27 @@ Qed.
 
 End DeltaSeqs.
 
+Section weighted_sum.
+
+(* TODO : I don't know what the right type is. *)
+Variable R : rcfType.
+
+Lemma size_weighted_sum_leq n m (f : nat -> R) (g : nat -> {poly R}) :
+  (forall i : 'I_n, (size (g i) <= m)%N) ->
+  (size (\sum_(i < n) f i *: g i)%R <= m)%N.
+Proof.
+elim: n => [_ | n IH cg]; first by rewrite !big_ord0 size_poly0.
+rewrite big_ord_recr /= (leq_trans (size_add _ _)) // geq_max.
+have sn : (size (f n *: g n) <= m)%N.
+  case fn : (f n == 0); first by rewrite (eqP fn) scale0r size_poly0.
+  rewrite size_scale; last by rewrite fn.
+  by apply: (cg ord_max).
+rewrite sn andbT; apply: IH.
+by move=> [i ci] /=; apply: (cg (Ordinal _%N)); rewrite ltnS ltnW.
+Qed.
+
+End weighted_sum.
+
 Section BernsteinPols.
 
 Variable R : rcfType.
@@ -695,12 +716,18 @@ have -> : i = deg by apply/eqP; move: ci; rewrite ltnS leq_eqVlt h' orbF.
 by rewrite subnn expr0 exprVn mulfV // expf_neq0.
 Qed.
 
+
 Lemma bern_coeffs_mon : forall i, (i <= deg)%N ->
-    relocate 'X^i = ('X - a%:P )^+(deg - i) * (b%:P - 'X)^+i.
+    relocate 'X^i = ((b - a)^+deg * 'C(deg, i)%:R^-1)%:P * bernp (deg - i).
 Proof.
 have nsba0 : ~~ (b - a == 0) by rewrite subr_eq0 eq_sym.
-move=> i leqip; rewrite /relocate /recip size_polyXn.
-rewrite ltnNge ltnS leqip/=; rewrite shift_polyXn.
+move=> i leqip.
+rewrite /bernp polyC_mul mulrAC -mulr_natr !mulrA -polyC_mul mulfV; last first.
+  by rewrite expf_eq0 (negbTE nsba0) andbF.
+rewrite mul1r -!mulrA -polyC_muln -polyC_mul bin_sub // mulfV; last first.
+  by rewrite pnatr_eq0 -lt0n bin_gt0.
+rewrite subKn // mulr1.
+rewrite /relocate /recip size_polyXn ltnNge ltnS leqip /= shift_polyXn.
 have -> // : forall c : R, c != 0 -> 
   (('X + (-1)%:P)^+ i) \scale c = ('X * c%:P + (-1)%:P)^+ i.
   move=> c hc; rewrite scaleX_polyE size_factor_expr.
@@ -721,8 +748,144 @@ rewrite comp_polyD linearN /= !comp_polyX comp_polyC opprD -!polyC_opp opprK.
 by rewrite polyC_sub addrAC !addrA addrK.
 Qed.
 
-(* TODO: change the condition on the size into a '<=', change the definition
-  of Mobius for that. *)
+Lemma scaleS (p : {poly R}) (u v : R) :
+  (p \scale u) \scale v = p \scale (u * v).
+Proof.
+rewrite /scaleX_poly -comp_polyA comp_polyM !comp_polyC comp_polyX.
+by rewrite -mulrA -polyC_mul [v * u]mulrC.
+Qed.
+
+Lemma scaleZ (p : {poly R}) u v : (u *: p) \scale v = u *: (p \scale v).
+Proof.
+by rewrite /scaleX_poly linearZ.
+Qed.
+
+Lemma scaleD (p q : {poly R}) u : (p + q) \shift u = p \shift u + (q \shift u).
+Proof.
+by rewrite /scaleX_poly linearD.
+Qed.
+
+(* TODO : move to another section and abstract over deg a b, maybe *)
+Lemma recip0 : recip deg (0 :{poly R}) = 0.
+Proof.
+rewrite recipE; last by rewrite size_poly0.
+by rewrite poly_def; apply: big1 => i _; rewrite polyseq0 nth_nil scale0r.
+Qed.
+
+Lemma Mobius0 : Mobius deg a b (0 : {poly R}) = 0.
+Proof.
+by rewrite /Mobius /shift_poly linear0 /scaleX_poly !linear0 recip0 linear0.
+Qed.
+
+Lemma recip_weighted_sum n (f : nat -> R) (g : nat -> {poly R}) :
+  (forall i : 'I_n, (size (g i) <= deg.+1)%N) ->
+  recip deg (\sum_(i < n) f i *: g i) = \sum_(i < n) f i *: (recip deg (g i)).
+Proof.
+elim: n => [ | n IH cg]; first by rewrite !big_ord0 recip0.
+rewrite !big_ord_recr /=.
+rewrite recipD; first last.
+    case fn0 : (f n == 0); first by rewrite (eqP fn0) scale0r size_poly0.
+    by rewrite size_scale ?fn0 // (cg ord_max).
+  apply: size_weighted_sum_leq.
+  by move=> [i ci]; apply: (cg (Ordinal _)); rewrite ltnS ltnW.
+rewrite IH ?recipZ //; first by apply: (cg ord_max).
+by move=> [i ci]; apply: (cg (Ordinal _)); rewrite ltnS ltnW.
+Qed.
+
+Lemma recip_sum n (g : nat -> {poly R}) :
+  (forall i : 'I_n, (size (g i) <= deg.+1)%N) ->
+  recip deg (\sum_(i < n) g i) = \sum_(i < n) recip deg (g i).
+move=> cg; have bigc : forall i : 'I_n, true -> g i = 1 *: g i.
+  by move=> i _; rewrite scale1r.
+rewrite (eq_bigr _ bigc).
+rewrite (recip_weighted_sum (fun i => 1%R)); last by [].
+by apply: eq_bigr=> i _; rewrite scale1r.
+Qed.
+
+Lemma MobiusZ x (p : {poly R}) :
+(* TODO: remove the size condition, but need to do it also for recipZ *)
+   (size p <= deg.+1)%N ->
+   Mobius deg a b (x *: p) = x *: Mobius deg a b p.
+Proof.
+move=> s; rewrite /Mobius /shift_poly /scaleX_poly /=.
+rewrite !linearZ recipZ; last first.
+  rewrite /= !size_comp_poly2 //; first by rewrite size_XaddC.
+  by rewrite size_XmulC // subr_eq0 eq_sym.
+by rewrite /= linearZ.   
+Qed.
+
+Lemma Mobius_weighted_sum n (f : nat -> R) (g : nat -> {poly R}) :
+  (forall i : 'I_n, (size (g i) <= deg.+1)%N) ->
+  Mobius deg a b (\sum_(i < n) f i *: g i) =
+  \sum_(i < n) f i *: Mobius deg a b (g i).
+Proof.
+rewrite /Mobius /shift_poly /scaleX_poly !linear_sum /= => cg.
+have cbig : forall i: 'I_n, true ->
+               ((f i *: g i) \Po ('X + a%:P) \Po 'X * (b - a)%:P) =
+                       f i *: ((g i \Po ('X + a%:P)) \Po 'X * (b - a)%:P). 
+  by move=> i _; rewrite !linearZ.
+rewrite (eq_bigr _ cbig).
+rewrite (@recip_weighted_sum _ _ (fun i => (g i \shift a) \scale _));
+  last first.
+  move=> i; rewrite !size_comp_poly2; first by apply: cg.
+    by apply: size_XaddC.
+  by apply: size_XmulC; rewrite subr_eq0 eq_sym.
+by rewrite linear_sum; apply: eq_bigr => i _; rewrite linearZ.
+Qed.
+
+Lemma relocate_weighted_sum n (f : nat -> R) (g : nat -> {poly R}) :
+  (forall i : 'I_n, (size (g i) <= deg.+1)%N) ->
+  relocate (\sum_(i < n) f i *: g i) = \sum_(i < n) f i *: relocate (g i).
+Proof.
+rewrite /relocate /shift_poly /scaleX_poly linear_sum /= => cg.
+have s : (size (\sum_(i < n) (f i *: g i))%R <= deg.+1)%N.
+  apply: (leq_trans (size_sum _ _ _)).
+  by apply/bigmax_leqP => i _; apply/(leq_trans (size_scale_leq _ _))/cg.
+rewrite ltnNge s linear_sum /=. 
+have s' : forall i : 'I_n,
+   (size (f i *: g i \Po ('X + (-1)%:P) \Po ('X * (b - a)%:P))%R <= deg.+1)%N.
+  move=> i; rewrite !size_comp_poly2.
+      by apply/(leq_trans (size_scale_leq _ _))/cg.
+    by apply: size_XaddC.
+   by apply: size_XmulC; rewrite subr_eq0 eq_sym.
+rewrite (@recip_sum _ (fun i => (f i *: g i \shift -1) \scale (b - a)) s').
+rewrite linear_sum.
+apply: eq_bigr => i _ /=.
+rewrite ltnNge cg /=.
+rewrite /shift_poly /scaleX_poly !linearZ recipZ ?linearZ //=.
+rewrite !size_comp_poly2 //; first by apply: size_XaddC.
+by apply: size_XmulC; rewrite subr_eq0 eq_sym.
+Qed.
+
+Lemma scalep1 (p : {poly R}) : p \scale 1 = p.
+Proof.
+by rewrite /scaleX_poly mulr1 comp_polyXr.
+Qed.
+
+Lemma MobiusK (q : {poly R}) : (size q <= deg.+1)%N -> 
+  Mobius deg a b (relocate q) = (b-a) ^+deg *: q.
+Proof.
+move=> s; rewrite /relocate /Mobius ltnNge s /= /shift_poly.
+rewrite -[X in (_ \Po (_ + _)) \Po (_ + X%:P)]opprK [(- - _)%:P]polyC_opp.
+have ba : b - a != 0 by rewrite subr_eq0 eq_sym.
+have bav : (b - a)^-1 != 0 by rewrite invr_eq0.
+have s1 : (size (q \Po ('X + (-1)%:P)) <= deg.+1)%N.
+  by rewrite size_comp_poly2 // size_XaddC.
+have rr : GRing.rreg ((b - a) ^+ deg).
+  by rewrite /GRing.rreg; apply: mulIf; rewrite expf_eq0 (negbTE ba) andbF.
+rewrite comp_polyXaddC_K !recip_scale_swap //; last first.
+    by rewrite size_scaleX // mulrC rreg_size ?size_recip.
+  by rewrite mulrC rreg_size ?size_recip.
+rewrite !mul_polyC recipZ; last first.
+  by apply: size_recip; rewrite size_comp_poly2 // size_XaddC.
+rewrite !scalerA exprVn mulVf ?scale1r; last first.
+  by rewrite expf_eq0 (negbTE ba) andbF.
+rewrite invrK recipK; last by rewrite size_comp_poly2 // size_XaddC.
+rewrite !scaleZ scaleS mulfV // scalep1 linearZ /=. 
+rewrite -[X in (_ \Po _) \Po (_ + X%:P)]opprK (polyC_opp (-1)).
+by rewrite comp_polyXaddC_K.
+Qed.
+
 Lemma relocateK (q : {poly R}) : (size q <= deg.+1)%N ->
   relocate (Mobius deg a b q) = (b-a) ^+deg *: q.
 Proof.
@@ -741,6 +904,125 @@ rewrite [_ \shift 0]/shift_poly addr0 comp_polyXr.
 rewrite recip_scale_swap // recipK // /sc mul_polyC /scaleX_poly linearZ /=.
 rewrite -comp_polyA comp_polyM comp_polyX comp_polyC -mulrA -polyC_mul.
 by rewrite mulVf // mulr1 comp_polyXr linearZ /= shift_polyDK.
+Qed.
+
+Lemma size_bernp : forall i, (i <= deg)%N -> size (bernp i) = deg.+1.
+Proof.
+move=> i id; rewrite /bernp.
+Search (_ * _ *+ _) in GRing.
+rewrite -!mulrnAl -polyC_muln -mulrA.
+rewrite size_Cmul. 
+  rewrite size_monicM.
+      rewrite size_exp_XsubC.
+      have <- : (-1)%:P * ('X - b%:P) = (b%:P - 'X).
+        by rewrite mulrBr polyC_opp !mulNr -polyC_mul mul1r opprK addrC mul1r.
+      rewrite exprMn_comm; last by apply: mulrC.
+      rewrite -polyC_exp size_Cmul; last first.
+        rewrite exprnP; apply: expfz_neq0.
+        by rewrite oppr_eq0 oner_neq0.
+      by rewrite size_exp_XsubC addSn /= addnS subnKC.
+    by apply/monic_exp/monicXsubC.
+  rewrite exprnP expfz_neq0 // -size_poly_eq0.
+  have -> : b%:P - 'X = (-1)%:P * 'X + b%:P.
+    by rewrite addrC polyC_opp mulNr mul1r.
+  rewrite size_MXaddC size_polyC.
+  by rewrite polyC_opp oppr_eq0 (negbTE (oner_neq0 _)) andFb.
+rewrite mulrn_eq0 negb_or.
+rewrite invr_neq0 ?andbT; first by rewrite -lt0n bin_gt0.
+by rewrite expf_neq0 // subr_eq0 eq_sym.
+Qed.
+
+Lemma relocate0 (p : {poly R}) : (size p <= deg.+1)%N ->
+  (relocate p == 0) = (p == 0).
+move=> s; apply/idP/idP; last first.
+  move/eqP=> ->; rewrite /relocate /shift_poly /scaleX_poly !linear0.
+  by rewrite size_poly0 ltn0 recip0 linear0.
+have bmax : (b - a) ^+ deg != 0 by rewrite expf_neq0 // subr_eq0 eq_sym.
+move/eqP=> r0; rewrite -[p]mul1r -[1]/1%:P -(mulVf bmax) polyC_mul -mulrA.
+rewrite !mul_polyC -MobiusK // r0 /Mobius /shift_poly /scaleX_poly !linear0.
+by rewrite recip0 linear0 scaler0.
+Qed.
+  
+Lemma monomial_free n (l : nat -> R):
+  \sum_(i < n) l i *: 'X ^+i == 0 -> forall i, (i < n)%N -> l i = 0.
+Proof.
+elim:n => [ | n IH] /=; first by move=> _ i; rewrite ltn0.
+rewrite big_ord_recr /=.
+case r : (l n == 0).
+  rewrite (eqP r) scale0r addr0; move/IH=>{IH} II i.
+  rewrite ltnS leq_eqVlt =>/orP; case.
+    by move/eqP=> ->;apply/eqP.
+  by apply: II.
+rewrite addr_eq0 => abs.
+case/negP: (negbT (ltnn n)).
+rewrite [X in (X <= _)%N](_ : _ = size (l n *: 'X^n)); last first.
+  by rewrite -mul_polyC size_Cmul ?r // size_polyXn.
+rewrite -size_opp -(eqP abs) size_weighted_sum_leq //.
+by move=> [i ci]; rewrite /= size_polyXn.
+Qed.
+
+Lemma bernp_free : forall (l : nat -> R),
+   \sum_(i < deg.+1) l i *: bernp i = 0 -> forall i : 'I_deg.+1, l i = 0.
+Proof.
+have bman0 : b - a != 0 by rewrite subr_eq0 eq_sym.
+move/(expf_neq0 deg): (bman0) => bmadeg.
+move=> l; rewrite -[X in X = 0]scale1r -(mulVf bmadeg) -scalerA.
+rewrite -relocateK; last first.
+  apply (leq_trans (size_sum _ _ _)); apply/bigmax_leqP.
+  move=> i _; apply: (leq_trans (size_scale_leq _ _)).
+  by rewrite size_bernp ?leqnn //; case : i => i /=; rewrite ltnS.
+move/eqP; rewrite scaler_eq0 invr_eq0 (negbTE bmadeg) orFb.
+have t : forall i : 'I_deg.+1, (size (bernp i) <= deg.+1)%N.
+  move=> [i ci] /=; rewrite size_bernp; first by apply: leqnn.
+  by rewrite -ltnS.
+rewrite (Mobius_weighted_sum l t) {t}.
+have xdi : forall i, (i < deg.+1)%N -> size (('X : {poly R}) ^+i) = i.+1.
+  by move=> i; rewrite -['X]subr0 size_exp_XsubC.
+have  t: forall i : nat, (i < deg.+1)%N -> Mobius deg a b (bernp i) = 
+                     ('C(deg, i)%:R)%:P * 'X ^+ (deg - i).
+  move=> i ci.
+  rewrite (_ : bernp i = 
+            ('C(deg, i)%:R / (b - a)^+ deg)%:P *
+             (((b - a) ^+ deg / 'C(deg, deg - i)%:R)%:P *
+                 bernp (deg - (deg - i)))); last first.
+    rewrite mulrA -polyC_mul !mulrA mulfVK //.
+    rewrite bin_sub // mulfV ?mul1r ?subKn // pnatr_eq0.
+    by rewrite -lt0n bin_gt0.
+  have di : (deg - i <= deg)%N by rewrite leq_subr.
+  rewrite -bern_coeffs_mon // !mul_polyC MobiusZ; last first.
+    rewrite /relocate /shift_poly /scaleX_poly xdi; last by rewrite ltnS.
+    rewrite ltnNge ltnS di /=.
+    rewrite size_comp_poly2; last by rewrite size_XaddC.
+    rewrite size_recip // !size_comp_poly2 ?xdi ?ltnS //.
+      by rewrite size_XaddC.
+    by rewrite size_XmulC.
+  by rewrite MobiusK ?xdi ?ltnS // -!mul_polyC mulrA -polyC_mul mulfVK.
+rewrite relocate0; last first.
+  have T : forall i : 'I_deg.+1,
+               (size (Mobius deg a b (bernp i)) <= deg.+1)%N.
+    move=> [i ci]; rewrite t //.
+    rewrite size_Cmul; last by rewrite pnatr_eq0 -lt0n bin_gt0.
+    by rewrite xdi; rewrite ltnS leq_subr.
+  apply: (@size_weighted_sum_leq R deg.+1 deg.+1 l
+                (fun i => Mobius deg a b (bernp i)) T).
+rewrite -(big_mkord (fun _ => true)
+             (fun i => l i *: Mobius deg a b (bernp i))) big_nat_rev /= add0n.
+have t' : forall i, (0 <= i < deg.+1)%N ->
+               l (deg.+1 - i.+1)%N *: Mobius deg a b (bernp (deg.+1 - i.+1)) =
+               (l (deg - i)%N * ('C(deg, deg - i))%:R) *: 'X^i.
+  move=> i;case/andP=> _ ci.
+  rewrite subSS t; last by rewrite ltnS leq_subr.
+  by rewrite -!mul_polyC mulrA polyC_mul subKn.
+rewrite (eq_big_nat _ _ t') big_mkord => t2.
+have t3 := (@monomial_free _
+                 (fun i => l (deg - i)%N * ('C(deg, deg - i))%:R) t2).
+move=> [i ci] /=.
+have t4 : ('C(deg, i))%:R != 0 :> R.
+  by rewrite pnatr_eq0 -lt0n bin_gt0.
+apply: (mulIf t4); rewrite mul0r.
+have t5: (i <= deg)%N by rewrite -ltnS.
+rewrite -(subKn t5); apply: t3.
+by rewrite ltnS leq_subr.
 Qed.
 
 End BernsteinPols.
@@ -940,7 +1222,9 @@ End isolation_tree.
 
 Section isolation_algorithm.
 
-Variable R : rcfType.
+Variable R0 : archiFieldType.
+
+Definition R := {realclosure R0}.
 
 Definition head_root (f : R -> R) (l : seq (root_info R)) : Prop :=
   match l with
@@ -970,7 +1254,7 @@ Fixpoint isol_rec n d a b (l : seq R) acc : seq (root_info R) :=
   match n with
     O => Unknown a b::acc
   | S p =>
-    match changes l with
+    match changes (seqn0 l) with
     | 0%nat => Zero_in a b::acc
     | 1%nat => One_in a b::acc
     | _ =>
@@ -983,14 +1267,124 @@ Fixpoint isol_rec n d a b (l : seq R) acc : seq (root_info R) :=
     end
   end.
 
-Lemma ch1_correct : forall l d a b q,
-       q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
-       changes l = 1%N -> unique_root_for (horner q) a b.
+Lemma cons_polyK : forall p : {poly R},
+  cons_poly p.[0] (\poly_(i < (size p).-1) p`_i.+1) = p.
+move=> p; rewrite cons_poly_def addrC -[X in _ = X]coefK.
+case sz : (size p) => [ | s].
+  move/eqP: sz; rewrite size_poly_eq0 => /eqP => sz.
+  by rewrite sz horner0 polyC0 add0r /= polyseq0 !polyd0 mul0r.
+rewrite [s.+1.-1]/= !poly_def big_ord_recl; congr (_ + _).
+  by rewrite expr0 alg_polyC horner_coef0.
+rewrite big_distrl; apply: eq_bigr; move=> [i ci] _ /=.
+by rewrite -scalerAl /bump leq0n add1n exprS mulrC.
+Qed.
+
+Lemma poly_border (p : {poly R}) a b:
+  a < b -> (forall x, a < x < b -> 0 < p.[x]) -> 0 <= p.[a].
+Proof.
+move=> ab cp; case p0: (p.[a] < 0); last by rewrite lerNgt p0.
+have := (cons_polyK (p \Po ('X + a%:P))); rewrite cons_poly_def.
+have -> : (p \Po ('X + a%:P)).[0] = p.[a].
+  by rewrite horner_comp hornerD hornerC hornerX add0r.
+move=> qdec.
+have : p = p \Po ('X + a%:P) \Po ('X - a%:P) by rewrite comp_polyXaddC_K.
+rewrite -qdec comp_polyD comp_polyC comp_polyM comp_polyX.
+set q := \poly_(_ < _) _; move=> pq.
+have [ub pu] := (poly_itv_bound (q \Po ('X - a%:P)) a b).
+have ub0 : 0 <= ub by rewrite (ler_trans _ (pu a _)) // lerr andTb ltrW.
+set ub' := ub + 1.
+have ub'0 : 0 < ub' by rewrite ltr_paddl.
+have ublt : ub < ub' by rewrite ltr_spaddr // ltr01.
+pose x := minr (a - p.[a]/ub') (half (a + b)).
+have xitv2 : a < x < b. 
+  by case/andP: (mid_between ab)=> A B; rewrite ltr_minr ltr_spaddr ?A //=
+    ?ltr_minl ?B ?orbT // -mulNr mulr_gt0 // ?invr_gt0 // oppr_gt0.
+have xitv : a <= x <= b by case/andP: xitv2 => *; rewrite !ltrW //.
+have := cp _ xitv2.
+rewrite [X in X.[x]]pq hornerD hornerC hornerM hornerXsubC.
+rewrite -[X in 0 <  _ + X]opprK subr_gt0 => abs.
+have : x - a <= -p.[a] / ub' by rewrite ler_subl_addl ler_minl mulNr lerr.
+rewrite -(ler_pmul2r ub'0) mulfVK; last first.
+  by move:ub'0; rewrite lt0r=>/andP=>[[]].
+have xma :0 < x - a by rewrite subr_gt0; case/andP: xitv2.
+move: (pu _ xitv); rewrite lter_norml; case/andP => _ {pu}.
+rewrite -[_ <= ub](ler_pmul2r xma) => pu2.
+rewrite mulrC; have := (ltr_le_trans abs pu2) => {pu2 abs} abs ab'.
+have := (ler_lt_trans ab' abs); rewrite ltr_pmul2r // ltrNge;case/negP.
+by rewrite ltrW.
+Qed.
+
+Lemma one_root1_unique :
+  forall q a b, one_root1 q a b -> unique_root_for (horner q) a b.
+Proof.
+move=> q a b [c [d [k [itv]]]].
+rewrite /pos_in_interval /neg_in_interval1 /slope_bounded2.
+move=> itv1 itv2 sl.
+case/andP: itv=> ac; case/andP=> cd; case/andP=> db k0.
+have qd0 : q.[d] <= 0.
+  have : (0 <= (-q).[d]).
+    by apply: (poly_border db) => x xitv; rewrite hornerN lter_oppE itv2.
+  by rewrite hornerN lter_oppE.
+have qc0 : 0 <= q.[c] by apply/ltrW/itv1; rewrite ac lerr.
+have qcd0 : (-q).[c] <= 0 <= (-q).[d] by rewrite !hornerN !lter_oppE qd0 qc0.
+have [x xin] := (poly_ivt (ltrW cd) qcd0).
+rewrite /root hornerN oppr_eq0 =>/eqP => xr.
+exists x.
+split.
+  by case/andP: xin=> cx xd; rewrite (ltr_le_trans ac cx) (ler_lt_trans xd db).
+split; first by [].
+move=> u; case/andP=> au ub qu0.
+case cu : (u <= c).
+  have : a < u <= c by rewrite cu au.
+  by move/itv1; rewrite qu0 ltrr.
+case ud : (d < u).
+  have : d < u < b by rewrite ud ub.
+  by move/itv2; rewrite qu0 ltrr.
+have cu' : c <= u.
+  by apply: ltrW; rewrite ltrNge cu.
+have ud' : u <= d.
+  by rewrite lerNgt ud.
+case/andP: xin=> cx xd.
+case ux : (u <= x).
+  have := (sl _ _ cu' ux xd).
+  rewrite qu0 xr subrr -(mulr0 k) ler_pmul2l // subr_le0 => xu.
+  by apply: ler_anti; rewrite ux xu.
+have xu : x <= u.
+  by apply: ltrW; rewrite ltrNge ux.
+  have := (sl _ _ cx xu ud').
+  rewrite qu0 xr subrr -(mulr0 k) ler_pmul2l // subr_le0 => ux'.
+  by apply: ler_anti; rewrite xu ux'.
+Qed.
+
+Lemma bernp_free (f : nat -> R) d (a b : R) :
+  \sum_(i < d.+1) (f i)%:P * bernp a b d i = 0 ->
+  forall i, (i < d.+1)%N -> f i = 0.
+move=> s0 i ib.
+have : bernp a b d i = 0.
+rewrite /bernp.
+have t := bern_coeffs_mon.
+
+Search relocate.
+Print bernp.
+
+Lemma ch1_correct l d a b (q : {poly R}):
+  a < b -> q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+    changes (seqn0 l) = 1%N -> unique_root_for (horner q) a b.
+Proof.
+move=> ab qq c1.
+case sg : (0 <= (seqn0 q)`_0).
+  suff : one_root1 q a b by apply: one_root1_unique.
+  apply: Bernstein_isolate => //.
+    rewrite lt0n size_poly_eq0; apply/negP => /eqP => abs.
+Search _ bernp.
+move=> [c [c' [k [itv]]]].
+    rewrite /pos_in_interval /neg_in_interval1 /slope_bounded2.
+unfold unique_root_for.
 Admitted.
 
-Lemma ch0_correct : forall l d a b q,
+Lemma ch0_correct : forall l d a b q, q != 0 ->
        q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
-       changes l = 0%N -> no_root_for (horner q) a b.
+       changes (seqn0 l) = 0%N -> no_root_for (horner q) a b.
 Admitted.
 
 
@@ -1022,19 +1416,19 @@ Lemma isol_rec_head_root : forall c l d a b q acc,
   q.[a] != 0 -> head_root (horner q) (isol_rec c d a b l acc).
 Proof.
 elim=> [// | c IH l d a b q acc qa0 /=].
-by case tst : (changes l) => [ | [ | cl]] //=; apply: IH.
+by case tst : (changes (seqn0 l)) => [ | [ | cl]] //=; apply: IH.
 Qed.
 
 Lemma isol_rec_correct : forall c l d a b q acc,
-  a != b -> (0 < d)%N ->
+  a != b -> (0 < d)%N -> q != 0 ->
  q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
  read (horner q) acc -> head_root (horner q) acc ->
  read (horner q) (isol_rec c d a b l acc).
 Proof.
 elim=> [// | c IH].
-move=> l d a b q acc anb dn0 qq ht hh /=.
-case tst : (changes l) => [/= | [/= | nc]].
-    by split=> //; apply (ch0_correct qq).
+move=> l d a b q acc anb dn0 qn0 qq ht hh /=.
+case tst : (changes (seqn0 l)) => [/= | [/= | nc]].
+    by split=> //; apply (ch0_correct qn0 qq).
   by split=> //; apply (ch1_correct qq).
 have help : 2%:R^-1 = ((a + b) / 2%:R - a)/(b - a).
   rewrite -[X in _ / _ - X]double_half -/(half (a + b)) half_lin half_lin1.
