@@ -431,7 +431,7 @@ Definition dicho p b i := de_casteljau b (p - i) i.
 
 
 (* the computation of the value at index (k, n) only uses values (i, j) 
-   for n <=  i <= n + k (a triangle, up and right *)
+   for n <=  i <= n + k (a triangle, up and right) *)
 
 
 
@@ -716,7 +716,6 @@ have -> : i = deg by apply/eqP; move: ci; rewrite ltnS leq_eqVlt h' orbF.
 by rewrite subnn expr0 exprVn mulfV // expf_neq0.
 Qed.
 
-
 Lemma bern_coeffs_mon : forall i, (i <= deg)%N ->
     relocate 'X^i = ((b - a)^+deg * 'C(deg, i)%:R^-1)%:P * bernp (deg - i).
 Proof.
@@ -943,6 +942,32 @@ rewrite !mul_polyC -MobiusK // r0 /Mobius /shift_poly /scaleX_poly !linear0.
 by rewrite recip0 linear0 scaler0.
 Qed.
   
+Lemma Mobius_bernp i : (i <= deg)%N ->
+  Mobius deg a b (bernp i) = ('C(deg, i))%:R *: 'X ^+ (deg - i).
+Proof.
+move=> ci; set u := _%:R; rewrite -(mul1r (bernp i)) -[1]/(1%:P).
+have t : (b - a)^+deg/('C(deg, i))%:R != 0.
+  apply: mulf_neq0; first by rewrite expf_neq0 // subr_eq0 eq_sym.
+  by rewrite invr_neq0 // pnatr_eq0 -lt0n bin_gt0.
+rewrite -(mulVf t) {t} polyC_mul -mulrA.
+rewrite -bin_sub // -[X in bernp X](subKn ci) -bern_coeffs_mon; last first.
+  by rewrite leq_subr.
+rewrite mul_polyC MobiusZ.
+  rewrite MobiusK; last first.
+    by rewrite size_polyXn ltnS leq_subr.
+  rewrite invfM scalerA mulrAC mulVf; last first.
+    by rewrite expf_neq0 // subr_eq0 eq_sym.
+  by rewrite mul1r invrK bin_sub.
+(* TODO : make a seprate lemma from this goal. *)
+rewrite /relocate.
+rewrite ltnNge size_polyXn (leq_ltn_trans _ (ltnSn _)) ?leq_subr //=.
+rewrite size_comp_poly2; last by rewrite size_XaddC.
+rewrite size_recip // !size_comp_poly2 //.
+    by rewrite size_polyXn (leq_ltn_trans _ (ltnSn _)) // leq_subr.
+  by rewrite size_XaddC.
+by rewrite size_XmulC // subr_eq0 eq_sym.
+Qed.
+
 Lemma monomial_free n (l : nat -> R):
   \sum_(i < n) l i *: 'X ^+i == 0 -> forall i, (i < n)%N -> l i = 0.
 Proof.
@@ -1356,26 +1381,142 @@ have xu : x <= u.
   by apply: ler_anti; rewrite xu ux'.
 Qed.
 
-Lemma bernp_free (f : nat -> R) d (a b : R) :
-  \sum_(i < d.+1) (f i)%:P * bernp a b d i = 0 ->
-  forall i, (i < d.+1)%N -> f i = 0.
-move=> s0 i ib.
-have : bernp a b d i = 0.
-rewrite /bernp.
-have t := bern_coeffs_mon.
+Lemma alternate_1_neq0 (p : {poly R}) :
+   alternate_1 p -> p != 0.
+case/alternate_1P=> l1 [v [l2 [h1]]] _ _ _.
+by rewrite -nil_poly h1 {h1}; case: l1 => //.
+Qed.
 
-Search relocate.
-Print bernp.
+Lemma all_ge0_cat {R : realDomainType} :
+   {morph (@all_ge0 R) : x y / x ++ y >-> x && y}.
+Proof. by elim=> [ | a x IH y] //=; rewrite IH andbA. Qed.
 
+Lemma alternate_r d (p : {poly R}) a :
+  ( 0 < a) -> alternate p -> (size p <= d)%N -> alternate (p + a *: 'X ^+ d).
+Proof.
+move=> a0 /alternate_P [l1 [x [l2 [y [l3 [P1 P2 P3 P4]]]]]] ps.
+apply/alternate_P; exists l1, x, l2, y.
+exists (l3 ++ (mkseq (fun i => 0) (d - size p)) ++ [:: a]).
+split => //; first last.
+  case: P4 => P4 P5 P6; split=> //.
+  rewrite !all_ge0_cat P6 andTb; apply/andP; split; last by rewrite /= ltrW.
+  by apply/(all_nthP 0); move => i; rewrite size_mkseq => W; rewrite nth_mkseq.
+(* With "apply/all_nthP"
+  The previous line introduces an existential that is uncaptured. *)
+set m := mkseq _ _; set l := _ ++ _.
+have reorg : l = p ++ m ++ [:: a] by rewrite P1 /m -!(catA, cat_cons).
+have saxd : size (a *: 'X^d) = d.+1.
+  by rewrite -mul_polyC size_Cmul ?size_polyXn; last rewrite neqr_lt a0 orbT.
+have spax : size (p + a *: 'X^d) = d.+1.
+  by rewrite addrC size_addl // saxd ltnS.
+have sreo : size (p ++ m) = d by rewrite size_cat /m size_mkseq addnC subnK.
+apply: (@eq_from_nth _ 0).
+by rewrite spax reorg catA size_cat sreo /= addn1.
+move=> i; rewrite spax ltnS leq_eqVlt=> ib; rewrite coef_add_poly coefZ.
+case/orP: ib => [/eqP -> | iltd].
+  rewrite [p`_d]nth_default // add0r coefXn eqxx mulr1 reorg catA.
+  by rewrite nth_cat sreo ltnn subnn.
+move: (iltd); rewrite coefXn ltn_neqAle=> /andP [df _]; rewrite (negbTE df).
+rewrite mulr0 addr0 reorg catA nth_cat sreo iltd nth_cat.
+case tst: (i < size p)%N => //.
+rewrite /m nth_mkseq. 
+  by rewrite nth_default // leqNgt tst.
+by rewrite ltn_subRL addnC subnK // leqNgt tst.
+Qed.
+
+Lemma changes1_alternate d (l : seq R) f : (size l <= d.+1)%N ->
+         (forall i, (i < d.+1)%N -> (0 < f i)) ->
+         changes (seqn0 l) = 1%N -> 0 <= (seqn0 l)`_0 = true ->
+         alternate (\sum_(i < d.+1) (l`_i * f i *: 'X^(d - i))).
+Proof.
+elim: d l f => [| d IH] /=.
+  case => /= [ | a [ | *]] // f cf _.
+  case: (a != 0) => //=; by rewrite mulr0 ltrr addn0.
+case => [| a l] //= f; rewrite ltnS.
+case h: (a!=0) => //=; last first.
+  rewrite -[X in 0 <= X]/((seqn0 l)`_0) => h1 h2 h3 h4.
+  rewrite big_ord_recl /=.
+  have := negbFE h => /eqP => ->; rewrite mul0r scale0r add0r.
+  have t : forall i : 'I_d.+1, true ->
+               l`_i * f (bump 0 i) *: 'X^(d.+1 - bump 0 i) =
+                 l`_i * f (i.+1) *: 'X^(d - i).
+    by move=> i /=; rewrite /bump leq0n add1n subSS.
+  rewrite (eq_bigr _ t) {t}.
+  have h2' : forall i : nat, (i < d.+1)%N -> (0 < f i.+1).
+    by move=> i ci; apply: h2; rewrite ltnS.
+  by apply: IH h2' _ _.
+case alt: (a * head 0 (seqn0 l) < 0)%R; last first.
+  rewrite add0n => h1 h2 h3 h4.
+  have h2' : forall i : nat, (i < d.+1)%N -> (0 < f i.+1).
+    by move=> i ci; apply: h2; rewrite ltnS.
+  have alt' : alternate (\sum_(i < d.+1) (l`_i * f i.+1) *: 'X^(d - i)).
+    apply: (IH l (fun i => f i.+1)) => //.
+    have agt0 : 0 < a by rewrite ltr_neqAle eq_sym (negbTE h).
+    rewrite -(ler_pmul2l agt0) mulr0 lerNgt; apply: negbT; exact alt.
+  rewrite big_ord_recl subn0 nth0 /= addrC; apply: alternate_r => //.
+    rewrite pmulr_lgt0; first by rewrite ltr_neqAle eq_sym h h4.
+    by apply: h2.
+  have asl : forall i : 'I_d.+1,
+                (size (('X^(d.+1 - bump 0 i):{poly R})) <= d.+1)%N.
+    by move=> i; rewrite /bump leq0n add1n subSS size_polyXn ltnS leq_subr.
+(*   have t := 
+        (size_weighted_sum_leq (fun i : nat => l`_i * f (bump 0 i)) asl).
+has a bugged behavior, in my opinion. *)
+  apply: (@size_weighted_sum_leq _ _ _ (fun i => (l`_i * f (bump 0 i)))
+              (fun i => 'X^(d.+1 - bump 0 i)) asl) => {t}.
+rewrite add1n; move=> sl cf [c0] ap.
+apply/alternate_P; rewrite /= -/R.
+(* Here l3 should be nil, y should be a, l2 should be the reverse prefix of
+  l until x, x should be the last element from
+   (seqn0 l) and l1 should be the tail of l after that element. *)
+
+
+Search alternate.
 Lemma ch1_correct l d a b (q : {poly R}):
-  a < b -> q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+  (size l <= d.+1)%N ->
+  a < b -> q = \sum_(i < d.+1) l`_i *: bernp a b d i ->
     changes (seqn0 l) = 1%N -> unique_root_for (horner q) a b.
 Proof.
-move=> ab qq c1.
-case sg : (0 <= (seqn0 q)`_0).
+move=> s ab qq c1.
+case sg : (0 <= (seqn0 l)`_0).
   suff : one_root1 q a b by apply: one_root1_unique.
-  apply: Bernstein_isolate => //.
-    rewrite lt0n size_poly_eq0; apply/negP => /eqP => abs.
+  apply: (@Bernstein_isolate _ d) => //.
+      rewrite lt0n size_poly_eq0; apply/negP => /eqP => abs.
+      move/eqP: qq; rewrite abs eq_sym=> /eqP.
+      move: (ab); rewrite ltr_def eq_sym; case/andP => ab' _ sb.
+      have := bernp_free ab' sb => bf {ab' sb abs sg}.
+      have abs : (seqn0 l) = [::].
+        move: l s bf {a b q ab c1}.
+        elim: d => [ | d IH].
+          move=> [ | a l]; first by [].
+          case: l => /=; last by [].
+          by move=> _ l0; have := (l0 ord0) => /= => ->; rewrite eqxx /=.
+        move=> [ | a l] /=; first by [].
+        rewrite ltnS=> s l0; have := (l0 ord0) => /= => ->; rewrite eqxx /=.
+        apply: IH => //; move=> [i] /=; rewrite -ltnS => ci.
+        by have := (l0 (Ordinal ci)).
+      by move: c1; rewrite abs.
+    rewrite qq; apply: size_weighted_sum_leq.
+    move=> [i ci]; rewrite size_bernp ?leqnn //.
+    by move: ab; rewrite ltr_def eq_sym; case/andP.
+  have anb : a != b.
+    by move: ab; rewrite ltr_def eq_sym; case/andP.
+  rewrite qq Mobius_weighted_sum //; last by move=> [i ci]; rewrite size_bernp.
+  have t : forall i : 'I_d.+1, true -> l`_i *: Mobius d a b (bernp a b d i) =
+                        (l`_i * ('C(d, i))%:R) *: 'X ^+ (d - i).
+    by move=> [i ci]; rewrite Mobius_bernp //= scalerA.
+  rewrite (eq_bigr _ t) {t}.
+
+Search relocate bernp.
+Check size_bernp.
+Check alternate.
+  move=> {ab qq s}.
+      Search nth (_ :: _).
+apply: (l0 (Ordinal (ltn_trans ci (ltnSn _)))).
+apply: (l0 (Ordinal _)).
+ssrnum.
+rewrite lt0r.
+apply/bernp_free.
 Search _ bernp.
 move=> [c [c' [k [itv]]]].
     rewrite /pos_in_interval /neg_in_interval1 /slope_bounded2.
