@@ -577,18 +577,18 @@ Section weighted_sum.
 (* TODO : I don't know what the right type is. *)
 Variable R : rcfType.
 
-Lemma size_weighted_sum_leq n m (f : nat -> R) (g : nat -> {poly R}) :
-  (forall i : 'I_n, (size (g i) <= m)%N) ->
-  (size (\sum_(i < n) f i *: g i)%R <= m)%N.
+Lemma size_weighted_sum_leq (A :eqType) (r : seq A) m (f : A -> R)
+   (g : A -> {poly R}) :
+  (forall i, i \in r -> (size (g i) <= m)%N) ->
+  (size (\sum_(i <- r) f i *: g i)%R <= m)%N.
 Proof.
-elim: n => [_ | n IH cg]; first by rewrite !big_ord0 size_poly0.
-rewrite big_ord_recr /= (leq_trans (size_add _ _)) // geq_max.
+elim: r => [_ | n r IH cg]; first by rewrite big_nil polyseq0.
+rewrite big_cons (leq_trans (size_add _ _)) // geq_max.
 have sn : (size (f n *: g n) <= m)%N.
   case fn : (f n == 0); first by rewrite (eqP fn) scale0r size_poly0.
   rewrite size_scale; last by rewrite fn.
-  by apply: (cg ord_max).
-rewrite sn andbT; apply: IH.
-by move=> [i ci] /=; apply: (cg (Ordinal _%N)); rewrite ltnS ltnW.
+  by apply: (cg n); rewrite in_cons eqxx.
+by rewrite sn /=; apply: IH => i ir; apply: cg; rewrite in_cons ir orbT.
 Qed.
 
 End weighted_sum.
@@ -786,7 +786,7 @@ rewrite recipD; first last.
     case fn0 : (f n == 0); first by rewrite (eqP fn0) scale0r size_poly0.
     by rewrite size_scale ?fn0 // (cg ord_max).
   apply: size_weighted_sum_leq.
-  by move=> [i ci]; apply: (cg (Ordinal _)); rewrite ltnS ltnW.
+  by move=> [i ci] _; apply: (cg (Ordinal _)); rewrite ltnS ltnW.
 rewrite IH ?recipZ //; first by apply: (cg ord_max).
 by move=> [i ci]; apply: (cg (Ordinal _)); rewrite ltnS ltnW.
 Qed.
@@ -1028,8 +1028,7 @@ rewrite relocate0; last first.
     move=> [i ci]; rewrite t //.
     rewrite size_Cmul; last by rewrite pnatr_eq0 -lt0n bin_gt0.
     by rewrite xdi; rewrite ltnS leq_subr.
-  apply: (@size_weighted_sum_leq R deg.+1 deg.+1 l
-                (fun i => Mobius deg a b (bernp i)) T).
+    apply: size_weighted_sum_leq => i _; apply: T.
 rewrite -(big_mkord (fun _ => true)
              (fun i => l i *: Mobius deg a b (bernp i))) big_nat_rev /= add0n.
 have t' : forall i, (0 <= i < deg.+1)%N ->
@@ -1411,7 +1410,7 @@ have spax : size (p + a *: 'X^d) = d.+1.
   by rewrite addrC size_addl // saxd ltnS.
 have sreo : size (p ++ m) = d by rewrite size_cat /m size_mkseq addnC subnK.
 apply: (@eq_from_nth _ 0).
-by rewrite spax reorg catA size_cat sreo /= addn1.
+  by rewrite spax reorg catA size_cat sreo /= addn1.
 move=> i; rewrite spax ltnS leq_eqVlt=> ib; rewrite coef_add_poly coefZ.
 case/orP: ib => [/eqP -> | iltd].
   rewrite [p`_d]nth_default // add0r coefXn eqxx mulr1 reorg catA.
@@ -1422,6 +1421,41 @@ case tst: (i < size p)%N => //.
 rewrite /m nth_mkseq. 
   by rewrite nth_default // leqNgt tst.
 by rewrite ltn_subRL addnC subnK // leqNgt tst.
+Qed.
+
+Lemma all_eq0_seqn0  (l : seq R) : (head 0 (seqn0 l) == 0) = (all_eq0 l).
+Proof.
+elim: l=> [ | a l IH]; first by rewrite eqxx.
+by rewrite /=; case a0: (a == 0) => //=.
+Qed.
+
+Lemma seqn0_last (l : seq R) : head 0 (seqn0 l) != 0 ->
+  exists l1 x l2, [&& l == l1 ++ x :: l2, x != 0 & all_eq0 l2].
+Proof.
+elim: l => [ | a l IH] /=; first by rewrite eqxx.
+case a0: (a == 0) => /=.
+  move/IH=> [l1 [x [l2 /andP [p1 p2]]]]; exists (a::l1), x, l2.
+  by rewrite (eqP p1) cat_cons eqxx p2.
+move=> an0.
+case h: (all_eq0 l).
+  by exists nil, a, l; rewrite /= an0 h eqxx.
+move/negbT: h. 
+rewrite -all_eq0_seqn0; move/IH=>[l1 [x [l2 /andP [p1 p2]]]].
+by exists (a::l1), x, l2; rewrite (eqP p1) p2 cat_cons eqxx.
+Qed.
+
+Lemma first_neg_no_change_all_le0 (l : seq R) :
+  head 0 (seqn0 l) < 0 -> changes (seqn0 l) = 0%N -> all_le0 l.
+Proof.
+elim: l=> [ | a l IH] //=; case a0: (a==0)=> /= hsn0.
+  by rewrite ler_eqVlt a0 /=; apply: IH => //; apply/eqP.
+case h0: (head 0 (seqn0 l) == 0); move: (h0).
+  rewrite all_eq0_seqn0 (ltrW hsn0) /= => al0 _.
+  by move: al0; apply: sub_all => x x0; rewrite (eqP x0) lerr.
+move=> _ /eqP; rewrite (ltrW hsn0) addn_eq0 /= => /andP [p1]/eqP.
+apply: IH.
+rewrite ltr_neqAle h0 /= -(ler_nmul2l hsn0) mulr0.
+by move: p1; rewrite eqb0 ltrNge negbK.
 Qed.
 
 Lemma changes1_alternate d (l : seq R) f : (size l <= d.+1)%N ->
@@ -1459,54 +1493,200 @@ case alt: (a * head 0 (seqn0 l) < 0)%R; last first.
   have asl : forall i : 'I_d.+1,
                 (size (('X^(d.+1 - bump 0 i):{poly R})) <= d.+1)%N.
     by move=> i; rewrite /bump leq0n add1n subSS size_polyXn ltnS leq_subr.
-(*   have t := 
-        (size_weighted_sum_leq (fun i : nat => l`_i * f (bump 0 i)) asl).
-has a bugged behavior, in my opinion. *)
-  apply: (@size_weighted_sum_leq _ _ _ (fun i => (l`_i * f (bump 0 i)))
-              (fun i => 'X^(d.+1 - bump 0 i)) asl) => {t}.
+  apply: size_weighted_sum_leq=> i _; apply: asl.
 rewrite add1n; move=> sl cf [c0] ap.
+have negl : head 0 (seqn0 l) < 0.
+  have ap' : 0 < a by rewrite ltr_neqAle eq_sym h ap.
+  by rewrite -(ltr_pmul2l ap') mulr0 alt.
+have int: head 0 (seqn0 l) != 0 by rewrite neqr_lt negl.
+move/seqn0_last: (int) => [l1 [x [l2 /andP [/eqP p1 /andP[p2 p3]]]]].
 apply/alternate_P; rewrite /= -/R.
-(* Here l3 should be nil, y should be a, l2 should be the reverse prefix of
-  l until x, x should be the last element from
-   (seqn0 l) and l1 should be the tail of l after that element. *)
+have cfp : forall j, (j < d.+2)%N ->
+      (\sum_(i < d.+2) ((a :: l)`_i * f i) *: 'X^(d.+1 - i))`_j =
+      ((a :: l)`_(d.+1 - j) * f (d.+1 - j)%N).
+  move=> j cj.
+  have cut1 : (0 <= d.+1 - j)%N by rewrite leq0n.
+  have cut2 : (d.+1 - j <= d.+2)%N.
+    by rewrite (leq_trans _ (ltnW (ltnSn d.+1))) // leq_subr.
+  rewrite -(big_mkord (fun i => true)
+                (fun i => ((a :: l)`_i * f i) *: 'X^(d.+1 - i))).
+  rewrite (big_cat_nat _ xpredT  _ cut1 cut2) /= coef_add_poly.
+  have cut3 : (d.+1 - j <= (d.+1 - j).+1)%N by rewrite leqnSn.
+  have cut4 : ((d.+1 - j) < d.+2)%N by rewrite ltnS leq_subr.
+  rewrite (big_cat_nat _ xpredT _ cut3 cut4) /= coef_add_poly.
+  rewrite big_nat1 coefZ subKn; last by rewrite -ltnS.
+  rewrite coefXn eqxx mulr1 [X in X + (_ + _)](_ : _ = 0).
+    rewrite add0r [X in _ + X](_ : _ = 0); first by rewrite addr0.
+    rewrite nth_default //.
+    apply: size_weighted_sum_leq=> i; rewrite mem_index_iota => /andP [ci c'].
+    rewrite size_polyXn.
+    move: ci; rewrite -(ltn_add2r j) subnK; last by rewrite -ltnS.
+    move=> ci; rewrite -(ltn_add2r i) subnK; first by rewrite addnC.
+    by rewrite -ltnS.    
+  have t : forall i, (0 <= i < d.+1 - j)%N ->
+             ((a :: l)`_i * f i) *: 'X^(d.+1 - i) =
+             ((a :: l)`_i * f i) *: 'X^(d - j - i) * 'X^j.+1.
+    move=> i /andP [_ ci]; rewrite -scalerAl -exprD addnS subnAC subnK.
+      by rewrite subSn // -ltnS (leq_trans ci).
+    rewrite -(leq_add2r i) subnK; last first.
+      by rewrite -ltnS (leq_trans ci).
+    move: ci; rewrite -(ltn_add2r j) subnK.
+      by rewrite ltnS addnC.
+    by rewrite -ltnS.
+  by rewrite (@eq_big_nat _ _ _ _ _ _ _ t) -big_distrl coefMXn leqnn.
+exists (mkseq (fun i => 0) (d.+1 - size l)++(rev l2)), (x * f (size l1).+1),
+  (mkseq (fun i => (rev l1)`_i * f ((size l1) - i)%N) (size l1)),
+  (a * f 0%N), [::].
+have am : all_eq0 (mkseq (fun  _ => (0:R)) (d.+1 - size l)).
+  rewrite /all_eq0; apply/(all_nthP 0); rewrite size_mkseq=> i ci.
+  by rewrite nth_mkseq.
+have apos : 0 < a * f 0%N.
+  by apply: mulr_gt0; first rewrite ltr_neqAle ap eq_sym h //; apply: cf.
+rewrite /all_eq0 /all_le0 all_cat -!all_rev -/(all_eq0 l2) p3 /=.
+have al : all_le0 l by apply: first_neg_no_change_all_le0.
+rewrite [all _ (mkseq _ _)]am apos /=.
+have sl' : (size l1 + size l2 <= d)%N.
+  by move: sl; rewrite p1 size_cat /= addnS ltnS.
+have sl1d : (size l1 <= d)%N.
+  by apply: leq_trans sl'; apply leq_addr.
+have -> : x * f (size l1).+1 < 0.
+  rewrite pmulr_llt0; last by apply: cf; rewrite !ltnS.
+  rewrite ltr_neqAle; rewrite p2 /=.
+  by move/allP: al=> al; apply al; rewrite p1 mem_cat in_cons eqxx orbT.
+split => //; last split=>//.
+  have st : size (a * f 0%N *: 'X^d.+1) = d.+2.
+  rewrite -mul_polyC size_Cmul ?size_polyXn // mulf_neq0 //.
+    by rewrite neqr_lt cf ?orbT.
+  set sg := \sum_(_ < _) _; have st' : size sg = d.+2.
+    rewrite /sg big_ord_recl /= subn0 size_addl; first by [].
+    rewrite st ltnS size_weighted_sum_leq ?st //.
+    by move=> [i C] _; rewrite /bump add1n subSS size_polyXn ltnS leq_subr.
+  apply: (@eq_from_nth _ 0).
+    move:sl; rewrite p1 !size_cat /= !size_cat /= !size_rev !addnS addn0=> T.
+    by rewrite !size_mkseq subSS -addnA [(size l2 + _)%N]addnC subnK.
+  move=> i; rewrite st' => ci; rewrite cfp // {st' sg st al apos am cfp}.
+  rewrite nth_cat size_cat size_mkseq size_rev.
+  case b1 : (i < d.+1 - size l + size l2)%N.
+    rewrite nth_cat size_mkseq.
+    case b2 : (i < d.+1 - size l)%N.
+      rewrite nth_mkseq // nth_default ?mul0r //=.
+      move: b2; rewrite -(ltn_add2r (size l)) subnK // => b2.
+      by rewrite -(ltn_add2r i) subnK // addnC.
+    have b2' : (d.+1 - size l <= i)%N by rewrite leqNgt b2.
+    rewrite nth_rev; last first.
+      by rewrite  -(ltn_add2r (d.+1 - size l)) subnK // addnC.
+    case l2c : (l2) => [ | b l3] /=; first by move: b1; rewrite l2c addn0 b2.
+    move: p3 {b2}; rewrite /all_eq0=>/all_nthP=> l20.
+    rewrite -l2c (eqP (l20 0 _ _)); last first.
+      by rewrite subSS l2c /= ltnS leq_subr.
+    have b1' : (i < d - size l1)%N.
+      move: b1; rewrite p1 size_cat /= addnS subSS subnDA subnK //.
+      by rewrite -(leq_add2r (size l1)) subnK // addnC.
+    have di1 : (i <= d)%N by rewrite (leq_trans (ltnW b1')) // leq_subr.
+    rewrite subSn //= p1 nth_cat.
+    have dil1 : (d - i < size l1)%N = false.
+      apply: negbTE; rewrite -leqNgt -(leq_add2r i) subnK//.
+      move: b1; rewrite -(ltn_add2l (size l1)) => b1.
+      rewrite -ltnS (leq_trans b1) // p1 size_cat /= addnS subSS.
+      by rewrite !(addnC (size l1)) -addnA subnK // addnC.
+    rewrite dil1; move/negbT: dil1; rewrite -leqNgt=>dil1.
+    rewrite -subnDA addnC subnDA -subnSK //= (eqP (l20 _ _ _)) ?mul0r //.
+    rewrite -(ltn_add2r i.+1) subnK // addnS ltnS -leq_subLR.
+    by rewrite (leq_trans _ b2') // p1 size_cat /= addnS subSS subnDA.
+  move=>{p3 p2}.
+  move/negbT: b1; rewrite -leqNgt leq_eqVlt; case/orP=>[/eqP b1 {ci} | b1].
+    rewrite b1 subnn p1 /= -b1 p1 size_cat /= addnS subSS [(d - _)%N]subnDA.
+    rewrite subnK; last first.
+      by rewrite -(leq_add2r (size l1)) subnK // addnC.
+    by rewrite subSn ?leq_subr // subKn //= nth_cat ltnn subnn /=.
+  have sl2dml1: (size l2 <= d - size l1)%N.
+    by rewrite -(leq_add2r (size l1)) subnK // addnC.
+  have dml1i : (d - size l1 < i)%N.
+    by apply: leq_trans b1; rewrite p1 size_cat /= addnS subSS subnDA subnK.
+  rewrite -[(i - _)%N]subnSK //= nth_cat size_mkseq -subnDA.
+  rewrite subnSK //.
+  case b2 : (i - (d.+1 - size l + size l2) <= size l1)%N.
+    rewrite nth_mkseq; last by rewrite subnSK.
+  move: (b2); rewrite -(leq_add2r (d.+1 - size l + size l2)).
+    rewrite subnK; last by rewrite ltnW.
+    rewrite addnC p1 size_cat /= addnS subSS subnDA subnK // subnK // => b2'.
+    rewrite nth_rev; last first.
+      by rewrite -(ltn_add2r (d - size l1).+1) subnK // addnS addnC subnK.
+    rewrite subnSK // subSn //= subnBA; last by rewrite ltnW.
+    rewrite addnC subnK // subnBA // addnS addnC subnK // nth_cat.
+    have dmil1 : (d - i < size l1)%N.
+      rewrite -(ltn_add2r i) subnK //; move: dml1i.
+      by rewrite -(ltn_add2r (size l1)) subnK // addnC.
+    by rewrite dmil1 subSn.
+  move/negbT: b2; rewrite -ltnNge=> b2.
+  have difinal : i = d.+1.
+    apply: anti_leq; apply/andP; split; first by rewrite -ltnS.
+    move: b2; rewrite -(ltn_add2r (d.+1 - size l + size l2)).
+    rewrite subnK; last by rewrite ltnW.
+    by rewrite p1 size_cat /= addnS subSS subnDA subnK // addnC subnK.
+  rewrite difinal subnn addSn subSS p1 size_cat /= addnS subnDA subSS.
+  rewrite [(d - (size l1 + size l2))%N]subnDA subnK // subnBA //.
+  by rewrite addKn subnn.
+apply/(all_nthP 0); rewrite size_mkseq => i C; rewrite nth_mkseq // pmulr_lle0.
+move: al; rewrite /all_le0 p1 all_cat => /andP [al1 _]; rewrite nth_rev //.
+  by move/(all_nthP 0): al1 => -> //; rewrite subnSK // leq_subr.
+apply: cf; rewrite ltnS (leq_trans _ (ltnW (ltnSn _))) ?(leq_trans _ sl1d) //.
+by rewrite leq_subr.
+Qed.
 
+Lemma seqn0_opp (l : seq R) :
+  seqn0 (map (fun i => -i) l) = map (fun i => -i) (seqn0 l).
+Proof.
+elim: l => [// | a l IH] /=.
+by rewrite oppr_eq0; case: (a != 0); rewrite /= IH //.
+Qed.
 
-Search alternate.
 Lemma ch1_correct l d a b (q : {poly R}):
   (size l <= d.+1)%N ->
   a < b -> q = \sum_(i < d.+1) l`_i *: bernp a b d i ->
     changes (seqn0 l) = 1%N -> unique_root_for (horner q) a b.
 Proof.
-move=> s ab qq c1.
-case sg : (0 <= (seqn0 l)`_0).
-  suff : one_root1 q a b by apply: one_root1_unique.
-  apply: (@Bernstein_isolate _ d) => //.
-      rewrite lt0n size_poly_eq0; apply/negP => /eqP => abs.
-      move/eqP: qq; rewrite abs eq_sym=> /eqP.
-      move: (ab); rewrite ltr_def eq_sym; case/andP => ab' _ sb.
-      have := bernp_free ab' sb => bf {ab' sb abs sg}.
-      have abs : (seqn0 l) = [::].
-        move: l s bf {a b q ab c1}.
-        elim: d => [ | d IH].
-          move=> [ | a l]; first by [].
-          case: l => /=; last by [].
-          by move=> _ l0; have := (l0 ord0) => /= => ->; rewrite eqxx /=.
-        move=> [ | a l] /=; first by [].
-        rewrite ltnS=> s l0; have := (l0 ord0) => /= => ->; rewrite eqxx /=.
-        apply: IH => //; move=> [i] /=; rewrite -ltnS => ci.
-        by have := (l0 (Ordinal ci)).
-      by move: c1; rewrite abs.
-    rewrite qq; apply: size_weighted_sum_leq.
-    move=> [i ci]; rewrite size_bernp ?leqnn //.
-    by move: ab; rewrite ltr_def eq_sym; case/andP.
-  have anb : a != b.
-    by move: ab; rewrite ltr_def eq_sym; case/andP.
-  rewrite qq Mobius_weighted_sum //; last by move=> [i ci]; rewrite size_bernp.
-  have t : forall i : 'I_d.+1, true -> l`_i *: Mobius d a b (bernp a b d i) =
-                        (l`_i * ('C(d, i))%:R) *: 'X ^+ (d - i).
-    by move=> [i ci]; rewrite Mobius_bernp //= scalerA.
-  rewrite (eq_bigr _ t) {t}.
-
+wlog : l q / (0 <= (seqn0 l)`_0).
+  move=> main s ab qq c1.
+  case sg : (0 <= (seqn0 l)`_0).
+  apply: (main l q sg) => //.
+  have ur : unique_root_for (horner (-q)) a b.
+    apply: (main (map (fun x => -x) l) (-q)) => //.
+rewrite seqn0_opp (nth_map 0). 
+(* here is the place to work, now. *)
+admit. admit. admit. admit. admit. admit.
+move=> sg s ab qq c1.
+suff : one_root1 q a b by apply: one_root1_unique.
+apply: (@Bernstein_isolate _ d) => //.
+    rewrite lt0n size_poly_eq0; apply/negP => /eqP => abs.
+    move/eqP: qq; rewrite abs eq_sym=> /eqP.
+    move: (ab); rewrite ltr_def eq_sym; case/andP => ab' _ sb.
+    have := bernp_free ab' sb => bf {ab' sb abs sg}.
+    have abs : (seqn0 l) = [::].
+      move: l s bf {a b q ab c1}.
+      elim: d => [ | d IH].
+        move=> [ | a l]; first by [].
+        case: l => /=; last by [].
+        by move=> _ l0; have := (l0 ord0) => /= => ->; rewrite eqxx /=.
+      move=> [ | a l] /=; first by [].
+      rewrite ltnS=> s l0; have := (l0 ord0) => /= => ->; rewrite eqxx /=.
+      apply: IH => //; move=> [i] /=; rewrite -ltnS => ci.
+      by have := (l0 (Ordinal ci)).
+    by move: c1; rewrite abs.
+  rewrite qq; apply: size_weighted_sum_leq.
+  move=> [i ci]; rewrite size_bernp ?leqnn //.
+  by move: ab; rewrite ltr_def eq_sym; case/andP.
+have anb : a != b.
+  by move: ab; rewrite ltr_def eq_sym; case/andP.
+rewrite qq Mobius_weighted_sum //; last by move=> [i ci]; rewrite size_bernp.
+have t : forall i : 'I_d.+1, true -> l`_i *: Mobius d a b (bernp a b d i) =
+                      (l`_i * ('C(d, i))%:R) *: 'X ^+ (d - i).
+  by move=> [i ci]; rewrite Mobius_bernp //= scalerA.
+rewrite (eq_bigr _ t) {t}.
+have binp : forall i, (i < d.+1)%N -> (0:R) < ('C(d, i))%:R.
+  by move => i ci; rewrite ltr0n bin_gt0 -ltnS.
+apply: (changes1_alternate s binp) => //.
+Qed.
 Search relocate bernp.
 Check size_bernp.
 Check alternate.
