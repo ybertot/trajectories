@@ -1458,6 +1458,21 @@ rewrite ltr_neqAle h0 /= -(ler_nmul2l hsn0) mulr0.
 by move: p1; rewrite eqb0 ltrNge negbK.
 Qed.
 
+Lemma first_pos_no_change_all_ge0 (l : seq R) :
+  0 <= head 0 (seqn0 l) -> changes (seqn0 l) = 0%N -> all_ge0 l.
+Proof.
+elim: l=> [ | a l IH] //=; case a0: (a==0)=> /= hsn0.
+  by rewrite ler_eqVlt eq_sym a0 /=; apply: IH => //; apply/eqP.
+case h0: (head 0 (seqn0 l) == 0); move: (h0).
+  rewrite all_eq0_seqn0 hsn0 /= => al0 _.
+  by move: al0; apply: sub_all => x x0; rewrite (eqP x0) lerr.
+move=> _ /eqP; rewrite hsn0 addn_eq0 /= => /andP [p1]/eqP.
+apply: IH.
+have hsn0' : 0 < a by rewrite ltr_neqAle eq_sym a0.
+rewrite  -(ler_pmul2l hsn0') mulr0.
+by move: p1; rewrite eqb0 ltrNge negbK.
+Qed.
+
 Lemma changes1_alternate d (l : seq R) f : (size l <= d.+1)%N ->
          (forall i, (i < d.+1)%N -> (0 < f i)) ->
          changes (seqn0 l) = 1%N -> 0 <= (seqn0 l)`_0 = true ->
@@ -1634,11 +1649,17 @@ apply: cf; rewrite ltnS (leq_trans _ (ltnW (ltnSn _))) ?(leq_trans _ sl1d) //.
 by rewrite leq_subr.
 Qed.
 
-Lemma seqn0_opp (l : seq R) :
+Lemma seqn0_oppr (l : seq R) :
   seqn0 (map (fun i => -i) l) = map (fun i => -i) (seqn0 l).
 Proof.
 elim: l => [// | a l IH] /=.
 by rewrite oppr_eq0; case: (a != 0); rewrite /= IH //.
+Qed.
+
+Lemma changes_oppr (l : seq R) :
+  changes [seq - x | x <- l] = changes l.
+elim: l => [// | x [ | y l] IH] /=; first by rewrite !mulr0.
+rewrite mulrNN; congr (_ + _)%N; exact: IH.
 Qed.
 
 Lemma ch1_correct l d a b (q : {poly R}):
@@ -1652,9 +1673,22 @@ wlog : l q / (0 <= (seqn0 l)`_0).
   apply: (main l q sg) => //.
   have ur : unique_root_for (horner (-q)) a b.
     apply: (main (map (fun x => -x) l) (-q)) => //.
-rewrite seqn0_opp (nth_map 0). 
-(* here is the place to work, now. *)
-admit. admit. admit. admit. admit. admit.
+          rewrite seqn0_oppr (nth_map 0).
+            by rewrite ler_oppr oppr0 ltrW // ltrNge sg.
+          rewrite lt0n; apply/negP; move/eqP=>abs; move: sg.
+          by rewrite nth_default ?abs ?lerr.
+        by rewrite size_map.
+      rewrite -(mul1r q) -mulNr qq big_distrr; apply/eq_bigr.
+      move=> i _ /=; case ci : (i < size l)%N.
+        by rewrite (nth_map 0) // mulNr mul1r scaleNr.
+      move/negbT: ci; rewrite -leqNgt => ci.
+      rewrite !nth_default //; last by rewrite size_map.
+      by rewrite !scale0r mulr0.
+    by rewrite seqn0_oppr changes_oppr.    
+  case: ur => [x [inx [xr xu]]].
+  exists x; split; first by [].
+  split; first by apply/eqP; rewrite -oppr_eq0 -hornerN; apply/eqP.
+  by move=> u inu /eqP; rewrite -oppr_eq0 -hornerN => /eqP; apply:xu.
 move=> sg s ab qq c1.
 suff : one_root1 q a b by apply: one_root1_unique.
 apply: (@Bernstein_isolate _ d) => //.
@@ -1687,27 +1721,71 @@ have binp : forall i, (i < d.+1)%N -> (0:R) < ('C(d, i))%:R.
   by move => i ci; rewrite ltr0n bin_gt0 -ltnS.
 apply: (changes1_alternate s binp) => //.
 Qed.
-Search relocate bernp.
-Check size_bernp.
-Check alternate.
-  move=> {ab qq s}.
-      Search nth (_ :: _).
-apply: (l0 (Ordinal (ltn_trans ci (ltnSn _)))).
-apply: (l0 (Ordinal _)).
-ssrnum.
-rewrite lt0r.
-apply/bernp_free.
-Search _ bernp.
-move=> [c [c' [k [itv]]]].
-    rewrite /pos_in_interval /neg_in_interval1 /slope_bounded2.
-unfold unique_root_for.
-Admitted.
 
-Lemma ch0_correct : forall l d a b q, q != 0 ->
+Lemma bernp_gt0 (a b : R) d i x : (i <= d)%N -> a < x < b ->
+   0 < (bernp a b d i).[x].
+Proof.
+move=> id /andP [ax xb]; rewrite /bernp hornerMn pmulrn_lgt0; last first.
+  by rewrite bin_gt0.
+rewrite !hornerE.
+apply mulr_gt0; first apply mulr_gt0.
+    by rewrite invr_gt0 exprn_gt0 // subr_gt0 (ltr_trans ax).
+  by rewrite horner_exp exprn_gt0 // !hornerE subr_gt0.
+by rewrite horner_exp exprn_gt0 // !hornerE subr_gt0.
+Qed.
+
+Lemma ch0_correct l d a b q : a < b -> q != 0 ->
        q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
        changes (seqn0 l) = 0%N -> no_root_for (horner q) a b.
-Admitted.
-
+move=> ab.
+wlog : l q / 0 <= head 0 (seqn0 l).
+move=> wlh qn0 qq ch.
+  case pos : (0 <= head 0 (seqn0 l)); first by apply: (wlh l) => //.
+  have ssn0 : (0 < size (seqn0 l))%N.
+    rewrite lt0n; apply/negP=> s0.
+    case/negP: qn0; rewrite qq big1 //.
+    move=> i _; case sli: (size l <= i)%N; first by rewrite nth_default ?mul0r.
+    have : all_eq0 l by rewrite -all_eq0_seqn0 -nth0 nth_default // (eqP s0).
+    move/negbT: sli; rewrite -ltnNge=> sli /allP l0.
+    by have := mem_nth 0 sli => /l0/eqP=> li0; rewrite li0 mul0r.
+  move: ch; rewrite -changes_oppr -seqn0_oppr => ch.
+  move/negbT: pos; rewrite -ltrNge -oppr_gt0 -nth0 -(nth_map 0 0) // nth0.
+  rewrite -seqn0_oppr=>pos.
+  have ssn0' : (0 < size (seqn0 [seq -x | x <- l]))%N.
+    by rewrite seqn0_oppr size_map.
+  move: qn0; rewrite -oppr_eq0 => qn0.
+  have := refl_equal (-q); rewrite [X in _ = - X]qq -[X in _ = -X]mul1r {qq}.
+  rewrite -mulNr big_distrr /=.
+  have t : forall i : 'I_d.+1, true ->
+     -1 * ((l`_i)%:P * bernp a b d i) = 
+     ([seq -x | x <- l]`_i)%:P * bernp a b d i.
+    move=> i _; case ci : (i < size l)%N.
+      rewrite (nth_map 0) // -[-1]/(-(1%:P)) -polyC_opp mulrA -polyC_mul.
+      by rewrite mulNr mul1r.
+    move/negbT: ci; rewrite -leqNgt=> ci.
+    rewrite !nth_default //; first by rewrite !mul0r mulr0. 
+    by rewrite size_map.
+  rewrite (eq_bigr _ t) => qq {t ssn0}.
+  have {wlh qq ch qn0 pos ssn0'} := wlh _ _ (ltrW pos) qn0 qq ch.  
+  by move=> nx x inx; rewrite -[q.[x]]opprK -hornerN oppr_eq0 nx.
+move=> h qn0 qq ch x inx; apply /negP; rewrite qq.
+rewrite horner_sum psumr_eq0 /=.
+move=> al0; case/negP: qn0; rewrite qq.
+  rewrite big1 //; move => i _; rewrite [l`_i](_ : _ = 0) ?mul0r //.
+  have : l`_i * (bernp a b d i).[x] == 0.
+    by have := (allP al0 i (mem_index_enum _)); rewrite hornerM hornerC.
+  rewrite mulf_eq0.
+  case: i => i /=; rewrite ltnS => ci.
+  have := bernp_gt0 ci inx; set bf := (_.[_]) => b0.
+  have bn0 : (bf != 0) by rewrite neqr_lt b0 orbT.
+  by rewrite (negbTE bn0) orbF => /eqP.
+move=> i _; rewrite hornerM hornerC.
+apply: mulr_ge0; last first.
+  by apply/ltrW/bernp_gt0=> //; case i.
+case sli: (i < size l)%N; last first.
+  by move/negbT: sli; rewrite -leqNgt=> sli; rewrite nth_default //.
+by move/allP: (first_pos_no_change_all_ge0 h ch)=> t; apply/t/mem_nth.
+Qed.
 
 Lemma bern0_a : forall (a b : R) deg i, a != b -> (0 < deg)%N ->
    (i <= deg)%N -> (bernp a b deg i).[a] == 0 = (i != 0)%N.
