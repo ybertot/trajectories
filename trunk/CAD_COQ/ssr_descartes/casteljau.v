@@ -139,7 +139,7 @@ Proof.
 by move=> p q; rewrite coef_mul_poly big_ord_recl big_ord0 sub0n addr0. Qed.
 
 End ToBeAddedInPoly.
-(* We prove the Chauchy bound in any ordered field *)
+(* We prove the Cauchy bound in any ordered field *)
 
 Section CauchyBound.
 
@@ -157,7 +157,7 @@ move=> px0; case: (lerP `|x| 1)=> cx1.
   have h1 : `|E n| > 0 by rewrite  normr_gt0.
   rewrite -(ler_pmul2l h1) /= mulr1 /C mulrA mulfV ?normr_eq0 // mul1r.
   rewrite big_ord_recr /= -{1}(add0r `|E n|) ler_add2r.
-  (* here should be a lemme in orderedalg *)
+  (* here should be a lemma in orderedalg *)
   elim: n=> [|m ihm]; first by rewrite big_ord0 lerr.
   rewrite big_ord_recr /=; apply: addr_ge0=> //; exact: normr_ge0.
 case e: n=> [| m].
@@ -432,8 +432,6 @@ Definition dicho p b i := de_casteljau b (p - i) i.
 
 (* the computation of the value at index (k, n) only uses values (i, j) 
    for n <=  i <= n + k (a triangle, up and right) *)
-
-
 
 Lemma ext_dc :
   forall k b b' n, (forall i, (n <= i)%nat -> (i <= n + k)%nat -> b i = b' i) ->
@@ -908,7 +906,6 @@ Qed.
 Lemma size_bernp : forall i, (i <= deg)%N -> size (bernp i) = deg.+1.
 Proof.
 move=> i id; rewrite /bernp.
-Search (_ * _ *+ _) in GRing.
 rewrite -!mulrnAl -polyC_muln -mulrA.
 rewrite size_Cmul. 
   rewrite size_monicM.
@@ -1138,8 +1135,8 @@ Lemma dicho'_correct : forall (a b m : R)(alpha := (b - m) * (b - a)^-1)
   (beta := ((m - a) * (b - a)^-1))(p : nat)(q : {poly R})(c : nat -> R),
   a != b ->
   m != a ->
-  q = \sum_(i < p.+1)(c i)%:P * bernp a b p i ->
-  q = \sum_(j < p.+1)(dicho' alpha beta c j)%:P * bernp a m p j.
+  q = \sum_(i < p.+1) c i *: bernp a b p i ->
+  q = \sum_(j < p.+1) dicho' alpha beta c j *: bernp a m p j.
 Proof.
 move=> a b m alpha beta p q c neqab neqma qdef.
 have {neqma qdef} -> : q = 
@@ -1149,10 +1146,10 @@ have {neqma qdef} -> : q =
   case=> k hk _ /=.
   have hk': (k <= p)%N by exact: hk. 
   rewrite (dicho'_delta_bern neqab neqma hk').
-  rewrite big_distrr /=;  apply: congr_big; [by [] | by [] |]. 
+  rewrite -mul_polyC big_distrr /=;  apply: congr_big; [by [] | by [] |]. 
   by case=> i hi _; rewrite !mulrA.
 apply: congr_big; [by [] | by [] |]. 
-case=> i hi _ /=;  rewrite -big_distrl /=; congr (_ * _).
+case=> i hi _ /=;  rewrite -big_distrl /= -mul_polyC; congr (_ * _).
 have -> : dicho' alpha beta c i = 
   dicho' alpha beta (fun k => \sum_(j < p.+1)(c j) * (delta R j k)) i.
   apply: ext_dc=> k _; rewrite add0n => h.
@@ -1194,11 +1191,11 @@ by rewrite -addnA subnKC // -signr_odd odd_add addbb /= expr0 mul1r.
 Qed.
 
 Lemma bern_rev_coef : forall (p : nat)(a b : R)(c : nat -> R),
-  \sum_(i < p.+1)(c i)%:P * (bernp a b p i) = 
-  \sum_(i < p.+1)(c (p - i)%N)%:P * (bernp b a p i).
+  \sum_(i < p.+1) c i *: (bernp a b p i) = 
+  \sum_(i < p.+1) c (p - i)%N *: (bernp b a p i).
 Proof.
 move=> p a b c.
-pose t := \sum_(i < p.+1) (c (p - i)%N)%:P * bernp a b p (p - i)%N.
+pose t := \sum_(i < p.+1) c (p - i)%N *: bernp a b p (p - i)%N.
 transitivity t.
   by rewrite (reindex_inj rev_ord_inj) /=; apply: eq_bigl.
 apply:eq_bigr => [[i hi]] _ /=.
@@ -1210,19 +1207,19 @@ Lemma dicho_correct : forall (a b m : R)(alpha := (b - m) * (b - a)^-1)
   (beta := ((m - a) * (b - a)^-1))(p : nat)(q : {poly R})(c : nat -> R),
   a != b ->
   m != b ->
-  q = \sum_(i < p.+1)(c i)%:P * bernp a b p i ->
-  q = \sum_(j < p.+1)(dicho alpha beta p c j)%:P * bernp m b p j.
+  q = \sum_(i < p.+1) c i *: bernp a b p i ->
+  q = \sum_(j < p.+1) dicho alpha beta p c j *: bernp m b p j.
 Proof.
 move=> a b m alpha beta p q c neqab neqmb qdef.
 rewrite bern_rev_coef in qdef.
 have neqba : b != a by rewrite eq_sym.
 rewrite (@dicho'_correct _ _ _ _ _ (fun i => c (p - i)%N) neqba neqmb qdef).
 rewrite -(big_mkord  
-(fun _ => true) (fun j => (dicho' ((a - m) / (a - b)) ((m - b) / (a - b))
-         (fun i : nat => c (p - i)%N) j)%:P * bernp b m p j)).
+(fun _ => true) (fun j => dicho' ((a - m) / (a - b)) ((m - b) / (a - b))
+         (fun i : nat => c (p - i)%N) j *: bernp b m p j)).
 rewrite big_nat_rev /= big_mkord; apply: congr_big; [by [] | by [] |].
 move=> [i hi] _ {qdef}; rewrite add0n subSS.
-rewrite -bern_swap //; congr (_%:P * _); rewrite /dicho' /dicho.
+rewrite -bern_swap //; congr (_ *: _); rewrite /dicho' /dicho.
 rewrite dc_reverse //= ?leq_subr // addn0 subKn //.
 rewrite -opprB -[a - b]opprB -[a - m]opprB -mulN1r -[-(b - a)]mulN1r.
 rewrite -[-(m - a)]mulN1r invfM [(- 1)^-1]invrN invr1 -mulrA.
@@ -1735,7 +1732,7 @@ by rewrite horner_exp exprn_gt0 // !hornerE subr_gt0.
 Qed.
 
 Lemma ch0_correct l d a b q : a < b -> q != 0 ->
-       q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+       q = \sum_(i < d.+1) l`_i *: bernp a b d i ->
        changes (seqn0 l) = 0%N -> no_root_for (horner q) a b.
 move=> ab.
 wlog : l q / 0 <= head 0 (seqn0 l).
@@ -1744,10 +1741,11 @@ move=> wlh qn0 qq ch.
   have ssn0 : (0 < size (seqn0 l))%N.
     rewrite lt0n; apply/negP=> s0.
     case/negP: qn0; rewrite qq big1 //.
-    move=> i _; case sli: (size l <= i)%N; first by rewrite nth_default ?mul0r.
+    move=> i _; case sli: (size l <= i)%N.
+      by rewrite nth_default ?scale0r.
     have : all_eq0 l by rewrite -all_eq0_seqn0 -nth0 nth_default // (eqP s0).
     move/negbT: sli; rewrite -ltnNge=> sli /allP l0.
-    by have := mem_nth 0 sli => /l0/eqP=> li0; rewrite li0 mul0r.
+    by have := mem_nth 0 sli => /l0/eqP=> li0; rewrite li0 scale0r.
   move: ch; rewrite -changes_oppr -seqn0_oppr => ch.
   move/negbT: pos; rewrite -ltrNge -oppr_gt0 -nth0 -(nth_map 0 0) // nth0.
   rewrite -seqn0_oppr=>pos.
@@ -1757,13 +1755,13 @@ move=> wlh qn0 qq ch.
   have := refl_equal (-q); rewrite [X in _ = - X]qq -[X in _ = -X]mul1r {qq}.
   rewrite -mulNr big_distrr /=.
   have t : forall i : 'I_d.+1, true ->
-     -1 * ((l`_i)%:P * bernp a b d i) = 
-     ([seq -x | x <- l]`_i)%:P * bernp a b d i.
+     -1 * (l`_i *: bernp a b d i) = 
+     [seq -x | x <- l]`_i *: bernp a b d i.
     move=> i _; case ci : (i < size l)%N.
-      rewrite (nth_map 0) // -[-1]/(-(1%:P)) -polyC_opp mulrA -polyC_mul.
+      rewrite (nth_map 0) // -[-1]/(-(1%:P)) -polyC_opp mul_polyC scalerA.
       by rewrite mulNr mul1r.
     move/negbT: ci; rewrite -leqNgt=> ci.
-    rewrite !nth_default //; first by rewrite !mul0r mulr0. 
+    rewrite !nth_default //; first by rewrite !scale0r mulr0. 
     by rewrite size_map.
   rewrite (eq_bigr _ t) => qq {t ssn0}.
   have {wlh qq ch qn0 pos ssn0'} := wlh _ _ (ltrW pos) qn0 qq ch.  
@@ -1771,15 +1769,15 @@ move=> wlh qn0 qq ch.
 move=> h qn0 qq ch x inx; apply /negP; rewrite qq.
 rewrite horner_sum psumr_eq0 /=.
 move=> al0; case/negP: qn0; rewrite qq.
-  rewrite big1 //; move => i _; rewrite [l`_i](_ : _ = 0) ?mul0r //.
+  rewrite big1 //; move => i _; rewrite [l`_i](_ : _ = 0) ?scale0r //.
   have : l`_i * (bernp a b d i).[x] == 0.
-    by have := (allP al0 i (mem_index_enum _)); rewrite hornerM hornerC.
+    by have := (allP al0 i (mem_index_enum _)); rewrite hornerZ.
   rewrite mulf_eq0.
   case: i => i /=; rewrite ltnS => ci.
   have := bernp_gt0 ci inx; set bf := (_.[_]) => b0.
   have bn0 : (bf != 0) by rewrite neqr_lt b0 orbT.
   by rewrite (negbTE bn0) orbF => /eqP.
-move=> i _; rewrite hornerM hornerC.
+move=> i _; rewrite hornerZ.
 apply: mulr_ge0; last first.
   by apply/ltrW/bernp_gt0=> //; case i.
 case sli: (i < size l)%N; last first.
@@ -1800,7 +1798,7 @@ Qed.
 Lemma bernp_first_coeff0 :
   forall l d (a b : R) q, 
   a != b -> (0 < d)%N  ->
-  q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+  q = \sum_(i < d.+1) l`_i *: bernp a b d i ->
   (l`_0 == 0) = (q.[a] == 0).
 Proof.
 move=> l d a b q anb dn0 qq.
@@ -1819,16 +1817,17 @@ by case tst : (changes (seqn0 l)) => [ | [ | cl]] //=; apply: IH.
 Qed.
 
 Lemma isol_rec_correct : forall c l d a b q acc,
-  a != b -> (0 < d)%N -> q != 0 ->
- q = \sum_(i < d.+1) (l`_i)%:P * bernp a b d i ->
+  a < b -> (0 < d)%N -> q != 0 -> (size l <= d.+1)%N ->
+ q = \sum_(i < d.+1) l`_i *: bernp a b d i ->
  read (horner q) acc -> head_root (horner q) acc ->
  read (horner q) (isol_rec c d a b l acc).
 Proof.
 elim=> [// | c IH].
-move=> l d a b q acc anb dn0 qn0 qq ht hh /=.
+move=> l d a b q acc altb dn0 qn0 sld qq ht hh /=.
+have anb : a != b by rewrite neqr_lt altb.
 case tst : (changes (seqn0 l)) => [/= | [/= | nc]].
-    by split=> //; apply (ch0_correct qn0 qq).
-  by split=> //; apply (ch1_correct qq).
+    by split=> //; apply (ch0_correct altb qn0 qq).
+  by split=> //; apply (ch1_correct sld altb qq).
 have help : 2%:R^-1 = ((a + b) / 2%:R - a)/(b - a).
   rewrite -[X in _ / _ - X]double_half -/(half (a + b)) half_lin half_lin1.
   rewrite opprD addrCA !addrA addNr add0r /half mulrAC mulfV ?mul1r //.
@@ -1839,13 +1838,13 @@ have help2 : 2%:R^-1 = (b - (a + b)/2%:R)/(b - a).
   by rewrite subr_eq0 eq_sym.
 have qh' : 
   q = \sum_(i < d.+1)
-         ((mkseq (dicho' 2%:R^-1 2%:R^-1 [eta nth 0 l]) d.+1)`_i)%:P *
+         (mkseq (dicho' 2%:R^-1 2%:R^-1 [eta nth 0 l]) d.+1)`_i *:
          bernp a ((a + b) / 2%:R) d i.
   have qt : forall i : 'I_d.+1, true ->
-                  ((mkseq (dicho' 2%:R^-1 2%:R^-1 [eta nth 0 l]) d.+1)`_i)%:P *
+                  (mkseq (dicho' 2%:R^-1 2%:R^-1 [eta nth 0 l]) d.+1)`_i *:
                        bernp a ((a + b) / 2%:R) d i =
-                  (dicho' ((b - half (a + b))/(b - a))
-                          ((half (a + b) - a)/(b - a)) [eta nth 0 l] i)%:P *
+                  dicho' ((b - half (a + b))/(b - a))
+                         ((half (a + b) - a)/(b - a)) [eta nth 0 l] i *:
                   bernp a ((a + b) / 2%:R) d i.
     by move => [i ci] _; rewrite -help -help2 /= nth_mkseq.
   rewrite (eq_bigr _ qt); apply: dicho'_correct => //.
@@ -1853,21 +1852,21 @@ have qh' :
   by move/eqP/half_inj/addrI/eqP; rewrite eq_sym; apply/negP.
 have qh : 
   q = \sum_(i < d.+1)
-         ((mkseq (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l]) d.+1)`_i)%:P *
+         (mkseq (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l]) d.+1)`_i *:
          bernp ((a + b) / 2%:R) b d i.
   have qt : forall i : 'I_d.+1, true ->
-                ((mkseq (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l]) d.+1)`_i)%:P *
+                (mkseq (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l]) d.+1)`_i *:
                      bernp ((a + b) / 2%:R) b d i =
-                (dicho ((b - half (a + b))/(b - a))
-                       ((half (a + b) - a)/(b - a)) d [eta nth 0 l] i)%:P *
+                dicho ((b - half (a + b))/(b - a))
+                      ((half (a + b) - a)/(b - a)) d [eta nth 0 l] i *:
                   bernp ((a + b) / 2%:R) b d i.
     by move => [i ci] _; rewrite -help -help2 /= nth_mkseq.
   rewrite (eq_bigr _ qt); apply: dicho_correct => //.
   rewrite -[X in _ == X]double_half half_lin; apply/negP.
   by move/eqP/half_inj/addIr/eqP; apply/negP.
 apply: (IH) => //.
-    rewrite -[X in X == _]double_half -/(half (a + b)) half_lin.
-    by apply/negP;move/eqP/half_inj/addrI/eqP => abs;case/negP: anb.
+      by case/andP : (mid_between altb) => it _; exact it.
+    by rewrite size_mkseq.
   case ts0: (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l] 0 == 0).
     rewrite /=; split.
       apply/eqP; rewrite -(bernp_first_coeff0 _ dn0 qh).
@@ -1875,11 +1874,11 @@ apply: (IH) => //.
       rewrite -[X in _ == X]double_half half_lin; apply/negP.
       by move/eqP/half_inj/addIr/eqP; apply/negP.
     apply: IH => //.
-    rewrite -[X in _ == X]double_half half_lin; apply/negP.
-    by move/eqP/half_inj/addIr/eqP; apply/negP.
+      by case/andP : (mid_between altb) => _ it; exact it.
+    by rewrite size_mkseq.
   apply: IH => //.
-  rewrite -[X in _ == X]double_half half_lin; apply/negP.
-  by move/eqP/half_inj/addIr/eqP; apply/negP.
+    by case/andP : (mid_between altb) => _ it; exact it.
+  by rewrite size_mkseq.
 case ts0: (dicho 2%:R^-1 2%:R^-1 d [eta nth 0 l] 0 == 0); first by [].
 apply: isol_rec_head_root.
 rewrite -(bernp_first_coeff0 _ dn0 qh); last first.
@@ -1887,3 +1886,5 @@ rewrite -(bernp_first_coeff0 _ dn0 qh); last first.
   by move/eqP/half_inj/addIr/eqP; apply/negP.
 by rewrite nth_mkseq; move/negbT: ts0.
 Qed.
+
+End isolation_algorithm.
