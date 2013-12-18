@@ -17,6 +17,8 @@ Import GRing.Theory Num.Theory Num.Def.
 Import Pdiv.Idomain.
 Import ComplexField.
 
+Local Open Scope ring_scope.
+
 Section normal_polynomial.
 
 Variable (R : rcfType).
