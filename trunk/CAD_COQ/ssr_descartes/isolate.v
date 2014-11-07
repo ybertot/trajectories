@@ -6,7 +6,7 @@ Require Import mxalgebra perm zmodp matrix ssrint refinements funperm.
 Require Import seq seqpoly pol square_free casteljau desc rat QArith.
 
 Require Import ssrnum ssrint realalg poly.
-Import GRing.
+Import GRing.Theory Num.Theory.
 
 (* Viewing p1 and p2 (list of rationals as representing polynomials,
   with coefficients of lower degree appearing first. *)
@@ -195,6 +195,9 @@ Proof.
 move=> q1 q2; rewrite /eq Q_to_RP /bigQ_to_R; by split => //;  move/eqP.
 Qed.
 
+Lemma bigQ_to_R_red : forall m, bigQ_to_R (red m) = bigQ_to_R m.
+Proof. by move => m; apply/eqP/bigQ_to_RP/spec_red. Qed.
+
 Lemma Q_to_RM : forall x y, Q_to_R (x * y) = (Q_to_R x * Q_to_R y)%R.
 Proof.
 move=> x y; rewrite /Q_to_R Z_to_RM pos_to_RM invfM !mulrA mulrAC.
@@ -234,7 +237,7 @@ Proof.
 by move=> x y /=; rewrite /bigQ_to_R -Q_to_RD; apply/eqP/Q_to_RP/spec_add.
 Qed.
 
-Lemma bigQ_toRN : {morph bigQ_to_R : x / (- x)%bigQ >-> (- x)%R}.
+Lemma bigQ_to_RN : {morph bigQ_to_R : x / (- x)%bigQ >-> (- x)%R}.
 Proof.
 move=> x /=; rewrite /bigQ_to_R -Q_to_RN; apply/eqP/Q_to_RP/spec_opp.
 Qed.
@@ -255,6 +258,10 @@ Qed.
 Lemma Q_to_R1 : Q_to_R 1 = 1%R.
 Proof. by rewrite /Q_to_R /=; rewrite invr1 mulr1. Qed.
 
+Lemma bigQ_to_R1 : bigQ_to_R 1 = 1%R.
+Proof. by rewrite /bigQ_to_R Q_to_R1. Qed.
+
+Search _ 1%bigQ.
 Lemma Q_to_R0 : Q_to_R 0 = 0%R.
 Proof. by rewrite /Q_to_R /=; rewrite mul0r. Qed.
 
@@ -401,6 +408,13 @@ rewrite -bigQ_to_R0.
 by apply/negP/bigQ_to_RP=> t; have := (eqb_complete _ _ t); rewrite /eq_bool h.
 Qed.
 
+Lemma nth_normalize : forall p i def, (i < size (normalize p))%N ->
+            nth def (normalize p) i = nth def p i.
+elim=> [ | a p IH] i def; first by [].
+rewrite /=; case: (a ?= 0)%bigQ; case: (is_zero_pol p); case: i => [ | i] //=;
+  rewrite ltnS; apply: IH.
+Qed.
+
 Lemma size_sbQ : forall p, size (sbQ_to_p p) = size (normalize p).
 Proof.
 elim=> [ | a p IH] /=; first by rewrite size_poly0.
@@ -449,30 +463,47 @@ rewrite (eq_bigr (fun i : 'I_(size p) =>
 by rewrite IH poly_def big_distrr.
 Qed.
 
-Lemma rhoP : forall p, sbQ_to_p (rho p) = reciprocal_pol (sbQ_to_p p).
+Lemma rhoP : forall p, ~~is_zero_pol p -> sbQ_to_p (rho p) =
+                       recip (size (sbQ_to_p p)).-1 (sbQ_to_p p).
 Proof.
-move=> p; rewrite /rho /reciprocal_pol.
-rewrite sbQ_nth size_sbQ size_rev !poly_def; apply: eq_bigr => /= i _.
-rewrite -normalizeP nth_rev; last by case:i.
-by congr (_ *: _); rewrite sbQ_nth coef_poly rev_ord_proof.
+move=> p pn0; rewrite /rho /recip /reciprocal_pol.
+rewrite sbQ_nth size_sbQ size_rev !poly_def.
+have sn0: (size (sbQ_to_p p) != 0)%N
+  by rewrite size_poly_eq0 -is_zero_polP pn0.
+rewrite -size_sbQ prednK ?subnn ?expr0 ?mul1r; last by rewrite lt0n.
+apply: eq_bigr; move=> [] i ih _ /=.
+rewrite nth_rev; last by rewrite -size_sbQ.
+rewrite nth_normalize; last by rewrite -size_sbQ (rev_ord_proof (Ordinal ih)).
+rewrite -size_sbQ sbQ_nth coef_poly.
+set t := (_ < _)%N; have -> //: t; rewrite /t {t}.
+rewrite -sbQ_nth.
+have t :  (size (sbQ_to_p p) <= size p)%N by rewrite sbQ_nth; apply: size_poly.
+by apply : leq_trans t; apply: (rev_ord_proof (Ordinal ih)).
 Qed.
 
-Lemma tauP : forall l r p, sbQ_to_p (tau l r p) = 
-   Mobius (sbQ_to_p p) (bigQ_to_R l) (bigQ_to_R r).
+Lemma tauP : forall l r p, bigQ_to_R (r - l) != 0%R -> ~~is_zero_pol p ->
+   sbQ_to_p (tau l r p) = 
+   Mobius (size (sbQ_to_p p)).-1 (bigQ_to_R l) (bigQ_to_R r) (sbQ_to_p p).
 Proof.
-move=> l r p; rewrite /tau /Mobius.
+move=> l r p clr cp; rewrite /tau /Mobius.
 rewrite sbQ_to_p_redP thetaP; congr (_ \shift _).
   by rewrite /bigQ_to_R Q_to_R1.
-rewrite rhoP chiP thetaP; congr reciprocal_pol; congr scaleX_poly.
-by rewrite bigQ_to_RD bigQ_toRN.
+rewrite rhoP; last first.
+  rewrite is_zero_polP -size_poly_eq0 chiP size_scaleX //.
+  rewrite thetaP /shift_poly size_comp_poly2; last by rewrite size_XaddC.
+  by rewrite size_poly_eq0 -is_zero_polP.
+rewrite chiP thetaP; congr recip; last congr scaleX_poly.
+  by rewrite size_scaleX // /shift_poly size_comp_poly2 // size_XaddC.
+by rewrite bigQ_to_RD bigQ_to_RN.
 Qed.
 
 End tau_correct.
 
-(* Computing binomial coefficients in the filed bigQ *)
+(* Fixpoint f_aux (count : nat) (n : bigQ) := *)
+(* Computing binomial coefficients in the type bigQ *)
 Fixpoint fact_aux (count : nat) (n : bigQ) :=
   match count with
-  | 0%nat => n
+  | 0%nat => 1%bigQ
   | 1%nat => n
   | S p => (n * fact_aux p (n + 1))%bigQ
   end. 
@@ -481,22 +512,106 @@ Definition fact (n : nat) : bigQ := fact_aux n 1.
 
 Definition binomial n i := red ((fact n) / (fact i * fact (n - i)))%bigQ.
 
+Section binomial_correct.
+
+(* this computes m * (m - 1) * ... * (m - n + 1) *)
+Fixpoint ff (n : nat) (m : bigQ) : bigQ :=
+  match n with
+  | 0%nat => 1%bigQ
+  | S p => (m * (ff p (m - 1)))%bigQ
+  end.
+
+Fixpoint BigQ_of_nat (n : nat) :=
+  match n with O => 0%bigQ | S p => (BigQ_of_nat p + 1)%bigQ end.
+
+Lemma BigQ_of_natS (n : nat) :
+  BigQ_of_nat (S n) = (BigQ_of_nat n + 1)%bigQ.
+Proof. by []. Qed.
+
+Lemma BigQ_of_nat0 : (BigQ_of_nat 0 == 0)%bigQ.
+Proof. by []. Qed.
+
+Lemma BigQ_of_nat1 : (BigQ_of_nat 1 == 1)%bigQ.
+Proof. by rewrite BigQ_of_natS add_0_l. Qed.
+
+Lemma BigQ_to_R_BigQ_of_nat (n : nat) : bigQ_to_R (BigQ_of_nat n) = n%:R.
+Proof.
+elim:n => [ | n IH]; first by rewrite bigQ_to_R0.
+by rewrite BigQ_of_natS bigQ_to_RD mulrS bigQ_to_R1 addrC IH.
+Qed.
+
+Lemma BigQ_of_natD : forall n m, 
+  (BigQ_of_nat (n + m) == BigQ_of_nat n + BigQ_of_nat m)%bigQ.
+Proof. 
+elim=> [ | n IH] m; first by rewrite add0n BigQ_of_nat0 add_0_l.
+by rewrite addSn !BigQ_of_natS -!(add_comm 1) -add_assoc IH.
+Qed.
+
+Definition fact' (n : nat) : bigQ := ff n (BigQ_of_nat n).
+
+Lemma ffP : forall (m : nat) n qm,
+   bigQ_to_R qm = m%:R -> bigQ_to_R (ff n qm) = (m ^_ n)%:R.
+Proof.
+move=> m n; move: n m.
+elim=> [ | n IH] m qm qq; first by rewrite /= bigQ_to_R1 ffactn0.
+case h : m => [ | m'] .
+  by rewrite /= bigQ_to_RM qq h mul0r ffactnS mul0n.
+rewrite /= bigQ_to_RM (IH (m - 1)%N); last first.
+  by rewrite bigQ_to_RD bigQ_to_RN qq bigQ_to_R1 natrB h.
+by rewrite ffactnS qq h subSS subn0 natrM.
+Qed.
+
+Lemma fact'P (n : nat) : bigQ_to_R (fact' n) = (n `!)%:R.
+Proof.
+rewrite /fact' (ffP n); first by rewrite ffactnn.
+by rewrite BigQ_to_R_BigQ_of_nat.
+Qed.
+
+Lemma fact_auxP : forall n (m : nat) qm,
+   (0 < n)%N -> bigQ_to_R qm = m%:R ->
+   bigQ_to_R (fact_aux n qm) = ((m + (n - 1)) ^_ n)%:R.
+Proof.
+elim=> [ | n IH] m qm //= _ bm.
+case h : n => [ | n']; first by rewrite subnn addn0 ffactn1.
+rewrite bigQ_to_RM -h (IH (m + 1)%N); first last.
+    by rewrite bigQ_to_RD bigQ_to_R1 bm mulrnDr.
+  by rewrite h.
+rewrite ffactnSr h subSS subn0 addnK bm mulrC subSS subn0 addnAC addn1 addnS.
+by rewrite mulrnA mulrnAr mulr1.
+Qed.
+
+Lemma factP : forall n:nat, bigQ_to_R (fact n) = (n `!)%:R.
+Proof.
+move=> [ | n] /=; first by rewrite fact0 /fact /= bigQ_to_R1.
+by rewrite (fact_auxP _ 1 1) // ?bigQ_to_R1 // subSS subn0 add1n ffactnn. 
+Qed.
+
+Lemma binomialP : forall n m, (m <= n)%N ->
+   bigQ_to_R (binomial n m) = 'C(n,m)%:R.
+Proof.
+move=> n m mn.
+rewrite /binomial bigQ_to_R_red bigQ_to_RM bigQ_to_RV bigQ_to_RM.
+have t : (bigQ_to_R (fact m) * bigQ_to_R (fact (n - m)))%R != 0%R.
+  rewrite mulf_eq0 negb_orb !factP.
+  by rewrite !pnatr_eq0 -!lt0n !fact_gt0.
+by apply/(mulIf t); rewrite mulfVK // !factP -(bin_fact mn) !natrM.
+Qed.
+
+End binomial_correct.
+
 (* The scalar product between sequences of numbers, the size of
   the result is the minimum of the input sizes. *)
 Definition product l1 l2 := map (fun c => (c.1 * c.2)%bigQ) (zip l1 l2).
 
-(* Defining a function that returns the list of natural numbers, in
- increasing order. *)
-
 Definition binvs n := map (fun i => (1/binomial n i)%bigQ) (iota 0 (S n)).
 
 (* Computing the initial list of Bernstein coefficients for a polynomial
-  and an interval.  The first argument is degree of the polynomial. *)
+  and an interval.  The first argument is the degree of the polynomial. *)
 Definition b_coefs n l r p := rev (product (binvs n) (tau l r p)).
 
 (* Bernstein coefficients for half intervals can be computed using the
  algorithm by de Casteljau. *)
-Fixpoint casteljau l (n : nat) :=
+Fixpoint casteljau (l : list bigQ) (n : nat) : nat -> bigQ :=
   match n with
     O => fun j => nth 0%bigQ l j
   | S p => fun j => ((casteljau l p j + casteljau l p j.+1)/2)%bigQ
@@ -509,6 +624,48 @@ Definition dicho_l n l :=
 
 Definition dicho_r n l :=
   map (fun i => red (casteljau l (n - i) i)) (iota 0 (S n)).
+
+Section dicho_correct.
+
+Lemma casteljau_correct (l : seq bigQ) k n :
+  bigQ_to_R (casteljau l k n) =
+  de_casteljau (1/(1+1)) (1/(1+1)) 
+    (fun i => bigQ_to_R (nth 0%bigQ l i)) k n.
+Proof.
+elim : k n => [ n | k Ik n]; first by [].
+rewrite /= bigQ_to_RM bigQ_to_RV bigQ_to_RD !Ik mul1r !(mulrC (_ ^-1)).
+have -> : (bigQ_to_R 2 = 1 + 1)%R.
+ by apply/eqP; rewrite -bigQ_to_R1 -bigQ_to_RD -bigQ_to_RP.
+by rewrite mulrDl.
+Qed.
+
+Lemma dicho_l_correct (n : nat) (l : seq bigQ) (k : nat) :
+  (size l = n)%nat -> (k <= n)%nat ->
+  bigQ_to_R (nth 0%bigQ (dicho_l n l) k) =
+   dicho' (1/(1+1)) (1/(1+1)) (fun i => bigQ_to_R (nth 0%bigQ l i)) k.
+Proof.
+move => sl kn.
+rewrite /dicho_l /dicho'.
+have kn' : (k < size (iota 0 n.+1))%nat.
+ by rewrite size_iota.
+rewrite (nth_map 0%nat 0%bigQ (fun v => red (casteljau l v 0))) //.
+by rewrite bigQ_to_R_red nth_iota // add0n casteljau_correct.
+Qed.
+
+Lemma dicho_r_correct (n : nat) (l : seq bigQ) (k : nat) :
+  (size l = n)%nat -> (k <= n)%nat ->
+  bigQ_to_R (nth 0%bigQ (dicho_r n l) k) =
+   dicho (1/(1+1)) (1/(1+1)) n (fun i => bigQ_to_R (nth 0%bigQ l i)) k.
+Proof.
+move => sl kn.
+rewrite /dicho_r /dicho.
+have kn' : (k < size (iota 0 n.+1))%nat.
+ by rewrite size_iota.
+rewrite (nth_map 0%nat 0%bigQ (fun v => red (casteljau l (n - v) v))) //.
+by rewrite bigQ_to_R_red nth_iota // add0n casteljau_correct.
+Qed.
+
+End dicho_correct.
 
 Fixpoint seqn0 l :=
   match l with
@@ -529,25 +686,25 @@ Fixpoint ch_r a l : nat :=
 Definition changes l :=
   match l with | [::] => 0%nat | a::l' => ch_r a l' end.
 
-Inductive root_info := 
-  | Exact (x : bigQ)
-  | One_in (x y : bigQ)
-  | Zero_in (x y : bigQ)
-  | Unknown (x y : bigQ).
+Inductive root_info A : Type := 
+  | Exact (x : A)
+  | One_in (x y : A)
+  | Zero_in (x y : A)
+  | Unknown (x y : A).
 
-Fixpoint isol_rec n d a b l acc : seq root_info :=
+Fixpoint isol_rec n d (a b : bigQ) l acc : seq (root_info bigQ) :=
   match n with
-    O => Unknown a b::acc
+    O => Unknown _ a b::acc
   | S p =>
     match changes l with
-    | 0%nat => Zero_in a b::acc
-    | 1%nat => One_in a b::acc
+    | 0%nat => Zero_in _ a b::acc
+    | 1%nat => One_in _ a b::acc
     | _ =>
     let c := red ((a + b)/2) in
     let l2 := dicho_r d l in
     isol_rec p d a c (dicho_l d l)
         (if eq_bool (head 0%bigQ l2) 0 then
-           Exact c::isol_rec p d c b l2 acc
+           Exact _ c::isol_rec p d c b l2 acc
         else isol_rec p d c b l2 acc)
     end
   end.
@@ -557,16 +714,6 @@ Definition big_num := 500%nat.
 (* Returns the last element of the sequence of coefficients, i.e.
   the lead coefficient if the sequence is normal. *)
 Definition lead_coef p := last 0%bigQ p.
-
-Fixpoint chomp {A : Type} (p : list A) :=
-  match p with
-    [::] => [::]
-  | x::nil => nil
-  | x::p' => x::chomp p'
-  end.
-
-Definition belast1 (p : seq bigQ) :=
-  match p with [::] => [::] | a::tl => belast a tl end.
 
 (* To be used with a monic divisor d, of degree dd *)
 
@@ -593,8 +740,7 @@ Definition divp p d :=
 
 (* Correctness proof. *)
 
-Search _ Q.
-Definition repr (l : list bigQ) : poly rat :=
+(* Definition repr (l : list bigQ) : poly rat := *)
   
   
     
@@ -604,7 +750,7 @@ Definition clean_divp p d :=
 
 Fixpoint gcd_r n (p q : seq bigQ) : seq bigQ :=
   match n with
-    0 => p
+    O => p
   | S n' =>
     let (_, r) := clean_divp p q in
       match r with nil => q | _ => gcd_r n' q r end
@@ -630,14 +776,14 @@ Definition derive p :=
 Definition no_square p :=
   fst (clean_divp p (gcd p (derive p))).
 
-Definition isolate a b p : seq root_info :=
+Definition isolate a b p : seq (root_info bigQ) :=
   let l := no_square p in
   let deg := (size l).-1 in
   let coefs := b_coefs deg a b l in
   let b_is_root :=
-    if eq_bool (last 0%bigQ coefs) 0 then [:: Exact b] else [::] in
+    if eq_bool (last 0%bigQ coefs) 0 then [:: Exact _ b] else [::] in
   let result := isol_rec big_num deg a b coefs b_is_root in
-  if eq_bool (head 0%bigQ l) 0 then Exact a::result else result.
+  if eq_bool (head 0%bigQ l) 0 then Exact _ a::result else result.
 
 Fixpoint horner x p :=
   match p with
@@ -647,14 +793,14 @@ Fixpoint horner x p :=
 
 Fixpoint ref_rec n a b pol :=
   match n with
-    O => One_in (red a) (red b)
+    O => One_in _ (red a) (red b)
   | S p =>
     let c := ((a + b)/2)%bigQ in
     let v := horner c pol in
     match (v ?= 0)%bigQ with
       Lt =>  ref_rec p c b pol
     | Gt =>  ref_rec p a c pol
-    | Eq => Exact (red c)
+    | Eq => Exact _ (red c)
     end
   end.
 
@@ -676,15 +822,14 @@ Definition pol2 : list bigQ := ((-6)::11::(-6)::1::nil)%bigQ.
 (* This polynomial as 1 and 2 as roots, with respective multiplicities
   1 and 2. *)
 
-Fixpoint no_root (l : list root_info) : bool :=
+Definition pol3 : list bigQ := ((-4)::8::(-5)::1::nil)%bigQ.
+
+Fixpoint no_root (l : list (root_info bigQ)) : bool :=
   match l with
     nil => true
   | Zero_in a b::l' => no_root l'
   | _ => false
   end.
-
-
-Definition pol3 : list bigQ := ((-4)::8::(-5)::1::nil)%bigQ.
 
 (* this polynomial has only one root, but the curve comes close to
   the x axis around 2.5: this forces the dichotomy process a few times. *)
@@ -695,20 +840,20 @@ Compute clean_divp mypol [::1]%bigQ.
 Compute no_square mypol.
 Compute b_coefs 3 0 4 (no_square mypol).
 
-
 (* The following isolates the single root of mypol in (0,4) *)
 Compute isolate 0 4 mypol.
 
 (* The following computation proves that mypol has no roots in (2,4) *)
+Compute no_root (isolate 2 4 mypol).
+
 Compute b_coefs 3 2 4 mypol.
 Compute map (fun p => p.1 ?= p.2)%bigQ 
     (zip (dicho_r 3 (b_coefs 3 2 4 mypol)) (b_coefs 3 3 4 mypol)).
-Compute changes (b_coefs 3 3 4 mypol).
+Compute let l := b_coefs 3 3 4 mypol in (changes l, l).
 Compute isol_rec big_num 3 2 3 (b_coefs 3 2 3 mypol) [::].
 Compute isol_rec big_num 3 0 4 (b_coefs 3 0 4 mypol) [::].
 
 Compute isolate 2 4 mypol.
-
 
 Time Compute refine 20 0 2 mypol.
 
