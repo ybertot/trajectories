@@ -708,6 +708,73 @@ Fixpoint isol_rec n d (a b : bigQ) l acc : seq (root_info bigQ) :=
         else isol_rec p d c b l2 acc)
     end
   end.
+
+Section isol_rec_correct.
+
+Search Mobius bernp.
+
+Lemma isol_rec_acc : forall n d a b l acc, exists l'', isol_rec n d a b l acc = l''++acc.
+Proof.
+elim => [| n In] d a b l acc.
+ by rewrite /=; exists [:: Unknown bigQ a b].
+rewrite /=; case: (changes l) => [ | n0]; first by exists [:: Zero_in _ a b].
+case: n0 => [ | n1]; first by exists [:: One_in bigQ a b].
+case: (In d (red ((a + b) / 2)) b (dicho_r d l) acc) => [l1 l1q].
+case: (eq_bool (red (casteljau l (d - 0) 0)) 0).
+ case: (In d a (red ((a + b) / 2)) (dicho_l d l)
+               (Exact _ (red ((a + b) / 2))::l1++acc)) => [l2 l2q].
+ exists (l2++Exact _ (red ((a + b) / 2))::l1).
+ by rewrite -(cat1s _ l1) l1q l2q -!catA.
+case: (In d a (red ((a + b) / 2)) (dicho_l d l) (l1++acc)) => [l2 l2q].
+by exists (l2++l1); rewrite l1q l2q -!catA.
+Qed.
+
+Lemma bigQ_to_R_lt :
+  forall a b, (a < b)%bigQ -> (bigQ_to_R a < bigQ_to_R b)%R.
+Proof.
+Admitted.
+
+Lemma isol_rec_zero n (l : seq bigQ) rl rl' d q a b a' b' acc:
+  (a < b)%bigQ ->
+  size l = d ->
+  q = \sum_(i < d.+1) (bigQ_to_R (nth 0%bigQ l i)) *:
+         bernp  (bigQ_to_R a) (bigQ_to_R b) d i ->
+   rl++(Zero_in bigQ a' b')::rl'++ acc = (isol_rec n d a b l acc) ->
+   (bigQ_to_R a <= bigQ_to_R a' /\ bigQ_to_R b' <= bigQ_to_R b /\
+    bigQ_to_R a' < bigQ_to_R b' /\
+   forall x, bigQ_to_R a' < x < bigQ_to_R b' -> q.[x] != 0)%R.
+Proof.
+have catKr : forall T (s1 s2 s3 : seq T), s2++s1 = s3++s1 -> s2 = s3.
+ move => T s1 s2 s3 h.
+ have s23: size s2 = size s3.
+  by apply/eqP; rewrite -(eqn_add2r (size s1)) -!size_cat h.
+ by rewrite -(take_size_cat s1 (erefl (size s2)))
+        -(take_size_cat s1 (erefl (size s3))) h s23.
+have one_elem :
+  forall T (s1 s2 : seq T) e e' s3, 
+         s1++(e::s2++s3) = e'::s3 ->
+         e = e'.
+ move => T s1 s2 e e' s3 main.
+ have sizes : (size s1 == 0%N)%B && (size s2 == 0%N)%B.
+  have : (size s1 + size [:: e] + size s2)%N = size [::e'].
+   by apply/eqP; rewrite -(eqn_add2r (size s3)) -!size_cat -!catA !cat1s main.
+ rewrite /= -addnA (addnC 1%N) addnA -{2}[1%N]add0n =>/eqP.
+ by rewrite eqn_add2r addn_eq0.
+ move /andP: sizes => [/eqP size1 /eqP size2].
+ move: main; rewrite - (cat1s e' s3) -(cat1s e (s2++s3)) !catA => main.
+ move: (catKr _ _ _ _ main).
+ by rewrite (size0nil size1) (size0nil size2) cat0s cats0; move => [h1].
+elim: n l rl rl' d q a b a' b' acc =>
+  [ | n IH] l rl rl' d q a b a' b' acc dab sl qq.
+ by rewrite /= => abs; move : (one_elem _ _ _ _ _ _ abs).
+rewrite /=; case clq : (changes l) => [ | n0 ].
+ move => qr; move: (one_elem _ _ _ _ _ _ qr) => [qa qb].
+ rewrite qa qb !lerr.
+ repeat (split;[done | ]);split; first by apply:bigQ_to_R_lt.
+ move => x xint.
+Admitted.
+
+End isol_rec_correct.
     
 Definition big_num := 500%nat.
 
