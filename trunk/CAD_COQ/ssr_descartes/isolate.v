@@ -734,6 +734,18 @@ Lemma bigQ_to_R_lt :
 Proof.
 Admitted.
 
+Lemma changes_0_no_root :
+  forall (l : seq bigQ) d q a b x, size l = d -> seqn0 l <> [::] ->
+    changes l = 0%N ->
+    q = \sum_(i < d.+1) (bigQ_to_R (nth 0%bigQ l i)) *:
+         bernp  (bigQ_to_R a) (bigQ_to_R b) d i ->
+    (bigQ_to_R a < x < bigQ_to_R b)%R ->
+    q.[x] != 0%R.
+Proof.
+move => l d q a b x sl n0 cl qq intx.
+rewrite qq.
+
+Qed.
 Lemma isol_rec_zero n (l : seq bigQ) rl rl' d q a b a' b' acc:
   (a < b)%bigQ ->
   size l = d ->
@@ -744,7 +756,7 @@ Lemma isol_rec_zero n (l : seq bigQ) rl rl' d q a b a' b' acc:
     bigQ_to_R a' < bigQ_to_R b' /\
    forall x, bigQ_to_R a' < x < bigQ_to_R b' -> q.[x] != 0)%R.
 Proof.
-have catKr : forall T (s1 s2 s3 : seq T), s2++s1 = s3++s1 -> s2 = s3.
+have eq_cat2r : forall T (s1 s2 s3 : seq T), s2++s1 = s3++s1 -> s2 = s3.
  move => T s1 s2 s3 h.
  have s23: size s2 = size s3.
   by apply/eqP; rewrite -(eqn_add2r (size s1)) -!size_cat h.
@@ -762,7 +774,7 @@ have one_elem :
  by rewrite eqn_add2r addn_eq0.
  move /andP: sizes => [/eqP size1 /eqP size2].
  move: main; rewrite - (cat1s e' s3) -(cat1s e (s2++s3)) !catA => main.
- move: (catKr _ _ _ _ main).
+ move: (eq_cat2r _ _ _ _ main).
  by rewrite (size0nil size1) (size0nil size2) cat0s cats0; move => [h1].
 elim: n l rl rl' d q a b a' b' acc =>
   [ | n IH] l rl rl' d q a b a' b' acc dab sl qq.
@@ -772,6 +784,8 @@ rewrite /=; case clq : (changes l) => [ | n0 ].
  rewrite qa qb !lerr.
  repeat (split;[done | ]);split; first by apply:bigQ_to_R_lt.
  move => x xint.
+Search bernp.
+Print bernp.
 Admitted.
 
 End isol_rec_correct.
