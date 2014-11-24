@@ -8,12 +8,6 @@ Import GRing.Theory Num.Theory.
 
 Search seqn0 bernp.
 
-Inductive root_info A : Type := 
-  | Exact (x : A)
-  | One_in (x y : A)
-  | Zero_in (x y : A)
-  | Unknown (x y : A).
-
 (* Bernstein coefficients for half intervals can be computed using the
  algorithm by de Casteljau. *)
 Open Scope ring_scope.
@@ -32,23 +26,22 @@ Definition dicho_l n l :=
 Definition dicho_r n l :=
   map (fun i => casteljau l (n - i) i) (iota 0 (S n)).
 
-Fixpoint isol_rec n d (a b : rat) (l : seq rat) acc : seq (root_info rat) :=
-  match n with
-    O => Unknown _ a b::acc
-  | S p =>
-    match qe_rcf_th.changes (seqn0 l) with
-    | 0%nat => Zero_in _ a b::acc
-    | 1%nat => One_in _ a b::acc
-    | _ =>
-    let c := ((a + b)/(1+1)) in
-    let l2 := dicho_r d l in
-    isol_rec p d a c (dicho_l d l)
-        (if head 0 l2 == 0 then
-           Exact _ c::isol_rec p d c b l2 acc
-        else isol_rec p d c b l2 acc)
+Fixpoint count_root n d (l : seq rat) : option nat :=
+ match n with
+   0 => None
+ | S p =>
+   match qe_rcf_th.changes (seqn0 l) with
+     0%N => Some 0%N
+   | 1%N => Some 1%N
+   |_ => let l2 := dicho_r d l in
+      match count_root p d l2, count_root p d (dicho_l d l) with
+        Some v1, Some v2 =>
+          if head 0 l2 == 0 then Some (v1 + v2 + 1)%N else Some (v1 + v2)%N
+      | _, _ => None
+      end
     end
   end.
-
+      
 Section dicho_correct.
 Variable R : numFieldType.
 
@@ -90,6 +83,29 @@ Qed.
 
 End dicho_correct.
 
+Inductive root_info A : Type := 
+  | Exact (x : A)
+  | One_in (x y : A)
+  | Zero_in (x y : A)
+  | Unknown (x y : A).
+
+Fixpoint isol_rec n d (a b : rat) (l : seq rat) acc : seq (root_info rat) :=
+  match n with
+    O => Unknown _ a b::acc
+  | S p =>
+    match qe_rcf_th.changes (seqn0 l) with
+    | 0%nat => Zero_in _ a b::acc
+    | 1%nat => One_in _ a b::acc
+    | _ =>
+    let c := ((a + b)/(1+1)) in
+    let l2 := dicho_r d l in
+    isol_rec p d a c (dicho_l d l)
+        (if head 0 l2 == 0 then
+           Exact _ c::isol_rec p d c b l2 acc
+        else isol_rec p d c b l2 acc)
+    end
+  end.
+
 Definition root_info_eq (R : eqType) 
  (x y : root_info R) : bool :=
   match x, y with
@@ -121,6 +137,157 @@ by apply/q/(leq_trans ci2); rewrite subnKC.
 Qed.
 
 End more_on_dicho.
+
+Section count_root_correct.
+
+Variable R : archiFieldType.
+
+Definition R' := RealAlg.alg_of_rcfType R.
+
+Lemma count_root_correct0 n (l : seq rat) q d (a b: R') :
+  (0 < d)%N -> a < b -> q != 0 -> size l = d.+1 ->
+  q = \sum_(i < d.+1) (nth 0 (map ratr l) i) *:
+      bernp  a b d i -> count_root n d l = Some 0%N ->
+  forall (x : R'), a < x < b -> q.[x]!=0.
+Proof.
+move=> dgt0; elim: n l a b => [ | n In l a b ab qn0 sl qq]; first by [].
+rewrite /=.
+have anb : a != b.
+ by apply/negP => aqb; move: ab; rewrite ltr_neqAle aqb.
+have bman0 : b - a != 0  by rewrite subr_eq0 eq_sym.
+have twogt0 : (0 < 1 + 1 :> R').
+ by apply: addr_gt0; apply: ltr01.
+have twon0 : (1 + 1 != 0 :> R').
+ by apply/negP => two0; move: twogt0; rewrite ltr_neqAle eq_sym two0.
+have twoV : forall a, a = a/(1 + 1) + a/(1+1) :> R'.
+  by move=> y; rewrite -mulrDl -(mulr1 y) -mulrDr mulrK // mulr1.
+have altm : a < (a + b)/(1 + 1).
+ by rewrite {1}[a]twoV mulrDl ltr_add2l ltr_pmul2r // invr_gt0.
+have mltb : (a + b)/(1 + 1) < b.
+ by rewrite {2}[b]twoV mulrDl ltr_add2r ltr_pmul2r // invr_gt0.
+have mna : (a + b)/(1 + 1) != a.
+ by apply/negP => ma; move:altm; rewrite ltr_neqAle eq_sym ma.
+have mnb : (a + b)/(1 + 1) != b.
+ by apply/negP => mb; move:mltb; rewrite ltr_neqAle mb.
+case ch: (qe_rcf_th.changes (seqn0 l)) => [ | nch].
+ move => _; apply: (ch0_correct (d := d) ab qn0 qq) => //.
+  (* The following proof exactly common with isol_rec_no_root, except for hypothesis
+     that are discarded at the time of tactic elim *)
+ elim: {qq sl} l ch => /= [| e l Il]; first by [].
+ case e0 : (e == 0).
+  by rewrite (eqP e0) rmorph0 eqxx.
+ case h : (_ == 0).
+  move/negbT : e0 => /negP; case.
+  by rewrite -(fmorph_eq0 (ratr_rmorphism (RealAlg.alg_of_rcfType R))) h.
+ rewrite /=.
+ move/eqP; rewrite addn_eq0 => /andP [pe /eqP pl].
+ apply/eqP; rewrite addn_eq0; apply/andP; split; last first.
+  by apply/eqP; apply: Il.
+ set (u := ratr e).
+ have sr : (head 0 (seqn0 l) < 0) = 
+        (head 0 (seqn0 [seq ratr i | i <- l]) < 0 :> RealAlg.alg_of_rcfType R).
+  elim : {Il pl pe} l => [ | e' l' Il']; first by rewrite /= ltrr.
+  rewrite /=; case he' : (e' == 0) => /=.
+   by rewrite (eqP he') rmorph0 eqxx /=.
+  by rewrite fmorph_eq0 he' /= ltrq0.
+ have sr' : (0 < head 0 (seqn0 l)) = 
+           (0 < head 0 (seqn0 [seq ratr i | i <- l]) :> RealAlg.alg_of_rcfType R).
+  elim : {Il pl pe sr} l => [ | e' l' Il']; first by rewrite /= ltrr.
+  rewrite /=; case he' : (e' == 0) => /=.
+   by rewrite (eqP he') rmorph0 eqxx /=.
+  by rewrite fmorph_eq0 he' /= ltr0q.
+ case u0 : (u < 0).
+  rewrite nmulr_rlt0; last by [].
+  move: u0; rewrite ltrq0 => u0.
+  by rewrite -sr' -(nmulr_rlt0 _ u0).
+ move: u0; rewrite ltrNge ler_eqVlt eq_sym h /= => /negbFE => u0.
+ rewrite pmulr_rlt0; last by [].
+ by move: u0; rewrite ltr0q => u0; rewrite -sr -(pmulr_rlt0 _ u0).
+ (* end of common proof. *)
+case: {ch} nch => [| _]; first by [].
+case cr1 : (count_root n d (dicho_r d l)) => [ [ | v1] | //];
+ case cr2 : (count_root n d (dicho_l d l)) => [ [ | v2] | //];
+  case cc : ((casteljau l (d - 0) 0) == 0) => //.
+move => _ x axb.
+case xm : (x < (a + b) / (1 + 1)). 
+ have axm : (a < x < (a + b)/(1 + 1)).
+  by case/andP: axb => [ax xb]; rewrite ax xm.
+ have sl' : size (dicho_l d l) = d.+1 by rewrite /dicho_l size_map size_iota.
+ have qq' : q = \sum_(i < d.+1)
+       [seq ratr i | i <- dicho_l d l]`_i *:
+       bernp (R:=R') a ((a + b) / (1 + 1)) d i.
+  have sll : (size l <= d.+1)%N by rewrite sl leqnn.
+  have dlc := fun k => dicho_l_correct (RealAlg.alg_of_rcfType R) d l k sll.
+  set f := fun i : 'I_d.+1 => 
+    dicho' ((b - (a + b)/(1+1)) / (b - a)) (((a + b)/(1+1) - a) / (b - a))
+       [eta nth 0 [seq ratr v | v <- l]] i *: bernp a ((a + b)/(1+1)) d i.
+  have bodyq :
+   forall i : 'I_d.+1, true ->
+    [seq ratr i | i <- dicho_l d l]`_i *: bernp a ((a + b)/(1+1)) d i = f i.
+   rewrite /f.
+   have -> : (b - (a + b)/(1 + 1))/(b - a) = 1/(1 + 1).
+    rewrite (addrC a) {1}[b]twoV !mulrDl opprD mulrBl addrA.
+    by rewrite mulNr addrK -!mulrBl mulrC mulrA mulVf.
+   have -> : ((a + b) / (1 + 1) - a) / (b - a) = 1/(1 + 1).
+    rewrite (addrC a) {2}[a]twoV (mulrDl b) opprD addrA addrK -mulrBl.
+    by rewrite mulrC mulrA mulVf.
+   move=> [i id] _; congr (_ *: _).
+   rewrite /nat_of_ord (nth_map 0 0) ?sl' // dlc /dicho'.
+    apply: ext_dc => j j0 ji.
+    by rewrite (nth_map 0 0) // (leq_ltn_trans ji) // sl.
+   by rewrite -ltnS.
+  rewrite (eq_bigr f bodyq) /f.
+  by apply:(dicho'_correct (c :=fun i => [seq ratr v | v <- l]`_i) anb mna qq).
+ by apply: (In _ _ _  altm qn0 sl' qq' cr2 _ axm).
+set f := fun i : 'I_d.+1 => 
+    dicho ((b - (a + b)/(1+1)) / (b - a)) (((a + b)/(1+1) - a) / (b - a))
+       d [eta nth 0 [seq ratr v | v <- l]] i *: bernp ((a + b)/(1+1)) b d i.
+have sll : (size l <= d.+1)%N by rewrite sl leqnn.
+have drc := fun k => dicho_r_correct (RealAlg.alg_of_rcfType R) d l k sll.
+have sl' : size (dicho_r d l) = d.+1 by rewrite /dicho_l size_map size_iota.
+have bodyq :
+   forall i : 'I_d.+1, true ->
+    [seq ratr i | i <- dicho_r d l]`_i *: bernp ((a + b)/(1+1)) b d i = f i.
+ rewrite /f.
+ have -> : (b - (a + b)/(1 + 1))/(b - a) = 1/(1 + 1).
+  rewrite (addrC a) {1}[b]twoV !mulrDl opprD mulrBl addrA.
+  by rewrite mulNr addrK -!mulrBl mulrC mulrA mulVf.
+ have -> : ((a + b) / (1 + 1) - a) / (b - a) = 1/(1 + 1).
+  rewrite (addrC a) {2}[a]twoV (mulrDl b) opprD addrA addrK -mulrBl.
+  by rewrite mulrC mulrA mulVf.
+ move=> [i id] _; congr (_ *: _).
+ rewrite /nat_of_ord (nth_map 0 0) ?sl' // drc /dicho.
+  apply: ext_dc => j j0 ji.
+  by rewrite (nth_map 0 0) // sl (leq_ltn_trans ji) // subnKC.
+ by rewrite -ltnS.
+have qq' : q = \sum_(i < d.+1)
+       [seq ratr i | i <- dicho_r d l]`_i *:
+       bernp (R:=R') ((a + b) / (1 + 1)) b d i.
+ rewrite (eq_bigr f bodyq) /f.
+ apply:(dicho_correct (c :=fun i => [seq ratr v | v <- l]`_i) anb mnb qq).
+move/negP/negP: xm ; rewrite -lerNgt ler_eqVlt => /orP [/eqP xm | xm]; last first.
+ have mxb : ((a + b)/(1 + 1) < x < b).
+  by case/andP: axb => [ax xb]; rewrite xb xm.
+ by apply: (In _ _ _  mltb qn0 sl' qq' cr1 _ mxb).
+rewrite qq' (big_morph (fun p => horner p x) (fun p q => hornerD p q x)
+               (horner0 x)).
+have b0m := fun i (id : (i <= d)%N) => bern0_a mnb dgt0 id.
+have all0 : forall (i : 'I_d),  true ->
+   ([seq ratr i | i <- dicho_r d l]`_(lift ord0 i) *:
+    bernp (R:=R') x b d (lift ord0 i)).[x] = 0.
+ move => i _.
+ have id: (lift ord0 i <= d)%N by case: i => [i id].
+ have : (lift ord0 i != 0) by case: {id} i => [i id'].
+ rewrite -(b0m _ id) xm /R' hornerZ => /eqP ->.
+ by rewrite mulr0.
+rewrite big_ord_recl big1; last by rewrite xm.
+rewrite addr0 hornerZ mulf_neq0 //.
+ by rewrite /= fmorph_eq0 cc.
+by rewrite -xm (b0m _ (leq0n d)).
+Qed.
+
+End count_root_correct.
+
 Section isol_rec_correct.
 
 Variable R : archiFieldType.
@@ -313,47 +480,6 @@ rewrite (eq_bigr (fun i : 'I_d.+1 =>
              d i)); last by move => i _ ; apply bodyq.
 by apply: (dicho'_correct (c := fun i => [seq ratr v | v <- l]`_i) rabd ramd).
 Qed.
-
-Lemma isol_rec_zero n (l : seq rat) rl rl' d q a b a' b' acc :
-  (a < b) -> size l = d ->
-  q = \sum_(i < d.+1) (bigQ_to_R (nth 0%bigQ l i)) *:
-      bernp  (bigQ_to_R a) (bigQ_to_R b) d i ->
-   rl++(Zero_in bigQ a' b')::rl'++ acc = (isol_rec n d a b l acc) ->
-   (bigQ_to_R a <= bigQ_to_R a' /\ bigQ_to_R b' <= bigQ_to_R b /\
-    bigQ_to_R a' < bigQ_to_R b' /\
-   forall x, bigQ_to_R a' < x < bigQ_to_R b' -> q.[x] != 0)%R.
-Proof.
-have eq_cat2r : forall T (s1 s2 s3 : seq T), s2++s1 = s3++s1 -> s2 = s3.
- move => T s1 s2 s3 h.
- have s23: size s2 = size s3.
-  by apply/eqP; rewrite -(eqn_add2r (size s1)) -!size_cat h.
- by rewrite -(take_size_cat s1 (erefl (size s2)))
-        -(take_size_cat s1 (erefl (size s3))) h s23.
-have one_elem :
-  forall T (s1 s2 : seq T) e e' s3, 
-         s1++(e::s2++s3) = e'::s3 ->
-         e = e'.
- move => T s1 s2 e e' s3 main.
- have sizes : (size s1 == 0%N)%B && (size s2 == 0%N)%B.
-  have : (size s1 + size [:: e] + size s2)%N = size [::e'].
-   by apply/eqP; rewrite -(eqn_add2r (size s3)) -!size_cat -!catA !cat1s main.
- rewrite /= -addnA (addnC 1%N) addnA -{2}[1%N]add0n =>/eqP.
- by rewrite eqn_add2r addn_eq0.
- move /andP: sizes => [/eqP size1 /eqP size2].
- move: main; rewrite - (cat1s e' s3) -(cat1s e (s2++s3)) !catA => main.
- move: (eq_cat2r _ _ _ _ main).
- by rewrite (size0nil size1) (size0nil size2) cat0s cats0; move => [h1].
-elim: n l rl rl' d q a b a' b' acc =>
-  [ | n IH] l rl rl' d q a b a' b' acc dab sl qq.
- by rewrite /= => abs; move : (one_elem _ _ _ _ _ _ abs).
-rewrite /=; case clq : (changes l) => [ | n0 ].
- move => qr; move: (one_elem _ _ _ _ _ _ qr) => [qa qb].
- rewrite qa qb !lerr.
- repeat (split;[done | ]);split; first by apply:bigQ_to_R_lt.
- move => x xint.
-Search bernp.
-Print bernp.
-Admitted.
 
 End isol_rec_correct.
     
