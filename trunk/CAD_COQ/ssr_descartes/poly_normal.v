@@ -19,9 +19,15 @@ Import ComplexField.
 
 Local Open Scope ring_scope.
 
-Section normal_polynomial.
+Section normal_sec_def.
 
-Variable (R : rcfType).
+Variable (R : numFieldType).
+
+Definition all_pos := fun (s : seq R) => all (fun x => 0 < x) s.
+
+Lemma all_posP (s : seq R) :
+   reflect (forall k, (k < size s)%N -> 0 < s`_k) (all_pos s).
+Proof. by apply/all_nthP. Qed.
 
 Fixpoint normal_seq (s : seq R) := 
    if s is (a::l1) then 
@@ -77,6 +83,16 @@ elim: l a b=> [a b /andP [Ha Hb]| c l IHl a b ] //.
 case/andP=> H1 /orP H2.
 exact: (IHl b c H1).
 Qed.
+
+End normal_sec_def.
+
+Section normal_polynomial.
+
+Variable R : rcfType.
+
+Local Notation C := (complex R).
+
+Local Notation normal := (normal R).
 
 Lemma normal_squares (p : {poly R}) :
    p \is normal -> (forall k, (1 <= k)%N -> p`_(k.-1) * p`_(k.+1) <= p`_k ^+2).
@@ -151,12 +167,11 @@ rewrite normalE polyseqXsubC /=.
 by case Ha: (a <= 0); rewrite oppr_ge0 Ha // ltr01.
 Qed.
 
-Local Notation C := (complex R).
-
 Definition inB (z : C) :=
    ((Re z) <= 0) && (Im(z) ^+2 <= 3%:R * Re(z) ^+2).
 
 (* Lemma 2.42 *)
+
 Lemma quad_monic_normal (z : C) :
    (('X^2 + (- 2%:R * Re(z)) *: 'X + (Re(z) ^+2 + Im(z) ^+2)%:P) \is normal)
    = (inB z).
@@ -966,29 +981,9 @@ End normal_polynomial.
 Implicit Arguments normal_seq [R].
 Implicit Arguments normal [R].
 
-Section more_on_sequences.
+Section seqn0_and_properties.
 
-Variable R : rcfType.
-
-Definition all_pos := fun (s : seq R) => all (fun x => 0 < x) s.
-
-Lemma all_posP (s : seq R) :
-   reflect (forall k, (k < size s)%N -> 0 < s`_k) (all_pos s).
-Proof. by apply/all_nthP. Qed.
-
-Lemma normal_all_pos : forall (p : {poly R}), p \is normal ->
-   ~~(root p 0) -> all_pos p.
-Proof.
-move=> p Hpnormal H0noroot; apply/all_posP.
-by apply: normal_0notroot_2.
-Qed.
-
-Lemma all_pos_subseq : forall (s1 s2 : seq R), (all_pos s2) -> (subseq s1 s2) ->
-   (all_pos s1).
-Proof.
-move=> s1 s2 /allP Hs2 /mem_subseq Hsubseq;
-by apply/allP=> y /Hsubseq /Hs2 Hy.
-Qed.
+Variable R : ringType.
 
 (* sequence without 0's : filter (fun x => x != 0) s) *)
 Definition seqn0 (s : seq R) := [seq x <- s | x != 0].
@@ -1015,27 +1010,6 @@ case Ha : (a != 0) => //.
 by apply: IHbl.
 Qed.
 
-Lemma seqn0_size_2 (s : seq R) :
-   (s`_0 < 0) -> (0 < s`_(size s).-1) -> (1 < size (seqn0 s))%N.
-Proof.
-move=> Hs1 Hs2.
-have Hssize : (0 < size s)%N.
-  case: s Hs1 Hs2 => [ | ] //=.
-  by rewrite ltrr.
-case: s Hs1 Hs2 Hssize => [|a ] //.
-case=> [Ha1 Ha2 _ | b l Ha Hln Hablsize] //.
-  have: false => //.
-  rewrite -(ltr_asym 0 a).
-  by apply/andP.
-rewrite seqn0_cons /=.
-  rewrite -(addn1 0) -(addn1 (size (seqn0 (b ::l)))) ltn_add2r seqn0_size //.
-  have H : (size [:: a, b & l]).-1 = (size (b :: l)).-1.+1.
-    by rewrite /=.
-  rewrite H ltr_def in Hln.
-  by move/andP : Hln; case => -> _.
-rewrite ltr_def eq_sym in Ha.
-by move/andP : Ha; case => ->.
-Qed.
 
 Definition all_neq0 := fun (s : seq R) => all (fun x => x != 0) s.
 
@@ -1070,6 +1044,48 @@ have H3 : ((size (a :: (if b != 0 then b :: seqn0 l else seqn0 l))).-1
      = (size (seqn0 (b :: l))).-1.+1).
   by rewrite prednK // seqn0_size.
 by rewrite H3.
+Qed.
+
+End seqn0_and_properties.
+
+Section more_on_sequences.
+
+Variable R : rcfType.
+
+Lemma seqn0_size_2 (s : seq R) :
+   (s`_0 < 0) -> (0 < s`_(size s).-1) -> (1 < size (seqn0 s))%N.
+Proof.
+move=> Hs1 Hs2.
+have Hssize : (0 < size s)%N.
+  case: s Hs1 Hs2 => [ | ] //=.
+  by rewrite ltrr.
+case: s Hs1 Hs2 Hssize => [|a ] //.
+case=> [Ha1 Ha2 _ | b l Ha Hln Hablsize] //.
+  have: false => //.
+  rewrite -(ltr_asym 0 a).
+  by apply/andP.
+rewrite seqn0_cons /=.
+  rewrite -(addn1 0) -(addn1 (size (seqn0 (b ::l)))) ltn_add2r seqn0_size //.
+  have H : (size [:: a, b & l]).-1 = (size (b :: l)).-1.+1.
+    by rewrite /=.
+  rewrite H ltr_def in Hln.
+  by move/andP : Hln; case => -> _.
+rewrite ltr_def eq_sym in Ha.
+by move/andP : Ha; case => ->.
+Qed.
+
+Lemma normal_all_pos : forall (p : {poly R}), p \is normal ->
+   ~~(root p 0) -> all_pos p.
+Proof.
+move=> p Hpnormal H0noroot; apply/all_posP.
+by apply: normal_0notroot_2.
+Qed.
+
+Lemma all_pos_subseq : forall (s1 s2 : seq R), (all_pos s2) -> (subseq s1 s2) ->
+   (all_pos s1).
+Proof.
+move=> s1 s2 /allP Hs2 /mem_subseq Hsubseq;
+by apply/allP=> y /Hsubseq /Hs2 Hy.
 Qed.
 
 Definition increasing := fun (s : seq R) =>
@@ -1303,7 +1319,7 @@ case Ha : (a != 0).
   rewrite /= Ha -IHbl => //.
   have H2 : (size (a :: (if b != 0 then b :: seqn0 l else seqn0 l))).-1 =
    (size (seqn0 (b ::l))).-1.+1.
-    rewrite prednK // (@seqn0_size (b :: l)) //.
+    rewrite prednK // (@seqn0_size _ (b :: l)) //.
   by rewrite H2 take_cons.
 by rewrite /= Ha -IHbl.
 Qed.
@@ -1637,8 +1653,8 @@ Lemma size_seqn0spseq_maskdropp : size (seqn0 spseq) =
 Proof.
 rewrite -mid_seqn0q_size mid_seqn0_C ?q_0_neq0 // ?q_n_neq0 //
   seqn0_as_mask !size_mask //.
-  by rewrite size_map size_drop mid_size p_size subn1.
-by rewrite size_map.
+  by rewrite size_map. 
+by rewrite size_map size_drop mid_size p_size subn1.
 Qed.
 
 Lemma minn_seqn0spseq_maskdropp : (minn (size (seqn0 spseq))
@@ -1666,8 +1682,7 @@ Qed.
 Lemma seqn0q_1 : (1 < (size (seqn0 q)).-1)%N ->
    (seqn0 q)`_1 = (mid (seqn0 q))`_0.
 Proof.
-move=> Hk.
-by rewrite -mid_coef_2.
+by move=> Hk; rewrite -{1}[(seqn0 q)`_1]mid_coef_2.
 Qed.
 
 Lemma seqn0q_n : (0 < (size (seqn0 q)).-2)%N ->
