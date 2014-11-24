@@ -410,7 +410,7 @@ invariant : l + r = b - a *)
 
 Section DeCasteljauAlgo.
 
-Variable R : rcfType.
+Variable R : comRingType.
 
 Variables l r : R.
 
