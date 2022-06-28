@@ -83,6 +83,8 @@ Definition pol_from_B' (l r a b c d e f x : Z) :=
   a * B5'_(0) l r x + b * B5'_(1)l r x + c * B5'_(2)l r x + d * B5'_(3)l r x +
   e * B5'_(4)l r x + f * B5'_(5)l r x.
 
+(* NB(rei): couldn't figure out how to make the code below go through
+Require Import FunInd.
 Functional Scheme iter_nat_ind := Induction for iter_nat Sort Prop.
 
 (* Using Coq as a symbolic engine to compute some polynomials from
@@ -131,3 +133,4 @@ Lemma bc_right2 : bc 6 ex2 2 4 =
           (map (fun x => (4 - 2) ^ 5 * bin 5 x) (seq 0 6)).
 reflexivity.
 Qed.
+*)

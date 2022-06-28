@@ -1,13 +1,13 @@
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice fintype.
+From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice fintype order.
 From mathcomp Require Import div finfun bigop prime binomial ssralg finset fingroup finalg.
-From mathcomp Require Import mxalgebra perm zmodp matrix ssrint refinements funperm.
-From mathcomp Require Import seq
-Require Import seqpoly pol square_free casteljau desc rat.
+From mathcomp Require Import mxalgebra perm zmodp matrix ssrint.
+(*From mathcomp Require Import (*refinements NB(rei) funperm*).*)
+From mathcomp Require Import seq rat.
+Require Import (*seqpoly*) pol square_free casteljau desc.
 
-From mathcomp Require Import ssrnum ssrint realalg poly poly_normal.
-Import GRing.Theory Num.Theory.
-
-Search seqn0 bernp.
+From mathcomp Require Import ssrnum ssrint realalg poly.
+Require Import poly_normal.
+Import Order.Theory GRing.Theory Num.Theory.
 
 (* Bernstein coefficients for half intervals can be computed using the
  algorithm by de Casteljau. *)

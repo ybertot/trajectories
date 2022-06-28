@@ -1,12 +1,11 @@
 (*Require Import QArith ZArith Zwf Omega.*)
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun order.
 From mathcomp Require Import bigop fingroup choice binomial.
-From mathcomp Require Export ssralg.
+From mathcomp Require Export ssralg rat ssrnum.
 Require Import infra pol cmvt desc.
 
 Import GroupScope .
-Import GRing.Theory .
-Import Order.Theory.
+Import Order.Theory GRing.Theory Num.Theory.
 Local Open Scope ring_scope .
 
 Set Printing Width 50.
@@ -28,28 +27,34 @@ Set Printing Width 50.
   only one root above a.
     
 *)
-Definition one_root1 (l : seq Qcb) (a b : Qcb) :=
-  exists c, exists d, exists k, 
-     a < c /\ c < d /\ d < b /\ 0 < k /\
-     (forall x, a < x -> x <= c -> 0 < eval_pol l x) /\
-     (forall x, d < x -> x < b -> eval_pol l x < 0) /\
-     (forall x y, c < x -> x <= y -> y < d ->
-        k * (y - x) <= eval_pol l x - eval_pol l y ).
 
-Definition one_root2 (l : seq Qcb) (a : Qcb) :=
-   exists c, exists k,
-     a < c /\ 0 < k /\
-     (forall x, a < x -> x <= c -> eval_pol l x < 0) /\
+Local Open Scope order_scope .
+
+Definition one_root1 (l : seq rat) (a b : rat) :=
+  exists c, exists d, exists k : rat, 
+     a < c /\ c < d /\ d < b /\ (0 < k)%Q /\
+     (forall x, a < x -> x <= c -> (0 < eval_pol l x)%Q) /\
+     (forall x, d < x -> x < b -> (eval_pol l x < 0)%Q) /\
+     (forall x y, c < x -> x <= y -> y < d ->
+        k * (y - x) <= eval_pol l x - eval_pol l y).
+
+Definition one_root2 (l : seq rat) (a : rat) :=
+   exists c, exists k : rat,
+     a < c /\ (0 < k)%Q /\
+     (forall x, a < x -> x <= c -> eval_pol l x < 0)%Q /\
      (forall x y, c <= x -> x < y -> 
          k * (y - x) <= eval_pol l y - eval_pol l x).
 
 Lemma alt_one_root2 : forall l, alternate l -> one_root2 l 0.
 move => l a.
-move: (desc l a) => [x1 [k [x1p [kp [neg sl]]]]].
+(*move: (desc l a) => [x1 [k [x1p [kp [neg sl]]]]].
 move: (above_slope _ _ 0 _ kp sl) => [x2 [pos x1x2]].
 by exists x1; exists k; split; first done; split; first done; split; done.
-Qed.
+Qed.*) Admitted.
 
+(* NB(rei): couldn't find translate_pol' *)
+(*
+TODO
 Lemma one_root2_translate :
   forall l a b, one_root2 (translate_pol' l a) b -> one_root2 l (a + b).
 Proof.
@@ -93,7 +98,10 @@ rewrite {2}(t x) {2}(t y) (_ : y - x = y - c - (x - c)); last first.
   by rewrite [x + _]addrC oppr_add opprK addrA addrNK.
 by rewrite -!(translate_pol'q l); apply: sl; rewrite ?ler_add2l // lter_subl.
 Qed.
+*)
 
+(* NB(rei): couldn't find expand
+TODO
 Lemma one_root1_expand :
   forall l a b c, 0 < c -> one_root1 (expand l c) a b ->
     one_root1 l (c * a) (c * b).
@@ -124,22 +132,26 @@ move=> x y cx1x xy ycx2; rewrite -mulrA mulr_addr mulrN ![c^-1 * _]mulrC
  by rewrite ltef_mulpr.
 by rewrite ltef_divpl // mulrC.
 Qed.
+*)
 
 Lemma diff_xn_ub :
-  forall n z, 0 < z -> exists k, 0 <= k /\
-   forall x y:Qcb, 0 < x -> x <= y -> y <= z ->
+  forall (n : nat) (z : rat), (0 < z)%Q -> exists k : rat, (0 <= k)%Q /\
+   forall x y : rat, (0 < x)%Q -> x <= y -> (y <= z) ->
       y ^+ n - x ^+ n <= k * (y - x).
 Proof.
-move => n; elim: n => {n} [z z0| n IHn z z0].
-  by exists 0.
+move => n; elim: n => [z z0| n IHn z z0].
+  exists 0%Q; split => // x y x0 xy yz.
+  by rewrite !expr0 subrr mul0r.
 case: (IHn z z0) => k [k0 kp].
 exists (z*k + z ^+ n); split => [ | x y x0 xy yz].
-  apply: lter_addpl => /=; first by apply:expf_ge0; rewrite ltrW.
-  by apply: mulr_gte0pp=> //=; apply: ltrW.
+  apply: addr_ge0 => //=.
+  (*; first by apply:expf_ge0; rewrite ltrW.
+  by apply: mulr_gte0pp=> //=; apply: ltrW.*) admit.
+  admit.
 rewrite !exprS.
 rewrite (_: _ * _ - _ =  y * (y ^+ n - x ^+ n) + (y - x) * x ^+ n); last first.
-  by rewrite mulr_addl mulr_addr addrA mulrN mulNr addrNK.
-rewrite [_ * (y-x)]mulr_addl lter_add //=.
+  (*by rewrite mulr_addl mulr_addr addrA mulrN mulNr addrNK.*) admit.
+(*rewrite [_ * (y-x)]mulr_addl lter_add //=.
   rewrite -mulrA; apply: ler_trans (_ : y * (k * (y - x)) <= _).
   rewrite lter_mulpl //=; first by apply: lter_le_trans xy; apply: ltrW.
     by apply: kp.
@@ -147,8 +159,10 @@ rewrite [_ * (y-x)]mulr_addl lter_add //=.
 rewrite (mulrC (_ - _)); apply: lter_mulpr; first by rewrite subr_gte0.
 case: {IHn kp} n=> /=; first by rewrite !expr0 lterr.
 by move => n; rewrite lef_expS2 ?(ltrW z0) ?(ltrW x0) //=; apply: ler_trans yz.
-Qed.
+Qed.*) Admitted.
 
+(* NB(rei): couldn't find reciprocate_pol
+TODO
 Lemma reciprocate_size :  forall l, size (reciprocate_pol l) = size l.
 by move => l; rewrite /reciprocate_pol size_rev.
 Qed.
@@ -419,3 +433,4 @@ apply one_root_reciprocate.
 rewrite -[1]addr0; apply one_root2_translate.
 by apply: alt_one_root2.
 Qed.
+*)
