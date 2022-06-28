@@ -1036,7 +1036,7 @@ have: k * (x - x1) <= p.[x] - p.[x1]  by apply: incr =>//; rewrite x1x v1x1.
 by apply : le_trans; apply: mulr_ge0 => //; rewrite ?(ltW kpos) ?subr_ge0.
 Admitted.
 
-Lemma one_root_reciprocal (p: {poly R}) deg : 
+Lemma one_root_reciprocal (p: {poly R}) deg :
   (0 < size p)%N ->
   (size p <= deg.+1)%N ->
   one_root2 (recip deg p) 1 -> one_root1 p 0 1.
@@ -1057,12 +1057,12 @@ move: (@diff_xn_ub R deg 1); set u := _ *+ _; move => up.
 set u':= Num.max 1 u.
 have uu': u <= u' by rewrite le_maxr lexx orbT.
 have u1: 1 <= u' by rewrite le_maxr lexx.
-have u'0 : 0 < u' by rewrite (lt_le_trans ltr01). 
+have u'0 : 0 < u' by rewrite (lt_le_trans ltr01).
 have divu_ltr : forall x, 0 <= x -> x / u' <= x.
    move => x x0; rewrite ler_pdivr_mulr // ler_pemulr //.
 have y'0: 0 < y' by apply: lt_trans y'1.
 pose y := y' + 1.
-have y'y : y' < y by rewrite /y ltr_addl. 
+have y'y : y' < y by rewrite /y ltr_addl.
 have y1 : x1 < y by apply: lt_trans y'1 _.
 have ypos : 0 <  q.[y].
   have aux: x1 <= y' <= y by rewrite (ltW y'1) (ltW y'y).
@@ -1070,9 +1070,9 @@ have ypos : 0 <  q.[y].
   by apply: lt_le_trans (sl _ _ aux); rewrite mulr_gt0 // subr_gt0.
 have y0: 0 < y by apply: lt_trans y'y.
 pose k' := half ((k * x1 ^+ 2 * y ^- 1 ^+ deg)).
-have k'p : 0 < k'. 
+have k'p : 0 < k'.
   apply: half_gt0; rewrite mulr_gt0 //; first by rewrite mulr_gt0  // exprn_gt0.
-  rewrite exprn_gt0 // invr_gt0 //.  
+  rewrite exprn_gt0 // invr_gt0 //.
 pose e := k' / u'.
 have ep: 0 < e by rewrite /e; apply: mulr_gt0 => //; rewrite invr_gt0.
 pose e1 := half e.
@@ -1091,8 +1091,8 @@ have cp0 : 0 < c.
   by move: (lt_le_trans  dp dp'); rewrite pmulr_lgt0 // subr_gt0.
 set b := Num.min y (b' +(half e1)/c).
 have blty: b <= y by  rewrite /b le_minl lexx.
-have b'b: b' < b. 
-  rewrite lt_minr (le_lt_trans b'y' y'y) /= - ltr_subl_addl addrN. 
+have b'b: b' < b.
+  rewrite lt_minr (le_lt_trans b'y' y'y) /= - ltr_subl_addl addrN.
   by rewrite (divr_gt0 (half_gt0 e1p) cp0).
 have clb:c * (b - b') < e1.
   apply: le_lt_trans (half_ltx e1p).
@@ -1126,7 +1126,7 @@ have res2: neg_in_interval1 a^-1 1 (horner p).
   have x1a0 : x^-1 < a by rewrite inv_compr.
   case : (lerP x1 x^-1) => cmp; last first.
      apply: neg => //;rewrite (inv_comp ltr01 x0) invr1.
-     by rewrite xlt1 (ltW cmp). 
+     by rewrite xlt1 (ltW cmp).
   have aux: (x1 <= x^-1 <= a) by rewrite cmp (ltW x1a0).
   apply: lt_trans nega; rewrite -subr_gte0.
   apply: lt_le_trans (sl _ _ aux).
@@ -1135,7 +1135,7 @@ exists b^-1, a^-1, k'.
 split => //.
   rewrite k'p ibp - ltpinv // (inv_compr ltr01 a0) invr1.
   by rewrite (lt_trans ab b'b) (lt_le_trans x1gt1 x1a).
-move => x z bvx xz zav. 
+move => x z bvx xz zav.
   rewrite le_eqVlt in xz; move/orP: xz => [xz | xz].
   by rewrite (eqP xz) !addrN mulr0 lexx.
 have x0: 0 < x by apply: (lt_le_trans ibp bvx).
@@ -1150,7 +1150,7 @@ have lmrec : forall yy, 0 < yy -> p.[yy] = yy ^+ deg * q.[yy^-1].
     case h'': (size p) => [ | [ | sp]] //.
       by move: s0; rewrite h'' ltn0.
     by move: h; rewrite h'' eqxx.
-  rewrite -expfB; last first. 
+  rewrite -expfB; last first.
     rewrite h' subSS prednK; last by rewrite h'.
     rewrite -{2}[deg]subn0 ltn_sub2l //.
       by rewrite -ltnS (leq_trans _ sz) // h'.
@@ -1174,7 +1174,7 @@ have pc: 0 <= k * (x^-1 - z^-1) by apply: ltW;rewrite(mulr_gt0 kp) // subr_gt0.
 have pdd:(x1 <= z^-1 <= x^-1) by rewrite pa (ltW xzi).
 have pd:= (sl _ _ pdd).
 have t3p:=  le_trans pc pd.
-have pe: 0 <= y^-1 <= z. 
+have pe: 0 <= y^-1 <= z.
   rewrite invr_ge0 ltW ? y0 //.
   by apply: le_trans (ltW xz); apply: le_trans bvx; rewrite -lepinv.
 case /andP: (pow_monotone s pe) => _ hh.
@@ -1192,7 +1192,7 @@ rewrite mulrDl; apply: ler_add; last first.
   rewrite (mulrC z^-1)  -mulrBl (mulrC (z - x)).
   rewrite ler_pmul2r /=; last by rewrite subr_gte0.
   apply: le_trans (_ : x1 / z <= _); first rewrite ler_pmul2l //=.
-  by rewrite ler_pmul2r ?invr_gt0. 
+  by rewrite ler_pmul2r ?invr_gt0.
 move:(ltW xz) => xz'.
 have xzexp : (x ^+ s - z ^+ s) <= 0.
    have aux: 0 <=x <= z by rewrite xz' ltW//.
@@ -1212,11 +1212,11 @@ have rpxe : q.[x^-1] <= e.
     rewrite mulr_ge0  ?subr_gte0 // ltW //.
   rewrite -[_ _ b]addr0 -(addrN (q).[b']) addrA.
   rewrite (addrC ( _ b)) -addrA - (double_half e) (ler_add clb')//.
-  have yb: - y <= b' by apply: ltW; apply: lt_trans b'0; rewrite oppr_lt0. 
+  have yb: - y <= b' by apply: ltW; apply: lt_trans b'0; rewrite oppr_lt0.
   move: (le_trans (cp b' b yb (ltW b'b) blty) (ltW clb)).
   by move /ler_normlP => [_].
 apply: le_trans (_ : (z^+ s - x ^+ s) * e <= _).
-  by rewrite ler_wpmul2l // ?subr_gte0. 
+  by rewrite ler_wpmul2l // ?subr_gte0.
 have un0 : (u' != 0) by  move: u'0; rewrite lt0r; case /andP =>[].
 rewrite [_ * e]mulrC; apply: le_trans (_ : e * (u' * (z - x)) <= _)=> /=.
   apply: ler_wpmul2l; first exact: ltW.
@@ -1228,7 +1228,7 @@ rewrite [_ * e]mulrC; apply: le_trans (_ : e * (u' * (z - x)) <= _)=> /=.
     by rewrite invr_le1 // unitf_gt0.
   by rewrite ler_pmul2r // subr_gte0.
 rewrite mulrA ler_pmul2r; last by rewrite subr_gte0.
-rewrite /= /e  divfK ?lterr //. 
+rewrite /= /e  divfK ?lterr //.
 Qed.
 
 Lemma alternate_MX (p : {poly R}) k:
@@ -1258,4 +1258,3 @@ by apply: one_root_reciprocal; rewrite sss.
 Qed.
 
 End DescOnArchiField.
-
