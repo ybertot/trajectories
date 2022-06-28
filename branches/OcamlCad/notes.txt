@@ -1,4 +1,0 @@
-a faire:
-- verifier les sous-résultants
-- bernstein
-- refinement of algebraic numbers

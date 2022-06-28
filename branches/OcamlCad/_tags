@@ -1,4 +1,0 @@
-<libCad/poly.ml>      : pp(camlp4o pa_macro.cmo)
-<libCad/*>            : use_nums, use_str
-<libCad/*.cmx>        : for-pack(LibCad)
-<src/*.{byte,native}> : use_nums, use_str, use_poly
