@@ -1,6 +1,6 @@
 (*Require Import QArith ZArith Zwf Omega.*)
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun order.
-From mathcomp Require Import bigop fingroup choice binomial.
+From mathcomp Require Import bigop fingroup choice binomial poly.
 From mathcomp Require Export ssralg rat ssrnum.
 Require Import infra pol civt desc.
 
@@ -96,42 +96,44 @@ have t: forall z, z = (z - c) + c by move=> z; rewrite addrNK.
 rewrite {2}(t x) {2}(t y) (_ : y - x = y - c - (x - c)); last first.
   by rewrite [x + _]addrC oppr_add opprK addrA addrNK.
 by rewrite -!(translate_pol'q l); apply: sl; rewrite ?ler_add2l // lter_subl.
-Qed.
+eQed.
 *)
 
-(* NB(rei): couldn't find expand
-TODO
+Definition expand (p : {poly rat}) (k : rat) :=
+  \poly_(i < size p)(p`_i * k ^+i).
+
 Lemma one_root1_expand :
-  forall l a b c, 0 < c -> one_root1 (expand l c) a b ->
+  forall l a b (c : rat), (0 < c)%Q -> one_root1 (expand l c) a b ->
     one_root1 l (c * a) (c * b).
 Proof.
 move=> l a b c cp [x1 [x2 [k [ax1 [x1x2 [x2b [kp [pos [neg sl]]]]]]]]].
 exists (c * x1); exists (c * x2); exists (k / c).
-have tc : 0 < c^-1 by rewrite invf_gte0.
+have tc : (0 < c^-1)%Q by rewrite invr_gt0.
 (*have uc: GRing.unit c by apply/negP; move/eqP => q; rewrite q lterr in cp.*)
-split; first by rewrite lter_mulpl.
-split; first by rewrite lter_mulpl.
-split; first by rewrite lter_mulpl.
-split; first by rewrite mulr_gte0pp.
+split; first by rewrite ltr_pmul2l.
+split; first by rewrite ltr_pmul2l.
+split; first by rewrite ltr_pmul2l.
+split; first by rewrite divr_gt0.
 split.
   move=> x acx xx1c.
-    rewrite (_ : x = c * (x/c)); last by rewrite mulrC mulfVK // eq_sym ltrWN.
-   rewrite -eval_expand; apply: pos.
+    rewrite (_ : x = c * (x/c)); last first.
+      by rewrite mulrC mulfVK // eq_sym lt_eqF.
+(* NB(rei): eval_expand?*)
+(*   rewrite -eval_expand; apply: pos.
      by rewrite ltef_divpr // mulrC.
-   by rewrite ltef_divpl //= mulrC.
+   by rewrite ltef_divpl //= mulrC.*)
+  admit.
 split.
-  move=> x cx2x xcb; rewrite (_ : x = c * (x/c)); last by rewrite mulrC mulfVK // eq_sym ltrWN.
-  rewrite -eval_expand; apply: neg; first by rewrite ltef_divpr 1?mulrC.
-  by rewrite ltef_divpl 1?mulrC.
+  move=> x cx2x xcb; rewrite (_ : x = c * (x/c)); last by rewrite mulrC mulfVK // eq_sym lt_eqF.
+  (*rewrite -eval_expand; apply: neg; first by rewrite ltef_divpr 1?mulrC.
+  by rewrite ltef_divpl 1?mulrC.*) admit.
 have t: forall z, z = c * (z/c).
-   by move=> z; rewrite [c * _]mulrC mulfVK // eq_sym ltrWN.
-move=> x y cx1x xy ycx2; rewrite -mulrA mulr_addr mulrN ![c^-1 * _]mulrC
+   by move=> z; rewrite [c * _]mulrC mulfVK // eq_sym lt_eqF.
+(*move=> x y cx1x xy ycx2; rewrite -mulrA mulrDr mulrN ![c^-1 * _]mulrC
   {2}(t x) {2}(t y) -!(eval_expand l); apply: sl.
    by rewrite ltef_divpr // mulrC.
  by rewrite ltef_mulpr.
-by rewrite ltef_divpl // mulrC.
-Qed.
-*)
+by rewrite ltef_divpl // mulrC.*) Admitted.
 
 Lemma diff_xn_ub :
   forall (n : nat) (z : rat), (0 < z)%Q -> exists k : rat, (0 <= k)%Q /\
