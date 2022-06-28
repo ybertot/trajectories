@@ -1,14 +1,15 @@
+From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path choice fintype order.
+From mathcomp Require Import prime div bigop ssralg poly polydiv polyorder ssrnum zmodp.
+From mathcomp Require Import polyrcf qe_rcf_th complex.
+
+(******************************************************************************)
 (*
 This file consists of 3 sections:
 - introduction of normal polynomials, some lemmas on normal polynomials
 - constructions on sequences, such as all_neq0, all_pos, increasing, mid, seqmul, seqn0 
 - proof of Proposition 2.44 of [bpr], normal_changes
 *)
-
-
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path choice fintype order.
-From mathcomp Require Import prime div bigop ssralg poly polydiv polyorder ssrnum zmodp.
-From mathcomp Require Import polyrcf qe_rcf_th complex.
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -4,14 +4,12 @@ From mathcomp Require Import bigop fingroup choice ssralg ssrnum rat.
 Require Export (*infra*) pol.
 
 Import GroupScope.
-Import GRing.Theory.
-Import Order.Theory.
-Import Num.Theory.
+Import Order.Theory GRing.Theory Num.Theory.
 Local Open Scope ring_scope.
-
 
 Set Printing Width 50.
 
+(******************************************************************************)
 (* We want to prove a simple and contructive approximation of the
  intermediate value theorem: if a polynomial is negative in a and positive in b,
  and a < b, then for any positive epsilon, there exists c and d, so that
@@ -20,9 +18,9 @@ Set Printing Width 50.
  we use a second polynomial, obtained by taking the the absolute value
  of each coefficient.
 *)
+(******************************************************************************)
 
 (* NB: copied from new_descartes *)
-
 Fixpoint eval_pol (l:list rat)(x:rat) {struct l} : rat :=
   match l with
     nil => 0
@@ -46,7 +44,6 @@ move=> l b; case: l =>[| a l].
 (*  rewrite (le_trans (ler_absr_eval_pol _ _)) //.
   by rewrite eval_pol_abs_pol_increase // ger0_abs.
 Qed.*) (*TODO*) Admitted.
-
 
 (* Cannot be abstracted since not every ordered ring has a floor ring *)
 (*

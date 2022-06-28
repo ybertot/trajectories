@@ -3,6 +3,13 @@ From mathcomp Require Import fintype bigop ssralg poly ssrnum ssrint rat ssrnum.
 From mathcomp Require Import polyrcf qe_rcf_th realalg.
 Require Import pol poly_normal desc.
 
+(******************************************************************************)
+(*  de_casteljau == De Casteljau's algorithm                                  *)
+(*    dicho' b i := de_casteljau b i 0                                        *)
+(*   dicho p b i := de_casteljau b (p - i) i                                  *)
+(* bernp a b p i == Bernstein polynomial of degree p for a, b for 0 <= i <= p *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -11,8 +18,6 @@ Import Order.Theory.
 Import GRing.Theory.
 Import Num.Theory Num.Def.
 Local Open Scope ring_scope.
-
-
 
 (* A technical binomial identity for the proof of de Casteljau *)
 Lemma util_C : forall n i j : nat, (i <= j)%nat -> (j <= n)%nat ->
@@ -40,13 +45,6 @@ Proof.
 exact: exprn_ege1.
 Qed.
 
-(* TODO: rm *)
-Lemma ge0_sum : forall m (G : nat -> F),
-  (forall i, ((i < m)%N ->  0 <= G i)) -> 0 <= \sum_(i < m) G i.
-Proof.
-by move=> m G F0; apply: sumr_ge0 => i _; apply: F0.
-Qed.
-
 Lemma ge_sum :  forall m (G1 G2 : nat -> F),
   (forall i, ((i < m)%N ->  G1 i <= G2 i)) -> \sum_(i < m) G1 i <= \sum_(i < m) G2 i.
 Proof.
@@ -63,11 +61,11 @@ rewrite !big_ord_recr /=; apply: le_trans (ler_norm_add _ _) _=> /=.
 by rewrite ler_add2r; apply: ihm.
 Qed.
 
+(* TODO: rm? *)
 Lemma absrge1 : forall x : F, 1 < x -> x^-1 < 1.
 Proof.
-move=> x lt1x; rewrite -(mul1r (x^-1)).
-rewrite lter_pdivr_mulr ?mul1r //.
-apply: lt_trans lt1x; exact: ltr01.
+move=> x x1.
+by rewrite invr_lt1 ?unitfE ?gt_eqF// (le_lt_trans _ x1)// ler01.
 Qed.
 
 (* TODO: rm *)
@@ -153,10 +151,7 @@ move=> px0; case: (lerP `|x| 1)=> cx1.
   set C := _ * _; suff leC1 : 1 <= C by apply: le_trans leC1.
   have h1 : `|E n| > 0 by rewrite  normr_gt0.
   rewrite -(ler_pmul2l h1) /= mulr1 /C mulrA mulfV ?normr_eq0 // mul1r.
-  rewrite big_ord_recr /= -{1}(add0r `|E n|) ler_add2r.
-  (* here should be a lemma in orderedalg *)
-  elim: n=> [|m ihm]; first by rewrite big_ord0 lexx.
-  rewrite big_ord_recr /=; apply: addr_ge0=> //; exact: normr_ge0.
+  by rewrite big_ord_recr /= -{1}(add0r `|E n|) ler_add2r sumr_ge0.
 case e: n=> [| m].
   move: pnz; rewrite -px0 e horner_poly big_ord_recl big_ord0 /=.
   by rewrite addr0 expr0 mulr1 /= eqxx.
@@ -164,12 +159,9 @@ have h1 : E  m.+1 * x^+m.+1 = - \sum_(i < m.+1) E i * x^+ i.
   apply/eqP; rewrite -subr_eq0 opprK -{2}px0 horner_poly (big_ord_recr n).
   by rewrite e //= addrC.
 case x0 : (x == 0).
-  rewrite (eqP x0) normr0; apply:  mulr_ge0.
-    by rewrite invr_gte0 /= normr_ge0.
-  suff h2: forall i, (i < m.+2)%N -> 0 <= `|E i| by apply: (ge0_sum h2).
-  move=> i _; exact: normr_ge0.
+  by rewrite (eqP x0) normr0 mulr_ge0 ?sumr_ge0// invr_gte0.
 have {h1} h2 : E m.+1 * x =  - \sum_(i < m.+1) E i * x^-(m - i).
-have xmn0 : ~~(x^+m == 0) by rewrite expf_eq0 x0 andbF.
+have xmn0 : ~~ (x^+m == 0) by rewrite expf_eq0 x0 andbF.
   apply: (mulIf xmn0); rewrite mulNr big_distrl /= -mulrA -exprS h1.
   congr (- _); apply: congr_big; [by [] | by [] |] => [[i hi]] _ /=.
   have mi : m = (m - i + i)%N by rewrite subnK.
@@ -426,7 +418,6 @@ Definition dicho' b i := de_casteljau b i 0.
 computes the B. coefficients on [b-r, b] si b - a = l + r , as soon as p = deg P *)
 Definition dicho p b i := de_casteljau b (p - i) i.
 
-
 (* the computation of the value at index (k, n) only uses values (i, j)
    for n <=  i <= n + k (a triangle, up and right) *)
 
@@ -441,36 +432,35 @@ by apply: leq_trans nik _; rewrite addnS leqnSn.
 Qed.
 
 (* de_casteljau is linear with respect to coefficients *)
-Lemma lin_dc :
-  forall k a a' b b' n,
-    de_casteljau (fun j => (a * b j + a' * b' j)%R) k n =
-
-    (a * de_casteljau b k n + a' * de_casteljau b' k n)%R.
-move => k; elim: k => [ | k IHk] a a' b b' n /= ; first by [].
+Lemma lin_dc : forall k a a' b b' n,
+  de_casteljau (fun j => (a * b j + a' * b' j)%R) k n =
+  (a * de_casteljau b k n + a' * de_casteljau b' k n)%R.
+Proof.
+elim => [ | k IHk] a a' b b' n /= ; first by [].
 rewrite 2!IHk !mulrDr !mulrA !(mulrC r) !(mulrC l) !addrA.
 by rewrite (addrAC _ _ (a' * l * _)%R).
 Qed.
 
 (* in particular it is additive *)
-Lemma add_dc :
-  forall k b b' n, de_casteljau (fun j => b j + b' j)%R k n =
-     (de_casteljau b k n + de_casteljau b' k n)%R.
-move => k b b' n; have := lin_dc k 1 1 b b' n.
+Lemma add_dc k b b' n :
+  de_casteljau (fun j => b j + b' j)%R k n =
+  (de_casteljau b k n + de_casteljau b' k n)%R.
+Proof.
+have := lin_dc k 1 1 b b' n.
 rewrite (@ext_dc k (fun j => 1 * b j + 1 * b' j) (fun j => b j + b' j))%R.
   by rewrite !mul1r.
 by move => x; rewrite /= !mul1r.
 Qed.
 
 (* in particular it is homothetic *)
-Lemma scal_dc :
-  forall k a b n, de_casteljau (fun j => a * b j)%R k n =
-      (a * de_casteljau b k n)%R.
-move => k a b n; have := lin_dc k a 0 b (fun i => 0)%R n.
+Lemma scal_dc k a b n :
+  de_casteljau (fun j => a * b j)%R k n = (a * de_casteljau b k n)%R.
+Proof.
+have := lin_dc k a 0 b (fun i => 0)%R n.
 rewrite (@ext_dc _ (fun j => a * b j + 0 * 0)%R (fun j => a * b j)%R).
-by rewrite mul0r addr0.
+  by rewrite mul0r addr0.
 by move => x; rewrite /= mul0r addr0.
 Qed.
-
 
 End DeCasteljauAlgo.
 
@@ -550,13 +540,12 @@ by congr (_ *+ _).
 Qed.
 
 (* Lemma algo_reverse:*)
-Lemma dc_reverse :
- forall b (A B : R) p i k,
+Lemma dc_reverse b (A B : R) p : forall i k,
  (i <= p)%N ->
  (k <= p - i)%N ->
   de_casteljau B A (fun t => b (p - t)%N) i k = de_casteljau A B b i (p - (i + k)).
 Proof.
-move=> b A B p; elim=> [| i ihi] k hip hk /=; first by rewrite add0n.
+elim=> [| i ihi] k hip hk /=; first by rewrite add0n.
 rewrite addrC; congr (_  + _).
   by rewrite ihi ?(ltnW hip) ?addnS ?addSn // -[(p - i)%N]subnSK.
 rewrite ihi ?(leq_trans hk) // ?leq_sub2l // ?(ltnW hip) //=.
@@ -1172,10 +1161,9 @@ rewrite /f /dicho' add_dc polyCD -ihp // big_ord_recr /=; congr (_ + _).
 by rewrite scal_dc polyCM.
 Qed.
 
-Lemma bern_swap :
- forall p i (l r : R), (i <= p)%N -> bernp r l p i = bernp l r p (p - i).
+Lemma bern_swap p i (l r : R) : (i <= p)%N -> bernp r l p i = bernp l r p (p - i).
 Proof.
-move=> p i l r lip; rewrite /bernp subKn // bin_sub //; congr (_ *+ _).
+move=> lip; rewrite /bernp subKn // bin_sub //; congr (_ *+ _).
 rewrite -[l - r]opprB -[l%:P - 'X]opprB -['X - r%:P]opprB.
 rewrite -mulN1r -[-(r%:P - 'X)]mulN1r  -[- ('X - l%:P)]mulN1r.
 rewrite !exprMn_comm; try exact: mulrC.
@@ -1197,7 +1185,6 @@ transitivity t.
 apply:eq_bigr => [[i hi]] _ /=.
 by rewrite bern_swap ?subKn // leq_subr.
 Qed.
-
 
 Lemma dicho_correct : forall (a b m : R)(alpha := (b - m) * (b - a)^-1)
   (beta := ((m - a) * (b - a)^-1))(p : nat)(q : {poly R})(c : nat -> R),
@@ -1411,7 +1398,7 @@ case/orP: ib => [/eqP -> | iltd].
 move: (iltd); rewrite coefXn ltn_neqAle=> /andP [df _]; rewrite (negbTE df).
 rewrite mulr0 addr0 reorg catA nth_cat sreo iltd nth_cat.
 case tst: (i < size p)%N => //.
-rewrite /m nth_mkseq. 
+rewrite /m nth_mkseq.
   by rewrite nth_default // leqNgt tst.
 by rewrite ltn_subRL addnC subnK // leqNgt tst.
 Qed.
@@ -1432,7 +1419,7 @@ case a0: (a == 0) => /=.
 move=> an0.
 case h: (all_eq0 l).
   by exists nil, a, l; rewrite /= an0 h eqxx.
-move/negbT: h. 
+move/negbT: h.
 rewrite -all_eq0_seqn0; move/IH=>[l1 [x [l2 /andP [p1 p2]]]].
 by exists (a::l1), x, l2; rewrite (eqP p1) p2 cat_cons eqxx.
 Qed.

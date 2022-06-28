@@ -154,17 +154,16 @@ elim: l => // a l Hrec /=.
 rewrite lt_neqAle; case az: (a==0).
    rewrite andFb => /Hrec [l1 [x [l2 [y [l3 [-> xn yn [l1n l2z l3p]]]]]]].
    exists (a :: l1), x, l2, y,l3; split => //; split => //.
-   apply /allP => t; rewrite in_cons; case /orP; last by move/(allP l1n). 
+   apply /allP => t; rewrite in_cons; case /orP; last by move/(allP l1n).
    move /eqP;move/eqP: az => -> -> //.
 case ane:(a <= 0) => //= /alternate_1P [l1 [x [l2 [-> l1n l2p xp]]]].
 by exists [::], a, l1, x,l2; rewrite lt_neqAle az ane.
 Qed.
 
-
 Lemma schangei_Sn l n a: SIA l n.+1 a = [seq z.+1 | z <- SIA l n a].
 Proof.
 move: n a; elim: l => [  n z // | a l hrec n y /=].
-by case hyp: ((y == 0) && (a != 0) || (a * y < 0))=> //=; rewrite hrec. 
+by case hyp: ((y == 0) && (a != 0) || (a * y < 0))=> //=; rewrite hrec.
 Qed.
 
 Lemma schangei_addm l n m a:
@@ -180,7 +179,7 @@ rewrite /schange_index - {2}oppr0; move: 0 0%N; elim: l; first by done.
 by move => a l hrec y n /=; rewrite mulrNN - hrec - hrec ! oppr_eq0.
 Qed.
 
-Lemma schangei_s0 l1 l2: all_eq0 l1 -> 
+Lemma schangei_s0 l1 l2: all_eq0 l1 ->
   schange_index (l1 ++ l2) = SIA l2 (size l1) 0.
 Proof.
 elim l1 => // a l hrec /= /andP [/eqP -> /hrec].
@@ -206,21 +205,21 @@ Lemma schangei_snn l i s:
 Proof.
 case alt: (all_eq0 l); first by move /schangei0:alt => -> //.
 move: (allPn (negbT alt)) => /hasP /has_split_eq [l1 [a [l2 [ -> az al0]]]].
-rewrite (schangei_s0n _ az al0) => /eqP;rewrite eqseq_cons. 
+rewrite (schangei_s0n _ az al0) => /eqP;rewrite eqseq_cons.
 by move => /andP [/eqP <- /eqP <-];exists l1, a, l2.
 Qed.
 
 Lemma schangei_rec a l1 l2 n: a != 0 -> all_ss a l1 ->
   SIA (l1++l2) n a = SIA l2 (n + size l1)%N a.
-Proof. 
+Proof.
 move => anz; move: n; elim : l1;first by move =>n /=; rewrite addn0.
-move =>b l hrec n /= /andP [pa pb]. 
+move =>b l hrec n /= /andP [pa pb].
 by rewrite ltNge pa (negbTE anz) /= (hrec _ pb) addnS addSn.
 Qed.
- 
+
 Lemma schangei_reca a l n: a != 0 -> ((all_ss a l) = (SIA l n a == [::])).
-Proof. 
-move => anz; move: n; elim: l => [// | b l h n]. 
+Proof.
+move => anz; move: n; elim: l => [// | b l h n].
 by rewrite /= (negbTE anz)/= (h n.+1) ltNge; case sab: (0 <= b * a).
 Qed.
 
@@ -236,7 +235,7 @@ Lemma schangei_recc a l i s n: a!= 0 ->
     [/\ l = l1 ++ b :: l2, b *a  <0, b!= 0, (all_ss a l1) &
      (i = n+size l1)%N  /\  SIA l2 (n + size l1).+1 b = s].
 Proof.
-move => anz;case alz: (all_ss a l). 
+move => anz;case alz: (all_ss a l).
   by move: alz; rewrite (schangei_reca _ n anz) => /eqP ->.
 move: (negbT alz); rewrite - (has_predC) => /has_split [l1 [b [l2 [-> pb pc]]]].
 move: pb => /=; rewrite - ltNge => abn.
@@ -248,7 +247,7 @@ Qed.
 
 Definition schange l := (size (schange_index l)).-1.
 
-Lemma schange_index_alternate l: (schange l = 1%N) <-> 
+Lemma schange_index_alternate l: (schange l = 1%N) <->
    (alternate l \/ alternate (opp_seq l)).
 Proof.
 have aux0 : (schange l = 1%N) <->  size (schange_index l) = 2.
@@ -272,7 +271,7 @@ have px: forall  a l, a !=0 -> all_ss a l -> all_ss (-a) (opp_seq l).
   move => a l1 anz h; apply /allP => x /mapP [y /(allP h) h1 ->].
   by rewrite mulrNN.
 split; last first.
-  by case; move /aux => //; rewrite - schangei_opp. 
+  by case; move /aux => //; rewrite - schangei_opp.
 move=> h.
 have [i [j]]: exists a b, (schange_index l) = [:: a; b].
    move: h; set s := (schange_index l); case: s => // a; case => // b.
@@ -299,21 +298,21 @@ Lemma schange_cat l1 a l2: a != 0 ->
   schange (l1++a::l2) = (schange (l1++[::a]) + schange (a::l2)) %N.
 Proof.
 have aux: forall a b l n m, a * b >0 -> size (SIA l n a) = size (SIA l m b).
-  move => c1 c2 l n m cp. 
+  move => c1 c2 l n m cp.
   rewrite -(add0n n) - (add0n m) !schangei_addm ! size_map.
   elim: l => // => u v Hrec /=.
   move: cp; case c1z: (c1 == 0); first by rewrite (eqP c1z) mul0r ltxx.
   case c2z: (c2 == 0); first by rewrite (eqP c2z) mulr0 ltxx.
   rewrite (mulrC u) (mulrC u).
   move => cp; have ->: (c1 * u  < 0) =  (c2 * u < 0).
-    apply/idP/idP => h; [ rewrite mulrC in cp |];exact :(schange_simpl1 h cp). 
-  simpl; case: (c2 * u < 0) => //. 
+    apply/idP/idP => h; [ rewrite mulrC in cp |];exact :(schange_simpl1 h cp).
+  simpl; case: (c2 * u < 0) => //.
   by rewrite - (add0n 1%N) !schangei_addm ! size_map Hrec.
 rewrite /schange -cat1s catA => anz.
 have: has (fun z => z != 0) (l1 ++ [:: a]).
   by apply /hasP; exists a => //; rewrite mem_cat mem_head orbT.
 move /has_split_eq => [l3 [b [l4 [lv bnz al0]]]].
-rewrite lv (schangei_s0n l4 bnz al0) -catA cat_cons (schangei_s0n _ bnz al0). 
+rewrite lv (schangei_s0n l4 bnz al0) -catA cat_cons (schangei_s0n _ bnz al0).
 rewrite /schange_index cat1s {3} /SIA eqxx anz /= - /SIA.
 have : a = last b l4 by move: (f_equal (last a) lv); rewrite !last_cat.
 move: (size l3).+1 => n; move: {2} (SIA l4 n b)  (erefl (SIA l4 n b)) => s.
@@ -339,8 +338,8 @@ Proof.
 move: l n a; elim:s.
   move => l n b bnz /= h.
   move: (schangei_recc bnz h)=> [l1 [c [l2 [-> pa cz pb [pc pd]]]]].
-  by exists l1,c,l2; split => //; move:pd => /eqP; rewrite - schangei_reca. 
-move => a l Hrec l2 n b bnz;rewrite rcons_cons. 
+  by exists l1,c,l2; split => //; move:pd => /eqP; rewrite - schangei_reca.
+move => a l Hrec l2 n b bnz;rewrite rcons_cons.
 move /(schangei_recc bnz) => [l1 [c [l3 [-> pa cz pb [pc]]]]].
 move /(Hrec _ _ _  cz) => [l0 [d [l4 [-> qa -> qc]]]].
 by exists ( l1 ++ c :: l0), d,l4; rewrite -catA cat_cons addSnnS size_cat addnA.
@@ -351,7 +350,7 @@ Lemma schange_index_tail2 s i l: schange_index l = rcons s i ->
   [/\ l = l1 ++ a :: l2, a != 0, i = size l1 & all_ss a l2].
 Proof.
 case: s.
-  move /schangei_snn => [l1 [a [l2 [ -> pb pc pd pe]]]]; exists l1, a, l2. 
+  move /schangei_snn => [l1 [a [l2 [ -> pb pc pd pe]]]]; exists l1, a, l2.
   by split => //; move: pe => /eqP; rewrite -schangei_reca.
 move => j s; move /schangei_snn => [l1 [a [l2 [-> pb pc _]]]].
 move /(schange_index_tail1 pb)  => [l0 [b [l3 [-> qb -> qd]]]].
@@ -359,14 +358,14 @@ exists (l1++a::l0),b,l3; rewrite - catA cat_cons addSnnS size_cat //=.
 Qed.
 
 
-Lemma schange_index_tail l i s: 
+Lemma schange_index_tail l i s :
   schange_index l = rcons s i -> exists l1 a l2,
   [/\ l = l1 ++ a :: l2, (i <= size l1)%N, 0 < a * l`_i & all_eq0 l2].
 Proof.
 move => /schange_index_tail2 [l1 [a [l2 [-> pa pb pc]]]].
 have:has (fun z => z != 0) (a::l2) by rewrite /= pa.
 move /has_split_eq_rev => [la [b [lb [qa qb qc]]]].
-exists (l1++la),b, lb. 
+exists (l1 ++ la),b, lb.
    rewrite pb size_cat leq_addr nth_cat ltnn subnn /= qa catA; split => //.
 rewrite lt0r (mulf_neq0 qb pa) /=.
 have: b \in a :: l2 by  rewrite qa mem_cat mem_head orbT.
@@ -383,13 +382,13 @@ move: (refl_equal s); rewrite {1} /s; case: s.
   have xl: x \in x :: l ++ [:: y] by rewrite mem_head.
   by move /schangei0 => h; move: xnz; move/(allP h):xl => /eqP ->; rewrite eqxx.
 move => i s /=.
-rewrite /schange_index /= eqxx xnz orTb => /eqP; rewrite eqseq_cons => /andP. 
+rewrite /schange_index /= eqxx xnz orTb => /eqP; rewrite eqseq_cons => /andP.
 move => [ _] /eqP.
 have ->: (size s)= (((x * y>=0)%R) + size s)%N by rewrite leNgt xy.
 clear i xy;move: x xnz 1%N l; elim: s.
   move => x xnz n l => /eqP; rewrite -(schangei_reca _ _ xnz) => ss.
   have: y \in (l ++ [:: y]) by rewrite mem_cat inE eqxx orbT.
-  by move /(allP ss); rewrite mulrC => ->. 
+  by move /(allP ss); rewrite mulrC => ->.
 move => a s Hrec x xnz n l.
 move/(schangei_recc xnz)=> [l1 [c [l2 [lv pa cnz pb [pc]]]]].
 have cp:0 < c * c by rewrite lt0r sqr_ge0 sqrf_eq0 (proj1 (product_neg pa)).
@@ -397,10 +396,10 @@ have ->: (0 <= x * y) = ~~(0 <= c * y).
    rewrite - (nmulr_rle0 (c * y) pa) mulrACA (pmulr_rle0 _ cp).
    by rewrite - ltNge lt_neqAle eq_sym (mulf_neq0  xnz ynz).
 move: (f_equal (last c) lv); rewrite !last_cat !last_cons /= addnS.
-case l2; first by move => ->; rewrite (ltW cp) /= => <-. 
+case l2; first by move => ->; rewrite (ltW cp) /= => <-.
 move => i1 l4; rewrite last_cons (lastI i1 l4) - cats1 => <-.
 move /(Hrec c cnz (n + size l1).+1 _).
-by case b:((0 <= c * y)%R) => //= ->.  
+by case b:((0 <= c * y)%R) => //= ->.
 Qed.
 
 Lemma schange_index_correct l (i: nat):
@@ -418,7 +417,7 @@ rewrite inE; case/ orP.
   by move: (mem_last 0 l1); rewrite inE => /orP; case => //; move /(allP l1z).
 rewrite - sv => isv.
 move : (aux i l2 (size l1).+1 a isv) => [j j2 j1].
-rewrite j1 addnC nth_cat - cat_cons nth_cat addSn - addnS ltnNge leq_addr /=. 
+rewrite j1 addnC nth_cat - cat_cons nth_cat addSn - addnS ltnNge leq_addr /=.
 rewrite addnC addnK /= addSn ltnNge ltnS leq_addl /= -addnS addnK.
 move: j2; clear il1 l1z isv j1 sv k s l1 l i.
 move: {1} 0%N {1} (SIA l2 0 a) (refl_equal (SIA l2 0 a)) => n s.
@@ -429,7 +428,7 @@ move: (schangei_recc bnz eq1)=> [l1 [c [l3 [pa pb cz pc [pd pe]]]]] => js.
 have: (j + n)%N \in SIA l n b.
    by rewrite-{2} (add0n n) schangei_addm; apply /mapP; exists j.
 rewrite eq1 in_cons => /orP [].
-  rewrite pd addnC eqn_add2l => /eqP ->. 
+  rewrite pd addnC eqn_add2l => /eqP ->.
   rewrite pa - cat_cons nth_cat ltnn subnn; split => //.
   rewrite /= - (cat_cons) nth_cat /= ltnS leqnn -last_nth.
   move: (mem_last b l1)=> /orP;case; first by move/eqP => ->;apply: ltW.
@@ -455,20 +454,20 @@ case: s.
 have rec0: forall l1 l2, l2`_0 != 0 -> (schange (l2) <= schange (l1++l2))%N.
   by move => l1; case => // a l2 /= anz; rewrite (schange_cat _ _ anz) leq_addl.
 have rec1: forall l i j, l`_i * l`_j < 0 -> (0 < (schange l))%N.
-  move => l1 i j; wlog : i j / (i<= j)%N. 
+  move => l1 i j; wlog : i j / (i<= j)%N.
     by case /orP:(leq_total i j)=> cij h; [ | rewrite mulrC]; apply:h.
   move => lij ov.
   move: (product_neg ov) => [anz bnz].
-  have st: size (take i l1) = i. 
+  have st: size (take i l1) = i.
      rewrite size_take;  case (ltnP i (size l1)) => // sl.
      by move: anz; rewrite (nth_default 0 sl) eqxx.
   move: (cat_take_drop i l1) => eq1.
   have e2: l1`_i = (drop i l1)`_0  by rewrite - {1} eq1 nth_cat st ltnn subnn.
   have e3:  (drop i l1)`_0 != 0 by rewrite - e2.
-  have e4: l1`_j = (drop i l1)`_(j-i) by rewrite -{1}eq1 nth_cat st ltnNge lij. 
+  have e4: l1`_j = (drop i l1)`_(j-i) by rewrite -{1}eq1 nth_cat st ltnNge lij.
   move:ov; rewrite e2 e4; set l3 :=  (drop i l1); set k:= (j - i)%N => ov.
   move: (rec0 (take i l1) l3 e3); rewrite eq1; apply: leq_trans.
-  have st': size (take k l3) = k. 
+  have st': size (take k l3) = k.
      rewrite size_take;  case (ltnP k (size l3)) => // sl.
      by move: bnz; rewrite e4 (nth_default 0 sl) eqxx.
   move: (cat_take_drop k l3) => eq2.
@@ -478,7 +477,7 @@ have rec1: forall l i j, l`_i * l`_j < 0 -> (0 < (schange l))%N.
     move:l3knz; rewrite l3k ;case (drop k l3); last by move => a b _; exists b.
     by rewrite eqxx.
   have [u eq7]: exists u, (take k l3) = l3`_0:: u.
-     move: st'; rewrite -{3} eq2; case (take k l3).  
+     move: st'; rewrite -{3} eq2; case (take k l3).
        by move => /= kz; move: ov; rewrite -kz ltNge sqr_ge0.
   by  move => a b _; exists b.
   rewrite -eq2 eq6 schange_cat // eq7 cat_cons.
@@ -603,13 +602,10 @@ rewrite /q mulrBr coefB coefMC mulrBr subr_lt0 coefMX (le_lt_trans _ rhsp) //.
 by move: eq2; case k. 
 Qed.
 
-
-
 End SignChange.
 
 Section DescOnOrderedRing.
 Variable R :realDomainType.
-
 
 (** The definitions *)
 

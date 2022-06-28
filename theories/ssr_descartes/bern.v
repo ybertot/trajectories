@@ -10,6 +10,7 @@ Local Open Scope ring_scope .
 
 (* Set Printing Width 50. *)
 
+(******************************************************************************)
 (* Two predicates to describe that a polynomial has only one root,
   one_root1 l a b :
      there exists c, d, and k, so that a,c,d,b is ordered, k is positive,
@@ -19,13 +20,13 @@ Local Open Scope ring_scope .
   interval a b.
 
   one_root2 l a :
-     there exists c, d, and k, so that a is smaller than c, k is positive,
+     there exists c, d, and k, so that a is smaller than c, k is p      ositive,
      the polynomical value is negative between a and c, and the slope is
      larger than k above c.
 
   A consequence of one_root2 is that there can be only one root above c, hence
-  only one root above a.
-*)
+  only one root above a.*)
+(******************************************************************************)
 
 Local Open Scope order_scope .
 
