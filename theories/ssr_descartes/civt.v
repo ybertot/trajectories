@@ -13,7 +13,7 @@ Local Open Scope ring_scope.
 Set Printing Width 50.
 
 (* We want to prove a simple and contructive approximation of the
- middle value theorem: if a polynomial is negative in a and positive in b,
+ intermediate value theorem: if a polynomial is negative in a and positive in b,
  and a < b, then for any positive epsilon, there exists c and d, so that 
  a <= c < d <= b, the polynomial is negative in c and positive and d,
  and the variation between c and d is less than epsilon.  To prove this,

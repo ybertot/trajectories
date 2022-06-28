@@ -2,13 +2,13 @@
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun order.
 From mathcomp Require Import bigop fingroup choice binomial.
 From mathcomp Require Export ssralg rat ssrnum.
-Require Import infra pol cmvt desc.
+Require Import infra pol civt desc.
 
 Import GroupScope .
 Import Order.Theory GRing.Theory Num.Theory.
 Local Open Scope ring_scope .
 
-Set Printing Width 50.
+(* Set Printing Width 50. *)
 
 (* Two predicates to describe that a polynomial has only one root,
   one_root1 l a b :
