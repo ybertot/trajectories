@@ -9,9 +9,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-
-Import Order.Theory GRing.Theory.
-Import Num.Theory Num.Def.
+Import Order.Theory GRing.Theory Num.Theory Num.Def.
 Local Open Scope ring_scope.
 (** ** Sign changes *)
 
@@ -24,17 +22,17 @@ Implicit Type p: {poly R}.
 Definition all_eq0 l := all (fun x => x == 0) l.
 Definition all_ge0 l:= all (fun x => 0 <= x) l.
 Definition all_le0 l := all (fun x => x <= 0) l.
-Definition all_ss a l := all (fun x => 0 <= x * a) l. 
+Definition all_ss a l := all (fun x => 0 <= x * a) l.
 Definition opp_seq l := [seq - z | z <- l].
 Definition filter0 l := [seq z <- l | z != 0].
 
 (** Some helper lemmas *)
 
-Lemma product_neg (a b : R): a * b < 0 -> a != 0 /\ b != 0. 
+Lemma product_neg (a b : R): a * b < 0 -> a != 0 /\ b != 0.
 Proof.
-(*case (eqVneq a 0) => ->; first by rewrite mul0r ltrr.
-case (eqVneq b 0) => -> //; by rewrite mulr0 ltrr.
-Qed.*) Admitted.
+case (eqVneq a 0) => [->|]; first by rewrite mul0r ltxx.
+case (eqVneq b 0) => [->|] //; by rewrite mulr0 ltxx.
+Qed.
 
 Lemma square_pos (a: R): a != 0 -> 0 < a * a.
 Proof. by move => anz; rewrite lt0r sqr_ge0 sqrf_eq0 anz. Qed.
@@ -81,7 +79,7 @@ Lemma has_split_eq_rev l: has (fun z => z != 0) l ->
 Proof.
 have <- : (has (fun z : R => z != 0)) (rev l) = has (fun z : R => z != 0) l.
   by elim:l => [// | a l hr]; rewrite rev_cons has_rcons /= hr.
-move/has_split_eq => [l1 [a [l2 [lv pa pb]]]]; exists (rev l2),a,(rev l1). 
+move/has_split_eq => [l1 [a [l2 [lv pa pb]]]]; exists (rev l2),a,(rev l1).
 by rewrite -(cat1s a) catA cats1 -rev_cons -rev_cat -lv revK /all_eq0 -all_rev.
 Qed.
 
@@ -89,8 +87,6 @@ Lemma opp_seqK l: opp_seq (opp_seq l) = l.
 Proof.
 by rewrite/opp_seq -map_comp; apply map_id_in => a /=; rewrite opprK.
 Qed.
-
-
 
 Definition tail_coef p := p `_(\mu_0 p).
 Definition lead_tail_coef p := (tail_coef p) * (lead_coef p).
@@ -101,7 +97,7 @@ Proof. by move /muNroot; rewrite /tail_coef => ->. Qed.
 Lemma tail_coef0b p: p`_0 != 0 ->  tail_coef  p = p`_0.
 Proof. rewrite - {1} horner_coef0; apply: tail_coef0a. Qed.
 
-Lemma tail_coefM (p q: {poly R}): 
+Lemma tail_coefM (p q: {poly R}):
    tail_coef (p*q) = (tail_coef p) * (tail_coef q).
 Proof.
 rewrite /tail_coef.
@@ -113,12 +109,12 @@ set a := (\mu_0 p); set b:= (\mu_0 q); move => [pa v1 ->] [qa v2 ->].
 by rewrite mulrACA -exprD 3! coefMXn ! ltnn ! subnn  - ! horner_coef0 hornerM.
 Qed.
 
-Lemma lead_tail_coefM (p q: {poly R}): 
+Lemma lead_tail_coefM (p q: {poly R}):
   lead_tail_coef (p*q) = (lead_tail_coef p)  * (lead_tail_coef q).
 Proof. by rewrite /lead_tail_coef -mulrACA -tail_coefM lead_coefM. Qed.
 
 Lemma lead_tail_coef_opp p: lead_tail_coef (- p) = (lead_tail_coef p).
-Proof. 
+Proof.
 rewrite - mulrN1 lead_tail_coefM; set one := (X in _ * lead_tail_coef(X)).
 suff : lead_tail_coef one = 1 by  move ->; rewrite mulr1.
 have ->: one = ((-1)%:P) by rewrite polyC_opp.
@@ -126,7 +122,7 @@ by rewrite /lead_tail_coef /tail_coef lead_coefC mu_polyC coefC mulN1r opprK.
 Qed.
 
 Lemma mu_spec_supp p: p != 0 ->
-   exists q, [/\  p = q * 'X^ (\mu_0 p), (~~ root q 0), 
+   exists q, [/\  p = q * 'X^ (\mu_0 p), (~~ root q 0),
      lead_coef p = lead_coef q, tail_coef p = tail_coef q &
      tail_coef q = q`_0].
 Proof.
@@ -140,14 +136,13 @@ Proof.
 have [-> |] := (eqVneq p 0); first by rewrite /tail_coef mu0 coef0 polyseq0 /=.
 move /(mu_spec_supp) => [q [pa pb pc pd pe]]; rewrite  /filter0.
 case (eqVneq q 0) => qnz; first by move: pb; rewrite qnz root0.
-have q0nz: q`_0 != 0 by rewrite - horner_coef0. 
+have q0nz: q`_0 != 0 by rewrite - horner_coef0.
 rewrite pd pe pa polyseqMXn// -cat_nseq filter_cat (eq_in_filter (a2 := pred0)).
   by rewrite filter_pred0 cat0s nth0; move: q0nz; case q; case => //= a l _ ->.
-(*have /allP h: all (pred1 (0:R)) (nseq (\mu_0 p) 0)
-   by rewrite all_pred1_nseq eqxx orbT.
-by move => x /h /= ->.  
-Qed.*) Admitted.
-
+have /allP h: all (pred1 (0:R)) (nseq (\mu_0 p) 0).
+  by rewrite all_pred1_nseq.
+by move => x /h /= ->.
+Qed.
 
 Fixpoint changes (s : seq R) : nat :=
   (if s is a :: q then (a * (head 0 q) < 0)%R + changes q else 0)%N.
@@ -157,7 +152,7 @@ Lemma schange_sgr l: schange l = schange [seq sgr z | z <- l].
 Proof.
 rewrite /schange /filter0 filter_map; set s1 := [seq z <- l | z != 0].
 set s := (filter (preim _ _)); have -> : s l = s1.
-  apply: eq_in_filter => x xl /=. 
+  apply: eq_in_filter => x xl /=.
   by rewrite sgr_def; case xz: (x!=0); rewrite ?mulr0n ?eqxx ?mulr1n ?signr_eq0.
 elim: s1 => [ // | a l1 /= ->]; case l1 => /=; first by rewrite !mulr0.
 by move => b l2; rewrite - sgrM sgr_lt0.
@@ -183,10 +178,10 @@ by case (d<0); case (b<0); case (c<0); rewrite ?mulrNN ? mulr1 ?mul1r ?ltr01
     ?ltrN10 ? ltr10 ? ltr0N1 ?addn0 ? addnS ?addn0//=; move => ->.
 Qed.
 
-Lemma schange_odd p: p != 0 -> odd (schange p + (0 < lead_tail_coef p)%R).
+Lemma schange_odd p : p != 0 -> odd (schange p + (0 < lead_tail_coef p)%R).
 Proof.
 rewrite - lead_coef_eq0 /lead_tail_coef tail_coefE /schange lead_coefE nth_last.
-by move => h; rewrite schange0_odd. 
+by move => h; rewrite schange0_odd.
 Qed.
 
 Lemma schange_cat l1 a l2: a != 0 ->
@@ -196,37 +191,38 @@ move => anz.
 rewrite /schange /filter0 filter_cat cats1 filter_rcons anz.
 set w := [seq z <- a :: l2 | z != 0].
 elim [seq z <- l1 | z != 0]; first by rewrite /= mulr0 ltxx.
-move => b l /= ->.  rewrite - addnA. congr addn. 
+move => b l /= ->.  rewrite - addnA. congr addn.
 by rewrite -cats1 /w; case l => //=; rewrite anz.
 Qed.
 
 Lemma schange_nz l i j:  l`_i * l`_j < 0 -> (0 < (schange l))%N.
 Proof.
 move=> pn; move: (product_neg pn) => [xnz ynz].
-have aux: forall k, l`_k !=0 -> l`_k \in (filter0 l). 
+have aux: forall k, l`_k !=0 -> l`_k \in (filter0 l).
   move => k kz; rewrite mem_filter kz /= mem_nth //.
   by case (leqP (size l) k) => h //; move: kz;rewrite nth_default // eqxx.
 move: pn (aux _ xnz) (aux _ ynz); set x := l`_i; set y := l`_j.
-move: (filter_all (fun z => z!=0) l); rewrite /schange -/(filter0 l). 
+move: (filter_all (fun z => z!=0) l); rewrite /schange -/(filter0 l).
 case (filter0 l) => //.
-move => a l2 pa pb pc pd.  
+move => a l2 pa pb pc pd.
 wlog : x y pb pc pd / a * x < 0.
    move => H; case (ltrgt0P (a * x)) => h; try apply: (H x y pb pc pd h).
      apply: (H y x) => //; [by rewrite mulrC | exact: (prodNsimpl_gt pb h)].
    move: pa => /= /andP [anz _].
    by move /eqP: h; rewrite mulf_eq0 (negbTE anz) (negbTE xnz).
-move: pc; rewrite inE; case /orP. 
+move: pc; rewrite inE; case /orP.
   by move /eqP <- => h; move: (lt_trans pb (prodNsimpl_lt pb h)); rewrite ltxx.
 move:  pa; clear; move:a x; elim l2 => //.
 move => a l H b x /= /andP [bnz bl]  ca bcn.
 case (ltrgt0P (b * a)); last first.
   by move /eqP; rewrite mulf_eq0 (negbTE bnz)=> /= ane; move: bl; rewrite ane.
-(*by rewrite add1n ltnS. 
+  move=> ->.
+  by rewrite add1n ltnS.
 rewrite mulrC; move => ba; move: (prodNsimpl_gt bcn ba) => aca.
+rewrite (ltNge (a * b)) (ltW ba) add0n.
 apply:  (H a x bl) => //; move: ca; rewrite inE; case /orP => // /eqP xa.
-by  move: (ltr_trans bcn ba); rewrite xa mulrC ltrr.
-Qed.*) Admitted.
-
+by  move: (lt_trans bcn ba); rewrite xa mulrC ltxx.
+Qed.
 
 Fixpoint schange_index_aux l i y :=
   if l is x::l' then
@@ -247,7 +243,7 @@ move: n a; elim: l => [  n z // | a l hrec n y /=].
 by case hyp: ((y == 0) && (a != 0) || (a * y < 0))=> //=; rewrite - addSn hrec.
 Qed.
 
-Lemma schangei_s0 l1 l2: all_eq0 l1 -> 
+Lemma schangei_s0 l1 l2: all_eq0 l1 ->
   schange_index (l1 ++ l2) = SIA l2 (size l1) 0.
 Proof.
 elim l1 => // a l hrec /= /andP [/eqP -> /hrec].
@@ -260,15 +256,15 @@ Proof.
 transitivity ((size (schange_index (filter (fun z => z != 0) l))).-1).
   have aux: forall l, (all_eq0 l) ->  filter (fun z => z != 0) l = [::].
     by elim => // a l' Hr /= /andP [-> /Hr ->].
-  rewrite /schange; case alz: (all_eq0 l). 
+  rewrite /schange; case alz: (all_eq0 l).
     by rewrite  (aux _ alz) - {1} (cats0 l) schangei_s0.
-  move: (negbT alz); rewrite - (has_predC) => /has_split_eq. 
+  move: (negbT alz); rewrite - (has_predC) => /has_split_eq.
   move => [l1 [b [l2 [-> pb pc]]]]; rewrite filter_cat aux //= pb.
   rewrite schangei_s0 // /schange_index /= eqxx pb /=.
   move: b (size l1).+1 1%N pb; elim: l2 => // a l' Hrec b n m bnz /=.
-  case (eqVneq a 0). 
+  case (eqVneq a 0).
     by move => ->; rewrite mul0r eqxx ltxx andbF /=; apply: Hrec.
-  move =>h; rewrite h /= (negbTE bnz) /=. 
+  move =>h; rewrite h /= (negbTE bnz) /=.
   by case h':(a * b < 0); [ simpl; congr S |]; apply: Hrec.
 move: (filter_all (fun z => z != 0) l); rewrite -/(filter0 l).
 rewrite /schange; case (filter0 l) => // a s /= /andP [anz ar].
@@ -278,8 +274,8 @@ move => a s Hrec n b bnz /= /andP [anz ar]; rewrite mulrC anz (negbTE  bnz) /=.
 case h:(b * a < 0) => /=;  rewrite Hrec // add0n.
 have:  (0 < b * a) by rewrite lt0r mulf_neq0 // leNgt h.
 case (ltrgt0P a) => ap //; last by move: anz; rewrite ap eqxx.
-  by rewrite (pmulr_lgt0) // => bp; rewrite ! (pmulr_rlt0) //. 
-by rewrite (nmulr_lgt0) // => bp; rewrite ! (nmulr_rlt0) //. 
+  by rewrite (pmulr_lgt0) // => bp; rewrite ! (pmulr_rlt0).
+by rewrite (nmulr_lgt0) // => bp; rewrite ! (nmulr_rlt0).
 Qed.
 
 Lemma schangei0 l: all_eq0 l <-> schange_index l = [::].
@@ -301,22 +297,22 @@ Lemma schangei_snn l i s:
 Proof.
 case alt: (all_eq0 l); first by move /schangei0:alt => -> //.
 move: (allPn (negbT alt)) => /hasP /has_split_eq [l1 [a [l2 [ -> az al0]]]].
-rewrite (schangei_s0n _ az al0) => /eqP;rewrite eqseq_cons. 
+rewrite (schangei_s0n _ az al0) => /eqP;rewrite eqseq_cons.
 by move => /andP [/eqP <- /eqP <-];exists l1, a, l2.
 Qed.
 
 Lemma schangei_reca a l n: a != 0 -> ((all_ss a l) = (SIA l n a == [::])).
-Proof. 
-move => anz; move: n; elim: l => [// | b l h n]. 
+Proof.
+move => anz; move: n; elim: l => [// | b l h n].
 by rewrite /= (negbTE anz)/= (h n.+1) ltNge; case sab: (0 <= b * a).
 Qed.
 
 
 Lemma schangei_rec a l1 l2 n: a != 0 -> all_ss a l1 ->
   SIA (l1++l2) n a = SIA l2 (n + size l1)%N a.
-Proof. 
+Proof.
 move => anz; move: n; elim : l1;first by move =>n /=; rewrite addn0.
-move =>b l hrec n /= /andP [pa pb]. 
+move =>b l hrec n /= /andP [pa pb].
 by rewrite ltNge pa (negbTE anz) /= (hrec _ pb) addnS addSn.
 Qed.
 
@@ -332,7 +328,7 @@ Lemma schangei_recc a l i s n: a!= 0 ->
     [/\ l = l1 ++ b :: l2, b *a  <0, b!= 0, (all_ss a l1) &
      (i = n+size l1)%N  /\  SIA l2 (n + size l1).+1 b = s].
 Proof.
-move => anz;case alz: (all_ss a l). 
+move => anz;case alz: (all_ss a l).
   by move: alz; rewrite (schangei_reca _ n anz) => /eqP ->.
 move: (negbT alz); rewrite - (has_predC) => /has_split [l1 [b [l2 [-> pb pc]]]].
 move: pb => /=; rewrite - ltNge => abn.
@@ -342,8 +338,7 @@ rewrite (schangei_recb l2 n abn pc') => /eqP h.
 by exists l1,b, l2; move: h; rewrite eqseq_cons => /andP [/eqP <- /eqP ->].
 Qed.
 
-
-Lemma schangei_tail l i s: 
+Lemma schangei_tail l i s:
   schange_index l = rcons s i -> exists l1 a l2,
   [/\ l = l1 ++ a :: l2, (i <= size l1)%N, 0 < a * l`_i & all_eq0 l2].
 Proof.
@@ -352,13 +347,13 @@ suff [l1 [a [l2 [-> pa pb pc]]]]: exists l1 (a : R) l2,
   [/\ l = l1 ++ a :: l2, a != 0, i = size l1 & all_ss a l2].
   have:has (fun z => z != 0) (a::l2) by rewrite /= pa.
   move /has_split_eq_rev => [la [b [lb [qa qb qc]]]].
-  exists (l1++la),b, lb. 
-  rewrite pb size_cat leq_addr nth_cat ltnn subnn /= qa catA; split => //. 
+  exists (l1++la),b, lb.
+  rewrite pb size_cat leq_addr nth_cat ltnn subnn /= qa catA; split => //.
   have: b \in a :: l2 by  rewrite qa mem_cat mem_head orbT.
   rewrite lt0r (mulf_neq0 qb pa) /= in_cons =>/orP []; last by move /(allP pc).
   by move /eqP => ->; rewrite sqr_ge0.
 move: h;case: s.
-  move /schangei_snn => [l1 [a [l2 [ -> pb pc pd pe]]]]; exists l1, a, l2. 
+  move /schangei_snn => [l1 [a [l2 [ -> pb pc pd pe]]]]; exists l1, a, l2.
   by split => //; move: pe => /eqP; rewrite -schangei_reca.
 move => j s; move /schangei_snn => [l1 [a [l2 [-> pb pc _]]]] h.
 suff [l0 [b [l3 [-> qb -> qd]]]]: exists l0 b l3, [/\ l2 = l0 ++ b :: l3, b !=0,
@@ -367,16 +362,15 @@ suff [l0 [b [l3 [-> qb -> qd]]]]: exists l0 b l3, [/\ l2 = l0 ++ b :: l3, b !=0,
 move: l2 a pb (size l1).+1 h; clear; elim: s.
   move => l b bnz n /= h.
   move: (schangei_recc bnz h)=> [l1 [c [l2 [-> pa cz pb [pc pd]]]]].
-  by exists l1,c,l2; split => //; move:pd => /eqP; rewrite - schangei_reca. 
-move => a l Hrec l2 b bnz n. 
+  by exists l1,c,l2; split => //; move:pd => /eqP; rewrite - schangei_reca.
+move => a l Hrec l2 b bnz n.
 move /(schangei_recc bnz) => [l1 [c [l3 [-> pa cz pb [pc]]]]].
 move /(Hrec _ _  cz _) => [l0 [d [l4 [-> qa -> qc]]]].
 by exists ( l1 ++ c :: l0), d,l4; rewrite -catA cat_cons addSnnS size_cat addnA.
 Qed.
 
-
-Lemma schangei_correct l (i: nat):
-  i \in (schange_index l) -> (l`_i != 0 /\ l`_i * (0::l)`_i <= 0).
+Lemma schangei_correct l (i : nat):
+  i \in schange_index l -> l`_i != 0 /\ l`_i * (0::l)`_i <= 0.
 Proof.
 move: {2 3} (schange_index l) (refl_equal (schange_index l)); case => //.
 have aux: forall i l n a,
@@ -390,7 +384,7 @@ rewrite inE; case/ orP.
   by move: (mem_last 0 l1); rewrite inE => /orP; case => //; move /(allP l1z).
 rewrite - sv => isv.
 move : (aux i l2 (size l1).+1 a isv) => [j j2 j1].
-rewrite j1 addnC nth_cat - cat_cons nth_cat addSn - addnS ltnNge leq_addr /=. 
+rewrite j1 addnC nth_cat - cat_cons nth_cat addSn - addnS ltnNge leq_addr /=.
 rewrite addnC addnK /= addSn ltnNge ltnS leq_addl /= -addnS addnK.
 move: j2; clear il1 l1z isv j1 sv k s l1 l i.
 move: {1} 0%N {1} (SIA l2 0 a) (refl_equal (SIA l2 0 a)) => n s.
@@ -401,7 +395,7 @@ move: (schangei_recc bnz eq1)=> [l1 [c [l3 [pa pb cz pc [pd pe]]]]] => js.
 have: (j + n)%N \in SIA l n b.
    by rewrite-{2} (add0n n) schangei_addm; apply /mapP; exists j.
 rewrite eq1 in_cons => /orP [].
-  rewrite pd addnC eqn_add2l => /eqP ->. 
+  rewrite pd addnC eqn_add2l => /eqP ->.
   rewrite pa - cat_cons nth_cat ltnn subnn; split => //.
   rewrite /= - (cat_cons) nth_cat /= ltnS leqnn -last_nth.
   move: (mem_last b l1)=> /orP;case; first by move/eqP => ->;apply: ltW.
@@ -414,9 +408,9 @@ rewrite pa  - cat_cons ! nth_cat - addSnnS leqNgt ltnS leq_addl /=.
 by rewrite addnK /= addSnnS leqNgt ltnS leq_addl /=  addnK.
 Qed.
 
-Lemma pol_mul_cs (p: {poly R}) (x: R):  
+Lemma pol_mul_cs (p: {poly R}) (x: R):
   p !=0 -> x > 0 -> ( (schange p) < (schange (p * ('X - x%:P))%R))%N.
-Proof.  
+Proof.
 move => pnz xn.
 set q := _ * _.
 have spp: size p = (size p).-1.+1.
@@ -429,13 +423,13 @@ have pa: forall k:nat, k \in s -> p`_k * q`_k < 0.
   rewrite /q mulrBr coefB coefMC mulrBr subr_lt0 coefMX (le_lt_trans _ rhsp)//.
   by move: eq2; case k.
 have: schange_index p = s by [].
-have lcpnz: lead_coef p != 0 by rewrite lead_coef_eq0. 
+have lcpnz: lead_coef p != 0 by rewrite lead_coef_eq0.
 have lpp: lead_coef p \in  polyseq p by apply: mem_nth; rewrite {2} spp.
 move: (eq_refl s); rewrite {1}/s; case s.
   by  move /eqP /schangei0 => ap; move:lcpnz; move /(allP ap): lpp => ->.
 move => i l0 _ sv0.
 have pb: 0 < p`_(last 0%N s) * q`_(size p).
-  have -> : q`_(size p) = lead_coef p. 
+  have -> : q`_(size p) = lead_coef p.
     move: (monicXsubC x) => mc; rewrite- (lead_coef_Mmonic p mc) lead_coefE.
     by rewrite (size_Mmonic pnz mc) size_XsubC addn2.
   move: (lastI i l0) lcpnz; rewrite - sv0 => sv1.
@@ -443,7 +437,7 @@ have pb: 0 < p`_(last 0%N s) * q`_(size p).
   have ->: last 0%N s = (last i l0) by rewrite /s sv1 last_rcons.
   have: lead_coef p = last 0 p by rewrite (last_nth 0) spp.
   rewrite pv last_cat last_cons; case l2.
-    move => /= ->; move: pn; rewrite pv - cat1s catA mulrC. 
+    move => /= ->; move: pn; rewrite pv - cat1s catA mulrC.
     by rewrite (nth_cat 0 (l1 ++ [:: a])) size_cat addn1 ltnS sl1.
   by move => b l anz lpv; rewrite (allP lpv) // anz /= mem_last.
 have rec0: forall l1 l2, l2`_0 != 0 -> (schange (l2) <= schange (l1++l2))%N.
@@ -464,10 +458,10 @@ move: (hc); rewrite -l2v nth_cat -sl ltnn subnn => hc'.
 apply: (leq_trans _ (rec0 l2a l2b (proj2 (product_neg hc')))).
 have sv:[seq (z + i)%N | z <- SIA l2 1 a] = l0 by rewrite pb -pd -schangei_addm.
 have: forall k, k \in (SIA l2 1 a) -> (a::l2)`_(k-0)%N * l2b`_(k-0%N) < 0.
-  move => k ka; rewrite - skm subn0. 
+  move => k ka; rewrite - skm subn0.
   have ->: l2b`_k = q`_(k+i) by rewrite -l2v - sl addnC ncat.
   by apply: ha;rewrite inE - sv (mem_map (@addIn i)) ka orbT.
-have: 0 < (a :: l2)`_((last 0%N (SIA l2 1 a)) -0) * l2b`_(size l2).+1. 
+have: 0 < (a :: l2)`_((last 0%N (SIA l2 1 a)) -0) * l2b`_(size l2).+1.
    move: hb; rewrite -sv /= (last_map (fun z=> (z + i)%N) (SIA l2 1 a) 0%N).
   by rewrite subn0 skm - l2v size_cat -pb - sl ncat.
 rewrite - sv size_map.
@@ -487,7 +481,7 @@ move /qc; rewrite imn -cat1s catA  nth_cat subnn ltnn - imn => e1.
 set ni := (i - n )%N.
 move: (cat_take_drop ni l').
 set l1' := take ni l'; set l2' := drop ni l' => e2.
-have e3: size l1' = ni. 
+have e3: size l1' = ni.
   move: e1;rewrite size_take; case (leqP (size l') ni) => //.
   by move/(nth_default 0) => ->; rewrite mulr0 ltxx.
 move: (prodNsimpl_lt qa pa); rewrite mulrC => e4.
@@ -528,33 +522,32 @@ Qed.
 
 End SignChange.
 
-
 Section SignChangeRcf.
-Variable R :rcfType.
-Implicit Type (p:{poly R}).
+Variable R : rcfType.
+Implicit Type p : {poly R}.
 
 Lemma noproots_cs p:  (forall x, 0 <x -> ~~ root p x) -> 0 < lead_tail_coef p.
 Proof.
 move => h.
 have [pz |pnz]:= (eqVneq p 0); first by move: (h _ ltr01); rewrite pz root0.
 move: (mu_spec_supp pnz) => [q [pa pb pc pd pe]].
-have: {in `[0, +oo[, (forall x, ~~ root q x)}. 
-  (*move => x; rewrite inE andbT; rewrite le0r; case/orP; first by move=>/eqP ->.
-  by move /h; rewrite pa rootM negb_or  => /andP [].*) admit.
-move/sgp_pinftyP => ha; move: (ha 0). (*; rewrite inE lexx andbT /= => H.
+have: {in `[0, +oo[, (forall x, ~~ root q x)}.
+  move=> x; rewrite in_itv/= andbT le0r; case/orP; first by move=>/eqP ->.
+  by move /h; rewrite pa rootM negb_or  => /andP [].
+move/sgp_pinftyP => ha; move: (ha 0).
+rewrite in_itv/= lexx /= => H.
 rewrite /lead_tail_coef pc pd pe - sgr_gt0 sgrM -/(sgp_pinfty q).
 by rewrite - horner_coef0 - H // - sgrM sgr_gt0 lt0r sqr_ge0 mulf_neq0.
-Qed.*) Admitted.
-
+Qed.
 
 Definition fact_list p s q :=
  [/\  p = (\prod_(z <- s) ('X - z.1%:P) ^+ (z.2)) * q,
       (all (fun z => 0 < z) [seq z.1 | z <- s]),
-      (sorted >%R [seq z.1 | z <- s]) &
+      (sorted <%R [seq z.1 | z <- s]) &
       (all (fun z => (0<z)%N ) [seq z.2 | z <- s])].
 
 Lemma poly_split_fact p : { sq : (seq (R * nat) * {poly R}) |
-  fact_list p (sq.1) (sq.2) & 
+  fact_list p (sq.1) (sq.2) &
     ( (p != 0 -> (forall x, 0 <x -> ~~ root (sq.2) x))
    /\ (p = 0 -> sq.1 = [::] /\ sq.2 = 0)) }.
 Proof.
@@ -563,30 +556,29 @@ case pnz: (p != 0); last  first.
 pose sa := [seq z <- rootsR p |  0 <z ].
 pose sb := [seq  (z, \mu_z p) | z <- sa].
 have sav: sa = [seq z.1 | z <- sb].
-   rewrite /sb - map_comp.
-   (*; symmetry; apply map_id_in => a.*) admit.
+   by rewrite /sb -map_comp; apply/esym/map_id_in.
 have pa: (all (fun z => 0 < z) [seq z.1 | z <- sb]).
-  by rewrite - sav; apply /allP => x; rewrite mem_filter => /andP []. 
-have pb : (sorted >%R [seq z.1 | z <- sb]). 
-  rewrite - sav.
-  (*apply: sorted_filter => //; [apply: ltr_trans |apply: sorted_roots].*) admit.
+  by rewrite - sav; apply /allP => x; rewrite mem_filter => /andP [].
+have pb : (sorted <%R [seq z.1 | z <- sb]).
+  rewrite -sav.
+  by apply: sorted_filter => //; [apply: lt_trans |apply: sorted_roots].
 have pc: (all (fun z => (0<z)%N ) [seq z.2 | z <- sb]).
   apply /allP => x /mapP [t] /mapP [z]; rewrite mem_filter => /andP [z0 z2].
   move => -> -> /=; rewrite mu_gt0 //; apply: (root_roots z2).
-suff: { q | p = (\prod_(z <- sa) ('X - z%:P) ^+ (\mu_z p))  * q & 
+suff: { q | p = (\prod_(z <- sa) ('X - z%:P) ^+ (\mu_z p))  * q &
   forall x : R, 0 < x -> ~~ root q x}.
-  move => [q qa qb]; exists (sb,q) => //. 
+  move => [q qa qb]; exists (sb,q) => //.
     by split => //;rewrite qa /= big_map; congr (_ * _); apply eq_big.
   by split => // pz; move: pnz; rewrite pz eqxx.
 clear sb sav pa pb pc.
-have: all (root p) sa. 
+have: all (root p) sa.
     apply/allP=> x;rewrite mem_filter =>/andP [_]; apply /root_roots.
 have: uniq sa by apply:filter_uniq; apply: uniq_roots.
-have: forall x, root p x -> 0 < x -> (x \in sa). 
+have: forall x, root p x -> 0 < x -> x \in sa.
   by move=> x rx xp;rewrite mem_filter xp -(roots_on_rootsR pnz) rx.
 move: sa=> s.
 elim: s p pnz=>[p _ H _ _| ].
-   exists p; first by by rewrite big_nil mul1r. 
+   exists p; first by by rewrite big_nil mul1r.
    move => x xp;apply/negP =>nr; by move: (H _ nr xp).
 move => a l Hrec /= p p0 rp /andP [nal ul] /andP [ap rap].
 have [q rqa pv] := (mu_spec a p0).
@@ -600,7 +592,7 @@ have q2: all (root q) l.
   move /(allP rap): xl.
   by rewrite  pv rootM -[\mu__ _]prednK ?mu_gt0 // root_exp_XsubC xa orbF.
 have [r qv rq]:= (Hrec q  q0  q1 ul q2).
-exists r => //; rewrite {1} pv {1} qv mulrAC; congr (_ * _). 
+exists r => //; rewrite {1} pv {1} qv mulrAC; congr (_ * _).
 rewrite big_cons mulrC; congr (_ * _).
 rewrite 2! (big_nth 0) 2! big_mkord; apply: eq_bigr => i _.
 set b := l`_i;congr (_ ^+ _).
@@ -608,18 +600,18 @@ have rb: root q b by apply /(allP q2); rewrite mem_nth //.
 have nr: ~~ root (('X - a%:P) ^+ \mu_a p) b.
    rewrite /root horner_exp !hornerE expf_neq0 // subr_eq0; apply /eqP => ab.
    by move: rqa; rewrite - ab rb.
-rewrite pv mu_mul ? (muNroot nr) //.
-(*by rewrite  mulf_neq0 // expf_neq0 // monic_neq0 // monicXsubC.
-Qed.*) Admitted.
+rewrite pv mu_mul ? (muNroot nr) // ?addn0//.
+by rewrite  mulf_neq0 // expf_neq0 // monic_neq0 // monicXsubC.
+Qed.
 
-Definition pos_roots p := (s2val (poly_split_fact p)).1. 
-Definition pos_cofactor p := (s2val (poly_split_fact p)).2. 
+Definition pos_roots p := (s2val (poly_split_fact p)).1.
+Definition pos_cofactor p := (s2val (poly_split_fact p)).2.
 Definition npos_roots p :=  (\sum_(i <- (pos_roots p)) (i.2)) %N.
 
 Lemma pos_split1 p (s := pos_roots p) (q:= pos_cofactor p):
   p != 0 -> [/\ fact_list p s q, (forall x, 0 <x -> ~~ root q x) &  q != 0].
 Proof.
-move => h; rewrite /s/q /pos_roots / pos_cofactor. 
+move => h; rewrite /s/q /pos_roots / pos_cofactor.
 move: (poly_split_fact p) => H; move: (s2valP' H) (s2valP H) => [h1 _] h2.
 split => //; first by apply: h1.
 by apply/eqP => qz; move:h2 => [] pv; move: h; rewrite {1} pv qz mulr0 eqxx.
@@ -643,23 +635,20 @@ rewrite lead_tail_coefM (pmulr_lgt0 _ (noproots_cs qp)) /lead_tail_coef.
 move: (refl_equal (sgr r`_0)); rewrite - {2} horner_coef0 horner_prod.
 set X := \prod_(z <- _) _; have ->: X = \prod_(i <- pos_roots p) (- i.1)^+ i.2.
   by apply: eq_big => // i _; rewrite horner_exp hornerXsubC sub0r.
-have ->: Num.sg (\prod_(i <- pos_roots p) (- i.1) ^+ i.2) = 
+have ->: Num.sg (\prod_(i <- pos_roots p) (- i.1) ^+ i.2) =
  (-1) ^+ \sum_(i <-  pos_roots p) (i.2).
   move: pb; elim (pos_roots p) => [ _ | i rr /= Hr /andP [pa pb]].
-    by rewrite !big_nil sgr1. 
-  by rewrite !big_cons sgrM sgrX Hr // sgrN  (gtr0_sg pa) exprD. 
+    by rewrite !big_nil sgr1.
+  by rewrite !big_cons sgrM sgrX Hr // sgrN  (gtr0_sg pa) exprD.
 move => aux.
-case (eqVneq r`_0 0) => nr0. 
+case (eqVneq r`_0 0) => nr0.
   by move: aux; rewrite nr0 sgr0 => /eqP; rewrite eq_sym signr_eq0.
-rewrite (eqP rm) mulr1 (tail_coef0b nr0) -sgr_gt0 aux - signr_odd signr_gt0. 
+rewrite (eqP rm) mulr1 (tail_coef0b nr0) -sgr_gt0 aux - signr_odd signr_gt0.
 by case h: (odd(npos_roots p)); [  rewrite addn0 | rewrite addn1 /= h].
 Qed.
 
-
-
-
 Lemma size_prod_XsubCe I rI (F : I -> R) (G : I -> nat)  :
-  size (\prod_(i <- rI) ('X - (F i)%:P)^+ (G i)) = 
+  size (\prod_(i <- rI) ('X - (F i)%:P)^+ (G i)) =
   (\sum_(i <- rI) (G i)).+1.
 Proof.
 elim: rI => [| i r /=]; rewrite ? big_nil ? size_poly1 // !big_cons.
@@ -675,22 +664,22 @@ case h: (0 < lead_tail_coef p)%R; last by rewrite  !addn0 => ->.
 by rewrite ! addn1 /= => /negbTE -> /negbTE ->.
 Qed.
 
-
 Lemma descartes p:  p != 0 ->
   (odd (npos_roots p) = odd (schange p) /\
   ((npos_roots p) <= (schange p)) %N).
 Proof.
 move => pa; split; first by apply:schange_parity.
 move: (pos_split1 pa); rewrite /npos_roots; move => [[p1 p2 p3 p4] p5 qnz].
-have [s [sa <- <-]]: exists s, [/\ (all [eta >%R 0] s),
+have [s [sa <- <-]]: exists s, [/\ (all [eta <%R 0] s),
     size s =  (\sum_(i <- pos_roots p) i.2)%N &
     \prod_(z <- s) ('X - z%:P) * pos_cofactor p = p].
   rewrite {3}p1;move: p2;elim: (pos_roots p) => [_ | a l Hrec /= /andP [q1 q2]].
     by exists [::]; rewrite ! big_nil.
   move: (Hrec q2) => [s [s1 s2 s3]]; exists ((nseq a.2 a.1) ++ s).
   rewrite all_cat s1 ! big_cons -s2 size_cat size_nseq andbT; split => //.
-(*    have:  all (pred1 a.1) (nseq a.2 a.1) by rewrite all_pred1_nseq eqxx orbT.
-    by move => h; apply /allP => x; move /(allP h) => /= /eqP ->.
+    have:  all (pred1 a.1) (nseq a.2 a.1).
+      by rewrite all_pred1_nseq.
+    by move => h; apply /allP => x; move /(allP h) => /= /eqP ->//.
   rewrite big_cat /= - ! mulrA -s3 ;congr ( _ * _).
   rewrite (big_nth 0) big_mkord (eq_bigr (fun _ => ('X - a.1%:P)))=>[|[i]] /=.
     by rewrite prodr_const card_ord size_nseq.
@@ -698,9 +687,9 @@ have [s [sa <- <-]]: exists s, [/\ (all [eta >%R 0] s),
 move: (pos_cofactor p) sa qnz ;clear; elim s; first by move => p _ pnz  //.
 move => a l Hrec p /= /andP [ap alp] pnz.
 rewrite big_cons - mulrA mulrC; move: (Hrec _ alp pnz); set q := _ * _ => e1.
-have qnz: q !=0 
+have qnz: q !=0
   by rewrite mulf_neq0 //; apply: monic_neq0; apply: monic_prod_XsubC.
 exact (leq_ltn_trans  e1 (pol_mul_cs qnz ap)).
-Qed.*) Admitted.
+Qed.
 
 End SignChangeRcf.

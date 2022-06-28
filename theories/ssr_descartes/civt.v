@@ -14,7 +14,7 @@ Set Printing Width 50.
 
 (* We want to prove a simple and contructive approximation of the
  intermediate value theorem: if a polynomial is negative in a and positive in b,
- and a < b, then for any positive epsilon, there exists c and d, so that 
+ and a < b, then for any positive epsilon, there exists c and d, so that
  a <= c < d <= b, the polynomial is negative in c and positive and d,
  and the variation between c and d is less than epsilon.  To prove this,
  we use a second polynomial, obtained by taking the the absolute value
@@ -24,7 +24,7 @@ Set Printing Width 50.
 (* NB: copied from new_descartes *)
 
 Fixpoint eval_pol (l:list rat)(x:rat) {struct l} : rat :=
-  match l with 
+  match l with
     nil => 0
   | a::tl => a + x * (eval_pol tl x)
   end.
@@ -35,13 +35,14 @@ Fixpoint abs_pol (l:list rat) :list rat :=
 (* Theorem binding the slope between two points inside an interval. *)
 Lemma cm2 :
   forall l b, { c |
-  forall x, 0 <= x -> x <= b -> 
+  forall x, 0 <= x -> x <= b ->
     `|(eval_pol l x - eval_pol l 0)| <= c * x}.
 Proof.
 move=> l b; case: l =>[| a l].
 - by exists 0; move=> /= x; rewrite mul0r oppr0 addr0 normr0 lexx.
 - exists (eval_pol (abs_pol l) b) => x px xb /=; rewrite mul0r addr0.
   rewrite addrC addKr normrM ger0_norm // mulrC ler_wpmul2r//.
+(* NB(rei): ler_absr_eval_pol? *)
 (*  rewrite (le_trans (ler_absr_eval_pol _ _)) //.
   by rewrite eval_pol_abs_pol_increase // ger0_abs.
 Qed.*) (*TODO*) Admitted.
@@ -69,7 +70,7 @@ Definition find_pair : forall A:eqType, forall P:A->bool, forall Q:A->A->Prop,
     (forall l1 l2 x y, a::l ++ b::nil= l1 ++ x :: y :: l2 -> Q x y) ->
     {c :A & { d | Q c d /\ P c /\ ~P d}}.
 Proof.
-move => A P Q l; elim: l => [ | a l IHl] a' b' Pa Pb connect. 
+move => A P Q l; elim: l => [ | a l IHl] a' b' Pa Pb connect.
   by exists a'; exists b'; split => //; apply: (connect [::] [::]).
 case Pa1: (P a).
   have tmp :
@@ -95,29 +96,33 @@ Definition ns p n :=
 Lemma ltb_Zneg0 : forall x, ((Zneg x) < 0)%Z.
 Proof. move=> x; by []. Qed.
 
-Lemma leb_Zneg0N : forall x, (0 <= (Zneg x))%Z = false.
-Proof. (*by move=> x. Qed.*) (*TODO*) Admitted.
+Lemma leb_Zneg0N : forall x, ~ (0 <= (Zneg x))%Z.
+Proof.
+move=> x.
+apply/Z.lt_nge.
+exact: ltb_Zneg0.
+Qed.
 
-Lemma nat_ns_head : forall (p : Z) n, 
+Lemma nat_ns_head : forall (p : Z) n,
   exists l, nat_ns p n = (p - (Z_of_nat n))%Z :: l.
 Proof.
 move=> p; elim=>[|n [l Ih]] /=.
   exists [::].
-  admit.
+  by rewrite Z.sub_0_r.
 by rewrite Ih; exists [:: (p - Z_of_nat n)%Z & l].
-Admitted.
+Qed.
 
 Local Open Scope Z_scope.
 
 Lemma ns_head :  forall p n :Z, (0 <= n) -> exists l, ns p n = (p - n) :: l.
 Proof.
 move=> p [|n|n] /=; last 1 first.
-- by rewrite leb_Zneg0N.
+- by move/leb_Zneg0N.
 - exists [::].
-  admit.
+  by rewrite Z.sub_0_r.
 - move=> _; set m := nat_of_P n; case: (nat_ns_head p m)=> l' ->; exists l'.
   by rewrite /m Zpos_eq_Z_of_nat_o_nat_of_P.
-Admitted.
+Qed.
 
 Lemma nat_ns_step : forall p n, forall l1 l2 x y,
   nat_ns p n = l1 ++ [:: x, y & l2] -> y = x + 1.
@@ -126,15 +131,16 @@ move=> p; elim=> [|n Ihn] l1 l2 x y /=.
   by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
 case: l1 => [|u l3] /=; last by case=> _; move/Ihn.
 case=> <-; case: (nat_ns_head p n)=> [l' ->]; case=> <- _.
-rewrite Zpos_P_of_succ_nat. (* /Z.succ /= -[(_ + 1)%Z]/((Z_of_nat n) + 1) oppr_add addrA.
-by rewrite addrK.
-Qed.*) Admitted.
+rewrite Zpos_P_of_succ_nat.
+rewrite /Z.succ /=.
+ring.
+Qed.
 
 Lemma ns_step : forall p n, forall l1 l2 x y, 0 <= n ->
   ns p n = l1 ++ [:: x, y & l2] -> y = x + 1.
 Proof.
 move=> p [|n|n] /=; last 1 first.
-- by rewrite leb_Zneg0N.
+- by move=> ? ? ? ? /leb_Zneg0N.
 - move=> ? ? ? ? ?.
   by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
 - move=> l1 l2 x y _; exact: nat_ns_step.
@@ -144,12 +150,15 @@ Lemma nat_ns_tail : forall p n, exists l, nat_ns p n = l ++ [:: p].
 Proof.
 move=> p; elim=> [|n [l' Ihn]] /=.
 - by exists [::]; rewrite cat0s.
-(*- by rewrite Ihn; exists [:: (p - (' P_of_succ_nat n)%Z) & l']; rewrite cat_cons.*) admit.
-Admitted.
+- rewrite Ihn.
+  eexists.
+  rewrite -cat_cons.
+  reflexivity.
+Qed.
 
 Lemma ns_tail : forall p n, exists l, ns p n = l ++ p ::nil.
 Proof.
-move=> p [|n|n] /=. 
+move=> p [|n|n] /=.
 - by exists [::]; rewrite cat0s.
 - by case: (nat_ns_tail p (nat_of_P n))=> l' ->; exists l'.
 - by exists [::]; rewrite cat0s.

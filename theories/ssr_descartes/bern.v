@@ -25,13 +25,12 @@ Local Open Scope ring_scope .
 
   A consequence of one_root2 is that there can be only one root above c, hence
   only one root above a.
-    
 *)
 
 Local Open Scope order_scope .
 
 Definition one_root1 (l : seq rat) (a b : rat) :=
-  exists c, exists d, exists k : rat, 
+  exists c, exists d, exists k : rat,
      a < c /\ c < d /\ d < b /\ (0 < k)%Q /\
      (forall x, a < x -> x <= c -> (0 < eval_pol l x)%Q) /\
      (forall x, d < x -> x < b -> (eval_pol l x < 0)%Q) /\
@@ -42,7 +41,7 @@ Definition one_root2 (l : seq rat) (a : rat) :=
    exists c, exists k : rat,
      a < c /\ (0 < k)%Q /\
      (forall x, a < x -> x <= c -> eval_pol l x < 0)%Q /\
-     (forall x y, c <= x -> x < y -> 
+     (forall x y, c <= x -> x < y ->
          k * (y - x) <= eval_pol l y - eval_pol l x).
 
 Lemma alt_one_root2 : forall l, alternate l -> one_root2 l 0.
@@ -145,21 +144,25 @@ move => n; elim: n => [z z0| n IHn z z0].
 case: (IHn z z0) => k [k0 kp].
 exists (z*k + z ^+ n); split => [ | x y x0 xy yz].
   apply: addr_ge0 => //=.
-  (*; first by apply:expf_ge0; rewrite ltrW.
-  by apply: mulr_gte0pp=> //=; apply: ltrW.*) admit.
-  admit.
+    by rewrite mulr_ge0// ltW.
+  by apply: exprn_ge0 => //; exact: ltW.
 rewrite !exprS.
 rewrite (_: _ * _ - _ =  y * (y ^+ n - x ^+ n) + (y - x) * x ^+ n); last first.
-  (*by rewrite mulr_addl mulr_addr addrA mulrN mulNr addrNK.*) admit.
-(*rewrite [_ * (y-x)]mulr_addl lter_add //=.
-  rewrite -mulrA; apply: ler_trans (_ : y * (k * (y - x)) <= _).
-  rewrite lter_mulpl //=; first by apply: lter_le_trans xy; apply: ltrW.
+  by rewrite mulrDr mulrDl addrA mulrN mulNr addrNK.
+rewrite [_ * (y-x)]mulrDl ler_add //=.
+  rewrite -mulrA; apply: le_trans (_ : y * (k * (y - x)) <= _).
+  rewrite ler_wpmul2l//.
+    by rewrite (le_trans _ xy)// ltW.
     by apply: kp.
-  apply: lter_mulpr => //; by apply: mulr_ge0pp => //; rewrite subr_gte0.
-rewrite (mulrC (_ - _)); apply: lter_mulpr; first by rewrite subr_gte0.
-case: {IHn kp} n=> /=; first by rewrite !expr0 lterr.
-by move => n; rewrite lef_expS2 ?(ltrW z0) ?(ltrW x0) //=; apply: ler_trans yz.
-Qed.*) Admitted.
+  rewrite !(mulrCA _ k) ler_wpmul2l//.
+  by rewrite ler_wpmul2r// ?subr_ge0.
+rewrite (mulrC (_ - _)).
+rewrite ler_wpmul2r// ?subr_ge0//.
+rewrite ler_expn2r//.
+by rewrite nnegrE ltW.
+by rewrite nnegrE ltW.
+by apply: le_trans yz.
+Qed.
 
 (* NB(rei): couldn't find reciprocate_pol
 TODO
