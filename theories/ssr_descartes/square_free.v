@@ -1,5 +1,5 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime.
-Require Import div ssralg poly polydiv polyorder ssrnum zmodp polyrcf.
+From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype prime.
+From mathcomp Require Import div ssralg poly polydiv polyorder ssrnum zmodp polyrcf.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -1,12 +1,13 @@
-Require Import QArith ZArith Zwf Omega.
-Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun.
-Require Import bigop fingroup choice binomial.
-Require Export ssralg infra pol cmvt desc.
+(*Require Import QArith ZArith Zwf Omega.*)
+From mathcomp Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun order.
+From mathcomp Require Import bigop fingroup choice binomial.
+From mathcomp Require Export ssralg.
+Require Import infra pol cmvt desc.
 
 Import GroupScope .
 Import GRing.Theory .
-Import OrderedRing.Theory.
-Open Local Scope ring_scope .
+Import Order.Theory.
+Local Open Scope ring_scope .
 
 Set Printing Width 50.
 

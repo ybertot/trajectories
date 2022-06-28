@@ -1,6 +1,6 @@
-Require Import ssreflect eqtype ssrbool ssrnat fintype seq ssrfun .
-Require Import bigops groups choice .
-Require Export ssralg .
+From mathcomp Require Import ssreflect eqtype ssrbool ssrnat fintype seq ssrfun.
+From mathcomp Require Import bigops groups choice.
+From mathcomp Require Export ssralg .
 
 Set   Implicit Arguments.
 Unset Strict Implicit.

@@ -1,4 +1,4 @@
-From mathcomp Require Import ssreflect ssrbool eqtype ssrnat seq.
+From mathcomp Require Import ssreflect ssrbool eqtype ssrnat seq order.
 From mathcomp Require Import choice fintype finfun ssrfun bigop ssralg.
 (*Require Import orderedalg.*)
 
@@ -218,15 +218,41 @@ Qed.
 
 Canonical Structure Z_iDomain := Eval hnf in IdomainType Z Z_idomain_axiom.
 
-Definition Z_OrderedRingMixin :=
+Lemma Zlt_def (x y : Z) : (x <? y)%Z = (y != x) && (x <=? y)%Z.
+Proof.
+(* TODO *)
+Admitted.
+
+Lemma Zle_total : forall m n : Z, (m <=? n)%Z || (n <=? m)%Z.
+Proof.
+(* TODO *)
+Admitted.
+
+(*Definition Z_OrderedRingMixin :=
   OrderedRing.Mixin 
-  Zle_bool_antisymb Zle_bool_transb Zle_bool_totalb Zle_bool_addr Zle_bool_mulr.
+  Zle_bool_antisymb Zle_bool_transb Zle_bool_totalb Zle_bool_addr Zle_bool_mulr.*)
+Lemma Z_display : Datatypes.unit. Proof. exact: tt. Qed.
+(*Definition Z_OrderedRingMixin :=
+  @LePOrderMixin Z_eqType Z.leb Z.ltb Zlt_def Zle_bool_refl Zle_bool_antisymb Zle_bool_transb.
+Canonical Z_porderType := POrderType Z_display Z Z_OrderedRingMixin.*)
 
+Definition Z_OrderedRingMixin2 :=
+  LeOrderMixin Zlt_def (fun _ _ => erefl) (fun _ _ => erefl) Zle_bool_antisymb Zle_bool_transb Zle_total.
 
-Canonical Structure Z_oIdomainType := 
+Canonical z_porderType := POrderType Z_display Z Z_OrderedRingMixin2.
+Canonical z_latticeType := LatticeType Z Z_OrderedRingMixin2.
+Canonical z_distrLatticeType := DistrLatticeType Z Z_OrderedRingMixin2.
+Canonical z_orderType := OrderType Z Z_OrderedRingMixin2.
+
+(*Canonical Structure Z_OrderedRingType :=
   Eval hnf in OIdomainType Z Z_OrderedRingMixin.
 
+Canonical Structure Z_oIdomainType :=
+  Eval hnf in OIdomainType Z Z_OrderedRingMixin.*)
+
 (* Basic tructures for rational numbers.*)
+
+(* TODO
 
 Definition eqq (x y : Q) : bool :=
   match x, y with
@@ -557,3 +583,5 @@ Canonical Structure Qcb_oIddomainType :=
 
 Canonical Structure Qcb_oFieldType :=
   Eval hnf in OFieldType Qcb Q_OrderedRingMixin.
+
+*)

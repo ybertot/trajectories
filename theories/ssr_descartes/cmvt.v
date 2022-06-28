@@ -1,12 +1,13 @@
-Require Import QArith ZArith Zwf Omega.
-Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun.
-Require Import bigop fingroup choice.
-Require Export ssralg orderedalg infra pol.
+Require Import (*QArith*) ZArith Zwf Lia.
+From mathcomp Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun order.
+From mathcomp Require Import bigop fingroup choice ssralg ssrnum rat.
+Require Export (*infra*) pol.
 
-Import GroupScope .
+Import GroupScope.
 Import GRing.Theory.
-Import OrderedRing.Theory.
-Open Local Scope ring_scope .
+Import Order.Theory.
+Import Num.Theory.
+Local Open Scope ring_scope.
 
 
 Set Printing Width 50.
@@ -20,6 +21,17 @@ Set Printing Width 50.
  of each coefficient.
 *)
 
+(* NB: copied from new_descartes *)
+
+Fixpoint eval_pol (l:list rat)(x:rat) {struct l} : rat :=
+  match l with 
+    nil => 0
+  | a::tl => a + x * (eval_pol tl x)
+  end.
+
+Fixpoint abs_pol (l:list rat) :list rat :=
+ match l with nil => nil | a::tl => `|a| :: abs_pol tl end.
+
 (* Theorem binding the slope between two points inside an interval. *)
 Lemma cm2 :
   forall l b, { c |
@@ -27,16 +39,17 @@ Lemma cm2 :
     `|(eval_pol l x - eval_pol l 0)| <= c * x}.
 Proof.
 move=> l b; case: l =>[| a l].
-- by exists 0; move=> /= x; rewrite mul0r oppr0 addr0 absr0 lerr.
+- by exists 0; move=> /= x; rewrite mul0r oppr0 addr0 normr0 lexx.
 - exists (eval_pol (abs_pol l) b) => x px xb /=; rewrite mul0r addr0.
-  rewrite addrC addKr absf_mul ger0_abs // mulrC lter_mulp //=.
-  rewrite (ler_trans (ler_absr_eval_pol _ _)) //.
+  rewrite addrC addKr normrM ger0_norm // mulrC ler_wpmul2r//.
+(*  rewrite (le_trans (ler_absr_eval_pol _ _)) //.
   by rewrite eval_pol_abs_pol_increase // ger0_abs.
-Qed.
-
+Qed.*) (*TODO*) Admitted.
 
 
 (* Cannot be abstracted since not every ordered ring has a floor ring *)
+(*
+TODO?
 Lemma QZ_bound : forall x:Q, (0 <= x)%Q -> {n : Z | x <= n#1}%Q.
 intros [n d]; exists(Zdiv n (Zpos d)+1)%Z.
 assert (dpos : (('d) > 0)%Z) by apply (refl_equal Gt).
@@ -46,6 +59,7 @@ rewrite (Zmult_comm ('d)); apply Zplus_le_compat; auto with zarith.
 destruct (Z_mod_lt n ('d)) as [_ H2]; auto.
 by apply Zlt_le_weak.
 Defined.
+*)
 
 (* We will look at n points regularly placed between a and b,  a satisfies
   a property P and b does not, we want to find the first point among the
@@ -69,7 +83,7 @@ Qed.
 Fixpoint nat_ns (p : Z)(n : nat) :=
   match n with
     |0 => [:: p]
-    |m.+1 => (p - (Z_of_nat m.+1)) :: nat_ns p m
+    |m.+1 => (p - (Z_of_nat m.+1))%Z :: nat_ns p m
   end.
 
 Definition ns p n :=
@@ -78,28 +92,32 @@ Definition ns p n :=
     |_ => [:: p]
   end.
 
-Lemma ltb_Zneg0 : forall x, (Zneg x) < 0.
+Lemma ltb_Zneg0 : forall x, ((Zneg x) < 0)%Z.
 Proof. move=> x; by []. Qed.
 
-Lemma leb_Zneg0N : forall x, 0 <= (Zneg x) = false.
-Proof. by move=> x. Qed.
+Lemma leb_Zneg0N : forall x, (0 <= (Zneg x))%Z = false.
+Proof. (*by move=> x. Qed.*) (*TODO*) Admitted.
 
 Lemma nat_ns_head : forall (p : Z) n, 
-  exists l, nat_ns p n = (p - (Z_of_nat n)) :: l.
+  exists l, nat_ns p n = (p - (Z_of_nat n))%Z :: l.
 Proof.
 move=> p; elim=>[|n [l Ih]] /=.
-  by rewrite oppr0 addr0; exists [::].
-by rewrite Ih; exists [:: p - Z_of_nat n & l].
-Qed.
+  exists [::].
+  admit.
+by rewrite Ih; exists [:: (p - Z_of_nat n)%Z & l].
+Admitted.
+
+Local Open Scope Z_scope.
 
 Lemma ns_head :  forall p n :Z, (0 <= n) -> exists l, ns p n = (p - n) :: l.
 Proof.
 move=> p [|n|n] /=; last 1 first.
 - by rewrite leb_Zneg0N.
-- by exists [::]; rewrite oppr0 addr0.
+- exists [::].
+  admit.
 - move=> _; set m := nat_of_P n; case: (nat_ns_head p m)=> l' ->; exists l'.
   by rewrite /m Zpos_eq_Z_of_nat_o_nat_of_P.
-Qed.
+Admitted.
 
 Lemma nat_ns_step : forall p n, forall l1 l2 x y,
   nat_ns p n = l1 ++ [:: x, y & l2] -> y = x + 1.
@@ -108,9 +126,9 @@ move=> p; elim=> [|n Ihn] l1 l2 x y /=.
   by move/(congr1 size)=> /=; rewrite size_cat /= !addnS; move/eqP; rewrite eqSS.
 case: l1 => [|u l3] /=; last by case=> _; move/Ihn.
 case=> <-; case: (nat_ns_head p n)=> [l' ->]; case=> <- _.
-rewrite Zpos_P_of_succ_nat /Zsucc /= -[(_ + 1)%Z]/((Z_of_nat n) + 1) oppr_add addrA.
+rewrite Zpos_P_of_succ_nat. (* /Z.succ /= -[(_ + 1)%Z]/((Z_of_nat n) + 1) oppr_add addrA.
 by rewrite addrK.
-Qed.
+Qed.*) Admitted.
 
 Lemma ns_step : forall p n, forall l1 l2 x y, 0 <= n ->
   ns p n = l1 ++ [:: x, y & l2] -> y = x + 1.
@@ -126,9 +144,9 @@ Lemma nat_ns_tail : forall p n, exists l, nat_ns p n = l ++ [:: p].
 Proof.
 move=> p; elim=> [|n [l' Ihn]] /=.
 - by exists [::]; rewrite cat0s.
-- by rewrite Ihn; exists [:: (p - (' P_of_succ_nat n)%Z) & l']; rewrite cat_cons.
-Qed.
-  
+(*- by rewrite Ihn; exists [:: (p - (' P_of_succ_nat n)%Z) & l']; rewrite cat_cons.*) admit.
+Admitted.
+
 Lemma ns_tail : forall p n, exists l, ns p n = l ++ p ::nil.
 Proof.
 move=> p [|n|n] /=. 
@@ -137,9 +155,13 @@ move=> p [|n|n] /=.
 - by exists [::]; rewrite cat0s.
 Qed.
 
+Local Close Scope Z_scope.
+
 (* Lemmas about minus are missing in xssralg .. .*)
+(* TODO
+
 Lemma nat_ns_bounds : forall p n x l1 l2, nat_ns p n = l1 ++ [:: x & l2] -> 
-        (p - Z_of_nat n <= x) && (x <= p).
+        (p - Z_of_nat n <= x)%Z && (x <= p).
 Proof.
 move=> p; elim=> [|n Ihn] x l1 l2 /= h.
 - rewrite oppr0 addr0. 
@@ -408,3 +430,4 @@ split; last by auto.
 apply: ler_trans main; rewrite -{1}(addr0 (eval_pol l b')); apply: lter_add; rewrite /= ?lerr //.
 by rewrite /= oppr_gte0 /= ltrW.
 Qed.
+*)

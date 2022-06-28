@@ -1,9 +1,10 @@
-Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice fintype.
-Require Import div finfun bigop prime binomial ssralg finset fingroup finalg.
-Require Import mxalgebra perm zmodp matrix ssrint refinements funperm.
-Require Import seq seqpoly pol square_free casteljau desc rat.
+From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice fintype.
+From mathcomp Require Import div finfun bigop prime binomial ssralg finset fingroup finalg.
+From mathcomp Require Import mxalgebra perm zmodp matrix ssrint refinements funperm.
+From mathcomp Require Import seq
+Require Import seqpoly pol square_free casteljau desc rat.
 
-Require Import ssrnum ssrint realalg poly poly_normal.
+From mathcomp Require Import ssrnum ssrint realalg poly poly_normal.
 Import GRing.Theory Num.Theory.
 
 Search seqn0 bernp.
