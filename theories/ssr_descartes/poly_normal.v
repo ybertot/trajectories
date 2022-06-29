@@ -30,10 +30,10 @@ Lemma all_posP (s : seq R) :
    reflect (forall k, (k < size s)%N -> 0 < s`_k) (all_pos s).
 Proof. by apply/all_nthP. Qed.
 
-Fixpoint normal_seq (s : seq R) := 
-   if s is (a::l1) then 
+Fixpoint normal_seq (s : seq R) :=
+   if s is (a::l1) then
       if l1 is (b::l2) then
-         if l2 is (c::l3) then 
+         if l2 is (c::l3) then
             (normal_seq l1)
             && ((0 == a) || ((a * c <= b^+2) && (0 < a) && (0 < b)))
          else (0 <= a) && (0 < b)
@@ -42,7 +42,7 @@ Fixpoint normal_seq (s : seq R) :=
 
 Definition normal := [qualify p : {poly R} | normal_seq p].
 
-Lemma normalE p : p \is normal = normal_seq p. 
+Lemma normalE p : p \is normal = normal_seq p.
 Proof. by []. Qed.
 
 Lemma polyseq_deg1 (a b : R) : (a != 0) ->

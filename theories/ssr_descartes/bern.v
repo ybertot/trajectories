@@ -12,16 +12,16 @@ Local Open Scope ring_scope .
 
 (******************************************************************************)
 (* Two predicates to describe that a polynomial has only one root,
-  one_root1 l a b :
+  one_root1 l a b ==
      there exists c, d, and k, so that a,c,d,b is ordered, k is positive,
      the polynomial value is positive between a and c, negative between d and b
      the slope is less than -k between c and d.
   This statement is specifically suited to speak about roots inside the
   interval a b.
 
-  one_root2 l a :
-     there exists c, d, and k, so that a is smaller than c, k is p      ositive,
-     the polynomical value is negative between a and c, and the slope is
+  one_root2 l a ==
+     there exists c, d, and k, so that a is smaller than c, k is positive,
+     the polynomial value is negative between a and c, and the slope is
      larger than k above c.
 
   A consequence of one_root2 is that there can be only one root above c, hence
@@ -52,28 +52,102 @@ move: (above_slope _ _ 0 _ kp sl) => [x2 [pos x1x2]].
 by exists x1; exists k; split; first done; split; first done; split; done.
 Qed.*) Admitted.
 
-(* NB(rei): couldn't find translate_pol' *)
-(*
-TODO
+Definition translate_pol' (l : seq rat) (a : rat) :=
+   mkseq (fun i : nat =>
+     \sum_(k < size l) 'C(k, i)%:R * nth 0 l k * a ^+ (k - i)) (size l).
+
+Lemma eval_pol_big :
+  forall l x, eval_pol l x = \sum_(i < size l) nth 0 l i * x ^+ i.
+Proof.
+move => l x; elim: l=> [ | a l IHl]; first by rewrite big_ord0.
+rewrite /= big_ord_recl /= mulr1 IHl; congr (fun v => a + v).
+rewrite big_distrr; apply:eq_bigr => i _.
+by rewrite /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
+Qed.
+
+Lemma size_translate_pol' : forall l a, size (translate_pol' l a)  = size l.
+Proof. by move => l a; rewrite /translate_pol' size_mkseq. Qed.
+
+Lemma pascalQ : forall a b n,
+  (a + b) ^+ n = \sum_(i < n.+1) ('C(n, i)%:R * (a ^+ (n - i) * b ^+ i)) :> rat.
+Proof.
+move=> a b n.
+rewrite exprDn_comm; last first.
+  by rewrite /GRing.comm mulrC.
+apply eq_bigr => i _.
+rewrite mulrCA.
+rewrite mulr_natl.
+by rewrite mulrnAr.
+Qed.
+
+Lemma translate_pol'q :
+  forall l a x, eval_pol (translate_pol' l a) x = eval_pol l (x + a).
+Proof.
+move => l a x; rewrite !eval_pol_big size_translate_pol' /translate_pol'.
+apply: trans_equal (_ : \sum_(k < size l)
+                      (\sum_(i < size l) 'C(k, i)%:R * l`_k * a^+ (k - i) * x^+ i)
+                       = _).
+  rewrite exchange_big /=.
+  by apply: eq_bigr => i _; rewrite nth_mkseq //= big_distrl.
+apply sym_equal.
+apply: trans_equal (_ : \sum_(i < size l)
+                \sum_(0 <= j < i.+1) l`_i * 'C(i, j)%:R * (x^+(i-j) * a ^+j) = _).
+  apply: eq_bigr => i _; rewrite big_mkord pascalQ big_distrr /=.
+  by apply: eq_bigr => j _; rewrite /= !mulrA.
+have jgti : forall i : 'I_(size l),
+      \sum_(i.+1 <= j < size l) l`_i * 'C(i, j)%:R * (x ^+ (i - j) * a ^+ j) = 0%R.
+  move => i; apply: big1_seq => j /=; rewrite mem_index_iota.
+  by move/andP => [ilj _]; rewrite bin_small // mulr0 mul0r.
+apply: trans_equal (_ : \sum_(i < size l)
+        \sum_(j < size l) l`_i * 'C(i, j)%:R * (x ^+ (i - j) * a ^+ j) = _).
+  apply: eq_bigr => i _.
+  rewrite -(@big_mkord rat 0%Q +%R (size l) (fun i => true)
+   (fun j => l`_i * 'C(i, j)%:R *(x ^+ (i - j) * a ^+ j))).
+  by rewrite  (@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0.
+apply: eq_bigr => i _.
+rewrite -(@big_mkord rat 0%Q +%R (size l) (fun i => true)
+   (fun j => l`_i * 'C(i, j)%:R *(x ^+ (i - j) * a ^+ j))).
+rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0 big_mkord.
+rewrite -(@big_mkord rat 0%Q +%R (size l) (fun i => true)
+   (fun j => 'C(i, j)%:R * l`_i * a ^+ (i - j) * x ^+ j)).
+have jgti' :
+   \sum_(i.+1 <= j < size l) 'C(i, j)%:R * l`_i * a ^+ (i - j) * x ^+ j = 0%Q.
+  apply: big1_seq => j /=; rewrite mem_index_iota.
+  by move/andP => [ilj _]; rewrite bin_small // !mul0r.
+rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti' addr0 big_mkord.
+set f := fun j:'I_i.+1 => (Ordinal ((leq_subr j i): ((i - j) < i.+1))%N).
+have finv: forall j:'I_i.+1, xpredT j -> f (f j) = j.
+  by move => j _; apply: val_inj => /=; rewrite subKn //; have : (j < i.+1)%N.
+rewrite (reindex_onto f f finv) /=.
+have tmp :(fun j => f (f j) == j) =1 xpredT.
+  by move=> j /=; apply/eqP; apply finv.
+rewrite (eq_bigl _ _ tmp); apply: eq_bigr => j _.
+have jli : (j <= i)%N by have : (j < i.+1)%N.
+rewrite subKn // [x ^+ _ * _]mulrC ['C(i, j)%:R * _]mulrC !mulrA -bin_sub; last first.
+  by rewrite leq_subr.
+by rewrite subKn//.
+Qed.
+
 Lemma one_root2_translate :
   forall l a b, one_root2 (translate_pol' l a) b -> one_root2 l (a + b).
 Proof.
 move=> l a b [x1 [k [x1a [kp [neg sl]]]]].
 exists (a + x1); exists k.
-split; first by rewrite  lter_add2r.
+split; first by rewrite ltr_add2l.
 split; first by [].
 split.
   move=> x abx xax1; rewrite (_ : x = x - a + a); last first.
     by rewrite addrNK.
-  rewrite  -translate_pol'q; apply: neg.
-    by rewrite lter_subr addrC.
-  by rewrite lter_subl.
+  rewrite -translate_pol'q; apply: neg.
+    by rewrite ltr_subr_addl.
+  by rewrite ler_subl_addl.
 move=> x y ax1x xy.
 have t: forall z, z = (z - a) + a by move=> z; rewrite addrNK.
 rewrite {2}(t y) {2}(t x) -!(translate_pol'q l) (_ : y - x = y - a - (x - a)).
-  apply: sl; first by rewrite lter_sublA.
-  by  rewrite lter_add2l.
-by rewrite [x + _]addrC oppr_add opprK addrA addrNK.
+  apply: sl.
+    by rewrite ler_subr_addl.
+  by rewrite ltr_le_sub//.
+by rewrite [x + _]addrC opprD opprK addrA addrNK.
 Qed.
 
 Lemma one_root1_translate :
@@ -82,23 +156,29 @@ Lemma one_root1_translate :
 Proof.
 move=> l a b c [x1 [x2 [k [ax1 [x1x2 [x2b [kp [pos [neg sl]]]]]]]]].
 exists (c + x1); exists (c + x2); exists k.
-split; first by rewrite lter_add2r.
-split; first by rewrite lter_add2r.
-split; first by rewrite lter_add2r.
+split; first by rewrite ltr_add2l.
+split; first by rewrite ltr_add2l.
+split; first by rewrite ltr_add2l.
 split; first by [].
 split.
   move=> x cax xcx1; rewrite (_ : x = x - c + c); last by rewrite addrNK.
-   by rewrite -translate_pol'q; apply pos; rewrite lter_subl.
+  rewrite -translate_pol'q; apply pos.
+    by rewrite ltr_subr_addl.
+  by rewrite ler_subl_addl.
 split.
   move=> x cx2x xcb; rewrite (_ : x = x - c + c); last by rewrite addrNK.
-    by rewrite -translate_pol'q; apply: neg; rewrite -?ler_addlA // lter_subl.
+  rewrite -translate_pol'q; apply: neg; rewrite -?ler_addlA //.
+    by rewrite ltr_subr_addl.
+  by rewrite ltr_subl_addl.
 move=> x y cx1x xy ycx2.
 have t: forall z, z = (z - c) + c by move=> z; rewrite addrNK.
 rewrite {2}(t x) {2}(t y) (_ : y - x = y - c - (x - c)); last first.
-  by rewrite [x + _]addrC oppr_add opprK addrA addrNK.
-by rewrite -!(translate_pol'q l); apply: sl; rewrite ?ler_add2l // lter_subl.
-eQed.
-*)
+  by rewrite [x + _]addrC opprD opprK addrA addrNK.
+rewrite -!(translate_pol'q l); apply: sl; rewrite ?ler_add2l //.
+by rewrite ltr_subr_addl.
+by rewrite ler_sub.
+by rewrite ltr_subl_addl.
+Qed.
 
 Definition expand (p : {poly rat}) (k : rat) :=
   \poly_(i < size p)(p`_i * k ^+i).
