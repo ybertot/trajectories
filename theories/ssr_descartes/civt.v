@@ -1,6 +1,6 @@
 Require Import (*QArith*) ZArith Zwf Lia.
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat div fintype seq ssrfun order.
-From mathcomp Require Import bigop fingroup choice ssralg ssrnum rat.
+From mathcomp Require Import bigop fingroup choice ssralg ssrnum rat poly.
 Require Export (*infra*) pol.
 
 Import GroupScope.
@@ -20,30 +20,21 @@ Set Printing Width 50.
 *)
 (******************************************************************************)
 
-(* NB: copied from new_descartes *)
-Fixpoint eval_pol (l:list rat)(x:rat) {struct l} : rat :=
-  match l with
-    nil => 0
-  | a::tl => a + x * (eval_pol tl x)
-  end.
-
 Fixpoint abs_pol (l:list rat) :list rat :=
  match l with nil => nil | a::tl => `|a| :: abs_pol tl end.
 
 (* Theorem binding the slope between two points inside an interval. *)
-Lemma cm2 :
-  forall l b, { c |
-  forall x, 0 <= x -> x <= b ->
-    `|(eval_pol l x - eval_pol l 0)| <= c * x}.
+Lemma cm2 : forall (l : {poly rat}) b,
+  { c | forall x, 0 <= x -> x <= b -> `|l.[x] - l.[0]| <= c * x}.
 Proof.
-move=> l b; case: l =>[| a l].
+(*move=> l b; case: l =>[| a l].
 - by exists 0; move=> /= x; rewrite mul0r oppr0 addr0 normr0 lexx.
 - exists (eval_pol (abs_pol l) b) => x px xb /=; rewrite mul0r addr0.
   rewrite addrC addKr normrM ger0_norm // mulrC ler_wpmul2r//.
 (* NB(rei): ler_absr_eval_pol? *)
 (*  rewrite (le_trans (ler_absr_eval_pol _ _)) //.
   by rewrite eval_pol_abs_pol_increase // ger0_abs.
-Qed.*) (*TODO*) Admitted.
+Qed.*) (*TODO*)*) Admitted.
 
 (* Cannot be abstracted since not every ordered ring has a floor ring *)
 (*
@@ -75,7 +66,7 @@ case Pa1: (P a).
     by move => l1 l2 x y q; apply: (connect (a'::l1) l2); rewrite /= q.
   by move: (IHl a b' Pa1 Pb tmp) => [c [d [cd Pc]]]; exists c; exists d.
 exists a'; exists a; split; first by apply (connect nil (l++b'::nil)).
-by rewrite Pa1. 
+by rewrite Pa1.
 Qed.
 
 Fixpoint nat_ns (p : Z)(n : nat) :=
@@ -90,15 +81,9 @@ Definition ns p n :=
     |_ => [:: p]
   end.
 
-Lemma ltb_Zneg0 : forall x, ((Zneg x) < 0)%Z.
-Proof. move=> x; by []. Qed.
+Lemma ltb_Zneg0 x : (Zneg x < 0)%Z. Proof. by []. Qed.
 
-Lemma leb_Zneg0N : forall x, ~ (0 <= (Zneg x))%Z.
-Proof.
-move=> x.
-apply/Z.lt_nge.
-exact: ltb_Zneg0.
-Qed.
+Lemma leb_Zneg0N x : ~ (0 <= Zneg x)%Z. Proof. exact/Z.lt_nge/ltb_Zneg0. Qed.
 
 Lemma nat_ns_head : forall (p : Z) n,
   exists l, nat_ns p n = (p - (Z_of_nat n))%Z :: l.
