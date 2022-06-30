@@ -27,6 +27,7 @@ Definition dicho_l n l :=
 Definition dicho_r n l :=
   map (fun i => casteljau l (n - i) i) (iota 0 (S n)).
 
+(*
 Fixpoint count_root n d (l : seq rat) : option nat :=
  match n with
    0 => None
@@ -42,13 +43,14 @@ Fixpoint count_root n d (l : seq rat) : option nat :=
       end
     end
   end.
-      
+*)
+
 Section dicho_correct.
 Variable R : numFieldType.
 
 Lemma casteljau_correct (l : seq rat) k n :
   ratr (casteljau l k n) =
-  de_casteljau (R:=R) (1/(1+1)) (1/(1+1)) 
+  de_casteljau (R:=R) (1/(1+1)) (1/(1+1))
     (fun i => ratr (nth 0 l i)) k n.
 Proof.
 elim : k n => [ n | k Ik n]; first by [].
@@ -84,12 +86,13 @@ Qed.
 
 End dicho_correct.
 
-Inductive root_info A : Type := 
+Inductive root_info A : Type :=
   | Exact (x : A)
   | One_in (x y : A)
   | Zero_in (x y : A)
   | Unknown (x y : A).
 
+(*
 Fixpoint isol_rec n d (a b : rat) (l : seq rat) acc : seq (root_info rat) :=
   match n with
     O => Unknown _ a b::acc
@@ -106,8 +109,9 @@ Fixpoint isol_rec n d (a b : rat) (l : seq rat) acc : seq (root_info rat) :=
         else isol_rec p d c b l2 acc)
     end
   end.
+*)
 
-Definition root_info_eq (R : eqType) 
+Definition root_info_eq (R : eqType)
  (x y : root_info R) : bool :=
   match x, y with
     Exact a, Exact b => a == b :> R
@@ -145,6 +149,7 @@ Variable R : archiFieldType.
 
 Definition R' := RealAlg.alg_of_rcfType R.
 
+(*
 Lemma count_root_correct0 n (l : seq rat) q d (a b: R') :
   (0 < d)%N -> a < b -> q != 0 -> size l = d.+1 ->
   q = \sum_(i < d.+1) (nth 0 (map ratr l) i) *:
@@ -286,6 +291,7 @@ rewrite addr0 hornerZ mulf_neq0 //.
  by rewrite /= fmorph_eq0 cc.
 by rewrite -xm (b0m _ (leq0n d)).
 Qed.
+*)
 
 End count_root_correct.
 
@@ -293,11 +299,12 @@ Section isol_rec_correct.
 
 Variable R : archiFieldType.
 
+(*NB(rei): couldn't type  Unknown rat a b a few lines below
 Lemma isol_rec_acc : forall n d a b l acc, exists l'',
-  isol_rec n d a b l acc = l''++acc.
+  @isol_rec R n d a b l acc = l''++acc.
 Proof.
 elim => [| n In] d a b l acc.
- by rewrite /=; exists [:: Unknown rat a b].
+  by rewrite /=; exists [:: Unknown rat a b].
 rewrite /=; case: (qe_rcf_th.changes (seqn0 l)) => [ | n0];
  first by exists [:: Zero_in _ a b].
 case: n0 => [ | n1]; first by exists [:: One_in rat a b].
@@ -309,18 +316,18 @@ case: (casteljau l (d - 0) 0 == 0).
  by rewrite -(cat1s _ l1) l1q l2q -!catA.
 case: (In d a ((a + b) / (1+1)) (dicho_l d l) (l1++acc)) => [l2 l2q].
 by exists (l2++l1); rewrite l1q l2q -!catA.
-Qed.
+Qed.*)
 
 Canonical root_info_eqMixin (R : eqType) := EqMixin (root_info_eqP R).
 
 Canonical root_info_eqType (R : eqType) :=
    Eval hnf in EqType (root_info R) (root_info_eqMixin R).
 
-(* Todo: use Arguments instead *)
-Implicit Arguments root_info_eqP [R x y].
+Arguments root_info_eqP {R x y}.
 Prenex Implicits root_info_eqP.
 
 
+(* NB(rei): typing issue with {realclosure _}
 Lemma isol_rec_no_root n (l : seq rat) q d (a b:rat) a' b' acc :
   a < b -> q != 0 -> size l = d.+1 ->
   ~~ (Zero_in rat a' b' \in acc) ->
@@ -382,13 +389,13 @@ case ch: (qe_rcf_th.changes (seqn0 l)) => [ | nch].
   apply/eqP; rewrite addn_eq0; apply/andP; split; last first.
    by apply/eqP; apply: Il.
   set (u := ratr e).
-  have sr : (head 0 (seqn0 l) < 0) = 
+  have sr : (head 0 (seqn0 l) < 0) =
          (head 0 (seqn0 [seq ratr i | i <- l]) < 0 :> RealAlg.alg_of_rcfType R).
    elim : {Il pl pe} l => [ | e' l' Il']; first by rewrite /= ltrr.
    rewrite /=; case he' : (e' == 0) => /=.
     by rewrite (eqP he') rmorph0 eqxx /=.
    by rewrite fmorph_eq0 he' /= ltrq0.
-  have sr' : (0 < head 0 (seqn0 l)) = 
+  have sr' : (0 < head 0 (seqn0 l)) =
             (0 < head 0 (seqn0 [seq ratr i | i <- l]) :> RealAlg.alg_of_rcfType R).
    elim : {Il pl pe sr} l => [ | e' l' Il']; first by rewrite /= ltrr.
    rewrite /=; case he' : (e' == 0) => /=.
@@ -475,27 +482,31 @@ move: ramd; rewrite eq_sym => ramd.
 rewrite (eq_bigr (fun i : 'I_d.+1 =>
     dicho' (R:=RealAlg.alg_of_rcfType R)
            ((ratr b - (ratr a + ratr b) / (1 + 1)) / (ratr b - ratr a))
-           (((ratr a + ratr b) / (1 + 1) - ratr a) / (ratr b - ratr a)) 
+           (((ratr a + ratr b) / (1 + 1) - ratr a) / (ratr b - ratr a))
            [eta nth 0 [seq ratr v | v <- l]] i *:
          bernp (R:=RealAlg.alg_of_rcfType R) (ratr a) ((ratr a + ratr b) / (1 + 1))
              d i)); last by move => i _ ; apply bodyq.
 by apply: (dicho'_correct (c := fun i => [seq ratr v | v <- l]`_i) rabd ramd).
 Qed.
+*)
 
 End isol_rec_correct.
-    
+
 Definition big_num := 500%nat.
 
 (* Returns the last element of the sequence of coefficients, i.e.
   the lead coefficient if the sequence is normal. *)
+(*NB(rei): it looks like this has to do with evaluation, rm?
 Definition lead_coef p := last 0%bigQ p.
+*)
 
 (* To be used with a monic divisor d, of degree dd *)
 
+(*
 Fixpoint divp_r (p d : seq bigQ) (dd : nat) : seq bigQ * seq bigQ :=
   if NPeano.Nat.leb (size p) dd
   then ([::], p)
-  else 
+  else
     match p with
       [::] => ([::], p)
     | a::p' => let (q, r) := divp_r p' d dd in
@@ -512,13 +523,13 @@ Definition divp p d :=
   | _::_ => let (q, r) := divp_r p (map (fun x => x/lc)%bigQ d') dd in
     (map (fun x => x/lc)%bigQ q, normalize r)
   end.
+*)
 
 (* Correctness proof. *)
 
 (* Definition repr (l : list bigQ) : poly rat := *)
-  
-  
-    
+
+(*
 
 Definition clean_divp p d :=
   let (a, b) := divp p d in (map red (normalize a), map red (normalize b)).
@@ -673,3 +684,5 @@ Time Compute no_square ((-1)::3::(-3)::1::nil)%bigQ.
 
 (* This is a poor man's correctness proof for the decision procedure,
   but it should actually be extended to be used in any real-closed field. *)
+
+*)

@@ -1228,7 +1228,7 @@ Section isolation_algorithm.
 
 Variable R0 : archiFieldType.
 
-Definition R := {realclosure R0}.
+Let R := {realclosure R0}.
 
 Definition head_root (f : R -> R) (l : seq (root_info R)) : Prop :=
   match l with
@@ -1300,7 +1300,7 @@ set ub' := ub + 1.
 have ub'0 : 0 < ub' by rewrite ltr_paddl.
 have ublt : ub < ub' by rewrite ltr_spaddr // ltr01.
 pose x := minr (a - p.[a]/ub') (half (a + b)).
-have xitv2 : a < x < b. 
+have xitv2 : a < x < b.
   by case/andP: (mid_between ab)=> A B; rewrite lt_minr ltr_spaddr ?A //=
     ?lt_minl ?B ?orbT // -mulNr mulr_gt0 // ?invr_gt0 // oppr_gt0.
 have xitv : a <= x <= b by case/andP: xitv2 => *; rewrite !ltW //.
@@ -1366,8 +1366,8 @@ case/alternate_1P=> l1 [v [l2 [h1]]] _ _ _.
 by rewrite -nil_poly h1 {h1}; case: l1 => //.
 Qed.
 
-Lemma all_ge0_cat {R : realDomainType} :
-   {morph (@all_ge0 R) : x y / x ++ y >-> x && y}.
+Lemma all_ge0_cat {R'' : realDomainType} :
+   {morph (@all_ge0 R'') : x y / x ++ y >-> x && y}.
 Proof. by elim=> [ | a x IH y] //=; rewrite IH andbA. Qed.
 
 Lemma alternate_r d (p : {poly R}) a :
@@ -1517,7 +1517,7 @@ have cfp : forall j, (j < d.+2)%N ->
     rewrite size_polyXn.
     move: ci; rewrite -(ltn_add2r j) subnK; last by rewrite -ltnS.
     move=> ci; rewrite -(ltn_add2r i) subnK; first by rewrite addnC.
-    by rewrite -ltnS.    
+    by rewrite -ltnS.
   have t : forall i, (0 <= i < d.+1 - j)%N ->
              ((a :: l)`_i * f i) *: 'X^(d.+1 - i) =
              ((a :: l)`_i * f i) *: 'X^(d - j - i) * 'X^j.+1.
@@ -1664,7 +1664,7 @@ wlog : l q / (0 <= (seqn0 l)`_0).
       move/negbT: ci; rewrite -leqNgt => ci.
       rewrite !nth_default //; last by rewrite size_map.
       by rewrite !scale0r mulr0.
-    by rewrite seqn0_oppr changes_oppr.    
+    by rewrite seqn0_oppr changes_oppr.
   case: ur => [x [inx [xr xu]]].
   exists x; split; first by [].
   split; first by apply/eqP; rewrite -oppr_eq0 -hornerN; apply/eqP.

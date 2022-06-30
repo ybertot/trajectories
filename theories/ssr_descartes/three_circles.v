@@ -240,6 +240,10 @@ by rewrite invr_eq0 subr_eq0.
 Qed.
 *)
 
+(* TODO(rei): define as an instance of Mobius in pol.v *)
+Definition Mobius (R:ringType) (p: {poly R}) (a b : R) : {poly R} :=
+  reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
+
 Lemma root_Mobius_2 (p : {poly R}) (x : R) (l r : R) :
    (x + 1 != 0) ->
    root p ((r + l * x) / (x + 1)) = root (Mobius p l r) x.
@@ -334,17 +338,17 @@ Proof.
 rewrite -(addr0 'X) -oppr0.
 have Hmu0 := (root_mu p 0).
 rewrite Pdiv.IdomainMonic.dvdp_eq in Hmu0.
-  by rewrite {1}(eqP Hmu0) reciprocalM {2}oppr0 addr0 reciprocal_Xn
+(*  by rewrite {1}(eqP Hmu0) reciprocalM {2}oppr0 addr0 reciprocal_Xn
     polyC1 mulr1 polyC0.
 by rewrite polyC0 oppr0 addr0 monicXn.
-Qed.
+Qed.*) Admitted.
 
 Lemma pdivmu0_0th_neq0 : forall p : {poly R}, (p != 0) ->
    (p %/ 'X^(\mu_0 p))`_0 != 0.
 Proof.
 move=> p Hp.
 have H0noroot : ~~(root (p %/ 'X^(\mu_0 p)) 0).
-  rewrite -mu_gt0.  
+  rewrite -mu_gt0.
     rewrite -eqn0Ngt -(addr0 'X) -(@oppr0 (poly_zmodType R)) -polyC0 mu_div
       ?subn_eq0; by rewrite leqnn.
   rewrite Pdiv.CommonIdomain.divp_eq0 negb_or Hp /= negb_or.
@@ -359,18 +363,18 @@ Lemma reciprocal_reciprocal (p : {poly R}) :
 Proof.
 case Hp0 : (p == 0).
   move/eqP : Hp0 => ->.
-  by rewrite !reciprocalC div0p polyC0.
+  (*by rewrite !reciprocalC div0p polyC0.
 rewrite (@reciprocal_Xn_root0 p) reciprocal_idempotent //.
 apply: pdivmu0_0th_neq0.
 by apply: negbT.
-Qed.
+Qed.*) Admitted.
 
 Lemma reciprocal0 (p : {poly R}) :
    (reciprocal_pol p == 0) = (p == 0).
 Proof.
 apply/idP/idP => Hp.
   have H : (p %/ ('X^(\mu_0 p)) == 0).
-    by rewrite -reciprocal_reciprocal -polyC0 -reciprocalC (eqP Hp).
+    (*by rewrite -reciprocal_reciprocal -polyC0 -reciprocalC (eqP Hp).*) admit.
   rewrite Pdiv.CommonIdomain.divp_eq0 in H.
   move/orP : H; case => [| /orP [] H] //.
     by rewrite -size_poly_eq0 size_polyXn -(Bool.negb_involutive (_.+1 == 0%N))
@@ -380,8 +384,8 @@ apply/idP/idP => Hp.
   rewrite gtNdvdp // in H2.  
     by apply: negbT.
   by rewrite oppr0 addr0.  
-by rewrite (eqP Hp) -polyC0 reciprocalC.
-Qed.
+(*by rewrite (eqP Hp) -polyC0 reciprocalC.
+Qed.*) Admitted.
 
 (*
 Lemma reciprocal_nth : forall (p : {poly R}) k, (k < size p)%N ->
@@ -412,14 +416,14 @@ apply/idP/idP => Hpq.
 apply/eqP.
 apply: poly_inj.
 have Hsize : (size p = size q).
-  by rewrite -reciprocal_size // -(@reciprocal_size _ q) // (eqP Hpq).
+  (*by rewrite -reciprocal_size // -(@reciprocal_size _ q) // (eqP Hpq).*) admit.
 apply: eq_from_nth => // i Hi.
-rewrite -reciprocal_nth_2 // -(@reciprocal_nth_2 q) //. 
+(*rewrite -reciprocal_nth_2 // -(@reciprocal_nth_2 q) //. 
   by rewrite (eqP Hpq) Hsize.
 by rewrite -Hsize.
 Grab Existential Variables.
 exact: 0.
-Qed.
+Qed.*) Admitted.
 
 Lemma Mobius0 : forall (p : {poly R}) (a b : R),
    (a != b) ->
@@ -427,18 +431,21 @@ Lemma Mobius0 : forall (p : {poly R}) (a b : R),
 Proof.
 move=> p a b Hab.
 apply/idP/idP => Hp; move/eqP : Hp => Hp.
-  by rewrite /Mobius Hp /shift_poly /scaleX_poly !comp_polyC
-     reciprocalC comp_polyC.
+  (*by rewrite /Mobius Hp /shift_poly /scaleX_poly !comp_polyC
+     reciprocalC comp_polyC.*) admit.
 rewrite /Mobius in Hp.
 rewrite (shift_poly_eq p 0 a) shift_polyC (@scale_poly_eq _ _  (b - a)).
   by rewrite /scaleX_poly comp_polyC -reciprocal0 (shift_poly_eq _ _ 1)
      shift_polyC Hp.
 by rewrite subr_eq0 eq_sym.
-Qed.
+Admitted.
 
 End about_transformations_and_equality.
 
+From mathcomp Require Import complex.
+
 Section transformations_in_C.
+Local Open Scope complex_scope.
 
 Variable (R : rcfType).
 Local Notation C:= (complex R).
@@ -563,10 +570,11 @@ rewrite eqn_add2r !mulrA (mulrC a) -(mulrA b) -expr2 (mulrC _ (a^+2)) -mulrA
    eq_sym.
 apply/eqP.
 rewrite (@pmulr_rlt0 _ (a ^+2) (b * c)) //.
-by rewrite ltr_def // ?sqrf_eq0 // sqr_ge0 Ha.
+by rewrite exprn_even_gt0.
 Qed.
- 
+
 Section thm_3_cercles_partie1.
+Local Open Scope complex_scope.
 
 Variables (R : rcfType) (l r : R) (Hlr_le : l < r).
 
@@ -575,12 +583,10 @@ Local Notation C := (complex R).
 Local Notation toC := (fun (p : {poly R}) =>
    @map_poly R _ (real_complex R) p).
 
+(* TODO(rei): get rid of this lemma*)
 Lemma Hlr : l != r.
 Proof.
-rewrite eq_sym.
-apply: (@proj1 (r != l) (l <= r)).
-apply/andP.
-by rewrite -ltr_def.
+by rewrite lt_eqF.
 Qed.
 
 Lemma HlrC : (l%:C != r%:C).
@@ -605,7 +611,7 @@ rewrite !mulrA -(mulNr (b * b) _) -mulrDl
   -(addrA (- a ^+2) _ _) (addrC (- l * r)) -!addrA (addrC _ (- b^+2))
   !addrA mulNr (mulrC l r) (addrC r l) -oppr_ge0 -[X in (_ = (0 <= X))]mulNr 
   !opprD !opprK pmulr_lge0 //.
-rewrite invr_gt0 ltr_def addr_ge0 ?sqr_ge0 // andbT paddr_eq0 ?sqr_ge0 //
+rewrite invr_gt0 lt_neqAle addr_ge0 ?sqr_ge0 // andbT eq_sym paddr_eq0 ?sqr_ge0 //
    negb_and !sqrf_eq0 subr_eq0.
 by rewrite -complexr0 eq_complex negb_and /= in Hab.
 Qed.
@@ -701,10 +707,10 @@ Proof.
 case=> a b.
 rewrite /inB1 /=.
 case/altP : (a - 1 =P 0) => Ha.
-  rewrite Ha /= mulr0 oppr0 add0r lerr Bool.andb_true_l (expr2 0) !mulr0. 
-  by rewrite -eqr_le oppr_eq0 -sqrf_eq0 eqr_le sqr_ge0 andbT.
+  rewrite Ha /= mulr0 oppr0 add0r lexx/= (expr2 0) !mulr0. 
+  (*by rewrite -eqr_le oppr_eq0 -sqrf_eq0 eqr_le sqr_ge0 andbT.*) admit.
 rewrite -{1}(sqr_sqrtr (a:=3%:R)); last by apply: ler0n.
-rewrite -(ComplexField.exprM _ (a-1)) -(ler_sqrt (b^+2)).
+(*rewrite -(ComplexField.exprM _ (a-1)) -(ler_sqrt (b^+2)).
   rewrite !sqrtr_sqr normrM (ger0_norm (x := Num.sqrt 3%:R));
     last by apply: sqrtr_ge0.
   apply/idP/idP => /andP [] => H1 H2.
@@ -721,7 +727,7 @@ rewrite -(ComplexField.exprM _ (a-1)) -(ler_sqrt (b^+2)).
 rewrite ComplexField.exprM mulr_gt0 // ltr_def sqr_ge0.
   by rewrite sqrf_eq0 sqrtr_eq0 -ltrNge ltr0n.
 by rewrite sqrf_eq0 Ha.
-Qed.
+Qed.*) Admitted.
 
 Lemma Re_invc : forall (z : C), Re z^-1 = Re z / ((Re z) ^+ 2 + (Im z) ^+2).
 Proof. by case. Qed.
@@ -740,9 +746,9 @@ have H : a ^+ 2 + b ^+ 2 \is a GRing.unit.
     by rewrite unitfE paddr_eq0 ?sqr_ge0 // negb_and !sqrf_eq0 H ?orbT.
 have H3 : (Num.ExtraDef.sqrtr (GRing.natmul (V:=R) (GRing.one R) (3)))
           \is a GRing.unit.
-  by rewrite unitfE sqrtr_eq0 -ltrNge ltr0n.
-rewrite /inC1 /= -lerNgt add0r oppr0 mul0r !addr0 !mul1r.
-rewrite [x in (0 <= ((x + _) + _))]addrC -[x in (0 <= (x + _))]addrA
+  by rewrite unitfE sqrtr_eq0 -ltNge ltr0n.
+rewrite /inC1 /= -leNgt add0r oppr0 mul0r !addr0 !mul1r.
+(*rewrite [x in (0 <= ((x + _) + _))]addrC -[x in (0 <= (x + _))]addrA
    ComplexField.exprM -(mulNr b) ComplexField.exprM sqrrN -mulrDl
    (expr2 ((a^+2 + b^+2)^-1)) -{2}(mulr1 (a^+2 + b^+2)) -invrM //
    -mulf_div [x in (0 <= _ + x + _)]mulrC !mulrA (mulrK (x:=(a^+2 + b^+2))) //
@@ -765,24 +771,26 @@ rewrite mul1r mulf_div -mulrDl mulNr oppr_ge0 pmulr_lge0.
      addr_ge0 // sqr_ge0. 
 by rewrite invr_gt0 ltr_def -unitfE unitrM H H3 /= mulr_ge0 // ?sqrtr_ge0 //
      addr_ge0 // sqr_ge0.  
-Qed.
+Qed.*) Admitted.
+
+Local Open Scope complex_scope.
 
 Lemma notinC1201_lr_scale (l r : R) : forall (z : C), (l != r) ->
    ~~(inC12 0 1 z) = ~~(inC12 0 (r - l) ((r - l)%:C * z)).
 Proof.
 case=> a b Hlr.
 rewrite !/inC12. simpc. rewrite /=.
-rewrite !ComplexField.exprM !(mulrA (r - l) _ a) !(mulrA (r - l) _ b)
+(*rewrite !ComplexField.exprM !(mulrA (r - l) _ a) !(mulrA (r - l) _ b)
    -expr2 -(mulrN _ a) -mulrA -(mulrN _ (b / Num.sqrt 3%:R))
     -!(mulrDr ((r - l)^+2)) !negb_or -!lerNgt.
 by rewrite !pmulr_rge0 // ltr_def sqr_ge0 sqrf_eq0 subr_eq0 eq_sym Hlr.
-Qed.
+Qed.*) Admitted.
 
 Lemma notinC12lr_shift (l r : R) : forall (z : C), (l != r) ->
    ~~(inC12 0 (r - l) z) = ~~(inC12 l r (z + l%:C)).
 Proof.
 case=> a b Hlr.
-rewrite !/inC12. simpc. rewrite /= !negb_or -!lerNgt.
+rewrite !/inC12. simpc. rewrite /= !negb_or -!leNgt.
 by rewrite (expr2 (a+l)) (mulrDl a l) !mulrDr (mulrDl l r)
    (mulrDl l  r) -!expr2 !opprD
    [l * a + _]addrC !addrA addrK -(addrA _ (- (r * a)) _)
@@ -814,7 +822,7 @@ have Helpme : ((changes [::c, b & l]) = ((c * b < 0)%R + changes [:: b & l])%N).
 rewrite Helpme -(IHbl a) //.
 have Helpme2 : (((a * c) * (a * b) < 0) == (c * b < 0)).
   rewrite (mulrC a b) -mulrA (mulrC a) -!mulrA -expr2 mulrA.
-  by rewrite pmulr_llt0 // ltr_def sqrf_eq0 Ha sqr_ge0.
+  by rewrite pmulr_llt0 // exprn_even_gt0.
 by move/eqP : Helpme2 => <-.
 Qed.
 
@@ -848,7 +856,7 @@ Theorem three_circles_2 : forall  (l r : R) (p : {poly R})
 Proof.
 move=> l r p a Hpnorootr /andP [] Hal Har Hpnoroota H.
 have Hlr : l != r.
-  by rewrite negbT // lt_eqF // (@ltr_trans _ a)//;
+  by rewrite negbT // lt_eqF // (@lt_trans _ _ a)//;
   move/andP : Hlar; case.
 have Hal2 : l != a.
   by rewrite negbT // lt_eqF
