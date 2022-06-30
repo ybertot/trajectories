@@ -389,7 +389,7 @@ Qed.
 
 
 Lemma sum_powers_of_x (n: nat) (x:R):
-  (x-1) * (\sum_(i < n) x^+ i) = x ^+ n -1.
+  (x-1) * (\sum_(i < n) x^+ i) = x ^+ n - 1.
 Proof.
 elim: n => [| n Ihn]. 
   by rewrite big_ord0 expr0 mulr0 subrr.
@@ -1077,7 +1077,7 @@ have ia'_sharp : (ia' < n.+1)%N.
   move: ia'iota; rewrite leq_eqVlt; rewrite size_iota; case/orP=> //.
   move/eqP; case=> abs.
   move: pa'n; rewrite abs (nth_map 0%N) ?size_iota // nth_iota //.
-  rewrite add0n divff ?mulr1 ?pnatr_eq0 // addrCA subrr addr0 => {abs} abs.
+  rewrite add0n divff ?mulr1 ?pnatr_eq0 // addrCA subrr addr0 => {} abs.
   by move: plb; rewrite leNgt abs.
 have b'b : b' <= b.
   rewrite /b'/sl (nth_map 0%N) ?size_iota ?ltnS // nth_iota // add0n.
