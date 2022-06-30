@@ -1,0 +1,36 @@
+# This file was generated from `meta.yml`, please do not edit manually.
+# Follow the instructions on https://github.com/coq-community/templates to regenerate.
+
+opam-version: "2.0"
+maintainer: "Reynald Affeldt <reynald.affeldt@aist.go.jp>"
+version: "dev"
+
+homepage: "https://github.com/math-comp/trajectories"
+dev-repo: "git+https://github.com/math-comp/trajectories.git"
+bug-reports: "https://github.com/math-comp/trajectories/issues"
+license: "CECILL-C"
+
+synopsis: "Trajectories"
+description: """
+TODO"""
+
+build: [make "-j%{jobs}%"]
+install: [make "install"]
+depends: [
+  "coq" { (>= "8.13" & < "8.16~") | (= "dev") }
+  "coq-mathcomp-ssreflect" { (>= "1.13.0" & < "1.15~") | (= "dev") }
+  "coq-mathcomp-fingroup" { (>= "1.13.0" & < "1.15~") | (= "dev") }
+  "coq-mathcomp-algebra" { (>= "1.13.0" & < "1.15~") | (= "dev") }
+  "coq-mathcomp-solvable" { (>= "1.13.0" & < "1.15~") | (= "dev") }
+  "coq-mathcomp-field" { (>= "1.13.0" & < "1.15~") | (= "dev") }
+]
+
+tags: [
+  "category:Mathematics/Real Calculus and Topology"
+  "keyword:trajectories"
+  "logpath:mathcomp.trajectories"
+]
+authors: [
+  "Reynald Affeldt"
+  "Yves Bertot"
+]

@@ -117,7 +117,7 @@ Lemma lead_tail_coef_opp p: lead_tail_coef (- p) = (lead_tail_coef p).
 Proof.
 rewrite - mulrN1 lead_tail_coefM; set one := (X in _ * lead_tail_coef(X)).
 suff : lead_tail_coef one = 1 by  move ->; rewrite mulr1.
-have ->: one = ((-1)%:P) by rewrite polyC_opp.
+have ->: one = ((-1)%:P) by rewrite polyCN.
 by rewrite /lead_tail_coef /tail_coef lead_coefC mu_polyC coefC mulN1r opprK.
 Qed.
 

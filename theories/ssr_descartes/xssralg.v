@@ -1,15 +1,16 @@
+(* TODO(rei): remove this file? *)
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat fintype seq ssrfun.
-From mathcomp Require Import bigops groups choice.
-From mathcomp Require Export ssralg .
+From mathcomp Require Import bigop (*groups*) choice.
+From mathcomp Require Export ssralg.
 
 Set   Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Import GroupScope .
+(*Import GroupScope .*)
 Import GRing.Theory .
 
-Open Local Scope ring_scope .
+Local Open Scope ring_scope .
 
 Structure orderb (M : Type) (R : M -> M -> bool) : Type := Orderb {
   reflb    : reflexive R;

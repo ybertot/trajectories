@@ -818,7 +818,7 @@ Local Notation toC := (fun (p : {poly R}) =>
    @map_poly R _ (real_complex R) p).
 
 Lemma real_complex_conjc : forall p : {poly R},
-   map_poly ((@conjc R) \o (real_complex R)) p  = 
+   map_poly ((@conjc R) \o (real_complex R)) p =
    map_poly (real_complex R) p.
 Proof.
 elim/poly_ind => [ | p c H].
@@ -840,7 +840,7 @@ Proof.
 rewrite mulrBr !mulrBl opprB (addrC (z%:P * (z^*)%:P) _) addrA.
 rewrite (mulrC _ (z^*)%:P) -[in RHS](addrA ('X * 'X) _) -expr2.
 rewrite -(opprD (z%:P * 'X) ((z^*)%:P * 'X)).
-rewrite -(mulrDl z%:P _ 'X) -(polyCD z z^*) -(polyC_mul z z^*)
+rewrite -(mulrDl z%:P _ 'X) -(polyCD z z^*) -(polyCM z z^*)
    -sqr_normc -re_conj normC_re_im mul_polyC
    -(opprK (Re z ^+ 2 + Im z ^+ 2)%:P) map_poly_is_additive
    -polyCN -mul_polyC map_polyC.

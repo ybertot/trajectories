@@ -30,29 +30,30 @@ Local Open Scope ring_scope .
 
 Local Open Scope order_scope .
 
-Definition one_root1 (l : {poly rat}) (a b : rat) :=
-  exists c, exists d, exists k : rat,
-     a < c /\ c < d /\ d < b /\ (0 < k)%Q /\
-     (forall x, a < x -> x <= c -> (0 < l.[x])%Q) /\
-     (forall x, d < x -> x < b -> (l.[x] < 0)%Q) /\
+Definition one_root1 {R : archiFieldType} (l : {poly R}) (a b : R) :=
+  exists c, exists d, exists k : R,
+     a < c /\ c < d /\ d < b /\ (0 < k)%R /\
+     (forall x, a < x -> x <= c -> (0 < l.[x])%R) /\
+     (forall x, d < x -> x < b -> (l.[x] < 0)%R) /\
      (forall x y, c < x -> x <= y -> y < d ->
         k * (y - x) <= l.[x] - l.[y]).
 
-Definition one_root2 (l : {poly rat}) (a : rat) :=
-   exists c, exists k : rat,
-     a < c /\ (0 < k)%Q /\
-     (forall x, a < x -> x <= c -> l.[x] < 0)%Q /\
+Definition one_root2 {R : archiFieldType} (l : {poly R}) (a : R) :=
+   exists c, exists k : R,
+     a < c /\ (0 < k)%R /\
+     (forall x, a < x -> x <= c -> l.[x] < 0)%R /\
      (forall x y, c <= x -> x < y ->
          k * (y - x) <= l.[y] - l.[x]).
 
-Lemma alt_one_root2 : forall l : {poly rat}, alternate l -> one_root2 l 0.
+Lemma alt_one_root2 (R : archiFieldType) : forall l : {poly R}, alternate l -> one_root2 l 0.
+Proof.
 move => l a.
 (*move: (desc l a) => [x1 [k [x1p [kp [neg sl]]]]].
 move: (above_slope _ _ 0 _ kp sl) => [x2 [pos x1x2]].
 by exists x1; exists k; split; first done; split; first done; split; done.
 Qed.*) Admitted.
 
-Definition translate_pol' (l : {poly rat}) (a : rat) : {poly rat}.
+Definition translate_pol' {R : archiFieldType} (l : {poly R}) (a : R) : {poly R}.
 (*   mkseq (fun i : nat =>
      \sum_(k < size l) 'C(k, i)%:R * nth 0 l k * a ^+ (k - i)) (size l).*) Admitted.
 
@@ -65,7 +66,7 @@ rewrite big_distrr; apply:eq_bigr => i _.
 by rewrite /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
 Qed.*) Admitted.
 
-Lemma size_translate_pol' : forall l a, size (translate_pol' l a)  = size l.
+Lemma size_translate_pol' {R : archiFieldType} : forall (l : {poly R}) a, size (translate_pol' l a)  = size l.
 Proof. (*by move => l a; rewrite /translate_pol' size_mkseq. Qed.*) Admitted.
 
 Lemma pascalQ : forall a b n,
@@ -80,8 +81,8 @@ rewrite mulr_natl.
 by rewrite mulrnAr.
 Qed.
 
-Lemma translate_pol'q :
-  forall (l : {poly rat}) a x, (translate_pol' l a).[x] = l.[x + a].
+Lemma translate_pol'q {R : archiFieldType} :
+  forall (l : {poly R}) a x, (translate_pol' l a).[x] = l.[x + a].
 Proof.
 (*move => l a x; rewrite !eval_pol_big size_translate_pol' /translate_pol'.
 apply: trans_equal (_ : \sum_(k < size l)
@@ -128,8 +129,8 @@ rewrite subKn // [x ^+ _ * _]mulrC ['C(i, j)%:R * _]mulrC !mulrA -bin_sub; last 
 by rewrite subKn//.
 Qed.*) Admitted.
 
-Lemma reciprocalq :
-  forall (l : {poly rat}) x, x \is a GRing.unit ->
+Lemma reciprocalq {R : archiFieldType} :
+  forall (l : {poly R}) x, x \is a GRing.unit ->
      (reciprocal_pol l).[x] = x ^+ (size l - 1) * l.[x^-1].
 Proof.
 (*move=> [ | a l] x xp; rewrite !eval_pol_big size_reciprocate.
@@ -152,8 +153,8 @@ have tmp : size l = ((size l - j) + j)%N by rewrite subnK //.
 by rewrite {3}tmp {tmp} expr_inv exprn_addr mulrK //; apply: unitr_exp.
 Qed.*) Admitted.
 
-Lemma one_root2_translate :
-  forall l a b, one_root2 (translate_pol' l a) b -> one_root2 l (a + b).
+Lemma one_root2_translate {R : archiFieldType} :
+  forall (l : {poly R}) a b, one_root2 (translate_pol' l a) b -> one_root2 l (a + b).
 Proof.
 move=> l a b [x1 [k [x1a [kp [neg sl]]]]].
 exists (a + x1); exists k.
@@ -174,8 +175,8 @@ rewrite {2}(t y) {2}(t x) -!(translate_pol'q l) (_ : y - x = y - a - (x - a)).
 by rewrite [x + _]addrC opprD opprK addrA addrNK.
 Qed.
 
-Lemma one_root1_translate :
-  forall l a b c, one_root1 (translate_pol' l c) a b ->
+Lemma one_root1_translate {R : archiFieldType} :
+  forall (l : {poly R}) a b c, one_root1 (translate_pol' l c) a b ->
     one_root1 l (c + a) (c + b).
 Proof.
 move=> l a b c [x1 [x2 [k [ax1 [x1x2 [x2b [kp [pos [neg sl]]]]]]]]].
@@ -204,16 +205,16 @@ by rewrite ler_sub.
 by rewrite ltr_subl_addl.
 Qed.
 
-Definition expand (p : {poly rat}) (k : rat) :=
+Definition expand {R :archiFieldType} (p : {poly R}) (k : R) :=
   \poly_(i < size p)(p`_i * k ^+i).
 
-Lemma one_root1_expand :
-  forall l a b (c : rat), (0 < c)%Q -> one_root1 (expand l c) a b ->
+Lemma one_root1_expand {R : archiFieldType} :
+  forall (l : {poly R}) a b (c : R), (0 < c)%R -> one_root1 (expand l c) a b ->
     one_root1 l (c * a) (c * b).
 Proof.
 move=> l a b c cp [x1 [x2 [k [ax1 [x1x2 [x2b [kp [pos [neg sl]]]]]]]]].
 exists (c * x1); exists (c * x2); exists (k / c).
-have tc : (0 < c^-1)%Q by rewrite invr_gt0.
+have tc : (0 < c^-1)%R by rewrite invr_gt0.
 (*have uc: GRing.unit c by apply/negP; move/eqP => q; rewrite q lterr in cp.*)
 split; first by rewrite ltr_pmul2l.
 split; first by rewrite ltr_pmul2l.
@@ -240,13 +241,13 @@ have t: forall z, z = c * (z/c).
  by rewrite ltef_mulpr.
 by rewrite ltef_divpl // mulrC.*) Admitted.
 
-Lemma diff_xn_ub :
-  forall (n : nat) (z : rat), (0 < z)%Q -> exists k : rat, (0 <= k)%Q /\
-   forall x y : rat, (0 < x)%Q -> x <= y -> (y <= z) ->
+Lemma diff_xn_ub {R : archiFieldType} :
+  forall (n : nat) (z : R), (0 < z)%R -> exists k : R, (0 <= k)%R /\
+   forall x y : R, (0 < x)%R -> x <= y -> (y <= z) ->
       y ^+ n - x ^+ n <= k * (y - x).
 Proof.
 move => n; elim: n => [z z0| n IHn z z0].
-  exists 0%Q; split => // x y x0 xy yz.
+  exists 0%R; split => // x y x0 xy yz.
   by rewrite !expr0 subrr mul0r.
 case: (IHn z z0) => k [k0 kp].
 exists (z*k + z ^+ n); split => [ | x y x0 xy yz].
@@ -266,9 +267,9 @@ rewrite [_ * (y-x)]mulrDl ler_add //=.
 rewrite (mulrC (_ - _)).
 rewrite ler_wpmul2r// ?subr_ge0//.
 rewrite ler_expn2r//.
-by rewrite nnegrE ltW.
-by rewrite nnegrE ltW.
-by apply: le_trans yz.
+- by rewrite nnegrE ltW.
+- by rewrite nnegrE ltW.
+- by apply: le_trans yz.
 Qed.
 
 Definition reciprocate_pol (l: seq rat) := rev l.
@@ -277,22 +278,22 @@ Lemma reciprocate_size :  forall l, size (reciprocate_pol l) = size l.
 by move => l; rewrite /reciprocate_pol size_rev.
 Qed.
 
-Lemma cut_epsilon (eps : rat) : (0 < eps)%R ->
-  exists eps1 : rat, exists eps2, (0 < eps1 /\ 0 < eps2 /\ eps1 + eps2 <= eps)%R /\
+Lemma cut_epsilon {R : archiFieldType} (eps : R) : (0 < eps)%R ->
+  exists eps1 : R, exists eps2, (0 < eps1 /\ 0 < eps2 /\ eps1 + eps2 <= eps)%R /\
     eps1 < eps /\ eps2 < eps.
 Proof.
 move=> p; exists (eps / 2%:R), (eps / 2%:R).
-have p1 : (0 < eps / 2%:R)%R by rewrite divr_gt0.
+have p1 : (0 < eps / 2%:R)%R by rewrite divr_gt0// ltr0n.
 split.
   split => //; split => //.
-  by rewrite -mulrDr ger_pmulr.
+  by rewrite -mulrDr ger_pmulr// -mulr2n -mulr_natr mulVf// pnatr_eq0.
 suff cmp : eps / 2%:R < eps by [].
-by rewrite ltr_pdivr_mulr// ltr_pmulr.
+by rewrite ltr_pdivr_mulr// ?ltr0n// ltr_pmulr// ltr1n.
 Qed.
 
-Lemma cm3 :
-  forall b : rat, (0 < b)%Q -> forall l : {poly rat},
-   {c | forall x y : rat, (0 <= x)%R -> (x <= y)%R -> (y <= b)%R ->
+Lemma cm3 {R : archiFieldType} :
+  forall b : R, (0 < b)%R -> forall l : {poly R},
+   {c | forall x y : R, (0 <= x)%R -> (x <= y)%R -> (y <= b)%R ->
     `|(l.[y] - l.[x])| <= c * (y - x)}.
 Proof.
 (*move=> b pb; elim=> [|u l [c cp]] /=.
@@ -316,12 +317,11 @@ rewrite -!mulrA lter_mulpr //= ?(ler_trans hxy) //.
 by apply: ler_trans (cp _ _ px hxy hyb); apply: absr_ge0.
 Qed.*) Admitted.
 
-
-Lemma one_root_reciprocate :
-  forall l, one_root2 (reciprocal_pol l) 1 -> one_root1 l 0 1.
+Lemma one_root_reciprocate {R : archiFieldType} :
+  forall (l : {poly R}), one_root2 (reciprocal_pol l) 1 -> one_root1 l 0 1.
 Proof.
 move=> l [x1 [k [x1gt1 [kp [neg sl]]]]].
-have x10 : (0 < x1)%R by rewrite (lt_trans _ x1gt1).
+have x10 : (0 < x1)%R by rewrite (lt_trans _ x1gt1)// ltr01.
 (*have ux1 : GRing.unit x1 by apply/negP; move/eqP => q; rewrite q lterr in x10.*)
 (*have uk: GRing.unit k by apply/negP; move/eqP => q; rewrite q lterr in kp.*)
 set y' := x1 - (reciprocal_pol l).[x1] / k.
@@ -330,21 +330,20 @@ have y'1: x1 < y'.
   apply: divr_gt0 => //.
   rewrite oppr_gt0.
   by apply: neg => //.
-have nx1 : (reciprocal_pol l).[x1] < 0%Q by apply: neg; rewrite // lterr.
+have nx1 : (reciprocal_pol l).[x1] < 0%R by apply: neg; rewrite // lterr.
 have y'pos : (0 <= (reciprocal_pol l).[y'])%R.
   rewrite -[_ _ y']addr0 -{2}(addNr (reciprocal_pol l).[x1]) addrA
    -{2}(opprK (_ _ x1)) subr_gte0 /=.
   apply: le_trans (_ : k * (y' - x1) <= _)=> /=.
     by rewrite /y' (addrC x1) addrK mulrN mulrC mulrVK // unitfE gt_eqF.
   by apply sl => //.
-have ltr1: (0 < 1)%Q by [].
-move: (diff_xn_ub (size l - 1) _ ltr1) => {ltr1} [u [u0 up]].
+move: (diff_xn_ub (size l - 1) _ (@ltr01 R)) => [u [u0 up]].
 have [u' [u1 u'u]] : exists u', (1 <= u' /\ u <= u')%R.
   case cmp: (1 <= u)%R; first by exists u; rewrite lexx cmp.
-  by exists 1%Q; rewrite lexx; split=> //; rewrite ltW // ltNge cmp.
+  by exists 1%R; rewrite lexx; split=> //; rewrite ltW // ltNge cmp.
 have u'0 : (0 < u')%R by apply: lt_le_trans u1.
 (*have u'unit : GRing.unit u' by apply/negP; move/eqP=> q; rewrite q lterr in u'0.*)
-have divu_ltr : forall x : rat, (0 <= x)%R -> (x / u' <= x)%R.
+have divu_ltr : forall x : R, (0 <= x)%R -> (x / u' <= x)%R.
   move => x x0.
   rewrite ler_pdivr_mulr//.
   by rewrite ler_pemulr//.
@@ -368,12 +367,13 @@ have y0 : (0 < y)%R by apply: lt_trans y'y.
 pose k' :=  ((k * x1 ^+ 2 * y ^- 1 ^+ (size l - 1))/(1+1)).
 have k'p : (0 < k')%R.
   rewrite /k' !mulr_gt0//.
-  rewrite exprn_gt0//.
-  by rewrite invr_gt0//.
-pose e := k'/u'.
-have ep: (0 < e)%R by rewrite divr_gt0//.
+    rewrite exprn_gt0//.
+    by rewrite invr_gt0//.
+  by rewrite invr_gt0// addr_gt0// ltr01.
+pose e : R := k' / u'.
+have ep: (0 < e)%R by rewrite divr_gt0.
 move: (cut_epsilon _ ep) => [e1 [e2 [[e1p [e2p e1e2e] [e1e e2e]]]]].
-move: (@constructive_ivt _ (reciprocal_pol l) _ _ _ y'1 nx1 y'pos e1p).
+move: (@constructive_ivt _ (@reciprocal_pol _ l) _ _ _ y'1 nx1 y'pos e1p).
 move=> [[a b']].
 rewrite {1}/pair_in_interval.
 move=> /and5P[/and3P[cla ? clb']].
@@ -443,7 +443,7 @@ split.
   rewrite -(pmulr_rlt0 _ xexp0) -{2}[x]invrK -reciprocalq//; last first.
     by rewrite unitfE gt_eqF.
   case cmp: (x^-1 <= x1); last (move/negbT:cmp => cmp).
-    by apply: neg => //; rewrite -invr1 ltf_pinv//.
+    by apply: neg => //; rewrite -invr1 ltf_pinv// ?posrE ltr01//.
   apply: lt_trans nega; rewrite -subr_gte0.
   apply: lt_le_trans (_ : k * (a - x^-1) <= _).
     by rewrite mulr_gt0// subr_gt0.
@@ -476,9 +476,10 @@ pose k1 := -k'; pose k2 := k' + k'.
 have times2 : forall a : rat, a + a = (1 + 1) * a.
   by move => a'; rewrite mulrDl !mul1r.
 have k2p : k2 = (k * x1 ^+ 2 * y ^-1 ^+ (size l - 1)).
-  rewrite /k2 /k' times2 -(mulrC (1 + 1)^-1) mulrA mulfV; first  by rewrite mul1r.
+  rewrite /k2 /k' -mulr2n -mulr_natl.
+  rewrite -(mulrC (1 + 1)^-1) mulrA mulfV; first  by rewrite mul1r.
   have twop : (0 < (1 + 1))%Q by [].
-  by rewrite gt_eqF.
+  by rewrite gt_eqF// ltr0n.
 rewrite (_ : k' = k1 + k2); last by rewrite /k1 /k2 addrA addNr add0r.
 rewrite mulrDl; apply: ler_add; last first.
   have maj' : t3 * y^-1 ^+ (size l - 1) <= t3 * z^+ (size l - 1).
@@ -591,3 +592,4 @@ rewrite -[1]addr0; apply one_root2_translate.
 by apply: alt_one_root2.
 Qed.
 *)
+

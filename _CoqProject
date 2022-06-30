@@ -10,7 +10,6 @@ theories/ssr_descartes/bern5.v
 theories/ssr_descartes/casteljau.v
 theories/ssr_descartes/isolate.v
 theories/ssr_descartes/square_free.v
-theories/ssr_descartes/xssralg.v
 theories/ssr_descartes/three_circles.v
 
 -R theories trajectories
