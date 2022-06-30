@@ -45,113 +45,41 @@ Definition one_root2 {R : archiFieldType} (l : {poly R}) (a : R) :=
      (forall x y, c <= x -> x < y ->
          k * (y - x) <= l.[y] - l.[x]).
 
-Lemma alt_one_root2 (R : archiFieldType) : forall l : {poly R}, alternate l -> one_root2 l 0.
+Lemma alt_one_root2 (R : archiFieldType) : forall l : {poly R}, alternate l ->
+  one_root2 l 0.
 Proof.
 move => l a.
-(*move: (desc l a) => [x1 [k [x1p [kp [neg sl]]]]].
-move: (above_slope _ _ 0 _ kp sl) => [x2 [pos x1x2]].
-by exists x1; exists k; split; first done; split; first done; split; done.
-Qed.*) Admitted.
-
-Definition translate_pol' {R : archiFieldType} (l : {poly R}) (a : R) : {poly R}.
-(*   mkseq (fun i : nat =>
-     \sum_(k < size l) 'C(k, i)%:R * nth 0 l k * a ^+ (k - i)) (size l).*) Admitted.
-
-Lemma eval_pol_big :
-  forall (l : {poly rat}) x, l.[x] = \sum_(i < size l) nth 0 l i * x ^+ i.
-Proof.
-(*move => l x; elim: l=> [ | a l IHl]; first by rewrite big_ord0.
-rewrite /= big_ord_recl /= mulr1 IHl; congr (fun v => a + v).
-rewrite big_distrr; apply:eq_bigr => i _.
-by rewrite /= [x * _]mulrC -mulrA [_ * x]mulrC exprS.
-Qed.*) Admitted.
-
-Lemma size_translate_pol' {R : archiFieldType} : forall (l : {poly R}) a, size (translate_pol' l a)  = size l.
-Proof. (*by move => l a; rewrite /translate_pol' size_mkseq. Qed.*) Admitted.
-
-Lemma pascalQ : forall a b n,
-  (a + b) ^+ n = \sum_(i < n.+1) ('C(n, i)%:R * (a ^+ (n - i) * b ^+ i)) :> rat.
-Proof.
-move=> a b n.
-rewrite exprDn_comm; last first.
-  by rewrite /GRing.comm mulrC.
-apply eq_bigr => i _.
-rewrite mulrCA.
-rewrite mulr_natl.
-by rewrite mulrnAr.
+move: (desc a) => [[x1 k] /= [[/andP[x1p kp] neg] sl]].
+exists x1, k; split; first done; split; first done; split.
+  by move=> x xgt0 xlex1; apply: neg; rewrite xgt0 xlex1.
+by move=> x y xlex1 xlty; apply: sl; rewrite xlex1 (ltW xlty).
 Qed.
 
-Lemma translate_pol'q {R : archiFieldType} :
+Definition translate_pol' {R : ringType} (l : {poly R})
+  (a : R) : {poly R}:=
+  l \Po ('X + a%:P).
+
+Lemma size_translate_pol' {R : idomainType} : 
+  forall (l : {poly R}) a, size (translate_pol' l a)  = size l.
+Proof.
+by move=> l a; rewrite size_comp_poly2 // size_XaddC.
+Qed.
+
+Lemma pascalQ {R : comRingType} : forall (a b : R) n,
+  (a + b) ^+ n = \sum_(i < n.+1) ('C(n, i)%:R * (a ^+ (n - i) * b ^+ i)).
+Proof.
+move=> a b n.
+rewrite exprDn_comm; last by exact: mulrC.
+apply eq_bigr => i _.
+by rewrite mulrCA mulr_natl mulrnAr.
+Qed.
+
+Lemma translate_pol'q {R : comRingType} :
   forall (l : {poly R}) a x, (translate_pol' l a).[x] = l.[x + a].
 Proof.
-(*move => l a x; rewrite !eval_pol_big size_translate_pol' /translate_pol'.
-apply: trans_equal (_ : \sum_(k < size l)
-                      (\sum_(i < size l) 'C(k, i)%:R * l`_k * a^+ (k - i) * x^+ i)
-                       = _).
-  rewrite exchange_big /=.
-  by apply: eq_bigr => i _; rewrite nth_mkseq //= big_distrl.
-apply sym_equal.
-apply: trans_equal (_ : \sum_(i < size l)
-                \sum_(0 <= j < i.+1) l`_i * 'C(i, j)%:R * (x^+(i-j) * a ^+j) = _).
-  apply: eq_bigr => i _; rewrite big_mkord pascalQ big_distrr /=.
-  by apply: eq_bigr => j _; rewrite /= !mulrA.
-have jgti : forall i : 'I_(size l),
-      \sum_(i.+1 <= j < size l) l`_i * 'C(i, j)%:R * (x ^+ (i - j) * a ^+ j) = 0%R.
-  move => i; apply: big1_seq => j /=; rewrite mem_index_iota.
-  by move/andP => [ilj _]; rewrite bin_small // mulr0 mul0r.
-apply: trans_equal (_ : \sum_(i < size l)
-        \sum_(j < size l) l`_i * 'C(i, j)%:R * (x ^+ (i - j) * a ^+ j) = _).
-  apply: eq_bigr => i _.
-  rewrite -(@big_mkord rat 0%Q +%R (size l) (fun i => true)
-   (fun j => l`_i * 'C(i, j)%:R *(x ^+ (i - j) * a ^+ j))).
-  by rewrite  (@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0.
-apply: eq_bigr => i _.
-rewrite -(@big_mkord rat 0%Q +%R (size l) (fun i => true)
-   (fun j => l`_i * 'C(i, j)%:R *(x ^+ (i - j) * a ^+ j))).
-rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti addr0 big_mkord.
-rewrite -(@big_mkord rat 0%Q +%R (size l) (fun i => true)
-   (fun j => 'C(i, j)%:R * l`_i * a ^+ (i - j) * x ^+ j)).
-have jgti' :
-   \sum_(i.+1 <= j < size l) 'C(i, j)%:R * l`_i * a ^+ (i - j) * x ^+ j = 0%Q.
-  apply: big1_seq => j /=; rewrite mem_index_iota.
-  by move/andP => [ilj _]; rewrite bin_small // !mul0r.
-rewrite !(@big_cat_nat _ _ _ i.+1 0 (size l)) //= jgti' addr0 big_mkord.
-set f := fun j:'I_i.+1 => (Ordinal ((leq_subr j i): ((i - j) < i.+1))%N).
-have finv: forall j:'I_i.+1, xpredT j -> f (f j) = j.
-  by move => j _; apply: val_inj => /=; rewrite subKn //; have : (j < i.+1)%N.
-rewrite (reindex_onto f f finv) /=.
-have tmp :(fun j => f (f j) == j) =1 xpredT.
-  by move=> j /=; apply/eqP; apply finv.
-rewrite (eq_bigl _ _ tmp); apply: eq_bigr => j _.
-have jli : (j <= i)%N by have : (j < i.+1)%N.
-rewrite subKn // [x ^+ _ * _]mulrC ['C(i, j)%:R * _]mulrC !mulrA -bin_sub; last first.
-  by rewrite leq_subr.
-by rewrite subKn//.
-Qed.*) Admitted.
-
-Lemma reciprocalq {R : archiFieldType} :
-  forall (l : {poly R}) x, x \is a GRing.unit ->
-     (reciprocal_pol l).[x] = x ^+ (size l - 1) * l.[x^-1].
-Proof.
-(*move=> [ | a l] x xp; rewrite !eval_pol_big size_reciprocate.
-  by rewrite !big_ord0 mulr0.
-rewrite big_distrr /=.
-set f := fun j:'I_(size l).+1 =>
-          Ordinal (leq_subr j (size l):size l - j <(size l).+1)%N.
-have finv: forall j:'I_(size l).+1, xpredT j -> f (f j) = j.
-  by move => j _; apply: val_inj => /=; rewrite subKn //;
-      have : (j < (size l).+1)%N.
-rewrite (reindex_onto f f finv) /=.
-have tmp :(fun j => f (f j) == j) =1 xpredT.
-  by move=> j /=; apply/eqP; apply finv.
-rewrite (eq_bigl _ _ tmp) {tmp}; apply: eq_bigr => j _.
-have jls : (j < (size l).+1)%N by [].
-rewrite /reciprocate_pol nth_rev; last by apply: leq_subr.
-rewrite /= !subSS subKn // subn0 mulrA [(x ^+ (size l)) * _]mulrC -mulrA.
-congr ((a :: l)`_j * _).
-have tmp : size l = ((size l - j) + j)%N by rewrite subnK //.
-by rewrite {3}tmp {tmp} expr_inv exprn_addr mulrK //; apply: unitr_exp.
-Qed.*) Admitted.
+move=> l a x; rewrite /translate_pol'.
+by rewrite horner_comp !hornerE.
+Qed.
 
 Lemma one_root2_translate {R : archiFieldType} :
   forall (l : {poly R}) a b, one_root2 (translate_pol' l a) b -> one_root2 l (a + b).
@@ -204,42 +132,6 @@ by rewrite ltr_subr_addl.
 by rewrite ler_sub.
 by rewrite ltr_subl_addl.
 Qed.
-
-Definition expand {R :archiFieldType} (p : {poly R}) (k : R) :=
-  \poly_(i < size p)(p`_i * k ^+i).
-
-Lemma one_root1_expand {R : archiFieldType} :
-  forall (l : {poly R}) a b (c : R), (0 < c)%R -> one_root1 (expand l c) a b ->
-    one_root1 l (c * a) (c * b).
-Proof.
-move=> l a b c cp [x1 [x2 [k [ax1 [x1x2 [x2b [kp [pos [neg sl]]]]]]]]].
-exists (c * x1); exists (c * x2); exists (k / c).
-have tc : (0 < c^-1)%R by rewrite invr_gt0.
-(*have uc: GRing.unit c by apply/negP; move/eqP => q; rewrite q lterr in cp.*)
-split; first by rewrite ltr_pmul2l.
-split; first by rewrite ltr_pmul2l.
-split; first by rewrite ltr_pmul2l.
-split; first by rewrite divr_gt0.
-split.
-  move=> x acx xx1c.
-    rewrite (_ : x = c * (x/c)); last first.
-      by rewrite mulrC mulfVK // eq_sym lt_eqF.
-(* NB(rei): eval_expand?*)
-(*   rewrite -eval_expand; apply: pos.
-     by rewrite ltef_divpr // mulrC.
-   by rewrite ltef_divpl //= mulrC.*)
-  admit.
-split.
-  move=> x cx2x xcb; rewrite (_ : x = c * (x/c)); last by rewrite mulrC mulfVK // eq_sym lt_eqF.
-  (*rewrite -eval_expand; apply: neg; first by rewrite ltef_divpr 1?mulrC.
-  by rewrite ltef_divpl 1?mulrC.*) admit.
-have t: forall z, z = c * (z/c).
-   by move=> z; rewrite [c * _]mulrC mulfVK // eq_sym lt_eqF.
-(*move=> x y cx1x xy ycx2; rewrite -mulrA mulrDr mulrN ![c^-1 * _]mulrC
-  {2}(t x) {2}(t y) -!(eval_expand l); apply: sl.
-   by rewrite ltef_divpr // mulrC.
- by rewrite ltef_mulpr.
-by rewrite ltef_divpl // mulrC.*) Admitted.
 
 Lemma diff_xn_ub {R : archiFieldType} :
   forall (n : nat) (z : R), (0 < z)%R -> exists k : R, (0 <= k)%R /\
@@ -426,7 +318,7 @@ split.
   have xexp0 : (0 < x^-1 ^+ (size l - 1))%R by rewrite exprn_gt0.
   have b'x : b' < x^-1.
     by rewrite -(invrK b')// ltf_pinv// (le_lt_trans _ bb'v).
-  rewrite -(pmulr_rgt0 _ xexp0) -{2}[x]invrK -reciprocalq; last first.
+  rewrite -(pmulr_rgt0 _ xexp0) -{2}[x]invrK -horner_reciprocal; last first.
     by rewrite unitfE gt_eqF.
   apply: (le_lt_trans posb'); rewrite -subr_gte0 /=.
   apply: lt_le_trans (_ : k * (x^-1 - b') <= _)=> /=.
@@ -440,7 +332,7 @@ split.
   have xv0 : (0 < x^-1)%R by rewrite invr_gt0.
   have x1a0 : (x^-1 < a)%R by rewrite -[a]invrK ltf_pinv// posrE// invr_gt0.
   have xexp0 : (0 < x^-1 ^+ (size l - 1))%R by apply: exprn_gt0.
-  rewrite -(pmulr_rlt0 _ xexp0) -{2}[x]invrK -reciprocalq//; last first.
+  rewrite -(pmulr_rlt0 _ xexp0) -{2}[x]invrK -horner_reciprocal//; last first.
     by rewrite unitfE gt_eqF.
   case cmp: (x^-1 <= x1); last (move/negbT:cmp => cmp).
     by apply: neg => //; rewrite -invr1 ltf_pinv// ?posrE ltr01//.
@@ -459,8 +351,8 @@ have uz: GRing.unit z by apply/negP;move/eqP=>q; rewrite q lterr in z0.*)
 have invo_rec : forall l, reciprocal_pol (reciprocal_pol l) = l.
   (*by move => l'; rewrite /reciprocate_pol revK.*) admit.
 rewrite -(invo_rec _ l).
-rewrite (reciprocalq _ x) //; last by rewrite unitfE gt_eqF.
-rewrite (reciprocalq _ z) //; last by rewrite unitfE gt_eqF.
+rewrite (@horner_reciprocal _ _ x) //; last by rewrite unitfE gt_eqF.
+rewrite (@horner_reciprocal _ _ z) //; last by rewrite unitfE gt_eqF.
 rewrite reciprocal_size; last first.
   admit.
 rewrite (_ : _ * _ - _ = (x ^+ (size l - 1) - z ^+ (size l - 1)) *
