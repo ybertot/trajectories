@@ -20,13 +20,14 @@ TODO
   - Reynald Affeldt (initial)
   - Yves Bertot (initial)
 - License: [CeCILL-C](LICENSE)
-- Compatible Coq versions: Coq 8.13 to 8.15 (or dev)
+- Compatible Coq versions: Coq 8.15 math-comp 1.14
 - Additional dependencies:
   - [MathComp ssreflect 1.13 or later](https://math-comp.github.io)
   - [MathComp fingroup 1.13 or later](https://math-comp.github.io)
   - [MathComp algebra 1.13 or later](https://math-comp.github.io)
   - [MathComp solvable 1.13 or later](https://math-comp.github.io)
   - [MathComp field 1.13 or later](https://math-comp.github.io)
+  - [Mathcomp real closed 1.1.2 or later](https://github.com/math-comp/real-closed/)
 - Coq namespace: `mathcomp.trajectories`
 - Related publication(s):
   - [TODO](TODO) doi:[TODO](https://doi.org/TODO)
