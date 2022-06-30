@@ -13,3 +13,5 @@ theories/ssr_descartes/square_free.v
 theories/ssr_descartes/three_circles.v
 
 -R theories trajectories
+-arg -w -arg -notation-overridden
+-arg -w -arg -ambiguous-paths
