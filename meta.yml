@@ -62,7 +62,7 @@ dependencies:
     [MathComp field 1.13 or later](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-real-closed
-    version: '{ (>= 1.1.2) | (= "dev") }'
+    version: '{ (>= "1.1.2") | (= "dev") }'
   description: |-
     [Mathcomp real closed 1.1.2 or later](https://github.com/math-comp/real-closed/)
 
