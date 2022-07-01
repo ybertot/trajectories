@@ -378,7 +378,7 @@ Lemma coprimep_prod p I l (F: I-> {poly R}):
    (all (fun z => coprimep p (F z)) l) -> coprimep p (\prod_(z <- l) (F z)).
 Proof.
 elim l; first by rewrite big_nil /= coprimep1.
-by move => b m Hrec /andP [ap /Hrec]; rewrite big_cons coprimep_mulr ap => ->.
+by move => b m Hrec /andP [ap /Hrec]; rewrite big_cons coprimepMr ap => ->.
 Qed.
 
 Lemma Gauss_dvdp_prod p (I:eqType) (l: seq I) (F: I-> {poly R}):
