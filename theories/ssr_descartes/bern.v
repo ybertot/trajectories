@@ -470,17 +470,53 @@ rewrite /e divrK// ?unitfE.
 by rewrite gt_eqF//.
 Qed.
 
-(* TODO(rei)
-Lemma Bernstein_isolate : forall a b l, a < b ->
-   alternate (Mobius l a b) -> one_root1 l a b.
+Lemma one_root1_scale (R : archiFieldType) :
+  forall (p :  {poly R}) k a b,
+  (0 < k)%R ->
+  one_root1 (p \scale k) a b ->
+   one_root1 p (k * a) (k * b).
 Proof.
-rewrite /Mobius => a b l altb alt.
+move=> p k a b kgt0.
+move=> [lb [ub [k' [alb [lu [ubb [k'gt0 [pos [negs dec]]]]]]]]].
+exists (k * lb), (k * ub), (k' / k).
+split; first by rewrite ltr_pmul2l.
+split; first by rewrite ltr_pmul2l.
+split; first by rewrite ltr_pmul2l.
+split; first by apply: mulr_gt0; rewrite // ?invr_gt0.
+split.
+  move=> x xgtka xlekl.
+  have xvkgta : a < x / k by rewrite ltr_pdivl_mulr 1?mulrC.
+  have xvkleb : x / k <= lb by rewrite ler_pdivr_mulr 1?mulrC.
+  move: (pos _ xvkgta xvkleb).
+  by rewrite /scaleX_poly horner_comp !hornerE divfK; last apply: lt0r_neq0.
+split.
+  move=> x xgtku xltkb.
+  have xvkgta : ub < x / k by rewrite ltr_pdivl_mulr 1?mulrC.
+  have xvkltb : x / k < b by rewrite ltr_pdivr_mulr 1?mulrC.
+  move: (negs _ xvkgta xvkltb).
+  by rewrite /scaleX_poly horner_comp !hornerE divfK; last apply lt0r_neq0.
+move=> x y xgtl xley yltku.
+have xvkgta : lb < x / k by rewrite ltr_pdivl_mulr 1?mulrC.
+have xvkley : x / k <= y / k by rewrite ler_pmul2r // invr_gt0.
+have yvkltu : y / k < ub by rewrite ltr_pdivr_mulr 1?mulrC.
+move: (dec _ _ xvkgta xvkley yvkltu).
+rewrite -(mulrBl) mulrA mulrAC !horner_comp !hornerE divfK; last first.
+  by apply : lt0r_neq0.
+by rewrite divfK; last apply: lt0r_neq0.
+Qed.
+
+Lemma Bernstein_isolate [R : archiFieldType] :
+  forall n a b (l : {poly R}), a < b ->
+   (size l <= n.+1)%N ->
+   alternate (Mobius n a b l) -> one_root1 l a b.
+Proof.
+rewrite /Mobius => n a b l szl altb alt.
 rewrite (_ : a = a + (a - a)); last by rewrite addrN addr0.
 rewrite (_ : b = a + (b - a)); last by rewrite (addrC b) addrA addrN add0r.
 apply one_root1_translate.
 rewrite addrN (_ : (b-a) = (b-a) * 1); last by rewrite mulr1.
-rewrite (_ : 0 =  (b-a) * 0); last by rewrite mulr0.
-apply one_root1_expand; first by rewrite -(addrN a) lter_add2l.
+rewrite (_ : 0%R =  ((b-a) * 0)%R); last by rewrite mulr0.
+apply one_root1_scale; first by rewrite subr_gt0.
 apply one_root_reciprocate.
 rewrite -[1]addr0; apply one_root2_translate.
 by apply: alt_one_root2.
