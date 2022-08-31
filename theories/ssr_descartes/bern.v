@@ -44,7 +44,7 @@ Definition one_root2 {R : archiFieldType} (p : {poly R}) (a : R) :=
 Lemma alt_one_root2 (R : archiFieldType) (l : {poly R}) : alternate l ->
   one_root2 l 0.
 Proof.
-move/desc => [[x1 k] /= [[/andP[x1p kp] neg] sl]]; exists x1, k; split => //.
+move/desc => [[x1 k] /= [/andP[x1p kp] neg] sl]; exists x1, k; split => //.
 - by move=> x xgt0 xlex1; apply: neg; rewrite xgt0 xlex1.
 - by move=> x y xlex1 xlty; apply: sl; rewrite xlex1 (ltW xlty).
 Qed.
@@ -188,7 +188,7 @@ Qed.
 Lemma one_root_reciprocate {R : archiFieldType} (l : {poly R}) :
   one_root2 (reciprocal_pol l) 1 -> one_root1 l 0 1.
 Proof.
-move=> [x1 [k [x1gt1 [kp neg sl]]]].
+move=> [x1 [k [x1gt1 kp neg sl]]].
 have x10 : (0 < x1)%R by rewrite (lt_trans _ x1gt1)// ltr01.
 set y' := x1 - (reciprocal_pol l).[x1] / k.
 have y'1 : x1 < y'.
@@ -241,7 +241,7 @@ have c0 : (0 < c)%R.
     - exact: ltW.
     - by rewrite (le_trans b'y')// ltW.
   by rewrite normr_gt0// gt_eqF// subr_gt0.
-have [b [b'b [clb blty]]] : exists b, [/\ b' < b, c * (b - b') < e2 & b <= y].
+have [b [b'b clb blty]] : exists b, [/\ b' < b, c * (b - b') < e2 & b <= y].
   have [e3 [e4 [e3p e4p e3e4e2 e3e2 e4e2]]] := cut_epsilon _ e2p.
   case cmp : (b' + e2 / c <= y).
     exists (b' + e3 / c); split.
