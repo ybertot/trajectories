@@ -1,4 +1,5 @@
 From mathcomp Require Import all_ssreflect ssrnum zmodp order constructive_ereal.
+Require Import preliminaries.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -15,37 +16,6 @@ Definition Zp_succ p : 'I_p -> 'I_p :=
 
 Lemma Zp_succE n (i : 'I_n) : val (Zp_succ i) = i.+1 %% n.
 Proof. by case: n i => // -[]. Qed.
-
-Lemma ord_S_split n (i: 'I_n.+1): {j: 'I_n | i = lift ord0 j} + {i = ord0}.
-Proof.
-case: i; case=>[| i] ilt.
-   by right; apply val_inj.
-by left; exists (Ordinal (ltnSE ilt)); apply val_inj.
-Qed.
-
-Lemma subseq_incl (T: eqType) (s s': seq T) x:
-  subseq s s' ->
-  {f: 'I_(size s) -> 'I_(size s') |
-      (forall i, nth x s' (f i) = nth x s i) /\
-      {homo f : x y / (x < y)%O >-> (x < y)%O}}.
-Proof.
-elim: s' s=> [| a s' IHs'] s sub.
-   by move:sub=>/eqP -> /=; exists id; split=>// i j.
-case: s sub=> [ _ | b s sub].
-   move=>/=; simple refine (exist _ _ _).
-      by move=> i; case: i.
-   by split; move=> i; case: i.
-move: sub=>/=; case sa: (b == a).
-   move: sa=>/eqP <- /IHs' [f [fn flt]].
-   exists (fun i => match ord_S_split i with | inleft j => lift ord0 (f (proj1_sig j)) | inright _ => ord0 end).
-   split.
-      by move=> i; case: ord_S_split=> [ [j ie] | ie ]; subst i=>/=.
-   move=> i j; case: ord_S_split=> [ [i' ie] | ie ]; case: ord_S_split=> [ [j' je] | je ]; subst i j=>//=.
-   do 2 rewrite ltEord=>/=.
-   by rewrite /bump /= add1n add1n add1n add1n ltnS ltnS; apply flt.
-by move=>/IHs' [f [fn flt]]; exists (fun i => lift ord0 (f i)).
-Qed.
-
 
 Lemma subseq_iota (n m : nat) (l : seq nat) : subseq l (iota n m) =
   (l == [::]) || (n <= nth 0 l 0)%N &&
@@ -282,7 +252,8 @@ End ereal_tblattice.
 
 Section bigop_partition.
 
-Lemma perm_eq_partition {aT rT : eqType} (l : seq aT) (s : seq rT) (f : aT -> rT) : uniq s -> all (fun x=> f x \in s) l -> perm_eq [seq x | y <- s, x <- [seq x <- l | f x == y]] l.
+Lemma perm_eq_partition {aT rT : eqType} (l : seq aT) (s : seq rT) (f : aT -> rT) :
+  uniq s -> all (fun x=> f x \in s) l -> perm_eq [seq x | y <- s, x <- [seq x <- l | f x == y]] l.
 Proof.
 elim: s l; first by case.
 move=>y s IHs l yus /allP fl /=.
@@ -299,20 +270,14 @@ apply IHs; first by move:yus=>/andP[].
 by apply/allP=>x; rewrite mem_filter=>/andP [/= /negPf fxy /fl]; rewrite in_cons=>/orP; case=>//; rewrite fxy.
 Qed.
 
-Lemma big_partition {aT rT : eqType} {R : Type} {idx : R} {op : Monoid.com_law idx} {F : aT -> R} {l : seq aT} {s : seq rT} {f : aT -> rT} : uniq s -> all (fun x=> f x \in s) l -> \big[op/idx]_(i <- l) F i = \big[op/idx]_(y <- s) \big[op/idx]_(i <- l | f i == y) F i.
+Lemma big_partition {aT rT : eqType} {R : Type} {idx : R} {op : Monoid.com_law idx} {F : aT -> R} {l : seq aT} {s : seq rT} {f : aT -> rT} :
+  uniq s -> all (fun x=> f x \in s) l ->
+  \big[op/idx]_(i <- l) F i = \big[op/idx]_(y <- s) \big[op/idx]_(i <- l | f i == y) F i.
 Proof.
 move=>us fs.
 move:(@big_allpairs_dep _ idx op _ _ _ (fun i j=> j) s (fun i=> [seq j <- l | f j == i]) F); congr eq.
    by apply/perm_big/perm_eq_partition.
 by apply congr_big=>//y _; rewrite big_filter.
-Qed.
-
-Lemma big_filterC [R : Type] [idx : R] [op : Monoid.com_law idx] [I : eqType] (r : seq I) (P : pred I) (F : I -> R) : \big[op/idx]_(i <- r) F i = op (\big[op/idx]_(i <- r | P i) F i) (\big[op/idx]_(i <- r | ~~ P i) F i).
-Proof.
-rewrite (@big_partition _ _ _ _ _ _ _ (index_enum bool_finType) P).
-- by rewrite big_bool; congr (op _ _); apply congr_big=>// i; [apply eqb_id | apply eqbF_neg].
-- by apply index_enum_uniq.
-- apply/allP=>i _; apply mem_index_enum.
 Qed.
 
 End bigop_partition.

@@ -128,56 +128,52 @@ apply/eqP/eqP.
 by move=>->.
 Qed.
 
-(*TODO: move to mathcomp. *)
-(*TODO: find a non-ugly proof. *)
+(* TODO: this lemma is already in infotheo where it was wrongly specialized to R!
+   this will be fixed in infotheo 0.5.1 so that this lemma can be removed *)
+Section freeN_combination.
+Import ssrnum vector.
+Import Order.POrderTheory Num.Theory.
+Variable (R : fieldType) (E : vectType R).
+Local Open Scope ring_scope.
+Local Open Scope classical_set_scope.
+Import GRing.
 
-Lemma freeN_combination (R: fieldType) (E: vectType R) n (s: n.-tuple E): ~free s -> exists k: 'I_n -> R, (\sum_i k i *: s`_i = 0)%R /\ exists i, k i != 0%R.
+Lemma freeN_combination n (s : n.-tuple E) : ~~ free s ->
+  exists k : 'I_n -> R, (\sum_i k i *: s`_i = 0) /\ exists i, k i != 0.
 Proof.
-move=>/negP; rewrite freeNE=>/existsP [[i ilt] /coord_span /= sin].
-move: (ilt) s sin; (have ne: (n = i.+1 + (n-i.+1))%N by rewrite subnKC); rewrite ne=> ilt' s sin.
-simple refine (let k: 'I_(i.+1 + (n - i.+1)) -> R := _ in _).
-   move=>/split; case=> [[j jlt] | [j jlt]].
-      exact (if j == i then 1%R else 0%R).
-   refine (-%R (coord (drop_tuple i.+1 s) (@Ordinal _ j _) s`_i)).
-   rewrite addnC -{3}[i.+1]/(0+i.+1)%N subnDr.
-   by have->: (n-i.+1-0 = n-i.+1)%N by move: PeanoNat.Nat.sub_0_r.
-simpl in k; exists k; split.
-   2:{ exists (Ordinal ilt'); rewrite /k.
-   move: (splitP (Ordinal ilt')).
-   case: (split _)=>o sp; inversion sp; subst o.
-      by case: j H1 {sp}=> j jlt /= ->; rewrite eq_refl; apply oner_neq0.
-   by move: H0; rewrite leqnn.
-   }
-rewrite big_split_ord big_ord_recr (congr_big (index_enum (ordinal_finType i)) (fun _ => true) (fun i => 0 *: 0)%R) //.
-rewrite -scaler_suml GRing.scaler0.
-   2:{ move=> [j jlt] _; rewrite /k.
-   move: (splitP (lshift (n - i.+1) (widen_ord (leqnSn i) (Ordinal jlt)))).
-   case split=>o; move=>sp; inversion sp; subst o.
-      case: j0 H1 {sp}=> j0 j0lt /=<-.
-      case ji: (j == i).
-         by move: ji (jlt)=>/eqP ji; subst j; rewrite ltnn.
-      by do 2 rewrite scale0r.
-   by move: H0=>/esym; rewrite ltnNge=>/negP/negP; rewrite ltnNge=>/negP jle; elim jle; apply ltnW.
-   }
-move: (splitP (lshift (n - i.+1) (@ord_max i))); rewrite {1}/k; case split=>o sp; inversion sp; subst o.
-   2: by move: H0; rewrite leqnn.
-case: j H1 {sp}=> j jlt /=<-; rewrite eq_refl.
-clear j jlt H0.
-rewrite add0r scale1r.
-suff: (\sum_(i1 < n - i.+1) k (rshift i.+1 i1) *: s`_(i.+1 + i1) = - s`_i)%R
-   by move=>->; apply subrr.
-rewrite sin -sumrN.
-have ne': (i.+1 + (n - i.+1) - i.+1 = n - i.+1)%N by rewrite -ne.
-rewrite (index_enum_cast_ord ne') big_map; apply congr_big=>// [[x xlt]] _.
+rewrite freeNE => /existsP[[i ilt] /coord_span /=].
+move: (ilt) s.
+have ne : (n = i.+1 + (n - i.+1))%nat by rewrite subnKC.
+rewrite ne => ilt' s sin.
+have hk m : (m < n - i.+1 -> m < i.+1 + (n - i.+1) - i.+1)%nat.
+  by move=> mni; rewrite -addnBAC// subnn add0n.
+pose k (x : 'I_(i.+1 + (n - i.+1))) :=
+  match fintype.split x with
+  | inl (@Ordinal _ m _) => if m == i then 1 else 0
+  | inr (@Ordinal _ m i0) => - coord (drop_tuple i.+1 s) (Ordinal (hk m i0)) s`_i
+  end.
+exists k; split; last first.
+  exists (Ordinal ilt'); rewrite /k; case: splitP.
+    by case=> j ji/= <-; rewrite eqxx; exact/oner_neq0.
+  by case=> j jni/= /eqP; rewrite lt_eqF// ltEnat/= addSn ltnS leq_addr.
+rewrite big_split_ord big_ord_recr/= big1 ?add0r; last first.
+  case=> j ji _; rewrite /k; case: splitP.
+    by case=> m mi /= jm; rewrite -jm lt_eqF ?ltEnat// !scale0r.
+  by case=> m mni /= jim; move: ji; rewrite jim addSnnS -ltn_subRL subnn.
+rewrite {1}/k /=; case: splitP => /=; last first.
+  by move=> m /eqP; rewrite lt_eqF// ltEnat/= addSn ltnS leq_addr.
+case=> j/= ji ij; rewrite [in j == i]ij eqxx scale1r.
+apply/eqP; rewrite addrC addr_eq0 sin -sumrN; apply/eqP.
+have {}ne : (i.+1 + (n - i.+1) - i.+1 = n - i.+1)%nat by rewrite -addnBAC// subnn.
+rewrite (index_enum_cast_ord ne) big_map; apply congr_big=>// [[x xlt]] _.
 rewrite nth_drop -scaleNr; congr (_ *: _).
-move: (splitP (rshift i.+1 (cast_ord ne' (Ordinal xlt)))); rewrite /k; case: split=>o sp; inversion sp; subst o.
-   by move: H0; rewrite ltnNge leq_addr.
-case: k0 H1 sp=>k0 k0lt H1 sp; congr (- coord _ _ _).
-apply val_inj=>/=; apply /esym.
-move: H1=>/= /(f_equal (fun x: nat => (x - i.+1)%N)).
-have np0: forall n, (n = n + 0)%N by move=>a; rewrite addnC.
-by rewrite {2 4}(np0 i.+1) subnDl subnDl !subn0.
+rewrite /k; case: splitP.
+  by case=> m + /= ixm; rewrite -ixm -ltn_subRL subnn.
+case=> m/= mni /eqP; rewrite eqn_add2l => /eqP kl.
+by congr (- coord _ _ _); exact/val_inj.
 Qed.
+
+End freeN_combination.
 
 Lemma ord_S_split n (i: 'I_n.+1): {j: 'I_n | i = lift ord0 j} + {i = ord0}.
 Proof.

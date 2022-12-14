@@ -273,7 +273,8 @@ Local Open Scope ring_scope.
 
 Variable f: {linear E -> F}.
 
-(* TODO: this lemma is already in infotheo but was wrongly specialized to R! *)
+(* TODO: this lemma is already in infotheo where it was wrongly specialized to R!
+   this will be fixed in infotheo 0.5.1 so that this lemma can be removed *)
 Lemma preimage_add_ker (A: set F) :
   [set a + b | a in f @^-1` A & b in f @^-1` [set 0]]%classic = (f @^-1` A)%classic.
 Proof.
@@ -383,7 +384,7 @@ have: exists mu: 'I_(size s) -> R, \sum_(i < size s) mu i = 0 /\ \sum_(i < size 
          by refine (leq_trans _ nsgt).
       rewrite in_tupleE basisEdim size_map=>/andP [_ nsge].
       by move: nsgt; rewrite ltnNge nsge.
-   move: sf=>/negP /preliminaries.freeN_combination; rewrite in_tupleE size_map=> [[mu [musum [i mui]]]].
+   move/negbT : sf => /preliminaries.freeN_combination; rewrite in_tupleE size_map=> [[mu [musum [i mui]]]].
    rewrite /= -addn1 addnC.
    exists (fun i => match split i with | inl i => - \sum_i mu i | inr i => mu i end).
    split.

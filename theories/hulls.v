@@ -73,10 +73,11 @@ rewrite eqEsubset; split; last first.
    split; first by move=>a[]; case; case=>/= [|n] _ _ <-; [left|right].
    by rewrite big_ord_recl big_ord1/=.
 move=>z [n][g][d][d0][d1][gxy]->.
-move:d1=>/esym/eqP; rewrite -subr_eq0 (big_filterC _ (fun i=> g i == x))/= opprD addrCA addrC subr_eq0=>/eqP/esym=>d1.
+move:d1=>/esym/eqP; rewrite -subr_eq0 (bigID [pred i | g i == x])//= opprD addrCA addrC subr_eq0=>/eqP/esym=>d1.
 exists (\sum_(i < n | g i == x) d i).
    by rewrite inE; apply/andP; rewrite    2!bnd_simp {2}d1 -[(_<=1)%R]subr_ge0 opprB addrCA subrr addr0; split; apply sumr_ge0.
-rewrite/conv {2}d1 opprB addrCA subrr addr0 (big_filterC _ (fun i=> g i == x))/=; congr GRing.add; rewrite scaler_suml; apply congr_big=>// i.
+rewrite/conv {2}d1 opprB addrCA subrr addr0 [RHS](bigID [pred i | g i == x])//=.
+congr (_ + _); rewrite scaler_suml; apply congr_big=>// i.
    by move=>/eqP->.
 have/gxy: range g (g i) by [].
 by case=>->; rewrite ?eq_refl.
@@ -310,5 +311,5 @@ apply congr_big=>//i _.
 rewrite scaler_suml.
 by apply congr_big=>//j/eqP->.
 Qed.
-   
+
 End Dummy.

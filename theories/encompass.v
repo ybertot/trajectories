@@ -1,6 +1,6 @@
-Require Export preliminaries_hull axiomsKnuth.
 From mathcomp Require Import all_ssreflect all_algebra vector reals ereal classical_sets.
 From mathcomp Require Import zmodp.
+Require Export preliminaries preliminaries_hull axiomsKnuth.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
@@ -223,5 +223,3 @@ Qed.
 
 End Dummy.
 End SpecKA.
-
-
