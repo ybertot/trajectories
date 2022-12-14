@@ -7,11 +7,11 @@ Unset Printing Implicit Defensive.
 Import Order.POrderTheory Order.TotalTheory.
 Local Open Scope order_scope.
 
-Definition Zp_succ (p : nat) (i : 'I_p): 'I_p.
-destruct p.
-   exact i.
-exact (zmodp.inZp i.+1).
-Defined.
+Definition Zp_succ p : 'I_p -> 'I_p :=
+  match p with
+    0 => id
+  | q.+1 => fun i : 'I_q.+1 => inZp i.+1
+  end.
 
 Lemma ord_S_split n (i: 'I_n.+1): {j: 'I_n | i = lift ord0 j} + {i = ord0}.
 Proof.
@@ -161,7 +161,6 @@ Lemma filter_succ (T : eqType) (x : T) (l : seq T) (P : pred T) :
          ~~ P (nth x l (k %% size l)).
 Proof.
 (*Huh???*)
-have mul1n: forall n: nat, (1 * n = n)%N by move=>n; rewrite/muln/muln_rec/=; move: (addn0 n).
 set l' := [seq x0 <- l | P x0]=>/= f fi fh i' k ikj; apply /negP=>Pkl.
 have kl: k %% size l < size l.
    apply ltn_pmod; destruct l=>//.

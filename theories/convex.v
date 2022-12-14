@@ -1,5 +1,6 @@
 From mathcomp Require Import all_ssreflect all_algebra vector reals ereal classical_sets.
 Require Import preliminaries.
+From infotheo Require convex.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 Local Open Scope ring_scope.
@@ -196,7 +197,7 @@ Lemma conv_add (A B: set E): conv [set a + b | a in A & b in B] = [set a + b | a
 Proof.
 rewrite eqEsubset; split.
    apply conv_sub_convex.
-      by apply image2_subset; apply conv_ext.
+      by apply convex.image2_subset; apply conv_ext.
    move=> x y [ax axA [bx bxA xe]] [ay ayA [by' byA ye]] z [t t01 ze]; subst x y z.
    exists (t *: ax + (1-t) *: ay).
       by apply (conv_convex axA ayA); exists t.

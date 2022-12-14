@@ -30,6 +30,7 @@ TODO
   - [Mathcomp real closed 1.1.3 or later](https://github.com/math-comp/real-closed/)
   - [Algebra tactics 1.0.0](https://github.com/math-comp/algebra-tactics)
   - [MathComp analysis](https://github.com/math-comp/analysis)
+  - [Infotheo](https://github.com/affeldt-aist/infotheo)
 - Coq namespace: `mathcomp.trajectories`
 - Related publication(s):
   - [TODO](TODO) doi:[TODO](https://doi.org/TODO)

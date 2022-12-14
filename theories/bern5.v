@@ -50,8 +50,8 @@ Fixpoint compose_list (s1 s2 : list Z) :=
 Definition expandr (s1 : list Z) (ratio : Z) :=
   compose_list s1 (0::ratio::nil).
 
-Fixpoint transr (s : list Z) (offset : Z) : list Z :=
-  compose_list s (offset::1::nil).
+Definition transr (s : list Z) (offset : Z) : list Z :=
+  compose_list s (offset :: 1 :: nil).
 
 Fixpoint recipr n (s : list Z) := 
   match n with S p => 

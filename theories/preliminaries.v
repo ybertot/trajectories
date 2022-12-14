@@ -9,10 +9,7 @@ Unset Printing Implicit Defensive.
 
 (* TODO: move to mathcomp ? *)
 
-Lemma image2_subset {aT bT rT : Type} [f : aT -> bT -> rT] [A B: set aT] [C D : set bT]: (A `<=` B)%classic -> (C `<=` D)%classic -> ([set f x y | x in A & y in C] `<=` [set f x y | x in B & y in D])%classic.
-Proof.
-by move=>AB CD x [a aA [c cC xe]]; subst x; exists a; (try by apply AB); exists c; (try by apply CD).
-Qed.
+From infotheo Require Import convex.
 
 Lemma enum_rank_index {T: finType} i: nat_of_ord (enum_rank i) = index i (enum T).
 Proof.
@@ -225,7 +222,7 @@ simpl in k; exists k; split.
    by move: H0; rewrite leqnn.
    }
 rewrite big_split_ord big_ord_recr (congr_big (index_enum (ordinal_finType i)) (fun _ => true) (fun i => 0 *: 0)%R) //.
-rewrite -scaler_suml scaler0.
+rewrite -scaler_suml GRing.scaler0.
    2:{ move=> [j jlt] _; rewrite /k.
    move: (splitP (lshift (n - i.+1) (widen_ord (leqnSn i) (Ordinal jlt)))).
    case split=>o; move=>sp; inversion sp; subst o.
@@ -252,10 +249,7 @@ case: k0 H1 sp=>k0 k0lt H1 sp; congr (- coord _ _ _).
 apply val_inj=>/=; apply /esym.
 move: H1=>/= /(f_equal (fun x: nat => (x - i.+1)%N)).
 have np0: forall n, (n = n + 0)%N by move=>a; rewrite addnC.
-rewrite {2 4}(np0 i.+1) subnDl subnDl.
-have n0: forall n: nat, (n-0 = n)%N.
-   by move=>a; rewrite (np0 (a-0)%N); apply subnK.
-by rewrite n0 n0.
+by rewrite {2 4}(np0 i.+1) subnDl subnDl !subn0.
 Qed.
 
 Lemma ord_S_split n (i: 'I_n.+1): {j: 'I_n | i = lift ord0 j} + {i = ord0}.
@@ -349,5 +343,3 @@ case_ereal a; case_ereal b; case_ereal c; (try by (congr (_%:E); apply mulrA)); 
    1, 3: by rewrite (pmule_lgt0 b%:E Heqx_gt_1) Heqx_gt_0.
    1, 2: by rewrite (mule_lt0_lt0 Heqx_lt_0 Heqx_lt_1).
 Qed.
-
-
