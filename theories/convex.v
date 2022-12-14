@@ -1,6 +1,6 @@
 From mathcomp Require Import all_ssreflect all_algebra vector reals ereal classical_sets.
 Require Import preliminaries.
-From infotheo Require convex.
+From infotheo Require Import convex.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 Local Open Scope ring_scope.
@@ -197,7 +197,7 @@ Lemma conv_add (A B: set E): conv [set a + b | a in A & b in B] = [set a + b | a
 Proof.
 rewrite eqEsubset; split.
    apply conv_sub_convex.
-      by apply convex.image2_subset; apply conv_ext.
+      by apply image2_subset; apply conv_ext.
    move=> x y [ax axA [bx bxA xe]] [ay ayA [by' byA ye]] z [t t01 ze]; subst x y z.
    exists (t *: ax + (1-t) *: ay).
       by apply (conv_convex axA ayA); exists t.
@@ -219,8 +219,8 @@ split.
   apply congr_big=>// i _.
   rewrite scaler_sumr -[ka i *: sa`_i]scale1r -kb1 scaler_suml -big_split.
   apply congr_big=>// j _.
-  by rewrite (nth_allpairs _ 0 0) unsplit_prodK scalerDr scalerA scalerA mulrC.
-- move=> i.
+  by rewrite (nth_allpairs _ 0 0) unsplit_prodK scalerDr scalerA scalerA mulrC//=.
+  move=> i.
   by case: split_prod=>o o0; apply mulr_ge0.
 - move=> i.
   rewrite (nth_allpairs _ 0 0); case: split_prod=>o o0.
@@ -272,6 +272,17 @@ Local Open Scope fun_scope.
 Local Open Scope ring_scope.
 
 Variable f: {linear E -> F}.
+
+(* TODO: this lemma is already in infotheo but was wrongly specialized to R! *)
+Lemma preimage_add_ker (A: set F) :
+  [set a + b | a in f @^-1` A & b in f @^-1` [set 0]]%classic = (f @^-1` A)%classic.
+Proof.
+rewrite eqEsubset; split.
+-  move=> x [a /= aA] [b /= bker] xe; subst x.
+   by rewrite GRing.linearD bker GRing.addr0.
+- move=> x /= fx; exists x=>//.
+  by exists 0; [ apply GRing.linear0 | apply GRing.addr0].
+Qed.
 
 Lemma imset_conv_lin (A: set E): image (conv A) f = conv (image A f).
 Proof.
@@ -372,7 +383,7 @@ have: exists mu: 'I_(size s) -> R, \sum_(i < size s) mu i = 0 /\ \sum_(i < size 
          by refine (leq_trans _ nsgt).
       rewrite in_tupleE basisEdim size_map=>/andP [_ nsge].
       by move: nsgt; rewrite ltnNge nsge.
-   move: sf=>/negP /freeN_combination; rewrite in_tupleE size_map=> [[mu [musum [i mui]]]].
+   move: sf=>/negP /preliminaries.freeN_combination; rewrite in_tupleE size_map=> [[mu [musum [i mui]]]].
    rewrite /= -addn1 addnC.
    exists (fun i => match split i with | inl i => - \sum_i mu i | inr i => mu i end).
    split.

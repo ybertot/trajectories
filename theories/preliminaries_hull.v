@@ -13,6 +13,9 @@ Definition Zp_succ p : 'I_p -> 'I_p :=
   | q.+1 => fun i : 'I_q.+1 => inZp i.+1
   end.
 
+Lemma Zp_succE n (i : 'I_n) : val (Zp_succ i) = i.+1 %% n.
+Proof. by case: n i => // -[]. Qed.
+
 Lemma ord_S_split n (i: 'I_n.+1): {j: 'I_n | i = lift ord0 j} + {i = ord0}.
 Proof.
 case: i; case=>[| i] ilt.
@@ -212,9 +215,6 @@ have ai': (a < i'.+1)%N.
    by rewrite modn_small.
 by move: (leq_ltn_trans ia' ai'); rewrite ltnn.
 Qed.
-
-Lemma Zp_succE (n : nat) (i : 'I_n) : val (Zp_succ i) = i.+1 %% n.
-Proof. by case: n i=>//; case. Qed.
 
 Lemma uniq_subseq_size (T: eqType) (l l': seq T) :
   all (fun x => x \in l) l' -> uniq l' -> (size l' <= size l)%N.
