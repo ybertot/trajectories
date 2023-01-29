@@ -22,26 +22,30 @@ Definition Plane := pair_vectType (regular_vectType R) (regular_vectType R).
 Definition abscisse (p : Plane) : R := p.1.
 Definition ordonnee (p : Plane) : R := p.2.
 
-Definition get_coord := fun i: 'I_3=> match val i with
-                     | 0 => abscisse
-                     | 1 => ordonnee
-                     | _.+2 => fun=> 1
-                     end.
-Definition get_pt (p q r : Plane) := fun j: 'I_3=>nth 0 [:: p; q; r] j.
+Definition get_coord (i : 'I_3) :=
+  match val i with
+  | 0 => abscisse
+  | 1 => ordonnee
+  | _.+2 => fun=> 1
+  end.
 
-Let det_mx (p q r: Plane) :=
+Definition get_pt (p q r : Plane) := fun j: 'I_3 => nth 0 [:: p; q; r] j.
+
+Let det_mx (p q r : Plane) :=
   \matrix_(i < 3, j < 3) get_coord i (get_pt p q r j).
 
 Definition det (p q r : Plane) : R := \det (det_mx p q r).
- 
-Definition sensDirect (p q r : Plane) : bool := (0 < det p q r)%R.
 
-Lemma direct_distincts : forall p q r : Plane, sensDirect p q r -> p <> q.
-move=> p q r pqr pq; subst q; move: pqr; rewrite/sensDirect/det.
+(* counterclockwise *)
+Definition ccw (p q r : Plane) : bool := (0 < det p q r)%R.
+
+Lemma direct_distincts (p q r : Plane) : ccw p q r -> p <> q.
+Proof.
+move=> pqr pq; subst q; move: pqr; rewrite /ccw /det.
 have n: (ord0: 'I_3) != lift ord0 ord0 by apply/eqP=>e; inversion e.
 rewrite -det_tr (determinant_alternate n).
-   by rewrite (lt_irreflexive 0%R).
-by move=>i; rewrite !mxE /=.
+  by rewrite ltxx.
+by move=>i; rewrite !mxE.
 Qed.
 
 Lemma det2 (R': comRingType) (M: 'M_2): (\det M: R') =
@@ -64,7 +68,7 @@ rewrite -mulrN; congr (_ * _ + _); by rewrite /cofactor !det2 !mxE /get_coord/ge
 Qed.
 
 (* ---------------- produit scalaire (avec le deuxième argument tourné de pi/2) ----------------- *)
-Definition scalar_product (p q: Plane) := p.1*q.1 + p.2*q.2.
+Definition scalar_product (p q: Plane) := p.1 * q.1 + p.2 * q.2.
 
 Definition rotate (p : Plane) := (p.2, -p.1).
 
@@ -89,15 +93,15 @@ Lemma scalar_productDl (p q r: Plane):
   scalar_product (p + q) r = scalar_product p r + scalar_product q r.
 Proof. by rewrite /scalar_product /=; ring. Qed.
 
-Lemma scalar_productDr (p q r: Plane):
+Lemma scalar_productDr (p q r : Plane):
   scalar_product r (p + q) = scalar_product r p + scalar_product r q.
 Proof. by rewrite scalar_productC scalar_productDl; congr add; apply scalar_productC. Qed.
 
 Lemma scalar_productrr_ge0 p : 0 <= (scalar_product p p).
 Proof. by rewrite /scalar_product; apply addr_ge0; apply sqr_ge0. Qed.
 
-Lemma scalar_productrr_gt0 u : u != 0 -> 0 < (scalar_product u u).
-Proof. 
+Lemma scalar_productrr_gt0 u : u != 0 -> 0 < scalar_product u u.
+Proof.
 move=>u0.
 rewrite lt0r; apply/andP; split; last by apply scalar_productrr_ge0.
 apply/negP; rewrite /scalar_product paddr_eq0.
@@ -112,7 +116,7 @@ rewrite /rotate; apply pair_equal_spec; split=>//=.
 by rewrite scalerN.
 Qed.
 
-Lemma rotateD (p q : Plane) : rotate (p+q) = rotate p + rotate q.
+Lemma rotateD (p q : Plane) : rotate (p + q) = rotate p + rotate q.
 Proof.
 rewrite /rotate; apply pair_equal_spec; split=>//=.
 by rewrite opprD.
@@ -176,7 +180,7 @@ Qed.
 (* ------------------ calcul de determinants ------------------- *)
 
 Lemma decompose_det (p q r t : Plane) :
- det p q r = (det t q r) + (det p t r) + (det p q t).
+  det p q r = (det t q r) + (det p t r) + (det p q t).
 Proof. by rewrite !develop_det; ring. Qed.
 
 Lemma det_inverse (p q r : Plane) : det p q r = - (det p r q).
@@ -243,14 +247,14 @@ split.
 by rewrite rotate_antisym pq oppr0.
 Qed.
 
-Lemma direct_uniq p q r : sensDirect p q r -> uniq [:: p; q; r].
+Lemma direct_uniq p q r : ccw p q r -> uniq [:: p; q; r].
 Proof.
 move=>pqr.
 apply/andP; split.
-   2: by rewrite in_cons 2!in_nil orbF 2!andbT; apply/eqP; apply (@direct_distincts q r p); rewrite /sensDirect 2!det_cyclique.
+   2: by rewrite in_cons 2!in_nil orbF 2!andbT; apply/eqP; apply (@direct_distincts q r p); rewrite /ccw 2!det_cyclique.
 rewrite negb_or orbF; apply/andP; split.
    by apply/eqP; exact (direct_distincts pqr).
-by rewrite eq_sym; apply/eqP; apply (@direct_distincts r p q); rewrite /sensDirect det_cyclique.
+by rewrite eq_sym; apply/eqP; apply (@direct_distincts r p q); rewrite /ccw det_cyclique.
 Qed.
 
 Lemma convex_combinaison p q r s t :
@@ -274,30 +278,29 @@ Qed.
 
 End Plane.
 
-Module sensDirect_KA <: KnuthAxioms.
+Module ccw_KA <: KnuthAxioms.
 Section Dummy.
 Variable (R : realType).
 Definition Plane := Plane R.
-Definition OT := sensDirect (R:=R).
+Definition OT := ccw (R:=R).
 
-Theorem Axiom1 : forall p q r : Plane, OT p q r -> OT q r p.
+Theorem Axiom1 (p q r : Plane) : OT p q r -> OT q r p.
 Proof.
-move=> p q r; congr (_ < _).
+congr (_ < _).
 rewrite !develop_det; ring.
 Qed.
 
-Theorem Axiom2 : forall p q r : Plane, OT p q r -> ~ OT p r q.
+Theorem Axiom2 (p q r : Plane) : OT p q r -> ~ OT p r q.
 Proof.
-move=> p q r; rewrite /OT/sensDirect lt0r=>/andP [_ pqr].
+rewrite /OT /ccw lt0r=>/andP [_ pqr].
 rewrite det_inverse oppr_gt0.
-by apply /negP; rewrite -real_leNgt; [| apply real0 | apply ger0_real ].
+by rewrite ltNge pqr.
 Qed.
 
-Theorem Axiom4 :
- forall p q r t : Plane,
+Theorem Axiom4 (p q r t : Plane) :
  OT t q r -> OT p t r -> OT p q t -> OT p q r.
 Proof.
-move=> p q r t; rewrite /OT/sensDirect (decompose_det p q r t)=> tqr ptr pqt.
+rewrite /OT /ccw (decompose_det p q r t)=> tqr ptr pqt.
 apply addr_gt0=>//.
 apply addr_gt0=>//.
 Qed.
@@ -307,10 +310,10 @@ Theorem Axiom5 t s p q r :
  OT t s q ->
  OT t s r -> OT t p q -> OT t q r -> OT t p r.
 Proof.
-rewrite /OT/sensDirect=>tsp tsq tsr tpq tqr.
+rewrite /OT /ccw => tsp tsq tsr tpq tqr.
 have->: det t p r = - det t r p by rewrite !develop_det; ring.
 rewrite ltNge oppr_le0; apply /negP=>trp.
-suff: 0 < det t q r * det t s p + det t r p * det t s q + det t p q * det t s r by rewrite convex_combinaison lt_irreflexive.
+suff: 0 < det t q r * det t s p + det t r p * det t s q + det t p q * det t s r by rewrite convex_combinaison ltxx.
 rewrite addrC.
 apply ltr_paddr; [| by apply mulr_gt0].
 by apply addr_ge0; apply mulr_ge0=>//; apply ltW.
@@ -323,11 +326,11 @@ Theorem Axiom5' (pivot p q r : Plane) :
   (pivot : R *l R) < p ->
   (pivot : R *l R) < q ->
   (pivot : R *l R) < r ->
-  sensDirect pivot p q ->
-  sensDirect pivot q r ->
-  sensDirect pivot p r.
+  ccw pivot p q ->
+  ccw pivot q r ->
+  ccw pivot p r.
 Proof.
-rewrite/sensDirect 3!det_scalar_productE/scalar_product/= !mulrN !subr_gt0 -![(pivot : R *l R) < _]subr_gtlex0 {1 2 3}/lt/=/ProdLexiOrder.lt/= !implybE -!ltNge !le_eqVlt ![(_==_)||_]orbC -!Bool.orb_andb_distrib_r=>/orP; case=>p0.
+rewrite /ccw 3!det_scalar_productE/scalar_product/= !mulrN !subr_gt0 -![(pivot : R *l R) < _]subr_gtlex0 {1 2 3}/lt/=/ProdLexiOrder.lt/= !implybE -!ltNge !le_eqVlt ![(_==_)||_]orbC -!Bool.orb_andb_distrib_r=>/orP; case=>p0.
    move=>/orP; case=>q0.
       move=>/orP; case=>r0.
          rewrite -(ltr_pdivr_mull _ _ p0) mulrA -(ltr_pdivl_mulr _ _ q0) [_^-1*_]mulrC -(ltr_pdivr_mull _ _ q0) mulrA -(ltr_pdivl_mulr _ _ r0) [_^-1*_]mulrC -(ltr_pdivr_mull _ _ p0) mulrA -(ltr_pdivl_mulr _ _ r0) [_^-1*_]mulrC=>qlt rlt; exact (lt_trans qlt rlt).
@@ -335,17 +338,16 @@ rewrite/sensDirect 3!det_scalar_productE/scalar_product/= !mulrN !subr_gt0 -![(p
       by rewrite 2!mulr0 pmulr_rgt0// pmulr_rgt0//.
    move:q0=>/andP[/eqP<- q0]/orP; case.
       move=>r0 _; rewrite mul0r pmulr_rlt0// =>r0'.
-      by move: (lt_trans r0 r0'); rewrite lt_irreflexive.
-   by move=>/andP[/eqP<- _] _; rewrite mul0r mulr0 lt_irreflexive.
+      by move: (lt_trans r0 r0'); rewrite ltxx.
+   by move=>/andP[/eqP<- _] _; rewrite mul0r mulr0 ltxx.
 move:p0=>/andP[/eqP<- p0].
 rewrite 2!mul0r pmulr_rlt0// pmulr_rlt0// =>/orP; case.
-   by move=>q0 _ q0'; move:(lt_trans q0 q0'); rewrite lt_irreflexive.
-by move=>/andP[/eqP<- q0]; rewrite lt_irreflexive.
+   by move=>q0 _ q0'; move:(lt_trans q0 q0'); rewrite ltxx.
+by move=>/andP[/eqP<- q0]; rewrite ltxx.
 Qed.
 
-
 End Dummy.
-End sensDirect_KA.
+End ccw_KA.
 
 (*Lemma Axiom5bis :
  forall t s p q r : Plane,
@@ -358,4 +360,3 @@ rewrite det_inverse oppr_gt0 -(nmulr_lgt0 _ tsq).
 have ->: det t r p * det t s q = - (det t q r * det t s p + det t p q * det t s r) by rewrite !develop_det; ring.
 by rewrite opprD; apply addr_gt0; rewrite oppr_gt0 nmulr_llt0.
    Qed.*)
-
