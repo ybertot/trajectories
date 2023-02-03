@@ -1,6 +1,11 @@
 From mathcomp Require Import all_ssreflect ssralg matrix ssrnum vector reals normedtype order boolp classical_sets.
 Require Import counterclockwise.
 
+(******************************************************************************)
+(*        conv t a b := t *: a + (1 - t) *: b where a,b : lmodType R          *)
+(*     between x y z := x \in [y,z]                                           *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -33,16 +38,16 @@ move=>ge0; apply/andP; split; rewrite leNgt; apply/negP=>ti; move:ge0.
 by move:(ti); rewrite -subr_lt0=>t1'; rewrite nmulr_lge0// =>t0; move:(lt_trans (le_lt_trans t0 ltr01) ti); rewrite ltxx.
 Qed.
 
-Lemma in01_onem t : in01 t = in01 (1-t).
+Lemma in01_onem t : in01 t = in01 (1 - t).
 Proof. by rewrite 2!in01M_ge0 opprB addrCA subrr addr0 mulrC. Qed.
 
-Lemma in01M t u : in01 t -> in01 u -> in01 (t*u).
+Lemma in01M t u : in01 t -> in01 u -> in01 (t * u).
 Proof.
 move=>/andP[t0 t1]/andP[u0 u1]; apply/andP; split; first by apply mulr_ge0.
 by apply mulr_ile1.
 Qed.
 
-Lemma in01M1 t u : in01 t -> in01 u -> (t*u == 1) = ((t == 1) && (u == 1)).
+Lemma in01M1 t u : in01 t -> in01 u -> (t * u == 1) = (t == 1) && (u == 1).
 Proof.
 move=>/andP[t0 t1]/andP[u0 u1].
 apply/idP/idP; last by move=>/andP[/eqP-> /eqP->]; rewrite mulr1.
@@ -55,16 +60,14 @@ Qed.
 
 Lemma in01_convA t u : in01 t -> in01 u -> in01 (t / (1-(1-t)*(1-u))).
 Proof.
-move=>t01 u01.
-have c0: 0 <= (1 - (1 - t) * (1 - u)).
-   by move:t01 u01; rewrite in01_onem=>t01; rewrite in01_onem=>/(in01M t01); rewrite in01_onem=>/andP[].
+move=> t01 u01.
+have c0 : 0 <= 1 - (1 - t) * (1 - u).
+  by move:t01 u01; rewrite in01_onem=>t01; rewrite in01_onem=>/(in01M t01); rewrite in01_onem=>/andP[].
 apply/andP; split.
    by apply divr_ge0=>//; move:t01=>/andP[].
-case e0: (1-(1-t)*(1-u) == 0).
-   move:e0=>/eqP->; rewrite invr0 mulr0; exact ler01.
-move:e0=>/negbT e0.
+have [->|e0] := eqVneq (1 - (1 - t) * (1 - u)) 0; first by rewrite invr0 mulr0; exact ler01.
 rewrite -{4}(divff e0).
-apply ler_wpmul2r; first by rewrite invr_ge0.
+rewrite ler_wpmul2r ?invr_ge0//.
 rewrite mulrBr mulr1 mulrBl -addrA opprD addrA subrr add0r opprB opprK -mulrBl -subr_ge0 -addrA subrr addr0; apply mulr_ge0; last by move:u01=>/andP[].
 by move:t01; rewrite in01_onem=>/andP[].
 Qed.
@@ -75,9 +78,10 @@ Section Conv.
 Variable R : realType.
 Variable E : lmodType R.
 
-Definition conv (t : R) (a b : E) := t *: a + (1-t) *: b.
+Definition conv (t : R) (a b : E) := t *: a + (1 - t) *: b.
 
 End Conv.
+
 Section Conv.
 Variable R : realType.
 Variable E : lmodType R.
@@ -102,6 +106,7 @@ Lemma convrl t a b : conv t a b = b + t *: (a-b).
 Proof. by rewrite convC convlr opprB addrCA subrr addr0. Qed.
 
 End Conv.
+
 Section Conv.
 Variable R : realType.
 Variable E : lmodType R.
@@ -216,7 +221,7 @@ Let Plane := pair_vectType (regular_vectType R) (regular_vectType R).
 Lemma det_conv (p p' q r : Plane) (t : R) :
   det (conv t p p') q r = conv t (det p q r : regular_lmodType R) (det p' q r).
 Proof.
-have sm: forall t u, t *: (u : regular_lmodType R) = t*u by [].
+have sm t' u : t' *: (u : regular_lmodType R) = t' * u by [].
 rewrite/conv !sm -det_cyclique -[det p q r]det_cyclique -[det p' q r]det_cyclique 3!det_scalar_productE -2!scalar_productZL -scalar_productDl; congr scalar_product.
 rewrite 2!scalerBr -!addrA; congr GRing.add.
 rewrite !addrA [-_ + _]addrC -addrA; congr GRing.add.
@@ -250,10 +255,10 @@ exists (1 - ordonnee r / ordonnee q)=>//.
 - by rewrite -mulrA [_^-1*_]mulrC divff // mulr1.
 Qed.
 
-Definition between (x y z : Plane) := (det x y z == 0)%R &&
-  (0%R <= scalar_product (x - y) (z - y)) &&
-  (0%R <= scalar_product (x - z) (y - z)) &&
-  ((y == z) ==> (x == z)).
+Definition between (x y z : Plane) := [&& (det x y z == 0)%R,
+  (0%R <= scalar_product (x - y) (z - y)) ,
+  (0%R <= scalar_product (x - z) (y - z)) &
+  ((y == z) ==> (x == z))].
 
 Lemma between_conv x y z : between x y z <->
   exists t, in01 t && (x == conv t y z).
@@ -269,21 +274,22 @@ have zye: forall t (y z: Plane), t *: y + (1-t) *: z - y = (1-t) *: (z-y).
 have yze: forall t (y z: Plane), t *: y + (1-t) *: z - z = t *: (y-z).
    by move=>t y' z'; rewrite -addrA scalerBr; congr +%R; rewrite scalerBl scale1r [_-_*:_]addrC -addrA subrr addr0.
 split.
-   rewrite det_cyclique=>/andP [/andP [/eqP/det0_aligned]]; case; first by move=> yz'; move:yz' yz=>->; rewrite eqxx.
+   rewrite det_cyclique =>/and3P[/eqP/det0_aligned]; case; first by move=> yz'; move:yz' yz=>->; rewrite eqxx.
    move=>[t <-].
    rewrite yze zye 2!scalar_productZL=> yp zp; exists t; apply/andP; split=>//.
    apply/andP; split.
       by move:zp; rewrite pmulr_lge0//; apply scalar_productrr_gt0; rewrite subr_eq0.
     by move:yp; rewrite pmulr_lge0 ?subr_ge0//; apply scalar_productrr_gt0; rewrite subr_eq0 eq_sym.
 move=>[t] /andP [/andP [t0 t1]] /eqP->.
-rewrite yze zye 2!scalar_productZL -andbA; apply/andP; split.
-   by rewrite det_cyclique; apply/eqP; apply det0_aligned; right; exists t.
-by apply/andP; split; apply mulr_ge0=>//; first (by rewrite subr_ge0); apply scalar_productrr_ge0.
+rewrite yze zye 2!scalar_productZL; apply/and3P; split.
+- by rewrite det_cyclique; apply/eqP; apply det0_aligned; right; exists t.
+- by rewrite mulr_ge0// ?subr_ge0// scalar_productrr_ge0.
+- by rewrite mulr_ge0// scalar_productrr_ge0.
 Qed.
 
 Lemma betweenC (a b c : Plane) : between a b c = between a c b.
 Proof.
-rewrite/between det_inverse -det_cyclique oppr_eq0 -!andbA; congr andb; rewrite !andbA; congr andb.
+rewrite /between det_inverse -det_cyclique oppr_eq0; congr andb; rewrite !andbA; congr andb.
    by apply andbC.
 by rewrite eq_sym; apply implyb_id2l=>/eqP->.
 Qed.

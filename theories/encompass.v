@@ -25,6 +25,7 @@ Fixpoint encompass_aux (l l' : seq plane) : bool :=
   | t1 :: nil => true
   | t1 :: ((t2 :: l') as l'') => all_left t1 t2 l && encompass_aux l l''
   end.
+
 Definition encompass (l s : seq plane) :=
   match l with
   | nil => false
@@ -37,7 +38,7 @@ Definition convexHullSpec (l1 l2 : seq plane) :=
 (* TOTHINK: replace encompass : seq -> seq -> bool by a predicate
    seq -> plane -> bool? *)
 
-Lemma encompass_aux_all (l l' : seq plane) : encompass_aux l l' = 
+Lemma encompass_aux_all (l l' : seq plane) : encompass_aux l l' =
   (l' != [::]) && all (fun x => encompass_aux [:: x] l') l.
 Proof.
 elim: l'=>// a'; case=>[ _ | b' l' IHl'].
@@ -154,10 +155,10 @@ move=>/uniqP; move=>/(_ (GRing.zero _)) lu; apply/idP/idP.
       by move=>/eqP; rewrite eqSS=>/eqP ie; subst i; move:jk=>/(leq_trans (leqnSn _)); rewrite ltnn.
    move=>ij.
    apply (@Ax5 _ l`_i.+1 _ l`_k).
-   - (apply sD=>//; first by apply (leq_trans ij); apply (leq_trans (leqnSn _))); apply/negPn=>/eqP ie; subst j.      
+   - (apply sD=>//; first by apply (leq_trans ij); apply (leq_trans (leqnSn _))); apply/negPn=>/eqP ie; subst j.
       by move:ij=>/(leq_trans (leqnSn _)); rewrite ltnn.
    by move:ij; rewrite ltnn.
-   - (apply sD=>//; first by apply (leq_trans ij); apply (leq_trans (leqnSn _))); apply/negPn=>/eqP ie; subst k.      
+   - (apply sD=>//; first by apply (leq_trans ij); apply (leq_trans (leqnSn _))); apply/negPn=>/eqP ie; subst k.
       by move:jk=>/(leq_trans (leqnSn _))/(leq_trans ij)/(leq_trans (leqnSn _)); rewrite ltnn.
    by move:jk=>/(leq_trans (leqnSn _))/(leq_trans ij); rewrite ltnn.
    - (apply sD=>//; first by apply (leq_trans ij); apply (leq_trans (leqnSn _))); apply/negPn.

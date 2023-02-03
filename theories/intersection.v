@@ -26,13 +26,15 @@ Definition separate (a b c d : Plane) := (det a b c * det a b d <= 0) &&
     (between a c d || between b c d || (between c a b && between d a b))).
 
 Lemma separateCl (a b c d : Plane) : separate a b c d = separate b a c d.
-Proof.  rewrite/separate 2![det _ b _]det_inverse mulrN mulNr opprK -2![det a _ _]det_cyclique 2!oppr_eq0 2![_ _ a b]betweenC eq_sym. congr (_ && _ && (_ ==> _ ==> _ ==> (_ || _))).
+Proof.
+rewrite/separate 2![det _ b _]det_inverse mulrN mulNr opprK -2![det a _ _]det_cyclique 2!oppr_eq0 2![_ _ a b]betweenC eq_sym. congr (_ && _ && (_ ==> _ ==> _ ==> (_ || _))).
    by apply implyb_id2l=>/eqP->.
 by apply orbC.
 Qed.
 
 Lemma separateCr (a b c d : Plane) : separate a b c d = separate a b d c.
-Proof. rewrite/separate mulrC ![_ _ c d]betweenC; congr andb.
+Proof.
+rewrite/separate mulrC ![_ _ c d]betweenC; congr andb.
 by rewrite -Bool.implb_curry andbC Bool.implb_curry andbC.
 Qed.
 
