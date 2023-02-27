@@ -8,6 +8,10 @@ Unset Printing Implicit Defensive.
 Import Order.POrderTheory Order.TotalTheory.
 Local Open Scope order_scope.
 
+(******************************************************************************)
+(*   Zp_succ (i : 'I_n) == the ordinal i.+1 : 'I_n                            *)
+(******************************************************************************)
+
 Definition Zp_succ p : 'I_p -> 'I_p :=
   match p with
     0 => id
@@ -16,6 +20,9 @@ Definition Zp_succ p : 'I_p -> 'I_p :=
 
 Lemma Zp_succE n (i : 'I_n) : val (Zp_succ i) = i.+1 %% n.
 Proof. by case: n i => // -[]. Qed.
+
+Lemma Zp_succ_max n : Zp_succ (@ord_max n) = ord0.
+Proof. by apply: val_inj => /=; rewrite modnn. Qed.
 
 Lemma subseq_iota (n m : nat) (l : seq nat) : subseq l (iota n m) =
   (l == [::]) || (n <= nth 0 l 0)%N &&
@@ -141,8 +148,7 @@ have kl: k %% size l < size l.
 move: (@filter_incl_surj _ _ _ _ _ fi fh (Ordinal kl) Pkl)=>[[a alt] /(congr1 val)/= ke].
 (*Way too long*)
 destruct i' as [i' i'lt].
-move:(i'lt); rewrite leq_eqVlt=>/orP; case.
-   move=>/eqP ie.
+move:(i'lt); rewrite leq_eqVlt => /predU1P[ie|].
    move:ikj; rewrite ie eq_refl mul1n.
    case klt: (k < size l).
       move:(alt); rewrite -{1}ie leq_eqVlt=>/orP; case.
@@ -153,9 +159,8 @@ move:(i'lt); rewrite leq_eqVlt=>/orP; case.
          by move: (lt_irreflexive (f (Ordinal i'lt)))=>/negbT/negP; apply.
       rewrite ltnS=>ai' /andP[fik _].
       have/fh fai:Ordinal alt < Ordinal i'lt by [].
-      move:(ltn_trans fai fik); rewrite/= -ke modn_small ?klt// =>kk.
-      have: k < k by [].
-      by rewrite lt_irreflexive.
+      move:(ltn_trans fai fik); rewrite/= -ke modn_small ?klt//.
+      by rewrite ltnn.
    move:klt; rewrite ltNge=>/negbT/negbNE lk.
    move=>/andP[_]; rewrite addnC -ltn_subLR// =>kf.
    have kmod: (k %% size l = k - size l)%N.
@@ -209,43 +214,25 @@ Definition ereal_blatticeMixin :
   Order.BLattice.mixin_of (Order.POrder.class (@ereal_porderType R)).
 exists (-oo); exact leNye.
 Defined.
-Canonical ereal_blatticeType := BLatticeType _ ereal_blatticeMixin.
+Canonical ereal_blatticeType := BLatticeType (\bar R) ereal_blatticeMixin.
 
 Definition ereal_tblatticeMixin :
   Order.TBLattice.mixin_of (Order.POrder.class (ereal_blatticeType)).
 exists (+oo); exact leey.
 Defined.
-Canonical ereal_tblatticeType := TBLatticeType _ ereal_tblatticeMixin.
+Canonical ereal_tblatticeType := TBLatticeType (\bar R) ereal_tblatticeMixin.
 
 (* Note: Should be generalized to tbLatticeType+orderType, but such a structure is not defined. *)
-Lemma ereal_joins_lt (J : Type) (r : seq J) (P : {pred J})
-  (F : J -> \bar R) (u : \bar R) :
-  -oo < u ->
-  (forall x : J, P x -> F x < u) ->
-  @BigOp.bigop (@Order.BLattice.sort ereal_display ereal_blatticeType) J
-               (@Order.bottom ereal_display ereal_blatticeType) r
-               (fun x : J =>
-                @BigBody
-                  (@Order.Lattice.sort ereal_display
-                     (@Order.BLattice.latticeType ereal_display ereal_blatticeType)) J x
-                  (@Order.join ereal_display (@Order.BLattice.latticeType ereal_display ereal_blatticeType))
-                  (P x) (F x)) < u
-.
+Lemma ereal_joins_lt
+    (J : Type) (r : seq J) (P : {pred J}) (F : J -> \bar R) (u : \bar R) :
+    -oo < u ->
+  (forall x, P x -> F x < u) -> \join_(x <- r | P x) F x < u.
 Proof. by move=>u0 ltFm; elim/big_rec: _ => // i x Px xu; rewrite ltUx ltFm. Qed.
 
-Lemma ereal_meets_gt (J : Type) (r : seq J) (P : {pred J})
-  (F : J -> \bar R) (u : \bar R) :
+Lemma ereal_meets_gt
+  (J : Type) (r : seq J) (P : {pred J}) (F : J -> \bar R) (u : \bar R) :
   u < +oo ->
-  (forall x : J, P x -> u < F x) ->
-  u < @BigOp.bigop (@Order.BLattice.sort ereal_display ereal_tblatticeType) J
-               (@Order.top ereal_display ereal_tblatticeType) r
-               (fun x : J =>
-                @BigBody
-                  (@Order.Lattice.sort ereal_display
-                     (@Order.BLattice.latticeType ereal_display ereal_tblatticeType)) J x
-                  (@Order.meet ereal_display (@Order.BLattice.latticeType ereal_display ereal_tblatticeType))
-                  (P x) (F x))
-.
+  (forall x, P x -> u < F x) -> u < \meet_(x <- r | P x) F x.
 Proof. by move=>u0 ltFm; elim/big_rec: _ => // i x Px xu; rewrite ltxI ltFm. Qed.
 
 End ereal_tblattice.
