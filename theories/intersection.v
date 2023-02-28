@@ -1,6 +1,11 @@
 Require Export counterclockwise conv encompass preliminaries.
 From mathcomp Require Import all_ssreflect ssralg matrix ssrnum vector reals normedtype order boolp classical_sets constructive_ereal.
 
+(******************************************************************************)
+(*  separated a b c d == true if a = b or (ab) intersects [c,d]               *)
+(*  intersect a b c d == true if [a, b] and [c, d] intersect                  *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -19,17 +24,19 @@ Section Plane.
 Variable R : realType.
 Let Plane := Plane R.
 
-(*Returns true iff a = b or the line going through a and b and [c, d] intersect *)
 Definition separate (a b c d : Plane) := (det a b c * det a b d <= 0) &&
   ((a == b) ==> between a c d) &&
   ((det a b c == 0) ==> (det a b d == 0) ==> (a != b) ==>
-    (between a c d || between b c d || (between c a b && between d a b))).
+    [|| between a c d, between b c d | (between c a b && between d a b)]).
 
 Lemma separateCl (a b c d : Plane) : separate a b c d = separate b a c d.
 Proof.
-rewrite/separate 2![det _ b _]det_inverse mulrN mulNr opprK -2![det a _ _]det_cyclique 2!oppr_eq0 2![_ _ a b]betweenC eq_sym. congr (_ && _ && (_ ==> _ ==> _ ==> (_ || _))).
-   by apply implyb_id2l=>/eqP->.
-by apply orbC.
+rewrite/separate 2![det _ b _]det_inverse mulrN mulNr opprK.
+rewrite -2![det a _ _]det_cyclique 2!oppr_eq0 eq_sym.
+rewrite orbA (orbC (_ a c d)) -orbA.
+congr (_ && _ && (_ ==> _ ==> _ ==> (_ || _))).
+- by apply implyb_id2l=>/eqP->.
+- by rewrite !(@betweenC _ _ a b).
 Qed.
 
 Lemma separateCr (a b c d : Plane) : separate a b c d = separate a b d c.
@@ -38,7 +45,6 @@ rewrite/separate mulrC ![_ _ c d]betweenC; congr andb.
 by rewrite -Bool.implb_curry andbC Bool.implb_curry andbC.
 Qed.
 
-(* Returns true iff [a, b] and [c, d] intersect *)
 Definition intersect (a b c d : Plane) := separate a b c d && separate c d a b.
 
 Lemma intersectCl (a b c d : Plane) : intersect a b c d = intersect b a c d.
@@ -56,8 +62,10 @@ wlog abc0: a b c d / 0 <= det a b c.
    case ge0: (0 <= det a b c); first by apply h.
    move:ge0=>/negP/negP; rewrite leNgt -oppr_gt0 -det_inverse -det_cyclique negbK intersectCl=>/ltW ge0 bacd.
    by move:(h _ _ _ _ ge0 bacd)=>[p]; rewrite betweenC=>pb; exists p.
-case ab: (a == b); first by move=>/andP[/andP[/andP[_]]]; rewrite ab/==>acd _ _; exists a; rewrite betweenl.
-case cd: (c == d); first by move=>/andP[_]/andP[/andP[_]]; rewrite cd/==>cab _; exists c; rewrite betweenl andbT.
+case ab: (a == b).
+  by move=>/andP[/andP[/andP[_]]]; rewrite ab/==>acd _ _; exists a; rewrite betweenl.
+case cd: (c == d).
+  by move=>/andP[_]/andP[/andP[_]]; rewrite cd/==>cab _; exists c; rewrite betweenl andbT.
 move=>/andP[/andP [/andP[absep _] ab0]] /andP[/andP[cdsep _] cd0].
 move: abc0; rewrite le0r => /orP[|].
    move=>/eqP/det0_aligned; case; first by move=>abe; move:ab; rewrite abe eqxx.
@@ -65,9 +73,10 @@ move: abc0; rewrite le0r => /orP[|].
    case tlt: ((1-t) * t < 0).
       rewrite nmulr_rge0// -expr2=>badle.
       have-> : (det b a d = 0) by apply/eqP; rewrite -sqrf_eq0; apply/eqP/le_anti/andP; split=>//; apply sqr_ge0.
-      rewrite 2!mulr0 oppr0 eqxx/= =>/orP[|]; last by move=>/andP[acd _]; exists a; rewrite betweenl.
-      move=>/orP[|] cdb; first by exists (a <| t |> b); rewrite betweenl andbT.
+      rewrite 2!mulr0 oppr0 eqxx/= =>/or3P[| |]; last first.
+        by move=>/andP[acd _]; exists a; rewrite betweenl.
       by exists d; rewrite betweenr andbT.
+      by move=> cdb; exists (a <| t |> b); rewrite betweenl andbT.
    move=>_ _; exists (a <| t |> b); rewrite betweenl andbT; apply between_conv.
    by exists t; rewrite eqxx andbT in01M_ge0 leNgt mulrC tlt.
 move:ab0=> _ abc; move:absep; rewrite pmulr_rle0// =>abd.
@@ -91,11 +100,10 @@ rewrite det_conv 2![det _ c d]det_cyclique addr_eq0 2!sm=>/eqP udetE.
 move:cdsep; rewrite -(nmulr_rge0 _ u01) mulrACA udetE mulNr oppr_ge0 -expr2=>det2_le0.
 have /eqP cdb0: det c d b == 0 by rewrite -(mulrI_eq0 _ u1) -sqrf_eq0; apply/eqP/le_anti/andP; split=>//; apply sqr_ge0.
 move:udetE=>/eqP; rewrite cdb0 mulr0 oppr0 mulrI_eq0// =>/eqP cda0.
-move:cd0; rewrite cdb0 cda0 eqxx cd/= =>/orP[|].
-   2: by move=>/andP[acd _]; exists a; rewrite betweenl.
-move=> /orP[cab|dab].
-   by exists c; rewrite betweenl andbT.
-by exists d; rewrite betweenr andbT.
+move:cd0; rewrite cdb0 cda0 eqxx cd/= =>/or3P[cab|dab|]; last first.
+- by move=>/andP[acd _]; exists a; rewrite betweenl.
+- by exists d; rewrite betweenr andbT.
+- by exists c; rewrite betweenl andbT.
 Qed.
 
 Lemma intersect_complete a b c d :
@@ -129,19 +137,19 @@ move=>tu.
 move:pe'; rewrite -{1}ce -{1}de /conv 3![(_ - _) *: b]scalerBl scale1r 3![_ *: _ + (_ - _)]addrCA -3!scalerBr 2![_ *: (_ + _ *: _)]scalerDr addrACA -scalerDl [u+(1-u)]addrCA subrr addr0 scale1r 2!scalerA -scalerDl=>/addrI/eqP.
 rewrite -subr_eq0 -scalerBl scaler_eq0 2!subr_eq0 ab orbF=>tconv.
 case t0: (t' < 0).
-   apply/orP; left; apply/orP; right.
-   apply/between_depl; exists (a-b), t', u'; rewrite -ce -de 2!convrl 2!eqxx 2!andbT nmulr_rle0//.
-   move:u01 tconv=>/andP[u0]; rewrite -[u<=1]subr_ge0 le0r subr_eq0 -invr_gt0 => /orP[|].
-      by move=>/eqP<-; rewrite subrr mul1r mul0r addr0=>/eqP te; move:t01=>/andP[]; rewrite te leNgt t0.
-   move=>ugt0.
-   have un0: (1-u)^-1 != 0 by apply/negP=>/eqP ue; move:ugt0; rewrite ue ltxx.
-   move:un0 (un0); rewrite {1}invr_eq0=>un0 /rregP ureg.
-   rewrite -subr_eq0 -(mulIr_eq0 _ ureg) opprD addrA mulrBl mulrAC divff// mul1r subr_eq0=>/eqP<-; apply mulr_ge0; last by apply ltW.
-   apply addr_ge0; first by move:t01=>/andP[t0' _].
-   by rewrite -mulrN mulr_ge0 // oppr_ge0 ltW.
+  apply/or3P/Or32.
+  apply/between_depl; exists (a-b), t', u'; rewrite -ce -de 2!convrl 2!eqxx 2!andbT nmulr_rle0//.
+  move:u01 tconv=>/andP[u0]; rewrite -[u<=1]subr_ge0 le0r subr_eq0 -invr_gt0 => /orP[|].
+     by move=>/eqP<-; rewrite subrr mul1r mul0r addr0=>/eqP te; move:t01=>/andP[]; rewrite te leNgt t0.
+  move=>ugt0.
+  have un0: (1-u)^-1 != 0 by apply/negP=>/eqP ue; move:ugt0; rewrite ue ltxx.
+  move:un0 (un0); rewrite {1}invr_eq0=>un0 /rregP ureg.
+  rewrite -subr_eq0 -(mulIr_eq0 _ ureg) opprD addrA mulrBl mulrAC divff// mul1r subr_eq0=>/eqP<-; apply mulr_ge0; last by apply ltW.
+  apply addr_ge0; first by move:t01=>/andP[t0' _].
+  by rewrite -mulrN mulr_ge0 // oppr_ge0 ltW.
 move:t0=>/negbT; rewrite -leNgt=>t0.
 case u1: (1 < u').
-   rewrite -orbA; apply/orP; left.
+   apply/or3P/Or31.
    apply/between_depl; exists (b - a), (1 - t'), (1 - u'); rewrite -2!convlr ce de 2!eqxx 2!andbT.
    move:u01 tconv=>/andP; rewrite le0r=>[[/orP[|]]].
       move=>/eqP-> _; rewrite subr0 mul0r mul1r add0r=>/eqP tu'.
@@ -154,18 +162,17 @@ case u1: (1 < u').
    apply (le_trans t1); rewrite -subr_ge0 addrAC -opprB -mulrN1 -mulrDr [-1+_]addrC.
    by rewrite mulr_ge0// subr_ge0// -subr_le0 ltW.
 move:u1=>/negbT; rewrite -leNgt=>u1.
-apply/orP; right; apply/andP; split; apply between_conv.
+apply/or3P/Or33.
+apply/andP; split; apply between_conv.
   by exists t'; rewrite ce eqxx andbT /in01 t0/= (le_trans tu).
 by exists u'; rewrite de eqxx andbT /in01 u1 (le_trans t0).
 Qed.
 
-Definition oriented (p q r : Plane) := 0 <= det p q r.
-
 Lemma is_left_oriented (p q r : Plane) :
-  encompass.is_left oriented p q r = oriented p q r.
+  encompass.is_left (@wccw R) p q r = wccw p q r.
 Proof.
 apply/idP/idP; last by rewrite/encompass.is_left; move=>->; rewrite !orbT.
-by move=>/or3P[| |//] /eqP re; subst r; rewrite /oriented det_cyclique;
+by move=>/or3P[| |//] /eqP re; subst r; rewrite /wccw det_cyclique;
   [rewrite det_cyclique |]; rewrite det_alternate.
 Qed.
 
@@ -198,12 +205,12 @@ Qed.
 Lemma hull_border_no_intersection (l : seq Plane) (a b : Plane) :
   (3 <= size l)%N ->
   uniq l ->
-  encompass (ccw (R:=R)) l l ->
-  [forall i : 'I_(size l), ~~ intersect l`_i l`_(Zp_succ i) a b] ->
-    (forall t : R, in01 t ->
+  encompass (@ccw R) l l ->
+  [forall i : 'I_(size l), ~~ intersect l`_i l`_i+1mod a b] ->
+    (forall t, in01 t ->
       encompass (ccw (R:=R)) [:: a <| t |> b] l) \/
-    (forall t : R, in01 t ->
-      ~~ encompass oriented [:: a <| t |> b] l).
+    (forall t, in01 t ->
+      ~~ encompass (@wccw R) [:: a <| t |> b] l).
 Proof.
 have sm t u : t *: (u : regular_lmodType R) = t * u by [].
 move=> ls /uniqP lu ll /forallP lab.
@@ -216,10 +223,10 @@ rewrite asbool_imply negb_imply 2!asboolb negbK => /andP[u01 luab].
 (* We have two points, exactly one of them being encompassed by l,
    we may assume that they are the ends of the segment. *)
 wlog : a b t u lab t01 ltab u01 luab / (t == 0) && (u == 1).
-   move=>/(_ (a <| u |> b) (a <| t |> b) 0 1); apply.
-   - move=>i.
-     apply/negP=>/intersect_correct[p]/andP[pl pab].
-     move:(lab i)=>/negP; apply; apply intersect_complete.
+   move=> /(_ (a <| u |> b) (a <| t |> b) 0 1); apply.
+   - move=> i.
+     apply/negP => /intersect_correct[p]/andP[pl pab].
+     move: (lab i) => /negP; apply; apply intersect_complete.
      exists p; apply/andP; split=>//; refine (between_trans _ _ pab).
        by apply between_conv; eexists; apply/andP; split => //.
      by apply between_conv; eexists; apply/andP; split => //.
@@ -232,15 +239,14 @@ move=>/andP[/eqP t0 /eqP u1]; subst t u; clear t01 u01.
 move:ltab luab; rewrite conv0 conv1 => lb la.
 (* We define I = \{t \in R, b <| t |> a is encompassed by l\}.
    We show that I is not empty and bounded. *)
-set I := [set t | in01 t && encompass oriented [:: b <| t |> a] l]%classic.
+set I := [set t | in01 t && encompass (@wccw R) [:: b <| t |> a] l]%classic.
 have I0 : I 0 by apply/andP; split; [apply in010 | rewrite conv0 ].
 have Ib : has_sup I.
-   split.
-      by exists 0.
-   by exists 1=>x /andP[/andP[_]].
-move:la; rewrite encompass_all_index l0/= =>/forallP.
+   split; first by exists 0.
+   by exists 1 => x /andP[/andP[_]].
+move: la; rewrite encompass_all_index l0/= =>/forallP.
 setoid_rewrite andbT.
-setoid_rewrite is_left_oriented; rewrite /oriented => la.
+setoid_rewrite is_left_oriented; rewrite /wccw => la.
 (* All constraints being a large inequality, they are all satisfied by sup I. *)
 have lt (i : 'I_(size l)) : 0 <= det l`_i l`_(Zp_succ i) (b <| sup I |> a).
    rewrite leNgt -det_cyclique det_conv convrl sm -opprB mulrN subr_lt0; apply/negP=>liI.
@@ -252,7 +258,7 @@ have lt (i : 'I_(size l)) : 0 <= det l`_i l`_(Zp_succ i) (b <| sup I |> a).
    move:abl0 (abl0); rewrite {1}lt0r=>/andP[abl0 _]; rewrite -invr_gt0=>abl_gt0.
    move:(liI); rewrite -subr_gt0 -(pmulr_lgt0 _ abl_gt0) mulrBl -mulrA divff// mulr1=>eps0.
    move: (sup_adherent eps0 Ib)=>[t]/andP[t01]; rewrite encompass_all_index l0/= =>/forallP/(_ i).
-   rewrite andbT is_left_oriented/oriented -det_cyclique det_conv convrl sm -opprB mulrN -(pmulr_lge0 _ abl_gt0) mulrBl -mulrA divff// mulr1 subr_ge0=>lit.
+   rewrite andbT is_left_oriented /wccw -det_cyclique det_conv convrl sm -opprB mulrN -(pmulr_lge0 _ abl_gt0) mulrBl -mulrA divff// mulr1 subr_ge0=>lit.
    by rewrite opprB addrCA subrr addr0=>/(le_lt_trans lit); rewrite ltxx.
 have I1: sup I <= 1.
    apply sup_le_ub; first by exists 0.
@@ -266,7 +272,7 @@ have : [exists i : 'I_(size l), det l`_i l`_(Zp_succ i) (b <| sup I |> a) <= 0].
   (* Each inequality defines a quantity by which we may exceed sup I without falsifying it.
      The inequalities being strict, these quantities are all positive, hence their mini too.
      Alas, R has no maximum, and hence min has no neutral elemnt, so we work in \bar R. *)
-  set t := \meet_(i : 'I_(size l) | 0 < det a l`_i l`_(Zp_succ i) - det b l`_i l`_(Zp_succ i))
+  set t := \meet_(i < size l | 0 < det a l`_i l`_(Zp_succ i) - det b l`_i l`_(Zp_succ i))
     ((det l`_i l`_(Zp_succ i) a) / (det l`_i l`_(Zp_succ i) a - det l`_i l`_(Zp_succ i) b))%:E.
   have It : ((sup I)%:E < t `&` 1%:E)%O.
     rewrite ltxI lte_fin I1 andbT ereal_meets_gt// ?ltey//.
@@ -291,7 +297,7 @@ have : [exists i : 'I_(size l), det l`_i l`_(Zp_succ i) (b <| sup I |> a) <= 0].
     by apply ltW; rewrite invr_gt0 -2![det l`_i _ _]det_cyclique.
   apply sup_upper_bound; first by [].
   apply/andP; split; first by [].
-  rewrite encompass_all_index l0/=; apply/forallP=>i; rewrite is_left_oriented andbT/oriented -det_cyclique det_conv convrl sm -opprB mulrN subr_ge0.
+  rewrite encompass_all_index l0/=; apply/forallP=>i; rewrite is_left_oriented andbT /wccw -det_cyclique det_conv convrl sm -opprB mulrN subr_ge0.
   have [/[dup]|able0] := ltP 0 (det a l`_i l`_(Zp_succ i) - det b l`_i l`_(Zp_succ i)).
     rewrite {1}lt0r -invr_gt0=>/andP[ab0 _] abgt0.
     rewrite -subr_ge0 -(pmulr_lge0 _ abgt0) mulrBl subr_ge0 -mulrA divff// mulr1 -lee_fin tfin leIx; apply/orP; left.

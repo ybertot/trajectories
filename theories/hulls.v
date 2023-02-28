@@ -1,6 +1,6 @@
 Require Export encompass conv.
 From mathcomp Require Import all_ssreflect all_algebra vector reals normedtype.
-From mathcomp Require Import classical_sets boolp.
+From mathcomp Require Import classical_sets boolp mathcomp_extra.
 Require Import counterclockwise.
 
 Set Implicit Arguments.
@@ -12,24 +12,25 @@ From mathcomp.zify Require Import zify.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
-Module Spec := SpecKA(ccw_KA).
-
-Section Dummy.
-Variable R : realType.
-Let Plane := Plane R.
-
-Open Scope ring_scope.
-Open Scope order_scope.
-
 Section hull_def.
 Local Open Scope classical_set_scope.
-Definition hull (T : lmodType R) (X : set T) : set T :=
+Local Open Scope ring_scope.
+Definition hull (R : realType) (T : lmodType R) (X : set T) : set T :=
   [set p : T | exists n (g : 'I_n -> T) (d : 'I_n -> R),
     [/\ (forall i, 0 <= d i)%R,
     (\sum_(i < n) d i = 1%R),
     g @` setT `<=` X &
     p = \sum_(i < n) (d i) *: (g i)] ].
 End hull_def.
+
+Module Spec := SpecKA(ccw_KA).
+
+Section spec.
+Variable R : realType.
+Let Plane := Plane R.
+
+Open Scope ring_scope.
+Open Scope order_scope.
 
 Section hull_prop.
 Local Open Scope classical_set_scope.
@@ -67,52 +68,59 @@ move=> H a [n [g [d [d0 d1 gX ae]]]]; exists n, g, d; split => //.
 by eapply subset_trans; first exact: gX.
 Qed.
 
-Lemma hull2 (x y : A) : hull [set x; y]%classic = ((fun t => x <| t |> y) @` `[0%R, 1%R])%classic.
+Lemma hull2 (x y : A) :
+  hull [set x; y]%classic = ((fun t => x <| t |> y) @` `[0%R, 1%R])%classic.
 Proof.
 rewrite eqEsubset; split; last first.
    move=> z [t /andP [t0 t1]] <-.
    rewrite bnd_simp in t0, t1.
-   exists 2%N, (fun i => if i == 0 then x else y), (fun i => if i == 0 then t else 1-t).
+   exists 2%N, (fun i => if i == 0 then x else y),
+               (fun i => if i == 0 then t else `1- t).
    split; first by case; case=>//= n _; rewrite subr_ge0.
    - by rewrite big_ord_recl big_ord1/= addrCA subrr addr0.
    - by move=>a[]; case; case=>/= [|n] _ _ <-; [left|right].
-   - by rewrite big_ord_recl big_ord1/=.
+   - by rewrite big_ord_recl big_ord1.
 move=>z [n][g][d][d0 d1 gxy ->].
-move:d1=>/esym/eqP; rewrite -subr_eq0 (bigID [pred i | g i == x])//= opprD addrCA addrC subr_eq0=>/eqP/esym=>d1.
+move:d1=>/esym/eqP; rewrite -subr_eq0 (bigID [pred i | g i == x])//= opprD.
+rewrite addrCA addrC subr_eq0=>/eqP/esym=>d1.
 exists (\sum_(i < n | g i == x) d i).
-   by rewrite inE; apply/andP; rewrite    2!bnd_simp {2}d1 -[(_<=1)%R]subr_ge0 opprB addrCA subrr addr0; split; apply sumr_ge0.
+   rewrite inE; apply/andP; rewrite 2!bnd_simp {2}d1 -[(_<=1)%R]subr_ge0 opprB.
+   by rewrite addrCA subrr addr0; split; apply sumr_ge0.
 rewrite/conv {2}d1 opprB addrCA subrr addr0 [RHS](bigID [pred i | g i == x])//=.
-congr (_ + _); rewrite scaler_suml; apply congr_big=>// i.
-   by move=>/eqP->.
-have/gxy: range g (g i) by [].
-by case=>->; rewrite ?eq_refl.
+congr (_ + _); rewrite scaler_suml; apply: congr_big=>// i.
+   by move=> /eqP ->.
+have /gxy[->|->//] : range g (g i) by [].
+by rewrite eqxx.
 Qed.
 
-Lemma hull_convex X : forall x y, (hull X) x -> (hull X) y -> hull [set x; y] `<=` hull X.
+Lemma hull_convex X : forall x y,
+  (hull X) x -> (hull X) y -> hull [set x; y] `<=` hull X.
 Proof.
-move=>+ + [n][g][d][d0 d1 gX->] [m][h][e][e0 e1 hX ->].
-rewrite hull2=>_ _ x [t] /andP; rewrite !bnd_simp -[(_ <= 1)%R]subr_ge0=>[[t0 t1]] <-.
-exists (n+m)%N, (fun i=> match split i with inl i => g i | inr i => h i end), (fun i=> match split i with inl i => t * (d i) | inr i => (1-t) * (e i) end); split.
+move=> + + [n][g][d][d0 d1 gX->] [m][h][e][e0 e1 hX ->].
+rewrite hull2=>_ _ x [t] /andP.
+rewrite !bnd_simp -[(_ <= 1)%R]subr_ge0 => [[t0 t1]] <-.
+exists (n + m)%N, (fun i=> match split i with inl i => g i | inr i => h i end),
+                  (fun i=> match split i with inl i => t * (d i)
+                                            | inr i => (`1- t) * e i end); split.
 - by move=>i; case: (split i)=>j; apply mulr_ge0.
-- rewrite big_split_ord/=.
-  have tonem: t + (1-t) = 1%R by rewrite addrCA subrr addr0.
-  rewrite -{3}tonem; congr GRing.add.
-    rewrite -{3}(mulr1 t) -{2}d1 mulr_sumr; apply congr_big=>// i _.
+- rewrite big_split_ord/= -{1}(add_onemK t); congr +%R.
+    rewrite -{3}(mulr1 t) -{1}d1 mulr_sumr; apply congr_big=>// i _.
     case: (splitP (lshift m i)).
       by move=>j ij; congr (_ * d _); apply val_inj.
-    by move=>j/=; case: i=>i ilt/= igt; exfalso; move:ilt; rewrite igt -{2}(addn0 n) ltn_add2l ltn0.
-  rewrite -{2}(mulr1 (1-t)) -{3}e1 mulr_sumr; apply congr_big=>// i _.
+    by move=> k/= ink; move: (ltn_ord i); rewrite ink -ltn_subRL subnn ltn0.
+  rewrite -{2}(mulr1 (`1- t)) -{1}e1 mulr_sumr; apply congr_big=>// i _.
   case: (splitP (rshift n i))=>/=.
-    by case=>j jlt/= jgt; exfalso; move:jlt; rewrite -jgt -{2}(addn0 n) ltn_add2l ltn0.
+    by move=> j/= nij; move: (ltn_ord j); rewrite -nij -ltn_subRL subnn ltn0.
   by move=>j /eqP; rewrite eqn_add2l=>/eqP ij; congr (_ * e _); apply val_inj.
 - by move=>y/= [i] _; case: split=>j <-; [ apply gX | apply hX ].
-- rewrite big_split_ord /conv; congr GRing.add; rewrite scaler_sumr; apply congr_big=>// i _; rewrite scalerA.
+- rewrite big_split_ord /conv; congr +%R; rewrite scaler_sumr;
+   apply congr_big => // i _; rewrite scalerA.
   + case: (splitP (lshift m i)).
-      by move=>j ij; congr (_ * d _ *: g _); apply val_inj.
-    by move=>j/=; case: i=>i ilt/= igt; exfalso; move:ilt; rewrite igt -{2}(addn0 n) ltn_add2l ltn0.
-  + case: (splitP (rshift n i))=>/=.
-      by case=>j jlt/= jgt; exfalso; move:jlt; rewrite -jgt -{2}(addn0 n) ltn_add2l ltn0.
-    by move=>j /eqP; rewrite eqn_add2l=>/eqP ij; congr (_ * e _ *: h _); apply val_inj.
+      by move=> j ij; congr (_ * d _ *: g _); apply val_inj.
+    by move=> k/= ink; move: (ltn_ord i); rewrite ink -ltn_subRL subnn ltn0.
+  + case: (splitP (rshift n i)) =>/=.
+      by move=> j/= nij; move: (ltn_ord j); rewrite -nij -ltn_subRL subnn ltn0.
+    by move=> j /eqP; rewrite eqn_add2l => /eqP ij; congr (_ * e _ *: h _); apply val_inj.
 Qed.
 
 End hull_prop.
@@ -156,7 +164,7 @@ have H3 a b c p : uniq [:: a; b; c] ->
    rewrite !big_ord_recr big_ord0 /= add0r.
    apply (scalerI cab).
    rewrite 2!scalerDr 3!scalerA 3!mulrA 3![det c a b * _]mulrC -3!mulrA divff// 3!mulr1.
-   apply/pair_eqP; apply/andP; split; apply/eqP; rewrite !develop_det /abscisse /ordonnee; cbn; ring.
+   apply/pair_eqP; apply/andP; split; apply/eqP; rewrite !develop_det /xcoord /ycoord; cbn; ring.
 move=> l p.
 elim: l=>// a; case=>// b; case=>// c; case.
    by move=>IHl abc _; apply H3.
@@ -276,7 +284,7 @@ wlog: l lu ls ll f f0 f1 i ilt / l`_i == 0%R.
 move=>/eqP li0; rewrite li0 det_sum; apply sumr_ge0=>[[j jlt]] _.
 rewrite det_scalar_productE 2!subr0 rotateZ scalar_productZR; apply mulr_ge0.
    apply f0.
-move:ll; rewrite encompass_all=>/andP[_ /allP ll].
+move:ll; rewrite encompassE =>/andP[_ /allP ll].
 have/ll: l`_(Ordinal jlt) \in l by rewrite mem_nth.
 rewrite encompass_all_index=>/andP[_] /forallP /(_ (Ordinal ilt))/=; rewrite andbT.
 rewrite li0// => /or3P[/eqP ->|/eqP ->|].
@@ -316,4 +324,4 @@ rewrite scaler_suml.
 by apply congr_big=>//j/eqP->.
 Qed.
 
-End Dummy.
+End spec.

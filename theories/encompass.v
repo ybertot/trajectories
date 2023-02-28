@@ -6,6 +6,11 @@ Require Export preliminaries preliminaries_hull axiomsKnuth.
 (*   encompass oriented s l == oriented is a ternary relation, s and l        *)
 (*                             are lists of points such that                  *)
 (*                             oriented l_i l_i.+1 s_k for all i and k        *)
+(*   encompass_aux oriented l h == h describes an open convex region that     *)
+(*                             contains l                                     *)
+(*   encompass oriented l h == h describes a convex hull for the set of       *)
+(*                             points l where the last segment is formed by   *)
+(*                             the last and first elements                    *)
 (******************************************************************************)
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
@@ -25,47 +30,46 @@ Hint Unfold is_left : core.
 
 Definition all_left (x y : plane) : seq plane -> bool := all (is_left x y).
 
-Fixpoint encompass_aux (l l' : seq plane) : bool :=
-  match l' with
+Fixpoint encompass_aux (l h : seq plane) : bool :=
+  match h with
   | nil => false
   | t1 :: nil => true
-  | t1 :: ((t2 :: l') as l'') => all_left t1 t2 l && encompass_aux l l''
+  | t1 :: ((t2 :: _) as h') => all_left t1 t2 l && encompass_aux l h'
   end.
 
-Definition encompass (s l : seq plane) :=
-  match l with
+Definition encompass (s h : seq plane) :=
+  match h with
   | nil => false
-  | t1 :: l' => encompass_aux s (last t1 l' :: l)
+  | t :: h' => encompass_aux s (last t h' :: h)
   end.
 
 Lemma encompassl0 l : encompass l [::] = false.
 Proof. by []. Qed.
 
-Definition convexHullSpec (l1 l2 : seq plane) :=
-  uniq l2 && all (mem l1) l2 && encompass l1 l2.
+Definition convexHullSpec (l h : seq plane) :=
+  uniq h && all (mem l) h && encompass l h.
 
 (* TOTHINK: replace encompass : seq -> seq -> bool by a predicate
    seq -> plane -> bool? *)
 
-Lemma encompass_aux_all (l l' : seq plane) : encompass_aux l l' =
-  (l' != [::]) && all (fun x => encompass_aux [:: x] l') l.
+Lemma encompass_auxE (l h : seq plane) :
+  encompass_aux l h = (h != [::]) && all (fun x => encompass_aux [:: x] h) l.
 Proof.
-elim: l'=>// a'; case=>[ _ | b' l' IHl'].
+elim: h =>// a'; case=> [ _ | b' l' IHl'].
    by elim: l.
 rewrite /= -/(encompass_aux l (b' :: l')) IHl' -all_predI; apply eq_all=>x.
 by rewrite /= andbT.
 Qed.
 
-Lemma encompass_all (l s : seq plane) : encompass s l =
-  (l != [::]) && all (fun x => encompass [:: x] l) s.
-Proof. by case: l =>// a l; rewrite {1}/encompass encompass_aux_all. Qed.
+Lemma encompassE (s h : seq plane) :
+  encompass s h = (h != [::]) && all (fun x => encompass [:: x] h) s.
+Proof. by case: h =>// a l; rewrite {1}/encompass encompass_auxE. Qed.
 
-Lemma encompass_aux_all_index (l l' : seq plane): encompass_aux l l' =
-  (l' != [::]) &&
-  [forall i : 'I_(size l'),
-    (Zp_succ i == 0%N :> nat) || all_left l'`_i l'`_(Zp_succ i) l].
+Lemma encompass_aux_all_index (l h : seq plane) :
+  encompass_aux l h = (h != [::]) &&
+    [forall i : 'I_(size h), (i+1mod == 0%N :> nat) || all_left h`_i h`_i+1mod l].
 Proof.
-elim: l'=>// a; case.
+elim: h=>// a; case.
    by move=>/= _; apply/esym/forallP => i; rewrite modn1 eq_refl.
 move=>b l' IHl' /=; rewrite -/(encompass_aux l (b :: l')) IHl' /=.
 apply/idP/idP => [/andP[Habl H]|/forallP H].
@@ -84,7 +88,7 @@ by rewrite modn_small ?ltnS// modn_small ?ltnS.
 Qed.
 
 Lemma encompass_all_index (l s : seq plane) : encompass s l =
-  (l != [::]) && [forall i : 'I_(size l), all_left l`_i l`_(Zp_succ i) s].
+  (l != [::]) && [forall i : 'I_(size l), all_left l`_i l`_i+1mod s].
 Proof.
 case: l => // a l /=.
 rewrite -/(encompass_aux s (a :: l)) encompass_aux_all_index.
@@ -122,7 +126,7 @@ Lemma encompassll_spec (l : seq plane) : uniq l ->
       (i < j < k)%N ==> oriented l`_i l`_j l`_k]]].
 Proof.
 move=> /uniqP-/(_ 0%R) lu; apply/idP/idP.
-  rewrite encompass_all => /andP[-> /allP] ll /=.
+  rewrite encompassE => /andP[-> /allP] ll /=.
   have sD i j : (i.+1 < size l)%N -> (j < size l)%N -> j != i -> j != i.+1 ->
       oriented l`_i l`_i.+1 l`_j.
     move=> isl jl ji jis.
@@ -163,7 +167,7 @@ move=> /uniqP-/(_ 0%R) lu; apply/idP/idP.
     apply: sD => //.
       by rewrite ltn_eqF// (ltn_trans _ jk)// (leq_trans _ ij).
     by rewrite ltn_eqF// ltnS (leq_trans _ (ltnW jk))// ltnW// (ltn_trans _ ij).
-rewrite encompass_all => /andP[l0 sD] /=; rewrite l0 /=.
+rewrite encompassE => /andP[l0 sD] /=; rewrite l0 /=.
 have id x : x \in l -> exists2 n, (n < size l)%N & l`_n = x.
    by move=> xl; exists (index x l); [rewrite index_mem|rewrite nth_index].
 apply/allP => _ /id[i il <-].

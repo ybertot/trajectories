@@ -18,10 +18,13 @@ Definition Zp_succ p : 'I_p -> 'I_p :=
   | q.+1 => fun i : 'I_q.+1 => inZp i.+1
   end.
 
-Lemma Zp_succE n (i : 'I_n) : val (Zp_succ i) = i.+1 %% n.
+Notation "n +1mod" := (Zp_succ n) (at level 2, left associativity,
+  format "n +1mod").
+
+Lemma Zp_succE n (i : 'I_n) : val (i +1mod) = i.+1 %% n.
 Proof. by case: n i => // -[]. Qed.
 
-Lemma Zp_succ_max n : Zp_succ (@ord_max n) = ord0.
+Lemma Zp_succ_max n : (@ord_max n)+1mod = ord0.
 Proof. by apply: val_inj => /=; rewrite modnn. Qed.
 
 Lemma subseq_iota (n m : nat) (l : seq nat) : subseq l (iota n m) =
@@ -137,7 +140,7 @@ Lemma filter_succ (T : eqType) (x : T) (l : seq T) (P : pred T) :
       (forall i : 'I_(size l'), nth x l (f i) = nth x l' i) ->
       {homo f : x0 y / x0 < y >-> x0 < y} ->
       forall (i' : 'I_(size l')) k,
-         (f i' < k < (f (Zp_succ i') + (i'.+1 == size l')*(size l))%N)%N ->
+         (f i' < k < (f i'+1mod + (i'.+1 == size l')*(size l))%N)%N ->
          ~~ P (nth x l (k %% size l)).
 Proof.
 (*Huh???*)
@@ -167,15 +170,17 @@ move:(i'lt); rewrite leq_eqVlt => /predU1P[ie|].
       rewrite -{1}[k](subnK lk) modnDr modn_small//.
       by apply (ltn_trans kf).
    move:ke; rewrite kmod=>ke.
-   have ie': val (Zp_succ (Ordinal i'lt)) = 0%N by move: ie i'lt {kf}=><- i'lt/=; apply modnn.
+   have ie' : val (Ordinal i'lt)+1mod = 0%N.
+     by move: ie i'lt {kf}=><- i'lt/=; apply modnn.
    destruct a as [| a].
       have ae: Zp_succ (Ordinal i'lt) = Ordinal alt by apply val_inj.
       by move: kf; rewrite ke -ae ltnn.
-   have /fh fia: Zp_succ (Ordinal i'lt) < Ordinal alt.
-      suff: val (Zp_succ (Ordinal i'lt)) < a.+1 by [].
+   have /fh fia : (Ordinal i'lt)+1mod < Ordinal alt.
+      suff: val (Ordinal i'lt)+1mod < a.+1 by [].
       by rewrite ie'; apply ltn0Sn.
-   have fai: f (Ordinal alt) < f (Zp_succ (Ordinal i'lt)) by (have: val (f (Ordinal alt)) < val (f (Zp_succ (Ordinal i'lt))) by rewrite/= -ke).
-   by move:(lt_trans fai fia); rewrite lt_irreflexive.
+   have fai: f (Ordinal alt) < f (Ordinal i'lt)+1mod.
+     by have: val (f (Ordinal alt)) < val (f (Ordinal i'lt)+1mod) by rewrite/= -ke.
+   by move:(lt_trans fai fia); rewrite ltxx.
 move=>i'lt'; move:ikj.
 case ile: ((Ordinal i'lt).+1 == size l').
    by move:ile=>/=/eqP ile; move:i'lt'; rewrite ile ltnn.
@@ -185,7 +190,7 @@ move:Pkl kl ke; rewrite modn_small// =>Pkl kl ke.
 move:fk kf; rewrite ke=>/(@homo_lt_total _ _ _ _ _ fh) ia /(@homo_lt_total _ _ _ _ _ fh) ai.
 have ia': (i' < a)%N by [].
 have ai': (a < i'.+1)%N.
-   have ai': val (Ordinal alt) < val (Zp_succ (Ordinal i'lt)) by [].
+   have ai': val (Ordinal alt) < val (Ordinal i'lt)+1mod by [].
    move:f fi fh alt i'lt ile {ia} ke i'lt' ai ai'; rewrite/Zp_succ -/l'; generalize (size l'); case=>// n _ _ _ /= _ _ _ _ i'lt _.
    by rewrite modn_small.
 by move: (leq_ltn_trans ia' ai'); rewrite ltnn.
@@ -210,6 +215,7 @@ Section ereal_tblattice.
 Variable (R : realDomainType).
 Local Open Scope ereal_scope.
 
+(* PRed to MathComp-Analysis: https://github.com/math-comp/analysis/pull/859 *)
 Definition ereal_blatticeMixin :
   Order.BLattice.mixin_of (Order.POrder.class (@ereal_porderType R)).
 exists (-oo); exact leNye.
@@ -221,6 +227,7 @@ Definition ereal_tblatticeMixin :
 exists (+oo); exact leey.
 Defined.
 Canonical ereal_tblatticeType := TBLatticeType (\bar R) ereal_tblatticeMixin.
+(* /PRed *)
 
 (* Note: Should be generalized to tbLatticeType+orderType, but such a structure is not defined. *)
 Lemma ereal_joins_lt

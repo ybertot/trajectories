@@ -1,12 +1,17 @@
 Require Export axiomsKnuth.
-From mathcomp Require Import all_ssreflect ssralg matrix ssrnum vector reals normedtype order.
+From mathcomp Require Import all_ssreflect ssralg matrix ssrnum vector reals.
+From mathcomp Require Import normedtype order.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 (******************************************************************************)
+(*                | 1 p_x p_y |                                               *)
+(*   det p q r == | 1 q_x q_y |                                               *)
+(*                | 1 r_x r_y |                                               *)
 (*   ccw p q r := counterclockwise                                            *)
+(*  wccw p q r := counterclockwise or aligned (0 <= det p q r)                *)
 (******************************************************************************)
 
 From mathcomp.algebra_tactics Require Import ring.
@@ -23,24 +28,26 @@ Definition Plane := pair_vectType (regular_vectType R) (regular_vectType R).
 
 (* ------------------ Definitions ------------------- *)
 
-Definition abscisse (p : Plane) : R := p.1.
-Definition ordonnee (p : Plane) : R := p.2.
+Definition xcoord (p : Plane) : R := p.1.
+Definition ycoord (p : Plane) : R := p.2.
 
 Definition get_coord (i : 'I_3) :=
   match val i with
-  | 0 => abscisse
-  | 1 => ordonnee
-  | _.+2 => fun=> 1
+  | 0 => xcoord
+  | 1 => ycoord
+  | _ => fun=> 1
   end.
 
-Definition get_pt (p q r : Plane) := fun j: 'I_3 => nth 0 [:: p; q; r] j.
+Definition get_pt (p q r : Plane) := fun j : 'I_3 => nth 0 [:: p; q; r] j.
 
 Let det_mx (p q r : Plane) :=
   \matrix_(i < 3, j < 3) get_coord i (get_pt p q r j).
 
 Definition det (p q r : Plane) : R := \det (det_mx p q r).
 
-Definition ccw (p q r : Plane) : bool := (0 < det p q r)%R.
+Definition ccw (p q r : Plane) : bool := 0 < det p q r.
+
+Definition wccw (p q r : Plane) := (0 <= det p q r)%R.
 
 Lemma direct_distincts (p q r : Plane) : ccw p q r -> p <> q.
 Proof.
@@ -55,19 +62,22 @@ Lemma det2 (R': comRingType) (M: 'M_2): (\det M: R') =
   M ord0 ord0 * M (lift ord0 ord0) (lift ord0 ord0) -
   M ord0 (lift ord0 ord0) * M (lift ord0 ord0) ord0.
 Proof.
-rewrite (expand_det_row M ord0) !big_ord_recl big_ord0 /cofactor !det_mx11 !mxE/= /bump /=/addn/addn_rec/= expr0 expr1 mul1r mulN1r mulrN addr0.
+rewrite (expand_det_row M ord0) !big_ord_recl big_ord0 /cofactor !det_mx11.
+rewrite !mxE/= /bump /= !(addn0,expr0,mul1r,add0n,addr0,expr1,mulN1r,mulrN)/=.
 congr (_ - (_ * M _ _)).
-by apply val_inj=>/=; rewrite /bump leqnn/=.
+exact: val_inj.
 Qed.
 
 Lemma develop_det (p q r: Plane): det p q r =
-  abscisse r * (ordonnee p - ordonnee q) -
-  ordonnee r * (abscisse p - abscisse q) +
-  abscisse p * ordonnee q - ordonnee p * abscisse q.
+  xcoord r * (ycoord p - ycoord q) -
+  ycoord r * (xcoord p - xcoord q) +
+  xcoord p * ycoord q - ycoord p * xcoord q.
 Proof.
-rewrite /det (expand_det_col (det_mx p q r) (lift ord0 (lift ord0 (@ord0 0)))) !big_ord_recl big_ord0 !mxE/= -!addrA; congr (_ * _ + _).
-   by rewrite /cofactor !det2 !mxE /get_coord/get_pt /=; ring.
-rewrite -mulrN; congr (_ * _ + _); by rewrite /cofactor !det2 !mxE /get_coord/get_pt /=; ring.
+rewrite /det (expand_det_col (det_mx p q r) (lift ord0 (lift ord0 (@ord0 0)))).
+rewrite !big_ord_recl big_ord0 !mxE/= -!addrA; congr (_ * _ + _).
+  by rewrite /cofactor !det2 !mxE /get_coord/get_pt /=; ring.
+by rewrite -mulrN; congr (_ * _ + _);
+  rewrite /cofactor !det2 !mxE /get_coord/get_pt /=; ring.
 Qed.
 
 (* ---------------- produit scalaire (avec le deuxième argument tourné de pi/2) ----------------- *)

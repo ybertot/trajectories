@@ -1,18 +1,12 @@
 From mathcomp Require Import all_ssreflect all_algebra vector reals ereal classical_sets boolp Rstruct.
 From infotheo Require Import convex Reals_ext.
+Require Import Reals.
+Local Close Scope R_scope.
 Require Import preliminaries.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory preliminaries.
 Import fdist convex.
 Local Open Scope ring_scope.
-
-Require Import Reals.
-Local Close Scope N_scope.
-Local Close Scope R_scope.
-Delimit Scope R_scope with coqR.
-Delimit Scope nat_scope with N.
-Delimit Scope int_scope with Z.
-Delimit Scope ring_scope with R.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -31,9 +25,7 @@ Defined.
 
 Lemma is_convex_setI (C D : {convex_set E}) : is_convex_set (C `&` D).
 Proof.
-apply/asboolP =>x y p [Cx Dx] [Cy Dy]; split.
-  by move/asboolP: (convex_setP C); apply.
-by move/asboolP: (convex_setP D); apply.
+by apply/asboolP=>x y p [Cx Dx] [Cy Dy]; split; [ move:(convex_setP C) | move:(convex_setP D)]; move=>/asboolP; apply.
 Qed.
 
 Lemma hullX (F : convType) (C : set E) (D : set F) : hull (C `*` D) = hull C `*` hull D.
@@ -41,71 +33,102 @@ Proof.
 rewrite eqEsubset; split.
    move=>+ [n][g][d][gCD]-> =>_.
    rewrite Convn_pair; split=>/=;
-      exists n; [exists (fst \o g) | exists (snd \o g)]; exists d; split=> // + [i] _ <- =>_ /=;
+      exists n; [exists (fst \o g) | exists (snd \o g)]; exists d; split=>// + [i] _ <- =>_ /=;
       (suff: ((C `*` D) (g i)) by move=>[]);
       by apply gCD; exists i.
 move=>[+ +][]/=[n][g][d][gC->][m][f][e][fD->]=>_ _.
-exists (n * m)%N, (fun i=> let (i, j) := split_prod i in (g i, f j)), (fdistmap (unsplit_prod (n:=m)) (d `x e)%fdist); split.
+exists (n * m)%nat, (fun i=> let (i, j) := split_prod i in (g i, f j)),
+                  (fdistmap (unsplit_prod (n:=m)) (d `x e)%fdist); split.
    move=>+ [i] _ <- =>_.
    by case: (split_prod i)=>a b; split; [apply gC | apply fD].
 rewrite Convn_pair/comp/=; congr pair; apply S1_inj; rewrite !S1_Convn big_prod_ord/=.
-  apply eq_big => // i _.
-  rewrite -(scale1pt (scalept _ _)) scaleptA// -(FDist.f1 e).
-  move: (@mulr_suml R_ringType _ (index_enum [finType of 'I_m]) (mem 'I_m)
-    (fun i => nneg_ff e i) (nneg_ff d i)); rewrite -RmultE => ->.
-  simple refine (let h : nneg_fun 'I_m := _ in _).
-     exists (fun j => nneg_ff e j * nneg_ff d i)%coqR=>j.
-     exact: ssrR.mulR_ge0.
-  have -> : (\sum_(j in 'I_m) (nneg_ff e j) * (nneg_ff d i) =
-             \sum_(i in 'I_m) nneg_f h i)%coqR.
-     by apply eq_big => // j _; rewrite fdist_prodE.
-  rewrite scalept_sum; apply eq_big=>// j _.
-  rewrite /h /= fdistmapE.
-  have -> : (\sum_(a in [finType of 'I_n * 'I_m] |
-                   a \in preim (@unsplit_prod _ m) (pred1 (Ordinal (unsplit_prodp i j))))
-             nneg_ff (fdist_prod d (fun=> e)) a =
-             \sum_(a in [finType of 'I_n * 'I_m] | a \in pred1 (i, j))
-             nneg_ff (fdist_prod d (fun=> e)) a)%coqR.
-     apply eq_big=>// k; congr andb; rewrite 3!inE.
-     by apply: (eqtype.inj_eq _ k (i, j)); exact: (can_inj (@unsplit_prodK _ _)).
-  rewrite (big_pred1 (i, j))// fdist_prodE/= ssrR.mulRC; congr (scalept _ (S1 (g _))).
-  by move: (unsplit_prodK (i, j)) => /(congr1 fst)/esym.
-rewrite (exchange_big_dep xpredT)//=; apply: eq_bigr => j _.
-rewrite -(scale1pt (scalept _ _)) scaleptA// -(FDist.f1 d).
-move: (@mulr_suml R_ringType _ (index_enum [finType of 'I_n]) (mem 'I_n)
-  (fun i=> nneg_ff d i) (nneg_ff e j)); rewrite -RmultE => ->.
-simple refine (let h : nneg_fun 'I_n := _ in _).
-   exists (fun i=> nneg_ff d i * nneg_ff e j)%coqR => i.
-   exact: ssrR.mulR_ge0.
-have -> : (\sum_(i in 'I_n) nneg_ff d i * nneg_ff e j = \sum_(i in 'I_n) nneg_f h i)%coqR.
+   apply eq_big=>// i _.
+   rewrite -(scale1pt (scalept _ _)) scaleptA//.
+   rewrite -(FDist.f1 e).
+   (* TODO: the next 5 lines should be a single rewrite. *)
+   move: (@mulr_suml R_ringType _ (index_enum [finType of 'I_m]) (mem 'I_m) (fun i=> Reals_ext.nneg_ff (FDist.f e) i) (Reals_ext.nneg_ff (FDist.f d) i))=>/=.
+   have -> : @GRing.mul R_ringType = Rdefinitions.RbaseSymbolsImpl.Rmult by [].
+   have -> : GRing.zero (GRing.Ring.zmodType R_ringType) = Rdefinitions.RbaseSymbolsImpl.R0 by [].
+   have -> : @GRing.add (GRing.Ring.zmodType R_ringType) = Rdefinitions.RbaseSymbolsImpl.Rplus by [].
+   move=> ->.
+   simple refine (let h : Reals_ext.nneg_fun 'I_m := _ in _).
+      exists (fun i0 =>
+        (Reals_ext.nneg_ff (FDist.f e) i0) *
+        (Reals_ext.nneg_ff (FDist.f d) i)) => j.
+      by apply ssrR.mulR_ge0; apply FDist.ge0.
+   have->: \big[Rplus/R0]_(i0 in 'I_m)
+        ((Reals_ext.nneg_ff (FDist.f e) i0) *
+        (Reals_ext.nneg_ff (FDist.f d) i)) =
+      \big[Rplus/R0]_(i in 'I_m)
+      Reals_ext.nneg_f h i.
+      by apply eq_big=>// j _; rewrite fdist_prodE.
+   rewrite scalept_sum.
+   apply eq_big=>// j _.
+   rewrite/h/= fdistmapE.
+   have->: \big[Rplus/R0]_(a in
+     [finType of 'I_n * 'I_m] |
+     a \in preim (unsplit_prod (n:=m)) (pred1 (Ordinal (unsplit_prodp i j))))
+       Reals_ext.nneg_ff (FDist.f (fdist_prod d (fun=> e))) a =
+     \big[Rdefinitions.RbaseSymbolsImpl.Rplus/Rdefinitions.RbaseSymbolsImpl.R0]_(a in
+     [finType of 'I_n * 'I_m] | a \in pred1 (i, j))
+      Reals_ext.nneg_ff (FDist.f (fdist_prod d (fun=> e))) a.
+      apply eq_big=>// k; congr andb; rewrite 3!inE.
+      by refine (eqtype.inj_eq _ k (i, j)); exact (can_inj (@unsplit_prodK n m)).
+   rewrite (big_pred1 (i, j))// fdist_prodE/= ssrR.mulRC; congr (scalept _ (S1 (g _))).
+   by move:(unsplit_prodK (i, j))=>/(congr1 fst)/esym.
+rewrite (exchange_big_dep xpredT)//=.
+apply eq_big=>// j _.
+rewrite -(scale1pt (scalept _ _)) scaleptA//.
+rewrite -(FDist.f1 d).
+(* TODO: the next 5 lines should be a single rewrite. *)
+move: (@mulr_suml R_ringType _ (index_enum [finType of 'I_n]) (mem 'I_n) (fun i=> Reals_ext.nneg_ff (FDist.f d) i) (Reals_ext.nneg_ff (FDist.f e) j))=>/=.
+have->: @GRing.mul R_ringType = Rdefinitions.RbaseSymbolsImpl.Rmult by [].
+have->: GRing.zero (GRing.Ring.zmodType R_ringType) = Rdefinitions.RbaseSymbolsImpl.R0 by [].
+have->: (@GRing.add (GRing.Ring.zmodType R_ringType)) = Rdefinitions.RbaseSymbolsImpl.Rplus by [].
+move=>->.
+simple refine (let h : Reals_ext.nneg_fun 'I_n := _ in _).
+   exists (fun i=> Rdefinitions.RbaseSymbolsImpl.Rmult
+      (Reals_ext.nneg_ff (FDist.f d) i)
+      (Reals_ext.nneg_ff (FDist.f e) j))=>i.
+   by apply ssrR.mulR_ge0; apply FDist.ge0.
+have->: \big[Rdefinitions.RbaseSymbolsImpl.Rplus/Rdefinitions.RbaseSymbolsImpl.R0]_(i in 'I_n)
+   Rdefinitions.RbaseSymbolsImpl.Rmult
+      (Reals_ext.nneg_ff (FDist.f d) i)
+      (Reals_ext.nneg_ff (FDist.f e) j) =
+   \big[Rdefinitions.RbaseSymbolsImpl.Rplus/Rdefinitions.RbaseSymbolsImpl.R0]_(i in 'I_n)
+   Reals_ext.nneg_f h i.
    by apply eq_big=>// i _; rewrite fdist_prodE.
-rewrite scalept_sum; apply: eq_big => // i _.
-rewrite /h/= fdistmapE.
-have -> : (\sum_(a in [finType of 'I_n * 'I_m] |
+rewrite scalept_sum.
+apply eq_big=>// i _.
+rewrite/h/= fdistmapE.
+have->: \big[Rdefinitions.RbaseSymbolsImpl.Rplus/Rdefinitions.RbaseSymbolsImpl.R0]_(a in
+   [finType of 'I_n * 'I_m] |
    a \in preim (unsplit_prod (n:=m)) (pred1 (Ordinal (unsplit_prodp i j))))
-         nneg_ff (fdist_prod d (fun=> e)) a =
-   \sum_(a in
+         Reals_ext.nneg_ff (FDist.f (fdist_prod d (fun=> e))) a =
+   \big[Rdefinitions.RbaseSymbolsImpl.Rplus/Rdefinitions.RbaseSymbolsImpl.R0]_(a in
    [finType of 'I_n * 'I_m] | a \in pred1 (i, j))
-      nneg_ff (FDist.f (fdist_prod d (fun=> e))) a)%coqR.
-   apply: eq_big=>// k; congr andb; rewrite 3!inE.
-   by apply: (eqtype.inj_eq _ k (i, j)); exact (can_inj (@unsplit_prodK _ _)).
+      Reals_ext.nneg_ff (FDist.f (fdist_prod d (fun=> e))) a.
+   apply eq_big=>// k; congr andb; rewrite 3!inE.
+   by refine (eqtype.inj_eq _ k (i, j)); exact (can_inj (@unsplit_prodK n m)).
 rewrite (big_pred1 (i, j))// fdist_prodE/= ssrR.mulRC; congr (scalept _ (S1 (f _))).
 by move:(unsplit_prodK (i, j))=>/(congr1 snd)/esym.
 Qed.
 
 End convex.
 
+Local Open Scope ring_scope.
 Lemma add_affine (E : lmodType R_ringType) : affine (fun p : E * E => p.1 + p.2).
 Proof.
 move=>p/= [x0 x1] [y0 y1]/=.
 by rewrite/conv/= addrACA -2!scalerDr.
 Qed.
 
-Lemma scale_affine (E : lmodType R_ringType) (t : R) : affine (fun x : E => t *: x).
+Lemma scale_affine (E : lmodType R_ringType) (t : Rdefinitions.RbaseSymbolsImpl.R) : affine (fun x : E=> t *: x).
 Proof.
-move=> p/= x y.
+move=>p/= x y.
 by rewrite/conv/= scalerDr; congr GRing.add; rewrite 2!scalerA mulrC.
 Qed.
+Local Close Scope ring_scope.
 
 Section C.
 Variable E F: lmodType R_ringType.
@@ -124,29 +147,26 @@ Qed.
 End C.
 
 Section face.
-Variable E : convType.
+
+Variable E: convType.
 
 Local Open Scope fun_scope.
 Local Open Scope ring_scope.
 
-Definition ext (A : set E) := [set x | forall u v, u \in A -> v \in A ->
-  x \in segment u v -> x = u \/ x = v]%classic.
+Definition ext (A : set E) := [set x | forall u v, u \in A -> v \in A -> x \in segment u v -> x = u \/ x = v]%classic.
 
-Definition face (A F: set E) := [/\ (F `<=` A)%classic, is_convex_set F &
-  forall x u v, x \in F -> u \in A -> v \in A -> x \in segment u v ->
-    x != u -> x != v -> u \in F /\ v \in F].
+Definition face (A F: set E) := (F `<=` A)%classic /\ is_convex_set F /\ forall x u v, x \in F -> u \in A -> v \in A -> x \in segment u v -> x != u -> x != v -> u \in F /\ v \in F.
 
-Definition face' (A F: set E) := [/\ (F `<=` A)%classic, is_convex_set F &
-  forall x u v, x \in F -> u \in A -> v \in A -> x \in segment u v -> x != v -> u \in F].
+Definition face' (A F: set E) := (F `<=` A)%classic /\ is_convex_set F /\ forall x u v, x \in F -> u \in A -> v \in A -> x \in segment u v -> x != v -> u \in F.
 
 Lemma face'P (A F: set E): face A F <-> face' A F.
 Proof.
-split => [[FA [Fconv Fface]]|[FA [Fconv Fface]]].
-  split=> // x u v xF uA vA xuv xv; have [xu|xu] := eqVneq x u.
-      by rewrite xu in xF.
-  by move: (Fface x u v xF uA vA xuv xu xv) => [].
-split => // x u v xF uA vA xuv xu xv; split; [ apply (Fface x u v) | apply (Fface x v u) ] =>//.
-by rewrite segmentC.
+split; move=>[FA [Fconv Fface]]; split=>//; split=>// x u v xF uA vA xuv.
+   move=>xv; case xu: (x == u).
+      by move: xu=>/eqP xu; subst u.
+   by move: xu=>/negP/negP xu; move: (Fface x u v xF uA vA xuv xu xv)=> [uF _].
+move=>xu xv; split; [ apply (Fface x u v) | apply (Fface x v u) ]=>//.
+by apply mem_set, segment_sym, set_mem.
 Qed.
 
 End face.
@@ -211,7 +231,7 @@ split.
       exact/ltW.
    move=>tle.
    have t01: ssrR.leRb (Rdefinitions.IZR BinNums.Z0) (2%:R*(t : R_ringType)) &&
-  ssrR.leRb (2*(t : R_ringType)) (Rdefinitions.IZR (BinNums.Zpos 1%AC)).
+  ssrR.leRb (2%:R*(t : R_ringType)) (Rdefinitions.IZR (BinNums.Zpos 1%AC)).
       apply/andP; split; apply/ssrR.leRP/RleP.
          apply mulr_ge0=>//.
          by apply/RleP/prob_ge0.
@@ -242,7 +262,7 @@ split.
    by move:xE; rewrite convmm=>/esym.
 split.
    move=>/asboolP Axconv.
-   split; [ by move=>u /= ->; apply set_mem | by apply is_convex_set1 | ]=> y u v /set_mem -> /set_mem uA /set_mem vA /set_mem [p _ xE] xu xv; exfalso.
+   split; [ by move=>u /= ->; apply set_mem |]; split; [ by apply is_convex_set1 |]=> y u v /set_mem -> /set_mem uA /set_mem vA /set_mem [p _ xE] xu xv; exfalso.
    have uAx: (A `\ x)%classic u by split=>//= ux; subst u; move: xu; rewrite eq_refl.
    have vAx: (A `\ x)%classic v by split=>//= vx; subst v; move: xv; rewrite eq_refl.
    have: (A `\ x)%classic x by rewrite -{2}xE; apply (Axconv _ _ _ uAx vAx).
@@ -259,59 +279,57 @@ Qed.
 Lemma face_trans (A : set E) (F : set E) (G : set E) : face A F -> face F G -> face A G.
 Proof.
 move=>[AF [Fconv Fface]] [FG [Gconv Gface]].
-split => //.
-- by move=> x Gx; apply AF, FG.
-- move=>// x u v xG uA vA xuv xu xv.
-  have [uF vF]: (u \in F /\ v \in F).
-    apply (Fface x)=>//.
-    by apply mem_set, FG, set_mem.
-  by apply (Gface x).
+split.
+   by move=> x Gx; apply AF, FG.
+split=>// x u v xG uA vA xuv xu xv.
+have [uF vF]: (u \in F /\ v \in F).
+   apply (Fface x)=>//.
+   by apply mem_set, FG, set_mem.
+by apply (Gface x).
 Qed.
 
 Definition supporting_hyperplane (A : set E) (f: {linear E -> R^o}) (a: R_ringType) :=
   (exists x, x \in A /\ f x = a) /\
   ((forall x, x \in A -> f x <= a) \/ (forall x, x \in A -> a <= f x)).
 
-Lemma is_convex_set_preimage [T U : convType] (f : {affine T -> U}) (A : {convex_set U}) :
-  is_convex_set (f @^-1` A)%classic.
+Lemma is_convex_set_preimage [T U : convType] (f : {affine T -> U}) (A : {convex_set U}) : is_convex_set (f @^-1` A)%classic.
 Proof.
 apply/asboolP=>x y p/= Ax Ay.
 by rewrite affine_conv -in_setE; apply/mem_convex_set; rewrite in_setE.
 Qed.
 
 (* TOTHINK : lemmas prove is_convex_set but use {convex_set _}. *)
-Lemma supporting_hyperplan_face (A : {convex_set E}) (f: {linear E -> R^o}) (a: R_ringType) :
-  supporting_hyperplane A f a <->
-  (exists x, x \in A /\ f x = a) /\ face A (A `&` (f @^-1` [set a])).
+Lemma hyperplan__face (A : {convex_set E}) (f: {linear E -> GRing.regular_lmodType R_ringType}) (a: R_ringType): supporting_hyperplane A f a <-> (exists x, x \in A /\ f x = a) /\ face A (A `&` (preimage f [set a])).
 Proof.
 split; move=>[hex hface]; split=>//.
    wlog: f a hex hface / (forall x : E, x \in A -> f x <= a).
       move=>h; move: (hface); case=>hf.
          by apply (h f a).
       move: h=>/(_ (GRing.comp_linear f (GRing.opp_linear E)) (- a)).
-      have hf' (x : E) : x \in A -> GRing.comp_linear f (GRing.opp_linear E) x <= - a.
-        by move=> xA /=; rewrite -scaleN1r linearZZ scaleN1r ler_oppl opprK; apply hf.
+      have hf': forall x : E, x \in A -> GRing.comp_linear f (GRing.opp_linear E) x <= - a by move=>x xA /=; rewrite -scaleN1r linearZZ scaleN1r ler_oppl opprK; apply hf.
       have hex': exists x : E, x \in A /\ GRing.comp_linear f (GRing.opp_linear E) x = - a.
          by move: hex=>[x [xA fx]]; exists x; split=>//=; rewrite -fx -scaleN1r linearZZ scaleN1r.
       move=>/(_ hex' (or_introl hf') hf'); congr (face A (A `&` _)).
       by rewrite eqEsubset; split=>x /= /eqP; rewrite -scaleN1r linearZZ scaleN1r; [ rewrite eqr_opp | rewrite -eqr_opp ]=>/eqP.
-   move=> hf; apply face'P; split; [ by apply subIsetl | |].
-      exact: (is_convex_setI _ (convex_set_of (is_convex_set_preimage _ (convex_set_of (is_convex_set1 (a : GRing.regular_lmodType R_ringType)))))).
+   move=> hf; apply face'P; split; [ by apply subIsetl |]; split.
+      exact (is_convex_setI _ (convex_set_of (is_convex_set_preimage _ (convex_set_of (is_convex_set1 (a : GRing.regular_lmodType R_ringType)))))).
    move=> x u v /set_mem [xA xa] uA vA /set_mem [t _ tx] xv; apply mem_set; (split; [ by apply set_mem |]); apply /eqP; rewrite -lte_anti; apply /andP; (split; [ by apply hf |]).
-   have t0 : (t : R_ringType) != 0.
-      by apply/eqP=>/val_inj t0; subst t; move: tx xv; rewrite conv0 => ->; rewrite eqxx.
-   have tgt : 0 < (t : R_ringType) by rewrite lt0r t0=>/=; exact/RleP.
-   move: tx=>/(f_equal (fun x=> (t : R_ringType)^-1 *: (x - (onem t) *: v))).
+   have t0: (t : R_ringType) != 0.
+      by apply /eqP=>/val_inj t0; subst t; move: tx xv; rewrite conv0 => ->; rewrite eqxx.
+   have tgt: 0 < (t : R_ringType) by rewrite lt0r t0=>/=; apply/RleP/prob_ge0.
+   move: tx=>/(f_equal (fun x=> (t : R_ringType)^-1 *: (x-((onem t) : R_ringType)*: v))).
    rewrite -addrA subrr addr0 scalerA mulVf // scale1r=>->.
    rewrite linearZZ linearD xa -scaleNr linearZZ ler_pdivl_mull// addrC -subr_ge0 -addrA -mulNr -{1}[a]mul1r -mulrDl scaleNr -scalerN -mulrDr; apply mulr_ge0.
-      exact/RleP.
+      by apply/RleP/prob_ge0.
    by rewrite addrC Num.Internals.subr_ge0; apply hf.
-have : forall x y, x \in A -> y \in A -> f x < a -> a < f y -> False.
+have: forall x y, x \in A -> y \in A -> f x < a -> a < f y -> False.
    move=> u v uA vA fua afv.
    move: (Order.POrderTheory.lt_trans fua afv); rewrite -subr_gt0=>fufv.
-   have t01: ssrR.leRb (Rdefinitions.IZR BinNums.Z0) ((f v - a) / (f v - f u))%R &&
-  ssrR.leRb ((f v - a) / (f v - f u))%R (Rdefinitions.IZR (BinNums.Zpos 1%AC)).
-      apply/andP; split; apply/ssrR.leRP/RleP.
+Local Open Scope ring_scope.
+   have t01: ssrR.leRb (Rdefinitions.IZR BinNums.Z0) ((f v - a) / (f v - f u)) &&
+  ssrR.leRb ((f v - a) / (f v - f u)) (Rdefinitions.IZR (BinNums.Zpos 1%AC)).
+Local Close Scope ring_scope.
+      apply/andP; split; apply/ssrR.leRP/RleP; rewrite RdivE 1?eq_sym ?lt_eqF//.
          by apply divr_ge0; apply ltW=>//; rewrite subr_gt0.
          rewrite ler_pdivr_mulr// mul1r -subr_ge0 opprB addrAC addrCA subrr addr0 subr_ge0.
          by apply ltW.
@@ -319,11 +337,12 @@ have : forall x y, x \in A -> y \in A -> f x < a -> a < f y -> False.
    have inuv: u <| Prob.mk t01 |> v \in segment u v.
       by apply mem_set; exists (Prob.mk t01).
    have uva: f (u <| Prob.mk t01 |> v) = a.
-      rewrite/= affine_conv/=/conv/=.
-      move: fufv; rewrite lt0r=>/andP [fufv _].
+      rewrite /= affine_conv/=/conv/=.
+      move: fufv; rewrite lt0r => /andP[fufv _].
       apply (mulfI fufv).
-      rewrite/GRing.regular_lmodType/GRing.scale/=.
-      rewrite mulrDr mulrAC mulrCA mulrAC divff// mulr1.
+      rewrite /GRing.scale/=.
+      rewrite mulrDr ssrR.divRE mulrAC mulrCA.
+      rewrite -(RmultE (f v - f u)) -ssrR.divRE RdivE// divff// mulr1.
       rewrite [onem _ * _]mulrBl mul1r mulrBr mulrAC mulrCA mulrAC divff// mulr1.
       rewrite -mulrBl opprB addrAC addrCA subrr addr0.
       rewrite 2!mulrBl mulrC addrAC addrCA subrr addr0.
@@ -332,13 +351,13 @@ have : forall x y, x \in A -> y \in A -> f x < a -> a < f y -> False.
       apply mem_set; split=>//.
       by move:(convex_setP A)=>/asboolP; apply; rewrite -in_setE.
    move=>/(_ Aa uA vA inuv).
-   have nev: u <|{| Prob.p := ((f v - a) / (f v - f u))%R; Prob.Op1 := t01 |}|> v != v.
+   have nev: u <|{| Prob.p := (f v - a) / (f v - f u); Prob.Op1 := t01 |}|> v != v.
       rewrite -subr_eq0 -{4}(scale1r v) -addrA -scalerBl addrAC subrr add0r scaleNr -scalerBr scaler_eq0 subr_eq0.
       apply/negP=>/orP; case=>/eqP.
          move=>/= t0.
          move:uva; rewrite/conv/= t0 scale0r add0r onem0 scale1r=>fva.
-         by move:afv; rewrite fva ltxx.
-      by move=>uv; move:fufv; rewrite uv subrr ltxx.
+         by move:afv; rewrite fva lt_irreflexive.
+      by move=>uv; move:fufv; rewrite uv subrr lt_irreflexive.
    by move=>/(_ nev) /set_mem [_ /= fuae]; move: fua; rewrite fuae -subr_gt0 lt0r subrr eq_refl.
 move=>h.
 move: (boolp.EM (exists x: E, x \in A /\ f x < a)); case.
@@ -357,13 +376,10 @@ Local Open Scope fun_scope.
 Local Open Scope ring_scope.
 Local Open Scope convex_scope.
 
-Definition cone0 (A : set E) :=
-  ([set (t : R_ringType) *: a | t in (@setT Rpos) & a in A] `<=` A)%classic.
+Definition cone0 (A: set E) := ([set (t : R_ringType) *: a | t in (@setT Rpos) & a in A] `<=` A)%classic.
+Definition cone (x: E) (A: set E) := cone0 [set a-x | a in A]%classic.
 
-Definition cone (x: E) (A: set E) := cone0 [set a - x | a in A]%classic.
-
-Lemma cone0_convex (A: set E): cone0 A ->
-  (is_convex_set A <-> ([set a+b | a in A & b in A] `<=` A)%classic).
+Lemma cone0_convex (A: set E): cone0 A -> (is_convex_set A <-> ([set a+b | a in A & b in A] `<=` A)%classic).
 Proof.
 have ne20: (2 : R_ringType) != 0 by rewrite intr_eq0.
 have /RltP/ssrR.ltRP gt20: (0 : R_ringType) < 2 by rewrite ltr0z.
@@ -379,9 +395,8 @@ move:(prob_ge0 t)=>/RleP; rewrite le0r=>/orP; case.
    by rewrite/conv/= =>/eqP ->; rewrite scale0r add0r onem0 scale1r.
 move=>/RltP/ssrR.ltRP t0; move: (prob_le1 t)=>/RleP; rewrite -subr_ge0 le0r=>/orP; case.
    by rewrite subr_eq0 /conv/= =>/eqP <-; rewrite onem1 scale0r addr0 scale1r.
-move=>/RltP/ssrR.ltRP t1; apply Aconv; exists ((t : R_ringType) *: x);
-   [| exists ((onem t) *: y) ]=>//; apply Acone.
-  by exists (Rpos.mk t0)=>//; exists x.
+move=>/RltP/ssrR.ltRP t1; apply Aconv; exists ((t : R_ringType) *: x); [| exists ((onem t) *: y) ]=>//; apply Acone.
+   by exists (Rpos.mk t0)=>//; exists x.
 by exists (Rpos.mk t1)=>//; exists y.
 Qed.
 
@@ -406,7 +421,7 @@ rewrite eqEsubset; split=>x.
    have: 0 <= t by apply sumr_ge0.
    rewrite le0r=>/orP; case.
       move=>/eqP /psumr_eq0P; move=> /(_ k0') /(_ ord0 Logic.eq_refl) k00; exfalso.
-      by move:(Rpos_gt0 (k ord0))=>/RltP; rewrite k00 ltxx.
+      by move:(Rpos_gt0 (k ord0))=>/RltP; rewrite k00 lt_irreflexive.
    move=>t0.
    have tk0: forall i, Rdefinitions.Rle (Rdefinitions.IZR BinNums.Z0) ([ffun i => t^-1 * k i] i).
       by move=>i; rewrite ffunE; apply/RleP/mulr_ge0; [ apply ltW; rewrite invr_gt0 | apply k0' ].
@@ -518,7 +533,8 @@ have fle: (Prob.p t)%:E * f u + (onem (Prob.p t))%:E * f v <= f (u <|t|> v).
       - by rewrite subr_ge0; apply/RleP/prob_le1.
    apply (@lee_add R_realDomainType); rewrite (@lee_pmul2l R_realDomainType)//= lte_fin.
    by rewrite subr_gt0.
-by move=>/(Order.POrderTheory.le_lt_trans fle); rewrite ltxx.
+by move=>/(le_lt_trans fle); rewrite lt_irreflexive.
 Qed.
+
 
 End Fun.
