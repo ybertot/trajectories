@@ -67,7 +67,7 @@ Proof. by case: h =>// a l; rewrite {1}/encompass encompass_auxE. Qed.
 
 Lemma encompass_aux_all_index (l h : seq plane) :
   encompass_aux l h = (h != [::]) &&
-    [forall i : 'I_(size h), (i+1mod == 0%N :> nat) || all_left h`_i h`_i+1mod l].
+    [forall i : 'I_(size h), (i.+1mod == 0%N :> nat) || all_left h`_i h`_i.+1mod l].
 Proof.
 elim: h=>// a; case.
    by move=>/= _; apply/esym/forallP => i; rewrite modn1 eq_refl.
@@ -88,7 +88,7 @@ by rewrite modn_small ?ltnS// modn_small ?ltnS.
 Qed.
 
 Lemma encompass_all_index (l s : seq plane) : encompass s l =
-  (l != [::]) && [forall i : 'I_(size l), all_left l`_i l`_i+1mod s].
+  (l != [::]) && [forall i : 'I_(size l), all_left l`_i l`_i.+1mod s].
 Proof.
 case: l => // a l /=.
 rewrite -/(encompass_aux s (a :: l)) encompass_aux_all_index.

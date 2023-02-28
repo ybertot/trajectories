@@ -78,7 +78,7 @@ dependencies:
     [Algebra tactics 1.0.0](https://github.com/math-comp/algebra-tactics)
 - opam:
     name: coq-mathcomp-analysis
-    version: '{ (>= "0.5.4") & (< "0.7~")}'
+    version: '{ (>= "0.6.1") & (< "0.7~")}'
   description: |-
     [MathComp analysis](https://github.com/math-comp/analysis)
 - opam:

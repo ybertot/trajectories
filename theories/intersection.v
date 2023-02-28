@@ -183,7 +183,7 @@ Qed.
    C is represented by a list of points that generate it (as given by
    the output of Jarvis' algorithm).
 
-   We prove the result by contraposition, assuming that one point of
+   We prove the result by contradiction, assuming that one point of
    the segment lies inside C and another one is outside. We
    immediately reduce to the case where the ends of the segment verify
    this property.
@@ -193,7 +193,9 @@ Qed.
    expect it to cross the border of C. Let I = \{t \in [0, 1],
    b <| t |> a \in C\} and t = sup(I). t is well defined because I is not
    empty (as 0 \in I) and bounded (by 1).  C being defined by a set of
-   large inequalities, we show b <| t |> a \in C.  Then we show that at
+   large inequalities,
+
+   we show b <| t |> a \in C.  Then we show that at
    least one inequality is an equality. Let this constraint being
    given by two points x and y of the list defining C.  Then b <| t |> a
    is on the line (xy) and every other point of the list is strictly
@@ -202,20 +204,22 @@ Qed.
    show that b <| t |> a is between x and y, which concludes the proof.
    *)
 
+Import Order.TBLatticeTheory.
+
 Lemma hull_border_no_intersection (l : seq Plane) (a b : Plane) :
   (3 <= size l)%N ->
   uniq l ->
   encompass (@ccw R) l l ->
-  [forall i : 'I_(size l), ~~ intersect l`_i l`_i+1mod a b] ->
+  (forall i : 'I_(size l), ~~ intersect l`_i l`_i.+1mod a b) ->
     (forall t, in01 t ->
-      encompass (ccw (R:=R)) [:: a <| t |> b] l) \/
+      encompass (@ccw R) [:: a <| t |> b] l) \/
     (forall t, in01 t ->
       ~~ encompass (@wccw R) [:: a <| t |> b] l).
 Proof.
-have sm t u : t *: (u : regular_lmodType R) = t * u by [].
-move=> ls /uniqP lu ll /forallP lab.
+have sm t u : t *: (u : R^o) = t * u by [].
+move=> ls /uniqP lu ll lab.
 have l0 : l != [::] by destruct l.
-(* We start the proof by contraposition. *)
+(* We start the proof by contradiction. *)
 apply/or_asboolP/negPn; rewrite negb_or; apply/negP => /andP[/existsp_asboolPn [t /asboolPn]].
 rewrite asbool_imply negb_imply 2!asboolb => /andP[t01 ltab].
 move=> /existsp_asboolPn [u /asboolPn].
@@ -248,86 +252,102 @@ move: la; rewrite encompass_all_index l0/= =>/forallP.
 setoid_rewrite andbT.
 setoid_rewrite is_left_oriented; rewrite /wccw => la.
 (* All constraints being a large inequality, they are all satisfied by sup I. *)
-have lt (i : 'I_(size l)) : 0 <= det l`_i l`_(Zp_succ i) (b <| sup I |> a).
-   rewrite leNgt -det_cyclique det_conv convrl sm -opprB mulrN subr_lt0; apply/negP=>liI.
-   have abl0: (0 < det a l`_i l`_(Zp_succ i) - det b l`_i l`_(Zp_succ i)).
-      rewrite ltNge; apply/negP=>abl.
-      move: (sup_upper_bound Ib)=>/(_ 0 I0)Ige.
-      move:(mulr_le0_ge0 abl Ige); rewrite mulrC=>/(lt_le_trans liI); rewrite ltNge=>/negP; apply.
-      by rewrite det_cyclique; apply la.
-   move:abl0 (abl0); rewrite {1}lt0r=>/andP[abl0 _]; rewrite -invr_gt0=>abl_gt0.
-   move:(liI); rewrite -subr_gt0 -(pmulr_lgt0 _ abl_gt0) mulrBl -mulrA divff// mulr1=>eps0.
-   move: (sup_adherent eps0 Ib)=>[t]/andP[t01]; rewrite encompass_all_index l0/= =>/forallP/(_ i).
-   rewrite andbT is_left_oriented /wccw -det_cyclique det_conv convrl sm -opprB mulrN -(pmulr_lge0 _ abl_gt0) mulrBl -mulrA divff// mulr1 subr_ge0=>lit.
-   by rewrite opprB addrCA subrr addr0=>/(le_lt_trans lit); rewrite ltxx.
-have I1: sup I <= 1.
-   apply sup_le_ub; first by exists 0.
-   by move=>x /andP[/andP[_]].
-   (* At least one inequality is an equality, otherwise we would find t > sup I that verifies all of them. *)
-have : [exists i : 'I_(size l), det l`_i l`_(Zp_succ i) (b <| sup I |> a) <= 0].
+have lt (i : 'I_(size l)) : wccw l`_i l`_i.+1mod (b <| sup I |> a).
+  rewrite /wccw leNgt -det_cyclique det_conv convrl sm -opprB mulrN.
+  rewrite subr_lt0; apply/negP=>liI.
+  have abl0 : 0 < det a l`_i l`_i.+1mod - det b l`_i l`_i.+1mod.
+     rewrite ltNge; apply/negP => abl.
+     move: (sup_upper_bound Ib)=>/(_ 0 I0)Ige.
+     move:(mulr_le0_ge0 abl Ige); rewrite mulrC=>/(lt_le_trans liI).
+     rewrite ltNge=>/negP; apply.
+     by rewrite det_cyclique; apply la.
+  move:abl0 (abl0); rewrite {1}lt0r => /andP[abl0 _].
+  rewrite -invr_gt0 => abl_gt0.
+  move:(liI); rewrite -subr_gt0 -(pmulr_lgt0 _ abl_gt0) mulrBl.
+  rewrite -mulrA divff// mulr1 => eps0.
+  move: (sup_adherent eps0 Ib) => [t]/andP[t01].
+  rewrite encompass_all_index l0/= => /forallP/(_ i).
+  rewrite andbT is_left_oriented /wccw -det_cyclique det_conv convrl.
+  rewrite sm -opprB mulrN -(pmulr_lge0 _ abl_gt0) mulrBl -mulrA.
+  rewrite divff// mulr1 subr_ge0=>lit.
+  rewrite opprB addrCA subrr addr0=>/(le_lt_trans lit).
+  by rewrite ltxx.
+have I1 : sup I <= 1.
+  apply sup_le_ub; first by exists 0.
+  by move=>x /andP[/andP[_]].
+(* At least one inequality is an equality, otherwise we would find
+   t > sup I that verifies all of them. *)
+have : [exists i : 'I_(size l), det l`_i l`_i.+1mod (b <| sup I |> a) <= 0].
   move:I1; rewrite -subr_ge0 le0r subr_eq0 subr_gt0 => /orP[/eqP<-| I1].
     rewrite conv1; move:lb; rewrite encompass_all_index l0/= =>/forallPn[i].
-    by rewrite andbT !negb_or -leNgt =>/andP[_] /andP[lb det_le0]; apply/existsP; exists i.
+    rewrite andbT !negb_or -leNgt =>/andP[_] /andP[lb det_le0].
+    by apply/existsP; exists i.
   rewrite -[_ _ _]negbK; apply/negP =>/existsPn Isubopt.
-  (* Each inequality defines a quantity by which we may exceed sup I without falsifying it.
-     The inequalities being strict, these quantities are all positive, hence their mini too.
-     Alas, R has no maximum, and hence min has no neutral elemnt, so we work in \bar R. *)
-  set t := \meet_(i < size l | 0 < det a l`_i l`_(Zp_succ i) - det b l`_i l`_(Zp_succ i))
-    ((det l`_i l`_(Zp_succ i) a) / (det l`_i l`_(Zp_succ i) a - det l`_i l`_(Zp_succ i) b))%:E.
-  have It : ((sup I)%:E < t `&` 1%:E)%O.
+  (* Each inequality defines a quantity by which we may exceed sup I
+     without falsifying it.  The inequalities being strict, these
+     quantities are all positive, hence their mini too.  Alas, R has
+     no maximum, and hence min has no neutral elemnt, so we work in
+     \bar R. *)
+  set t := \meet_(i < size l | 0 < det a l`_i l`_i.+1mod - det b l`_i l`_i.+1mod)
+    ((det l`_i l`_i.+1mod a) / (det l`_i l`_i.+1mod a - det l`_i l`_i.+1mod b))%:E.
+  have It : ((sup I)%:E < mine t 1%:E)%E.
     rewrite ltxI lte_fin I1 andbT ereal_meets_gt// ?ltey//.
     move=>i abl_gt0; move:(abl_gt0); rewrite lt0r=>/andP[abl0 _].
-    rewrite lte_fin -subr_gt0 -(pmulr_lgt0 _ abl_gt0) mulrBl mulrAC -mulrA -2![det l`_i _ _]det_cyclique divff// mulr1.
+    rewrite lte_fin -subr_gt0 -(pmulr_lgt0 _ abl_gt0) mulrBl mulrAC -mulrA.
+    rewrite -2![det l`_i _ _]det_cyclique divff// mulr1.
     by move:(Isubopt i); rewrite -ltNge -det_cyclique det_conv convrl sm -opprB mulrN.
-  have tfin : (fine (t `&` 1%:E))%:E = t `&` 1%:E.
+  have tfin : (fine (mine t 1%:E))%:E = mine t 1%:E.
     apply/(@fineK R)/fin_numP; split; apply/negP=>/eqP tinf.
-      suff : (-oo < t `&` 1)%E by rewrite tinf ltxx.
+      suff : (-oo < mine t 1)%E by rewrite tinf ltxx.
       rewrite ltxI; apply/andP; split; last by apply ltNye.
       by apply ereal_meets_gt=>// i _; apply ltNye.
-    suff : (t `&` 1 < +oo)%E by rewrite tinf ltxx.
+    suff : (mine t 1 < +oo)%E by rewrite tinf ltxx.
     by rewrite ltIx [(1 < +oo)%E]ltey orbT.
   move: It; rewrite -tfin lte_fin ltNge=>/negP; apply.
-  have t01: in01 (fine (t `&` 1%E)).
+  have t01: in01 (fine (mine t 1%E)).
     apply/andP; split; rewrite -lee_fin tfin; last by rewrite lteIx le_refl orbT.
     rewrite ltexI; apply/andP; split; last by rewrite lee_fin ler01.
-    rewrite /t.
-    apply: Order.TBLatticeTheory.meets_ge => i abgt.
-    rewrite lee_fin; apply mulr_ge0.
-      by apply la.
+    apply: meets_ge => i abgt; rewrite lee_fin; apply: (mulr_ge0 (la _)).
     by apply ltW; rewrite invr_gt0 -2![det l`_i _ _]det_cyclique.
-  apply sup_upper_bound; first by [].
-  apply/andP; split; first by [].
-  rewrite encompass_all_index l0/=; apply/forallP=>i; rewrite is_left_oriented andbT /wccw -det_cyclique det_conv convrl sm -opprB mulrN subr_ge0.
-  have [/[dup]|able0] := ltP 0 (det a l`_i l`_(Zp_succ i) - det b l`_i l`_(Zp_succ i)).
+  apply: sup_upper_bound => //; apply/andP; split => //.
+  rewrite encompass_all_index l0/=; apply/forallP => i.
+  rewrite is_left_oriented andbT /wccw -det_cyclique det_conv convrl sm.
+  rewrite -opprB mulrN subr_ge0.
+  have [/[dup]|able0] := ltP 0 (det a l`_i l`_i.+1mod - det b l`_i l`_i.+1mod).
     rewrite {1}lt0r -invr_gt0=>/andP[ab0 _] abgt0.
-    rewrite -subr_ge0 -(pmulr_lge0 _ abgt0) mulrBl subr_ge0 -mulrA divff// mulr1 -lee_fin tfin leIx; apply/orP; left.
+    rewrite -subr_ge0 -(pmulr_lge0 _ abgt0) mulrBl subr_ge0 -mulrA divff// mulr1.
+    rewrite -lee_fin tfin leIx; apply/orP; left.
     rewrite ![det _ l`_i _]det_cyclique /t.
-    move:abgt0; rewrite invr_gt0=>abgt0.
-    exact: Order.TBLatticeTheory.meets_inf.
-  rewrite {2}[det a _ _]det_cyclique; refine (le_trans _ (la i)); apply mulr_ge0_le0=>//.
-  by move:t01=>/andP[].
-move=>/existsP[i] iable0.
-(* We want to show that b <| sup I |> a suits. We show that it is between a and b and between l`_i and l`_(i+1). *)
-move:lab=>/(_ i)/negP; apply; apply intersect_complete; exists (b <| sup I |> a); apply/andP; split; last first.
-   rewrite betweenC; apply between_conv; exists (sup I); apply/andP; split=>//.
-   apply/andP; split=>//.
-   by apply sup_upper_bound.
-(* First, b <| sup I |> a, l`_i et l`_(i+1) are aligned. *)
-have: det l`_i l`_(Zp_succ i) (b <| sup I |> a) = 0 by apply le_anti; apply/andP; split.
-move=>/det0_aligned; case.
-  move=>/lu; rewrite 2!inE.
-  move=>/(_ (ltn_ord i) (ltn_ord (Zp_succ i))); rewrite Zp_succE.
+    by move:abgt0; rewrite invr_gt0=>abgt; exact: meets_inf.
+  rewrite {2}[det a _ _]det_cyclique (le_trans _ (la i))// mulr_ge0_le0 //.
+  by move:t01 => /andP[].
+move=> /existsP[i] iable0.
+(* We want to show that b <| sup I |> a suits.
+   We show that it is between] a and b and between l`_i and l`_(i+1).
+   This gives a witness to contradict the hypo (lab i). *)
+move: lab =>/(_ i)/negP; apply; apply intersect_complete.
+exists (b <| sup I |> a); apply/andP; split; last first.
+  rewrite betweenC; apply between_conv; exists (sup I); apply/andP; split=>//.
+  apply/andP; split=>//.
+  by apply sup_upper_bound.
+(* First, b <| sup I |> a, l`_i and l`_(i+1) are aligned. *)
+have : det l`_i l`_i.+1mod (b <| sup I |> a) = 0.
+  by apply: le_anti; apply/andP; split => //; apply: lt.
+move=>/det0_aligned[/lu|].
+  rewrite 2!inE.
+  move=>/(_ (ltn_ord i) (ltn_ord i.+1mod)); rewrite Zp_succE.
   move:(ltn_ord i); rewrite leq_eqVlt => /predU1P[il|isl].
-    by rewrite il modnn=>i0; move:il; rewrite i0=>s1; move:ls; rewrite s1=>/ltnW; rewrite ltnn.
+    rewrite il modnn=>i0; move:il; rewrite i0=>s1; move:ls; rewrite s1=>/ltnW.
+    by rewrite ltnn.
   by rewrite modn_small// => /n_Sn.
 move=>[t] tie; apply between_conv; exists t; rewrite tie eqxx andbT.
 (* b <| sup I |> a is l`_i <| t |> l`_(i+1) for some t. We show 0 <= t <= 1
    by contradiction by looking at the inequalities
    0 <= det l`_j l`_(j+1) (b <| sup I |> a) for j = i+1 and j = i-1. *)
 apply/negPn/negP; rewrite negb_and -2!ltNge => /orP[t0|].
-   move:lt=>/(_ (Zp_succ i)); rewrite -tie -det_cyclique det_conv det_alternate /conv scaler0 addr0 sm nmulr_rge0// =>ile.
+   move:lt=>/(_ (Zp_succ i)); rewrite -tie /wccw -det_cyclique det_conv det_alternate /conv scaler0 addr0 sm nmulr_rge0// =>ile.
    move:ll; rewrite encompass_all_index l0/= =>/forallP/(_ i)/allP/(_ l`_(Zp_succ (Zp_succ i))).
-   have /[swap]/[apply] : l`_(Zp_succ (Zp_succ i)) \in l by apply mem_nth.
+   have /[swap]/[apply] : l`_i.+1mod.+1mod \in l by apply mem_nth.
    rewrite /encompass.is_left /ccw ltNge ile orbF => /orP[|] /eqP/lu; rewrite 2!inE=>/(_ (ltn_ord _) (ltn_ord _)); rewrite !Zp_succE=>/eqP; rewrite -2!addn1 modnDml -addnA addn1.
       by rewrite -{2}(modn_small (ltn_ord i)) -{2}(addn0 i) eqn_modDl modn_small// mod0n=>/eqP.
    rewrite eqn_modDl modn_small// modn_small; last by apply ltnW.
@@ -337,7 +357,7 @@ have predi_ltl : ((i + (size l).-1) %% (size l) < size l)%N by apply/ltn_pmod/lt
 have succ_predi : Zp_succ (Ordinal predi_ltl) = i.
    apply val_inj; rewrite Zp_succE -addn1 modnDml -addnA addn1 prednK; last by do 2 apply ltnW.
    by rewrite modnDr modn_small.
-move:lt=>/(_ (Ordinal predi_ltl)); rewrite succ_predi -tie -det_cyclique det_conv -det_cyclique det_alternate /conv scaler0 add0r sm nmulr_rge0// =>ile.
+move:lt=>/(_ (Ordinal predi_ltl)); rewrite succ_predi -tie /wccw -det_cyclique det_conv -det_cyclique det_alternate /conv scaler0 add0r sm nmulr_rge0// =>ile.
 move:ll; rewrite encompass_all_index l0/= =>/forallP/(_ (Ordinal predi_ltl))/allP/(_ l`_(Zp_succ i)).
 have /[swap]/[apply] : l`_(Zp_succ i) \in l by apply mem_nth.
 rewrite succ_predi /encompass.is_left /ccw ltNge -det_cyclique ile orbF => /orP[|] /eqP/lu; rewrite 2!inE=>/(_ (ltn_ord _) (ltn_ord _)); rewrite !Zp_succE=>/eqP.

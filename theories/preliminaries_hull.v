@@ -18,13 +18,13 @@ Definition Zp_succ p : 'I_p -> 'I_p :=
   | q.+1 => fun i : 'I_q.+1 => inZp i.+1
   end.
 
-Notation "n +1mod" := (Zp_succ n) (at level 2, left associativity,
-  format "n +1mod").
+Notation "n .+1mod" := (Zp_succ n) (at level 2, left associativity,
+  format "n .+1mod").
 
-Lemma Zp_succE n (i : 'I_n) : val (i +1mod) = i.+1 %% n.
+Lemma Zp_succE n (i : 'I_n) : val (i .+1mod) = i.+1 %% n.
 Proof. by case: n i => // -[]. Qed.
 
-Lemma Zp_succ_max n : (@ord_max n)+1mod = ord0.
+Lemma Zp_succ_max n : (@ord_max n).+1mod = ord0.
 Proof. by apply: val_inj => /=; rewrite modnn. Qed.
 
 Lemma subseq_iota (n m : nat) (l : seq nat) : subseq l (iota n m) =
@@ -140,7 +140,7 @@ Lemma filter_succ (T : eqType) (x : T) (l : seq T) (P : pred T) :
       (forall i : 'I_(size l'), nth x l (f i) = nth x l' i) ->
       {homo f : x0 y / x0 < y >-> x0 < y} ->
       forall (i' : 'I_(size l')) k,
-         (f i' < k < (f i'+1mod + (i'.+1 == size l')*(size l))%N)%N ->
+         (f i' < k < (f i'.+1mod + (i'.+1 == size l')*(size l))%N)%N ->
          ~~ P (nth x l (k %% size l)).
 Proof.
 (*Huh???*)
@@ -170,16 +170,16 @@ move:(i'lt); rewrite leq_eqVlt => /predU1P[ie|].
       rewrite -{1}[k](subnK lk) modnDr modn_small//.
       by apply (ltn_trans kf).
    move:ke; rewrite kmod=>ke.
-   have ie' : val (Ordinal i'lt)+1mod = 0%N.
+   have ie' : val (Ordinal i'lt).+1mod = 0%N.
      by move: ie i'lt {kf}=><- i'lt/=; apply modnn.
    destruct a as [| a].
       have ae: Zp_succ (Ordinal i'lt) = Ordinal alt by apply val_inj.
       by move: kf; rewrite ke -ae ltnn.
-   have /fh fia : (Ordinal i'lt)+1mod < Ordinal alt.
-      suff: val (Ordinal i'lt)+1mod < a.+1 by [].
+   have /fh fia : (Ordinal i'lt).+1mod < Ordinal alt.
+      suff: val (Ordinal i'lt).+1mod < a.+1 by [].
       by rewrite ie'; apply ltn0Sn.
-   have fai: f (Ordinal alt) < f (Ordinal i'lt)+1mod.
-     by have: val (f (Ordinal alt)) < val (f (Ordinal i'lt)+1mod) by rewrite/= -ke.
+   have fai: f (Ordinal alt) < f (Ordinal i'lt).+1mod.
+     by have: val (f (Ordinal alt)) < val (f (Ordinal i'lt).+1mod) by rewrite/= -ke.
    by move:(lt_trans fai fia); rewrite ltxx.
 move=>i'lt'; move:ikj.
 case ile: ((Ordinal i'lt).+1 == size l').
@@ -190,7 +190,7 @@ move:Pkl kl ke; rewrite modn_small// =>Pkl kl ke.
 move:fk kf; rewrite ke=>/(@homo_lt_total _ _ _ _ _ fh) ia /(@homo_lt_total _ _ _ _ _ fh) ai.
 have ia': (i' < a)%N by [].
 have ai': (a < i'.+1)%N.
-   have ai': val (Ordinal alt) < val (Ordinal i'lt)+1mod by [].
+   have ai': val (Ordinal alt) < val (Ordinal i'lt).+1mod by [].
    move:f fi fh alt i'lt ile {ia} ke i'lt' ai ai'; rewrite/Zp_succ -/l'; generalize (size l'); case=>// n _ _ _ /= _ _ _ _ i'lt _.
    by rewrite modn_small.
 by move: (leq_ltn_trans ia' ai'); rewrite ltnn.
