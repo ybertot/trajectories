@@ -223,6 +223,7 @@ Qed.
 
 (* TODO(rei): define as an instance of Mobius in pol.v? *)
 Definition Mobius' (R : ringType) (p : {poly R}) (a b : R) : {poly R} :=
+(*  Mobius (size p).-1 a b p.? *)
   reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
 
 Lemma root_Mobius'_2 (p : {poly R}) (x : R) (l r : R) :
@@ -296,29 +297,6 @@ by rewrite /scaleX_poly -(subr_eq0 p q) -(@comp_poly2_eq0 _ (p - q) ('X * a%:P))
   ?size_XmulC // rmorphB subr_eq add0r.
 Qed.
 
-(* NB(rei): move? *)
-Lemma reciprocal_Xn n : reciprocal_pol ('X^n) = (GRing.one R)%:P.
-Proof.
-rewrite /reciprocal_pol size_polyXn poly_def big_ord_recl.
-rewrite subSS subn0 coefXn expr0 eqxx scale1r big1 ?addr0 // => i _.
-rewrite lift0 subSS coefXn /=.
-have /negbTE -> : (n - i.+1)%N != n.
-  by rewrite neq_ltn -(ltn_add2r i.+1) subnK// -addSnnS ltn_addr.
-by rewrite -mul_polyC mul0r.
-Qed.
-
-(* NB(rei): move? *)
-Lemma reciprocal_Xn_root0 (p : {poly R}) :
-  reciprocal_pol p = reciprocal_pol (p %/ 'X^(\mu_0 p)).
-Proof.
-rewrite -(addr0 'X) -oppr0.
-have Hmu0 := root_mu p 0.
-rewrite Pdiv.IdomainMonic.dvdp_eq in Hmu0; last first.
-  by rewrite monic_exp// monicXsubC.
-by rewrite {1}(eqP Hmu0) reciprocalM {2}oppr0 addr0 reciprocal_Xn
-    polyC1 mulr1 polyC0.
-Qed.
-
 Lemma pdivmu0_0th_neq0 (p : {poly R}) : p != 0 -> (p %/ 'X^(\mu_0 p))`_0 != 0.
 Proof.
 move=> Hp.
@@ -331,71 +309,6 @@ have H0noroot : ~~(root (p %/ 'X^(\mu_0 p)) 0).
   by rewrite -(addr0 'X) -oppr0 -polyC0 root_mu.
 rewrite -horner_coef0. apply: negbT.
 by move/rootPf : H0noroot.
-Qed.
-
-(* NB(rei): move? *)
-Lemma reciprocal_reciprocal (p : {poly R}) :
-  reciprocal_pol (reciprocal_pol p) = p %/ ('X^(\mu_0 p)).
-Proof.
-case Hp0 : (p == 0).
-  move/eqP : Hp0 => ->.
-  by rewrite !reciprocalC div0p polyC0.
-rewrite (@reciprocal_Xn_root0 p) reciprocal_idempotent //.
-apply: pdivmu0_0th_neq0.
-by apply: negbT.
-Qed.
-
-(* NB(rei): move? *)
-Lemma reciprocal0 (p : {poly R}) : (reciprocal_pol p == 0) = (p == 0).
-Proof.
-apply/idP/idP => Hp.
-  have H : (p %/ ('X^(\mu_0 p)) == 0).
-    by rewrite -reciprocal_reciprocal -polyC0 -reciprocalC (eqP Hp).
-  rewrite Pdiv.CommonIdomain.divp_eq0 in H.
-  move/orP : H; case => [| /orP [] H] //.
-    by rewrite -size_poly_eq0 size_polyXn -(Bool.negb_involutive (_.+1 == 0%N))
-      -lt0n /= in H.
-  have H2 := (root_mu p 0).
-  case Hp0 : (p == 0) => //.
-  rewrite gtNdvdp // in H2.
-    by apply: negbT.
-  by rewrite oppr0 addr0.
-by rewrite (eqP Hp) -polyC0 reciprocalC.
-Qed.
-
-(*
-Lemma reciprocal_nth : forall (p : {poly R}) k, (k < size p)%N ->
-   (reciprocal_pol p)`_k = p`_((size p) - k.+1).
-Proof.
-move=> p k Hk.
-by rewrite /reciprocal_pol coef_poly Hk.
-Qed.
-*)
-(* NB(rei): move? *)
-Lemma reciprocal_nth_2 (p : {poly R}) k : (k < size p)%N ->
-  (reciprocal_pol p)`_(size p - k.+1) = p`_k.
-Proof.
-move=> Hk.
-rewrite /reciprocal_pol coef_poly.
-have Hk2 : (size p - k.+1 < size p)%N.
-  by rewrite -(ltn_add2r k.+1) subnK // -addSnnS ltn_addr.
-rewrite Hk2 !subnS -!subn1 !subnBA; last by rewrite subn_gt0.
-  by rewrite addn1 -subnDA addn1 addnC addnK.
-exact: ltnW.
-Qed.
-
-(* NB(rei): move? *)
-Lemma reciprocal_eq (p q : {poly R}) : p`_0 != 0 -> q`_0 != 0 ->
-  (p == q) = (reciprocal_pol p == reciprocal_pol q).
-Proof.
-move=> p0 q0; apply/idP/idP => [/eqP ->//|/eqP pq].
-apply/eqP/poly_inj.
-have Hsize : size p = size q.
-  by rewrite -reciprocal_size // -(@reciprocal_size _ q) // pq.
-apply: (@eq_from_nth _ 0) => // i ip.
-rewrite -reciprocal_nth_2// -(@reciprocal_nth_2 q) //.
-  by rewrite pq Hsize.
-by rewrite -Hsize.
 Qed.
 
 Lemma Mobius'0 (p : {poly R}) (a b : R) : a != b ->

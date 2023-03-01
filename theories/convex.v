@@ -141,7 +141,7 @@ Definition face' (A F: set E) := [/\ (F `<=` A)%classic, is_convex_set F &
 
 Lemma face'P (A F: set E): face A F <-> face' A F.
 Proof.
-split => [[FA [Fconv Fface]]|[FA [Fconv Fface]]].
+split => [[FA Fconv Fface]|[FA Fconv Fface]].
   split=> // x u v xF uA vA xuv xv; have [xu|xu] := eqVneq x u.
       by rewrite xu in xF.
   by move: (Fface x u v xF uA vA xuv xu xv) => [].
@@ -250,7 +250,7 @@ split.
 move=>xface; apply /mem_set=>u v uA vA xuv.
 suff: (x == u) || (x == v) by move=>/orP; case=> /eqP ->; [ left | right ].
 apply /negP=>/negP; rewrite negb_or=>/andP [xu xv].
-move: xface=>[_ [_ /(_ x u v)]].
+move: xface=> [_ _ /(_ x u v)].
 have xx: x \in [set x]%classic by apply /mem_set.
 move=>/(_ xx uA vA xuv xu xv) [/set_mem /= ux /set_mem /= vx]; subst u.
 by move: xu; rewrite eq_refl.
@@ -258,7 +258,7 @@ Qed.
 
 Lemma face_trans (A : set E) (F : set E) (G : set E) : face A F -> face F G -> face A G.
 Proof.
-move=>[AF [Fconv Fface]] [FG [Gconv Gface]].
+move=>[AF Fconv Fface] [FG Gconv Gface].
 split => //.
 - by move=> x Gx; apply AF, FG.
 - move=>// x u v xG uA vA xuv xu xv.
@@ -315,7 +315,7 @@ have : forall x y, x \in A -> y \in A -> f x < a -> a < f y -> False.
          by apply divr_ge0; apply ltW=>//; rewrite subr_gt0.
          rewrite ler_pdivr_mulr// mul1r -subr_ge0 opprB addrAC addrCA subrr addr0 subr_ge0.
          by apply ltW.
-   move: hface=>/face'P [_ [_ /(_ (u <| Prob.mk t01 |> v) u v)]].
+   move: hface=>/face'P [_ _ /(_ (u <| Prob.mk t01 |> v) u v)].
    have inuv: u <| Prob.mk t01 |> v \in segment u v.
       by apply mem_set; exists (Prob.mk t01).
    have uva: f (u <| Prob.mk t01 |> v) = a.
