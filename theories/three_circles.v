@@ -226,8 +226,8 @@ Definition Mobius' (R : ringType) (p : {poly R}) (a b : R) : {poly R} :=
   reciprocal_pol ((p \shift a) \scale (b - a)) \shift 1.
 
 Lemma root_Mobius'_2 (p : {poly R}) (x : R) (l r : R) :
-   x + 1 != 0 ->
-   root p ((r + l * x) / (x + 1)) = root (Mobius' p l r) x.
+  x + 1 != 0 ->
+  root p ((r + l * x) / (x + 1)) = root (Mobius' p l r) x.
 Proof.
 move=> Hx.
 rewrite /Mobius -root_shift_2 -root_reciprocal_2 //.

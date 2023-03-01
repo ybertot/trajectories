@@ -24,9 +24,34 @@ Fixpoint abs_pol (l:list rat) :list rat :=
  match l with nil => nil | a::tl => `|a| :: abs_pol tl end.
 
 (* Theorem binding the slope between two points inside an interval. *)
-Lemma cm2 : forall (l : {poly rat}) b,
+(*Lemma cm2 (l : {poly rat}) b :
   { c | forall x, 0 <= x -> x <= b -> `|l.[x] - l.[0]| <= c * x}.
 Proof.
+(*set al := \poly_(i < size l) `|l`_i|.
+exists al.[b] => x x0 xb.
+rewrite horner_poly horner_coef0 horner_coef.
+have [/size0nil ->|] := eqVneq (size l) 0%N.
+  by rewrite !big_ord0/= normr0 mul0r.
+rewrite -lt0n => l0.
+rewrite -[in leLHS](prednK l0).
+rewrite big_ord_recl/= expr0 mulr1 addrAC subrr add0r.
+rewrite /bump.
+under eq_bigr do rewrite leq0n/= add1n.
+rewrite big_distrl/=.
+rewrite (le_trans (ler_norm_sum _ _ _))//.
+under eq_bigr do rewrite normrM.
+rewrite -[in leRHS](prednK l0).
+rewrite big_ord_recl/= expr0 /bump.
+under [in leRHS]eq_bigr do rewrite leq0n/= add1n.
+rewrite mulr1.
+rewrite ler_paddl// ?mulr_ge0//.
+apply: ler_sum => j _.
+rewrite -mulrA.
+rewrite ler_pmul//.
+rewrite ger0_norm//; last first.
+  by rewrite exprn_ge0.
+rewrite (@le_trans _ _ (b ^+ j.+1))//.
+by rewrite ler_pexpn2r// nnegrE// (le_trans x0).*)
 (*move=> l b; case: l =>[| a l].
 - by exists 0; move=> /= x; rewrite mul0r oppr0 addr0 normr0 lexx.
 - exists (eval_pol (abs_pol l) b) => x px xb /=; rewrite mul0r addr0.
@@ -34,7 +59,7 @@ Proof.
 (* NB(rei): ler_absr_eval_pol? *)
 (*  rewrite (le_trans (ler_absr_eval_pol _ _)) //.
   by rewrite eval_pol_abs_pol_increase // ger0_abs.
-Qed.*) (*TODO*)*) Admitted.
+Qed.*) (*TODO*)*) Admitted. *)
 
 (* Cannot be abstracted since not every ordered ring has a floor ring *)
 (*
