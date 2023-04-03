@@ -300,7 +300,7 @@ Definition step (e : event) (st : scan_state) : scan_state :=
      let last_closed := close_cell p last_contact in
      let (new_opens, new_lopen) := update_open_cell_top lsto higher_edge e in
      Bscan (op1 ++ fc' ++ new_opens) new_lopen last_cells
-          (cls ++ closed) last_closed higher_edge lx.
+          (cls ++ cl :: closed) last_closed higher_edge lx.
 
 Definition leftmost_points (bottom top : edge) :=
   if Qlt_bool (p_x (left_pt bottom)) (p_x (left_pt top)) then
@@ -1153,3 +1153,12 @@ Compute
   let p1 := Bpt (-19/10) (-3/2) in
   let p2 := Bpt (1/3) (0) in
   example_test p1 p2 nil.
+
+Definition example_cells := edges_to_cells example_bottom example_top
+     example_edge_list.
+
+Compute nth 5 example_cells dummy_cell.
+
+Compute nth 7 example_cells dummy_cell.
+
+Compute edges_to_events example_edge_list.
