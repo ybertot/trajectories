@@ -1087,22 +1087,30 @@ Definition inside_box (p : pt) (bottom top : edge) :=
 (*******  starting work on an example ******************)
 
 Definition example_edge_list : seq edge :=
+  Bedge (Bpt (-3) 0) (Bpt (-2) 1) ::
+  Bedge (Bpt (-3) 0) (Bpt 0 (-3)) ::
+  Bedge (Bpt 0 (-3)) (Bpt 3 0) ::
+  Bedge (Bpt (-2) 1) (Bpt 0 1) ::
+  Bedge (Bpt 0 1) (Bpt 1 0) ::
+  Bedge (Bpt (-1) 0) (Bpt 0 (-1)) ::
+  Bedge (Bpt 0 (-1)) (Bpt 1 0) :: nil.
+(*
   Bedge (Bpt (-2) (-1)) (Bpt 2 1) ::
   Bedge (Bpt (4 # 5) (-1 # 5)) (Bpt 2 1) ::
   Bedge (Bpt (4 # 5) (-1 # 5)) (Bpt (17 # 5) (-5 / 2)) ::
-  Bedge  (Bpt (-2) (-1)) (Bpt (17 # 5) (-5 / 2)) :: nil.
+  Bedge  (Bpt (-2) (-1)) (Bpt (17 # 5) (-5 / 2)) :: nil. *)
 
 
 Lemma example_edge_cond : edge_cond example_edge_list = true.
 Proof. easy. Qed.
 
 Notation BOTTOM :=
-  ({| left_pt := {| p_x := -3; p_y := -3|};
+  ({| left_pt := {| p_x := -4; p_y := -4|};
       right_pt := {| p_x := 4; p_y := -4|}|}).
 
 Notation TOP :=
   ({| left_pt := {| p_x := -4; p_y := 2|};
-      right_pt := {| p_x := 4; p_y := 3|}|}).
+      right_pt := {| p_x := 4; p_y := 2|}|}).
 
 Definition example_bottom : edge := BOTTOM.
 
@@ -1143,5 +1151,5 @@ List.map (display_curve_element 300 400 70) bad_smooth ++
   command. *)
 Compute 
   let p1 := Bpt (-19/10) (-3/2) in
-  let p2 := Bpt (3/2) (0) in
+  let p2 := Bpt (1/3) (0) in
   example_test p1 p2 nil.
