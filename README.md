@@ -73,7 +73,30 @@ references:
 
 ## Development information
 
-TODO
+On April 2, 2023, a file `smooth_trajectories.v` was added to illustrate a
+program to compute smooth trajectories for a "point" between obstacles given
+by straight edges.
+
+The example can be played with by changing the contents of variables 
+`example_bottom`, `example_top`, `example_edge_list`, and changing
+the coordinates of points given as argument to `example_test` in the
+`Compute` command that appears at the end of the file.  This compute
+ commands produces text that should be placed in a postscript file and
+ can be displayed with any postscript enabled viewer.  A perl-script is
+ provided to produce this, so that the following command is a handy
+ way to produce example outputs:
+
+ ```
+ (cd theories; coqc smooth_trajectories.v | ../coq_output_to_postscript.pl)
+ ```
+
+At the time of writing this paragraph, the code is incomplete, in
+the sense that it won't compute a
+trajectory between points if either the source or the target are at the
+exact intersection between to adacent cells.
+
+If you play with this code and you obtain a trajectory that obviously
+crosses the given edges.
 
 ## Previous work reused at the time of the first releases
 
