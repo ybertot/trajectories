@@ -296,10 +296,17 @@ Definition step (e : event) (st : scan_state) : scan_state :=
      let '(fc', contact_cells, last_contact, last_cells, lower_edge,
                 higher_edge) :=
        open_cells_decomposition (lsto :: op2) p in
-     let closed := closing_cells p contact_cells in
+     (* we know lsto was just open, so that its left limit is lx
+        and its right limit is bounded by p_x (right_pt lhigh), which
+        is necessarily p_x (point e). lsto is necessarily the
+        first cell of contact_cells.  So the first element of
+        contact_cells should not be closed. It can just be
+        disregarded. *)
+     let closed := closing_cells p (seq.behead contact_cells) in
      let last_closed := close_cell p last_contact in
-     let (new_opens, new_lopen) := update_open_cell_top lsto higher_edge e in
-     Bscan (op1 ++ fc' ++ new_opens) new_lopen last_cells
+     let (new_opens, new_lopen) :=
+        update_open_cell_top lsto higher_edge e in
+        Bscan (op1 ++ fc' ++ new_opens) new_lopen last_cells
           (cls ++ cl :: closed) last_closed higher_edge lx.
 
 Definition leftmost_points (bottom top : edge) :=
@@ -1089,7 +1096,9 @@ Definition inside_box (p : pt) (bottom top : edge) :=
 Definition example_edge_list : seq edge :=
   Bedge (Bpt (-3) 0) (Bpt (-2) 1) ::
   Bedge (Bpt (-3) 0) (Bpt 0 (-3)) ::
-  Bedge (Bpt 0 (-3)) (Bpt 3 0) ::
+  Bedge (Bpt 0 (-3)) (Bpt 1 (-2)) ::
+  Bedge (Bpt 1 (-2)) (Bpt 3 (-1)) ::
+  Bedge (Bpt 0 (3/2)) (Bpt 3 (-1)) ::
   Bedge (Bpt (-2) 1) (Bpt 0 1) ::
   Bedge (Bpt 0 1) (Bpt 1 0) ::
   Bedge (Bpt (-1) 0) (Bpt 0 (-1)) ::
