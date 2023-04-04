@@ -27,7 +27,7 @@ Require Import ZArith QArith List String OrderedType OrderedTypeEx FMapAVL.
     the elements of right_pts *)
 
 Notation seq := list.
-(* In the original development Q is replaced by a variable numFieldType. *)
+(* In the original development Q is replaced by a variable realFieldType. *)
 Record pt := Bpt {p_x : Q; p_y : Q}.
 (* In the original development, edge have the data invariant that
   the left point has a first coordinate strictly less than the right point. *)
