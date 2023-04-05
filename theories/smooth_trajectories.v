@@ -622,40 +622,51 @@ Definition common_vert_edge (c1 c2 : cell) : option vert_edge:=
                       (cell_safe_exits_left c1))
       (cell_safe_exits_right c2).
 
+Definition inside_closedl p c :=
+  negb (point_under_edge p (low c)) &&
+  point_strictly_under_edge p (high c) &&
+ (Qlt_bool (left_limit c) (p_x p) &&
+ (Qle_bool (p_x p) (right_limit c))).
+
 (* This function computes a path (broken line) between a point
   in a cell and a point in another cell, going through the midpoint of
   the door between the two cells.  the points are annotated with the
   constraint they have to satisfied: the cells of which they have to
   be members of. This annotation is important because smoothing will
   replace these points with other points that have to satisfy the same
-  constraint. *)
+  constraint. The trajectory is a straight line segment when one of
+  the two points lies on the boundary between the cells. *)
 Definition path_adjacent_cells (cells : seq cell) (source target : pt)
   (source_i target_i : nat) : option (seq (annotated_point * annotated_point)) :=
   let source_cell := nth source_i cells dummy_cell in
   let target_cell := nth target_i cells dummy_cell in
-  match common_vert_edge source_cell target_cell with
-  | Some v => 
-    Some ((Apt source (source_i :: nil), 
-           Apt (vert_edge_midpoint v) (source_i :: target_i :: nil)) ::
-              (Apt (vert_edge_midpoint v) (source_i :: target_i :: nil),
-               Apt target (target_i :: nil)) :: nil)
-  | None => None
-  end.
+  if inside_closedl target source_cell then
+     Some ((Apt source (source_i :: nil), Apt target (source_i :: nil)) :: nil)
+  else if inside_closedl source target_cell then
+     Some ((Apt source (target_i :: nil), Apt target (target_i :: nil)) :: nil)
+  else
+    match common_vert_edge source_cell target_cell with
+    | Some v => 
+      Some ((Apt source (source_i :: nil), 
+             Apt (vert_edge_midpoint v) (source_i :: target_i :: nil)) ::
+                (Apt (vert_edge_midpoint v) (source_i :: target_i :: nil),
+                 Apt target (target_i :: nil)) :: nil)
+    | None => None
+    end.
 
-Definition strict_inside_closed p c :=
-  negb (point_under_edge p (low c)) &&
-  point_strictly_under_edge p (high c) &&
- (Qlt_bool (left_limit c) (p_x p) &&
- (Qlt_bool (p_x p) (right_limit c))).
+(* TODO : simplify, the verification of non collision is probably useless *)
+Definition on_side p c :=
+  (Qeq_bool (p_x p) (left_limit c) && negb (existsb (pt_eqb p) (left_pts c))) ||
+  (Qeq_bool (p_x p) (right_limit c) && negb (existsb (pt_eqb p) (right_pts c))).
 
 Definition point_to_point (bottom top : edge)
  (cells : seq cell) (source target : pt) :
   option (seq (annotated_point * annotated_point)) :=
 let source_i := find 
-        (fun i => strict_inside_closed source (nth i cells dummy_cell))
+        (fun i => inside_closedl source (nth i cells dummy_cell))
         (seq.iota 0 (List.length cells)) in
 let target_i := find 
-        (fun i => strict_inside_closed target (nth i cells dummy_cell))
+        (fun i => inside_closedl target (nth i cells dummy_cell))
         (seq.iota 0 (List.length cells)) in
 match source_i, target_i with
 | Some source_i, Some target_i =>
@@ -668,13 +679,34 @@ match source_i, target_i with
     | Some cp =>
       if 2 <=? List.length cp then
         let penultimate_cell_i := nth 1 (List.rev cp) 0%nat in
-        match common_vert_edge 
-               (nth penultimate_cell_i cells dummy_cell)
-               (nth target_i cells dummy_cell),
-             common_vert_edge
-               (nth source_i cells dummy_cell)
-               (nth (seq.head 0%nat cp) cells dummy_cell) with
+        let pen_cell := nth penultimate_cell_i cells dummy_cell in
+        let snd_cell_i := seq.head 0%nat cp in
+        let snd_cell := nth snd_cell_i cells dummy_cell in
+        let fst_cell := nth source_i cells dummy_cell in
+        let lst_cell := nth target_i cells dummy_cell in
+        match common_vert_edge pen_cell lst_cell,
+              common_vert_edge fst_cell snd_cell with
         | Some last_door, Some first_door =>
+            let path := 
+              connected_cells_path cells source_i (seq.head 0%nat cp)
+                    (seq.behead cp) in
+             let path' := belast (behead path)  in
+             let first_steps :=
+               if inside_closedl source snd_cell then
+                  let '(_, sndpt) := seq.head (Apt dummy_pt nil) path in
+                    (Apt source (snd_cell_i :: nil), sndpt) :: nil
+               else
+                   (Apt source (source_i :: nil),
+                    Apt (vert_edge_midpoint first_door)
+                            (source_i :: snd_cell_i :: nil) in
+              let last_steps :=
+                if inside_closedl target pen_cell then
+                  let '(fstpt, _) := seq.last (Apt dummy_pt nil, Apt dummy_pt nil) path in
+                    (fstpt, Apt target pen_ultimate_cell_i) :: nil
+                else
+                    seq.last (Apt
+              match path with (_, sndpt) :: tl
+              (Apt source (source_i :: nil)
           Some ((Apt source (source_i :: nil), 
                   (Apt (vert_edge_midpoint first_door)
                        (source_i :: seq.head 0%nat cp :: nil))) ::
